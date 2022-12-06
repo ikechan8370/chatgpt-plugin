@@ -12,8 +12,12 @@ pnpm install -w chatgpt undici
 git clone https://github.com/ikechan8370/yunzai-chatgpt.git ./plugins/chatgpt
 ```
 3. 修改配置
-编辑`plugins/chatgpt/index.js`文件主要修改其中的`SESSION_TOKEN`常量，修改为你的openai账号的token。
+编辑`plugins/chatgpt/index.js`文件主要修改其中的`SESSION_TOKEN`常量，修改为你的openai账号的token。token获取参见下文。
 
+## 使用
+#chatgpt开头即可，例如：#chatgpt 介绍一下米哈游
+![image](https://user-images.githubusercontent.com/21212372/205808552-a775cdea-0668-4273-865c-35c5d91ad37e.png)
+（图片仅供参考，chatgpt在某些领域依然是人工智障，但语言起码流畅自信多了）
 ## 关于openai token获取
 1. 注册openai账号
 进入https://chat.openai.com/ ，选择signup注册。目前openai不对包括俄罗斯、乌克兰、伊朗、中国等国家和地区提供服务，所以自行寻找办法使用其他国家和地区的ip登录。此外，注册可能需要验证所在国家和地区的手机号码，如果没有国外手机号可以试试解码网站，收费的推荐https://sms-activate.org/。
@@ -29,6 +33,10 @@ git clone https://github.com/ikechan8370/yunzai-chatgpt.git ./plugins/chatgpt
 const api = new ChatGPTAPI({ sessionToken: SESSION_TOKEN, markdown: false })
 ```
 默认关闭了markdown支持，如果发现代码类回答显示有问题可以将其改为true试试。
+
+此外，该api响应速度可能由于模型本身及网络原因不会太快，请勿频繁重发。后续准备加入限速等功能。
+
+openai目前开放chatgpt模型的免费试用，在此期间本项目应该都可用，后续如果openai调整其收费策略，到时候视情况进行调整。
 
 ## 感谢
 * https://github.com/transitive-bullshit/chatgpt-api
