@@ -18,6 +18,12 @@ git clone https://github.com/ikechan8370/yunzai-chatgpt.git ./plugins/chatgpt
 #chatgpt开头即可，例如：#chatgpt 介绍一下米哈游
 ![image](https://user-images.githubusercontent.com/21212372/205808552-a775cdea-0668-4273-865c-35c5d91ad37e.png)
 （图片仅供参考，chatgpt在某些领域依然是人工智障，但语言起码流畅自信多了）
+
+比如让他写代码
+![image](https://user-images.githubusercontent.com/21212372/205810566-af10e141-1ab4-4629-998d-664eea3ad827.png)
+
+发挥你的想象力吧！
+
 ## 关于openai token获取
 1. 注册openai账号
 进入https://chat.openai.com/ ，选择signup注册。目前openai不对包括俄罗斯、乌克兰、伊朗、中国等国家和地区提供服务，所以自行寻找办法使用其他国家和地区的ip登录。此外，注册可能需要验证所在国家和地区的手机号码，如果没有国外手机号可以试试解码网站，收费的推荐https://sms-activate.org/。
