@@ -1,12 +1,14 @@
 # yunzai-chatgpt
 云崽qq机器人的chatgpt插件
-
+## 版本要求
+nodejs版本大于14
 ## 安装
 进入yunzai根目录
 1. 安装依赖
 ```
 pnpm install -w chatgpt undici
 ```
+> 目前要求依赖chatgpt版本要大于2.0.0，如果报错可使用`pnpm update`更新一下。
 2. 克隆项目
 ```
 git clone https://github.com/ikechan8370/yunzai-chatgpt.git ./plugins/chatgpt
@@ -34,9 +36,13 @@ git clone https://github.com/ikechan8370/yunzai-chatgpt.git ./plugins/chatgpt
 其他问题可以参考使用的api库https://github.com/transitive-bullshit/chatgpt-api
 
 ## 其他
-`index.js`文件第26行中，
+`index.js`文件中，
 ```
-const api = new ChatGPTAPI({ sessionToken: SESSION_TOKEN, markdown: false })
+this.chatGPTApi = new ChatGPTAPI({
+  sessionToken: SESSION_TOKEN,
+  markdown: true,
+  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
+})
 ```
 默认关闭了markdown支持，如果发现代码类回答显示有问题可以将其改为true试试。
 
