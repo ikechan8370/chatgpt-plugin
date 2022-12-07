@@ -34,7 +34,7 @@ git clone https://github.com/ikechan8370/yunzai-chatgpt.git ./plugins/chatgpt
 其他问题可以参考使用的api库https://github.com/transitive-bullshit/chatgpt-api
 
 ## 其他
-`index.js`文件第35行中，
+`index.js`文件第26行中，
 ```
 const api = new ChatGPTAPI({ sessionToken: SESSION_TOKEN, markdown: false })
 ```
