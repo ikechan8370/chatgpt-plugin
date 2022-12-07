@@ -17,12 +17,14 @@ export class example extends plugin {
       rule: [
         {
           /** 命令正则匹配 */
-          reg: '^#chatgpt.*$',
+          reg: '^#chatgpt([\s\S]*)',
           /** 执行方法 */
           fnc: 'chatgpt'
         }
       ]
     })
+    const api = new ChatGPTAPI({ sessionToken: SESSION_TOKEN, markdown: false })
+    this.chatGPTApi = api
   }
   /**
    * 调用chatgpt接口
@@ -31,11 +33,17 @@ export class example extends plugin {
   async chatgpt (e) {
     logger.info(e.msg)
     let question = _.trimStart(e.msg, "#chatgpt")
+    question = question.trimStart()
     logger.info(`chatgpt question: ${question}`)
-    const api = new ChatGPTAPI({ sessionToken: SESSION_TOKEN, markdown: false })
-    await api.ensureAuth()
-    const response = await api.sendMessage(question)
+    await this.chatGPTApi.ensureAuth()
+    // @todo conversation
+    // const response = await this.chatGPTApi.sendMessage(question, { conversationId: '0c382256-d267-4dd4-90e3-a01dd22c20a2', onProgress: this.onProgress })
+    const response = await this.chatGPTApi.sendMessage(question)
     /** 最后回复消息 */
-    await this.reply(`${response}`)
+    await this.reply(`${response}`, true)
+  }
+  
+  onProgress(partialResponse) {
+    console.log(partialResponse)
   }
 }
