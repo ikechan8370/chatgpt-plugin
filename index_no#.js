@@ -105,7 +105,7 @@ export class chatgpt extends plugin {
             '@我+聊天内容: 发起对话与AI进行聊天\n' +
             '#chatgpt对话列表: 查看当前发起的对话\n' +
             '#结束对话: 结束自己或@用户的对话\n' +
-            '#chatgpt帮助: 查看本帮助' + 
+            '#chatgpt帮助: 查看本帮助\n' + 
             '源代码：https://github.com/ikechan8370/chatgpt-plugin'
         await this.reply(response)
     }
