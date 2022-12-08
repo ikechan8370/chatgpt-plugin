@@ -2,6 +2,7 @@ import plugin from '../../lib/plugins/plugin.js'
 import { ChatGPTAPI } from 'chatgpt'
 import _ from 'lodash'
 const SESSION_TOKEN=''
+const blockWords = '屏蔽词1,屏蔽词2,屏蔽词3'
 
 /**
  * 每个对话保留的时长。单个对话内ai是保留上下文的。超时后销毁对话，再次对话创建新的对话。
@@ -146,6 +147,14 @@ export class chatgpt extends plugin {
         utime: new Date(),
         num: previousConversation.num + 1
       }), { EX: CONVERSATION_PRESERVE_TIME })
+      
+      // 检索是否有屏蔽词
+      const blockWord = blockWords.split(',').find(word => response.toLowerCase().includes(word.toLowerCase()))
+      if (blockWord) {
+        await this.reply(`返回内容存在敏感词，我不想回答你`, true)
+        return
+      }
+      
       /** 最后回复消息 */
       await this.reply(`${response}`, true)
     } catch (e) {
