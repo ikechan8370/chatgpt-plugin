@@ -1,7 +1,7 @@
 # yunzai-chatgpt
 云崽qq机器人的chatgpt插件
 ## 版本要求
-nodejs版本大于14
+Node.js >= 16.8
 ## 安装
 进入yunzai根目录
 1. 安装依赖
