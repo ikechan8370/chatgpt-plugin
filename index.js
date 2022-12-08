@@ -101,10 +101,12 @@ export class chatgpt extends plugin {
 
   async help (e) {
     let response = 'chatgpt-plugin使用帮助文字版\n' +
-          '#chatgpt+聊天内容: 发起对话与AI进行聊天\n' +
-          'chatgpt对话列表: 查看当前发起的对话\n' +
-          '#结束对话: 结束自己或@用户的对话'
-    await this.reply(response)
+            '#chatgpt+聊天内容: 发起对话与AI进行聊天\n' +
+            'chatgpt对话列表: 查看当前发起的对话\n' +
+            '#结束对话: 结束自己或@用户的对话\n' +
+            'chatgpt帮助: 查看本帮助\n' + 
+            '源代码：https://github.com/ikechan8370/chatgpt-plugin'
+        await this.reply(response)
   }
 
   /**
@@ -120,18 +122,20 @@ export class chatgpt extends plugin {
     let previousConversation = await redis.get(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
     if (!previousConversation) {
       c = this.chatGPTApi.getConversation()
+      let ctime = new Date()
       previousConversation = {
         sender: e.sender,
         conversation: c,
-        ctime: new Date(),
-        utime: new Date(),
+        ctime,
+        utime: ctime,
         num: 0
       }
       await redis.set(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`, JSON.stringify(previousConversation), { EX: CONVERSATION_PRESERVE_TIME })
     } else {
+      previousConversation = JSON.parse(previousConversation)
       c = this.chatGPTApi.getConversation({
-        conversationId: JSON.parse(previousConversation).conversation.conversationId,
-        parentMessageId: JSON.parse(previousConversation).conversation.parentMessageId
+          conversationId: previousConversation.conversation.conversationId,
+          parentMessageId: previousConversation.conversation.parentMessageId
       })
     }
     try {
@@ -147,10 +151,10 @@ export class chatgpt extends plugin {
         num: previousConversation.num + 1
       }), { EX: CONVERSATION_PRESERVE_TIME })
       /** 最后回复消息 */
-      await this.reply(`${response}`, true)
+      await this.reply(`${response}`, e.isGroup)
     } catch (e) {
       logger.error(e)
-      await this.reply(`与OpenAI通信异常，请稍后重试：${e}`, true)
+      await this.reply(`与OpenAI通信异常，请稍后重试：${e}`, e.isGroup, { recallMsg: e.isGroup ? 10 : 0 })
     }
   }
 }
