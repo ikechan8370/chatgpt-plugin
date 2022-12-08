@@ -84,7 +84,7 @@ export class chatgpt extends plugin {
                 await this.reply('当前没有开启对话', true)
             } else {
                 await redis.del(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
-                await this.reply('已结束当前对话，请使用#chatgpt进行聊天以开启新的对话', true)
+                await this.reply('已结束当前对话，请@我进行聊天以开启新的对话', true)
             }
         } else {
             let at = ats[0]
@@ -95,7 +95,7 @@ export class chatgpt extends plugin {
                 await this.reply(`当前${atUser}没有开启对话`, true)
             } else {
                 await redis.del(`CHATGPT:CONVERSATIONS:${qq}`)
-                await this.reply(`已结束${atUser}的对话，他仍可以使用#chatgpt进行聊天以开启新的对话`, true)
+                await this.reply(`已结束${atUser}的对话，他仍可以@我进行聊天以开启新的对话`, true)
             }
         }
     }
