@@ -29,9 +29,13 @@ git clone https://github.com/ikechan8370/yunzai-chatgpt.git ./plugins/chatgpt
 <img width="835" alt="image" src="https://user-images.githubusercontent.com/21212372/206387421-db00728d-1869-40f3-bde4-0dd6a4b67913.png">
 
 ### 群聊使用艾特（@）的方式
-如果你的机器人插件少不担心冲突问题的话，将 `index.js` 重命名为 `index.js.bak`，将 `index_no#.js` 重命名为 `index.js`，此时将基于艾特模式进行聊天。\
-此时只需在群聊中@机器人+聊天内容即可。\
+如果你的机器人插件少不担心冲突问题的话，将 `index.js` 重命名为 `index.js.bak`，将 `index_no#.js` 重命名为 `index.js`，此时将基于艾特模式进行聊天。
+
+此时只需在群聊中@机器人+聊天内容即可。
+![image](https://user-images.githubusercontent.com/21212372/206436999-c8d3bd48-aa39-496a-a71a-89164e9d7c18.png)
+
 同时，此模式下私聊直接打字聊天即可，也无需加#chatgpt前缀。
+![image](https://user-images.githubusercontent.com/21212372/206437284-afed0fc6-caaa-4c6e-92e4-53fccbeff286.png)
 
 发挥你的想象力吧！
 
