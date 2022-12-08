@@ -29,7 +29,8 @@ export class chatgpt extends plugin {
         },
         {
           reg: 'chatgpt对话列表',
-          fnc: 'getConversations'
+          fnc: 'getConversations',
+          permission: 'master'
         },
         {
           reg: '^#结束对话([\s\S]*)',
@@ -55,19 +56,19 @@ export class chatgpt extends plugin {
    */
   async getConversations (e) {
     let keys = await redis.keys('CHATGPT:CONVERSATIONS:*')
-    if (!keys || keys.length === 0) {
-      await this.reply('当前没有人正在与机器人对话', true)
-    } else {
-      let response = '当前对话列表：(格式为【开始时间 qq昵称 对话长度 最后活跃时间】)\n'
-      await Promise.all(keys.map(async (key) => {
-        let conversation = await redis.get(key)
-        if (conversation) {
-          conversation = JSON.parse(conversation)
-          response += `${conversation.ctime} ${conversation.sender.nickname} ${conversation.num} ${conversation.utime} \n`
+        if (!keys || keys.length === 0) {
+            await this.reply('当前没有人正在与机器人对话', true)
+        } else {
+            let response = '当前对话列表：(格式为【开始时间 ｜ qq昵称 ｜ 对话长度 ｜ 最后活跃时间】)\n'
+            await Promise.all(keys.map(async (key) => {
+                let conversation = await redis.get(key)
+                if (conversation) {
+                    conversation = JSON.parse(conversation)
+                    response += `${conversation.ctime} ｜ ${conversation.sender.nickname} ｜ ${conversation.num} ｜ ${conversation.utime} \n`
+                }
+            }))
+            await this.reply(`${response}`, true)
         }
-      }))
-      await this.reply(`${response}`, true)
-    }
   }
 
   /**
