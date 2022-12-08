@@ -24,6 +24,9 @@ git clone https://github.com/ikechan8370/yunzai-chatgpt.git ./plugins/chatgpt
 比如让他写代码
 ![image](https://user-images.githubusercontent.com/21212372/205810566-af10e141-1ab4-4629-998d-664eea3ad827.png)
 
+比如让他写剧本
+<img width="835" alt="image" src="https://user-images.githubusercontent.com/21212372/206387421-db00728d-1869-40f3-bde4-0dd6a4b67913.png">
+
 发挥你的想象力吧！
 
 ## 关于openai token获取
