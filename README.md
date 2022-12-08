@@ -53,3 +53,5 @@ openai目前开放chatgpt模型的免费试用，在此期间本项目应该都�
 ## 感谢
 * https://github.com/transitive-bullshit/chatgpt-api
 * https://chat.openai.com/
+
+![Alt](https://repobeats.axiom.co/api/embed/076d597ede41432208435f233d18cb20052fb90a.svg "Repobeats analytics image")
