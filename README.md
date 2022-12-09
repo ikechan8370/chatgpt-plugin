@@ -8,7 +8,7 @@ Node.js >= 16.8
 ```
 pnpm install -w chatgpt undici
 ```
-> 目前要求依赖chatgpt版本要大于2.0.0，如果报错可使用`pnpm update`更新一下。
+> chatgpt从2.0开始支持Conversation，因此要求依赖chatgpt版本要大于2.0.0，如果使用了低版本导致报错可使用`pnpm update`更新一下。
 2. 克隆项目
 ```
 git clone https://github.com/ikechan8370/yunzai-chatgpt.git ./plugins/chatgpt
@@ -17,12 +17,25 @@ git clone https://github.com/ikechan8370/yunzai-chatgpt.git ./plugins/chatgpt
 编辑`plugins/chatgpt/index.js`文件主要修改其中的`SESSION_TOKEN`常量，修改为你的openai账号的token。token获取参见下文。
 
 ## 使用
+### 默认方式
 #chatgpt开头即可，例如：#chatgpt 介绍一下米哈游
 ![image](https://user-images.githubusercontent.com/21212372/205808552-a775cdea-0668-4273-865c-35c5d91ad37e.png)
 （图片仅供参考，chatgpt在某些领域依然是人工智障，但语言起码流畅自信多了）
 
 比如让他写代码
 ![image](https://user-images.githubusercontent.com/21212372/205810566-af10e141-1ab4-4629-998d-664eea3ad827.png)
+
+比如让他写剧本
+<img width="835" alt="image" src="https://user-images.githubusercontent.com/21212372/206387421-db00728d-1869-40f3-bde4-0dd6a4b67913.png">
+
+### 群聊使用艾特（@）的方式
+如果你的机器人插件少不担心冲突问题的话，将 `index.js` 重命名为 `index.js.bak`，将 `index_no#.js` 重命名为 `index.js`，此时将基于艾特模式进行聊天。
+
+此时只需在群聊中@机器人+聊天内容即可。
+![image](https://user-images.githubusercontent.com/21212372/206436999-c8d3bd48-aa39-496a-a71a-89164e9d7c18.png)
+
+同时，此模式下私聊直接打字聊天即可，也无需加#chatgpt前缀。
+![image](https://user-images.githubusercontent.com/21212372/206437284-afed0fc6-caaa-4c6e-92e4-53fccbeff286.png)
 
 发挥你的想象力吧！
 
@@ -35,18 +48,10 @@ git clone https://github.com/ikechan8370/yunzai-chatgpt.git ./plugins/chatgpt
 
 其他问题可以参考使用的api库https://github.com/transitive-bullshit/chatgpt-api
 
-## 其他
-`index.js`文件中，
-```
-this.chatGPTApi = new ChatGPTAPI({
-  sessionToken: SESSION_TOKEN,
-  markdown: true,
-  userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
-})
-```
-默认关闭了markdown支持，如果发现代码类回答显示有问题可以将其改为true试试。
 
-此外，该api响应速度可能由于模型本身及网络原因不会太快，请勿频繁重发。后续准备加入限速等功能。
+## 其他
+
+该api响应速度可能由于模型本身及网络原因不会太快，请勿频繁重发。后续准备加入限速等功能。因网络问题和模型响应速度问题可能出现500、503、404等各种异常状态码，此时等待官方恢复即可。实测复杂的中文对话更容易触发503错误（超时）。如出现429则意味着超出了免费账户调用频率，只能暂时停用，放置一段时间再继续使用。
 
 openai目前开放chatgpt模型的免费试用，在此期间本项目应该都可用，后续如果openai调整其收费策略，到时候视情况进行调整。
 
