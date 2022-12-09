@@ -123,6 +123,12 @@ export class chatgpt extends plugin {
         }
         // let question = _.trimStart(e.msg, '#chatgpt')
         let question = e.msg.trimStart()
+        try {
+            await this.chatGPTApi.ensureAuth()
+          } catch (e) {
+            logger.error(e)
+            await this.reply(`OpenAI认证失败，请检查Token：${e}`, true)
+          }
         let c
         logger.info(`chatgpt question: ${question}`)
         let previousConversation = await redis.get(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
@@ -146,7 +152,6 @@ export class chatgpt extends plugin {
         }
         try {
             // console.log({ c })
-            await this.chatGPTApi.ensureAuth()
             const response = await c.sendMessage(question)
             logger.info(response)
             // 更新redis中的conversation对象，因为send后c已经被自动更新了
