@@ -129,6 +129,7 @@ export class chatgpt extends plugin {
           } catch (e) {
             logger.error(e)
             await this.reply(`OpenAI认证失败，请检查Token：${e}`, true)
+            return
           }
         let c
         logger.info(`chatgpt question: ${question}`)
