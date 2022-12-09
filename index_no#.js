@@ -116,7 +116,7 @@ export class chatgpt extends plugin {
      * @param e oicq传递的事件参数e
      */
     async chatgpt (e) {
-        if (e.msg.startsWith("#")) {
+        if (!e.msg || e.msg.startsWith("#")) {
             return
         }
         if (e.isGroup && !e.atme) {
