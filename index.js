@@ -117,7 +117,12 @@ export class chatgpt extends plugin {
   async chatgpt (e) {
     let question = _.trimStart(e.msg, '#chatgpt')
     question = question.trimStart()
-    await this.chatGPTApi.ensureAuth()
+    try {
+      await this.chatGPTApi.ensureAuth()
+    } catch (e) {
+      logger.error(e)
+      await this.reply(`OpenAI认证失败，请检查Token：${e}`, true)
+    }
     let c
     logger.info(`chatgpt question: ${question}`)
     let previousConversation = await redis.get(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
