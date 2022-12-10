@@ -11,7 +11,7 @@ pnpm install -w chatgpt undici
 > chatgpt从2.0开始支持Conversation，因此要求依赖chatgpt版本要大于2.0.0，如果使用了低版本导致报错可使用`pnpm update`更新一下。
 2. 克隆项目
 ```
-git clone https://github.com/ikechan8370/yunzai-chatgpt.git ./plugins/chatgpt
+git clone https://github.com/ikechan8370/chatgpt-plugin.git ./plugins/chatgpt-plugin
 ```
 3. 修改配置
 编辑`plugins/chatgpt/config/index.js`文件主要修改其中的`SESSION_TOKEN`常量，修改为你的openai账号的token。token获取参见后文。
