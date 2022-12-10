@@ -1,0 +1,64 @@
+@font-face {
+    font-family: "tttgbnumber";
+    src: url("../../../../../resources/font/tttgbnumber.ttf");
+    font-weight: normal;
+    font-style: normal;
+}
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    user-select: none;
+}
+body {
+    font-family: sans-serif;
+    font-size: 16px;
+    width: 800px;
+    color: #1e1f20;
+    transform: scale(1.5);
+    transform-origin: 0 0;
+}
+.container {
+    width: 800px;
+    padding: 20px 15px 10px 15px;
+    background-color: #f5f6fb;
+}
+.head_box {
+    border-radius: 15px;
+    font-family: tttgbnumber;
+    padding: 10px 20px;
+    position: relative;
+    box-shadow: 0 5px 10px 0 rgb(0 0 0 / 15%);
+}
+.sender {
+    font-size: 12px;
+    color: #4d4d4d;
+    margin-bottom: 5px;
+}
+.question {
+    background: #009FFF;  /* fallback for old browsers */
+    background: -webkit-linear-gradient(to right, #ec2F4B, #009FFF);  /* Chrome 10-25, Safari 5.1-6 */
+    background: linear-gradient(to right, #ec2F4B, #009FFF); /* W3C, IE 10+/ Edge, Firefox 16+, Chrome 26+, Opera 12+, Safari 7+ */
+    color: #000000;
+    text-shadow: 0 0 10px white;
+    font-weight: bold;
+    border-radius: 5px;
+    padding: 8px 10px;
+    margin-bottom: 10px;
+}
+
+.answer {
+    position: relative;
+    border-radius: 5px;
+    padding: 8px 10px;
+    background: #dbe9ff;
+    width: 100%;
+}
+
+.logo {
+    margin-top: 10px;
+    font-size: 14px;
+    font-family: "tttgbnumber";
+    text-align: center;
+    color: #7994a7;
+}

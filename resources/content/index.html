@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="content-type" content="text/html;charset=utf-8" />
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="{{pluResPath}}content/content.css" />
+    <link rel="shortcut icon" href="#" />
+</head>
+{{@headStyle}}
+
+<body style="display:none;" onload="document.body.style.display='block'">
+<div class="container" id="container">
+<!--    <div class="sender">-->
+<!--        {{senderName}}-->
+<!--    </div>-->
+    <div class="question">
+        {{question}}
+    </div>
+    <div class="answer">
+        <div id="content">
+            {{@ content}}
+        </div>
+    </div>
+    <div class="logo">Response to {{senderName}} Created By Yunzai-Bot and ChatGPT-Plugin</div>
+</div>
+</body>
+
+</html>
+
+

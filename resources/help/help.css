@@ -1,0 +1,135 @@
+@font-face {
+  font-family: "tttgbnumber";
+  src: url("../../../../../resources/font/tttgbnumber.ttf");
+  font-weight: normal;
+  font-style: normal;
+}
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  user-select: none;
+}
+body {
+  font-family: sans-serif;
+  font-size: 16px;
+  width: 530px;
+  color: #1e1f20;
+  transform: scale(1.5);
+  transform-origin: 0 0;
+}
+.container {
+  width: 530px;
+  padding: 20px 15px 10px 15px;
+  background-color: #f5f6fb;
+}
+.head_box {
+  border-radius: 15px;
+  font-family: tttgbnumber;
+  padding: 10px 20px;
+  position: relative;
+  box-shadow: 0 5px 10px 0 rgb(0 0 0 / 15%);
+}
+.head_box .id_text {
+  font-size: 24px;
+}
+.head_box .day_text {
+  font-size: 20px;
+}
+.head_box .chatgpt_logo {
+  position: absolute;
+  top: 12px;
+  right: 15px;
+  width: 50px;
+}
+.base_info {
+  position: relative;
+  padding-left: 10px;
+}
+.uid {
+  font-family: tttgbnumber;
+}
+
+.data_box {
+  border-radius: 15px;
+  margin-top: 20px;
+  margin-bottom: 15px;
+  padding: 20px 0px 5px 0px;
+  background: #fff;
+  box-shadow: 0 5px 10px 0 rgb(0 0 0 / 15%);
+  position: relative;
+}
+.tab_lable {
+  position: absolute;
+  top: -10px;
+  left: -8px;
+  background: #d4b98c;
+  color: #fff;
+  font-size: 14px;
+  padding: 3px 10px;
+  border-radius: 15px 0px 15px 15px;
+  z-index: 20;
+}
+.data_line {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 14px;
+}
+.data_line_item {
+  width: 100px;
+  text-align: center;
+  /*margin: 0 20px;*/
+}
+.num {
+  font-family: tttgbnumber;
+  font-size: 24px;
+}
+.data_box .lable {
+  font-size: 14px;
+  color: #7f858a;
+  line-height: 1;
+  margin-top: 3px;
+}
+
+.list{
+  display: flex;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.list .item {
+  width: 235px;
+  display: flex;
+  align-items: center;
+  background: #f1f1f1;
+  padding: 8px 6px 8px 6px;
+  border-radius: 8px;
+  margin: 0 0px 10px 10px;
+}
+.list .item .icon{
+  width: 24px;
+  height: 24px;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  position: relative;
+  flex-shrink: 0;
+}
+.list .item .title{
+  font-size: 16px;
+  margin-left: 6px;
+  line-height: 20px;
+}
+/* .list .item .title .text{
+  white-space: nowrap;
+} */
+.list .item .title .dec{
+  font-size: 12px;
+  color: #999;
+  margin-top: 2px;
+}
+.logo {
+  font-size: 14px;
+  font-family: "tttgbnumber";
+  text-align: center;
+  color: #7994a7;
+}

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="content-type" content="text/html;charset=utf-8" />
+    <link rel="stylesheet" type="text/css" href="{{pluResPath}}help/help.css" />
+    <link rel="shortcut icon" href="#" />
+</head>
+{{@headStyle}}
+
+<body>
+<div class="container" id="container">
+    <div class="head_box">
+        <div class="id_text">ChatGPT-Plugin</div>
+        <h2 class="day_text">使用说明</h2>
+        <img class="chatgpt_logo" src="{{pluResPath}}img/icon/chatgpt.png"/>
+    </div>
+    {{each helpData val}}
+    <div class="data_box">
+        <div class="tab_lable">{{val.group}}</div>
+        <div class="list">
+            {{each val.list item}}
+            <div class="item">
+                <img class="icon" src="{{pluResPath}}img/icon/{{item.icon}}.png" />
+                <div class="title">
+                    <div class="text">{{item.title}}</div>
+                    <div class="dec">{{item.desc}}</div>
+                </div>
+            </div>
+            {{/each}}
+        </div>
+    </div>
+    {{/each}}
+    <div class="logo">Created By Yunzai-Bot and ChatGPT-Plugin</div>
+</div>
+</body>
+
+</html>
