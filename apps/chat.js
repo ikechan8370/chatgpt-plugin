@@ -239,7 +239,9 @@ export class chatgpt extends plugin {
         }
       }
       if (userSetting.usePicture) {
-        while (!response.trimEnd().endsWith('.') && !response.trimEnd().endsWith('。') && !response.trimEnd().endsWith('……')) {
+        while (!response.trimEnd().endsWith('.') && !response.trimEnd().endsWith('。') && !response.trimEnd().endsWith('……') &&
+            !response.trimEnd().endsWith('！') && !response.trimEnd().endsWith('!') && !response.trimEnd().endsWith(']') && !response.trimEnd().endsWith('】')
+        ) {
           await this.reply('内容有点多，我正在奋笔疾书，请再等一会', true, 5)
           const responseAppend = await c.sendMessage('Continue')
           // 检索是否有屏蔽词
