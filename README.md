@@ -6,12 +6,12 @@ Node.js >= 16.8
 进入yunzai根目录
 1. 安装依赖
 ```
-pnpm install -w chatgpt undici
+pnpm install -w chatgpt undici showdown mathjax-node
 ```
 > chatgpt从2.0开始支持Conversation，因此要求依赖chatgpt版本要大于2.0.0，如果使用了低版本导致报错可使用`pnpm update`更新一下。
 2. 克隆项目
 ```
-git clone https://github.com/ikechan8370/yunzai-chatgpt.git ./plugins/chatgpt
+git clone https://github.com/ikechan8370/chatgpt-plugin.git ./plugins/chatgpt-plugin
 ```
 3. 修改配置
 编辑`plugins/chatgpt/config/index.js`文件主要修改其中的`SESSION_TOKEN`常量，修改为你的openai账号的token。token获取参见后文。
@@ -41,6 +41,8 @@ git clone https://github.com/ikechan8370/yunzai-chatgpt.git ./plugins/chatgpt
 该api响应速度可能由于模型本身及网络原因不会太快，请勿频繁重发。后续准备加入限速等功能。因网络问题和模型响应速度问题可能出现500、503、404等各种异常状态码，此时等待官方恢复即可。实测复杂的中文对话更容易触发503错误（超时）。如出现429则意味着超出了免费账户调用频率，只能暂时停用，放置一段时间再继续使用。
 
 openai目前开放chatgpt模型的免费试用，在此期间本项目应该都可用，后续如果openai调整其收费策略，到时候视情况进行调整。
+
+如果在linux系统上发现emoj无法正常显示，可以搜索安装支持emoj的字体，如Ubuntu可以使用`sudo apt install fonts-noto-color-emoji`
 
 ## 感谢
 * https://github.com/transitive-bullshit/chatgpt-api
