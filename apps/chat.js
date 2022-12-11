@@ -240,7 +240,7 @@ export class chatgpt extends plugin {
         }
       }
       if (userSetting.usePicture) {
-        let endTokens = ['.', '。', '……', '!', '！', ']', ')', '）', '】', '?', '？', '~']
+        let endTokens = ['.', '。', '……', '!', '！', ']', ')', '）', '】', '?', '？', '~', '"', "'"]
         while (!endTokens.find(token => response.trimEnd().endsWith(token))) {
         // while (!response.trimEnd().endsWith('.') && !response.trimEnd().endsWith('。') && !response.trimEnd().endsWith('……') &&
         //     !response.trimEnd().endsWith('！') && !response.trimEnd().endsWith('!') && !response.trimEnd().endsWith(']') && !response.trimEnd().endsWith('】')
