@@ -79,13 +79,14 @@ export class chatgpt extends plugin {
       markdown: true,
       userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
     })
+    logger.info('chatgpt插件已加载')
   }
 
   /**
-     * 获取chatgpt当前对话列表
-     * @param e
-     * @returns {Promise<void>}
-     */
+   * 获取chatgpt当前对话列表
+   * @param e
+   * @returns {Promise<void>}
+   */
   async getConversations (e) {
     let keys = await redis.keys('CHATGPT:CONVERSATIONS:*')
     if (!keys || keys.length === 0) {
@@ -104,10 +105,10 @@ export class chatgpt extends plugin {
   }
 
   /**
-     * 销毁指定人的对话
-     * @param e
-     * @returns {Promise<void>}
-     */
+   * 销毁指定人的对话
+   * @param e
+   * @returns {Promise<void>}
+   */
   async destroyConversations (e) {
     let ats = e.message.filter(m => m.type === 'at')
     if (ats.length === 0) {
@@ -134,11 +135,11 @@ export class chatgpt extends plugin {
 
   async help (e) {
     let response = 'chatgpt-plugin使用帮助文字版\n' +
-            '@我+聊天内容: 发起对话与AI进行聊天\n' +
-            '#chatgpt对话列表: 查看当前发起的对话\n' +
-            '#结束对话: 结束自己或@用户的对话\n' +
-            '#chatgpt帮助: 查看本帮助\n' +
-            '源代码：https://github.com/ikechan8370/chatgpt-plugin'
+        '@我+聊天内容: 发起对话与AI进行聊天\n' +
+        '#chatgpt对话列表: 查看当前发起的对话\n' +
+        '#结束对话: 结束自己或@用户的对话\n' +
+        '#chatgpt帮助: 查看本帮助\n' +
+        '源代码：https://github.com/ikechan8370/chatgpt-plugin'
     await this.reply(response)
   }
 
@@ -167,9 +168,9 @@ export class chatgpt extends plugin {
   }
 
   /**
-     * #chatgpt
-     * @param e oicq传递的事件参数e
-     */
+   * #chatgpt
+   * @param e oicq传递的事件参数e
+   */
   async chatgpt (e) {
     if (!e.msg || e.msg.startsWith('#')) {
       return
@@ -188,7 +189,7 @@ export class chatgpt extends plugin {
       await this.reply(`OpenAI认证失败，请检查Token：${e}`, true)
       return
     }
-    await this.reply('我正在思考如何回复你，请稍等', true, 5)
+    await this.reply('我正在思考如何回复你，请稍等', true, { recallMsg: 5 })
     let c
     logger.info(`chatgpt question: ${question}`)
     let previousConversation = await redis.get(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
@@ -239,11 +240,14 @@ export class chatgpt extends plugin {
         }
       }
       if (userSetting.usePicture) {
-        while (!response.trimEnd().endsWith('.') && !response.trimEnd().endsWith('。') && !response.trimEnd().endsWith('……') &&
-            !response.trimEnd().endsWith('！') && !response.trimEnd().endsWith('!') && !response.trimEnd().endsWith(']') && !response.trimEnd().endsWith('】')
-        ) {
-          await this.reply('内容有点多，我正在奋笔疾书，请再等一会', true, 5)
+        let endTokens = ['.', '。', '……', '!', '！', ']', ')', '）', '】', '?', '？', '~']
+        while (!endTokens.find(token => response.trimEnd().endsWith(token))) {
+        // while (!response.trimEnd().endsWith('.') && !response.trimEnd().endsWith('。') && !response.trimEnd().endsWith('……') &&
+        //     !response.trimEnd().endsWith('！') && !response.trimEnd().endsWith('!') && !response.trimEnd().endsWith(']') && !response.trimEnd().endsWith('】')
+        // ) {
+          await this.reply('内容有点多，我正在奋笔疾书，请再等一会', true, { recallMsg: 5 })
           const responseAppend = await c.sendMessage('Continue')
+          // console.log(responseAppend)
           // 检索是否有屏蔽词
           const blockWord = blockWords.split(',').find(word => responseAppend.toLowerCase().includes(word.toLowerCase()))
           if (blockWord) {
@@ -251,7 +255,7 @@ export class chatgpt extends plugin {
             return
           }
           if (responseAppend.indexOf('conversation') > -1 || responseAppend.startsWith("I'm sorry")) {
-            logger.warn('chatgpt might forgot what it had said')
+            logger.warn('chatgpt might forget what it had said')
             break
           }
           // 更新redis中的conversation对象，因为send后c已经被自动更新了
