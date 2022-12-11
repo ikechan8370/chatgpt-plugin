@@ -60,16 +60,16 @@ export class chatgpt extends plugin {
           reg: '^#结束对话([sS]*)',
           fnc: 'destroyConversations'
         },
-        {
-          reg: '#chatgpt帮助',
-          fnc: 'help'
-        },
+        // {
+        //   reg: '#chatgpt帮助',
+        //   fnc: 'help'
+        // },
         {
           reg: '#chatgpt图片模式',
           fnc: 'switch2Picture'
         },
         {
-          reg: '#chatgpt文字模式',
+          reg: '#chatgpt文本模式',
           fnc: 'switch2Text'
         }
       ]
