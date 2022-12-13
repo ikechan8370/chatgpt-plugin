@@ -1,9 +1,10 @@
 import plugin from '../../../lib/plugins/plugin.js'
-import { ChatGPTAPI } from 'chatgpt'
+import { ChatGPTAPI, getOpenAIAuth } from 'chatgpt'
 import _ from 'lodash'
 import { Config } from '../config/index.js'
 import showdown from 'showdown'
 import mjAPI from 'mathjax-node'
+import puppeteer from '../utils/browser.js'
 // import showdownKatex from 'showdown-katex'
 const SESSION_TOKEN = Config.token
 const blockWords = '屏蔽词1,屏蔽词2,屏蔽词3'
@@ -74,12 +75,6 @@ export class chatgpt extends plugin {
         }
       ]
     })
-    this.chatGPTApi = new ChatGPTAPI({
-      sessionToken: SESSION_TOKEN,
-      markdown: true,
-      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
-    })
-    logger.info('chatgpt插件已加载')
   }
 
   /**
@@ -178,17 +173,64 @@ export class chatgpt extends plugin {
     if (e.isGroup && !e.atme) {
       return
     }
-    // let question = _.trimStart(e.msg, '#chatgpt')
-    let question = e.msg.trimStart()
-    // await e.runtime.render('chatgpt-plugin', 'content/index', { content: "", question })
-    // return
-    try {
-      await this.chatGPTApi.ensureAuth()
-    } catch (e) {
-      logger.error(e)
-      await this.reply(`OpenAI认证失败，请检查Token：${e}`, true)
-      return
+    let api = await redis.get('CHATGPT:API_OPTION')
+    if (!api) {
+      let browser = await puppeteer.getBrowser()
+      const openAIAuth = await getOpenAIAuth((Config.username && Config.password)
+        ? {
+            email: Config.username,
+            password: Config.password,
+            browser
+          }
+        : {
+            browser
+          })
+      const userAgent = await browser.userAgent()
+      let config = { markdown: true, userAgent }
+      let option
+      if (Config.username && Config.password) {
+        option = { ...Object.assign(config, openAIAuth) }
+        this.chatGPTApi = new ChatGPTAPI(option)
+      } else {
+        config.sessionToken = Config.token
+        option = { ...Object.assign(config, openAIAuth) }
+        this.chatGPTApi = new ChatGPTAPI(option)
+      }
+      try {
+        await this.chatGPTApi.ensureAuth()
+        await redis.set('CHATGPT:API_OPTION', JSON.stringify(option))
+      } catch (e) {
+        logger.error(e)
+        await this.reply(`OpenAI认证失败，请检查Token：${e}`, true)
+        return
+      }
+    } else {
+      let option = JSON.parse(api)
+      this.chatGPTApi = new ChatGPTAPI(option)
+      try {
+        await this.chatGPTApi.ensureAuth()
+      } catch (e) {
+        let browser = await puppeteer.getBrowser()
+        const openAIAuth = await getOpenAIAuth({
+          email: Config.username,
+          password: Config.password,
+          browserW
+        })
+        const userAgent = await browser.userAgent()
+        let config = { markdown: true, userAgent }
+        let option = { ...Object.assign(config, openAIAuth) }
+        this.chatGPTApi = new ChatGPTAPI(option)
+        try {
+          await this.chatGPTApi.ensureAuth()
+          await redis.set('CHATGPT:API_OPTION', JSON.stringify(option))
+        } catch (e) {
+          logger.error(e)
+          await this.reply(`OpenAI认证失败，请检查Token：${e}`, true)
+          return
+        }
+      }
     }
+    let question = e.msg.trimStart()
     await this.reply('我正在思考如何回复你，请稍等', true, { recallMsg: 5 })
     let c
     logger.info(`chatgpt question: ${question}`)
