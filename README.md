@@ -6,7 +6,7 @@ Node.js >= 16.8
 进入yunzai根目录
 1. 安装依赖
 ```
-pnpm install -w chatgpt undici showdown mathjax-node
+pnpm install -w chatgpt undici showdown mathjax-node puppeteer-extra puppeteer-extra-plugin-stealth
 ```
 > chatgpt从2.0开始支持Conversation，因此要求依赖chatgpt版本要大于2.0.0，如果使用了低版本导致报错可使用`pnpm update`更新一下。
 2. 克隆项目
@@ -14,7 +14,7 @@ pnpm install -w chatgpt undici showdown mathjax-node
 git clone https://github.com/ikechan8370/chatgpt-plugin.git ./plugins/chatgpt-plugin
 ```
 3. 修改配置
-编辑`plugins/chatgpt/config/index.js`文件主要修改其中的`SESSION_TOKEN`常量，修改为你的openai账号的token。token获取参见后文。
+编辑`plugins/chatgpt/config/index.js`文件主要修改其中的`username`和`password`配置。特殊需求可自行修改token
 
 ## 使用
 
