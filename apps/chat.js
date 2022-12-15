@@ -214,7 +214,7 @@ export class chatgpt extends plugin {
         const openAIAuth = await getOpenAIAuth({
           email: Config.username,
           password: Config.password,
-          browserW
+          browser
         })
         const userAgent = await browser.userAgent()
         let config = { markdown: true, userAgent }
