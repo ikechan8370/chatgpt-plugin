@@ -17,7 +17,10 @@ export const Config = {
   // 每个人发起的对话保留时长。超过这个时长没有进行对话，再进行对话将开启新的对话。单位：秒
   conversationPreserveTime: 600,
   // UA: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
-  headless: false,
+  // headless: false,
   // 为空使用默认puppeteer的chromium，也可以传递自己本机安装的Chrome可执行文件地址，提高通过率
-  chromePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
+  // 目前库暂时不支持指定chrome
+  // chromePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+  // 可注册2captcha实现跳过验证码，收费服务但很便宜
+  '2captchaToken': ''
 }

@@ -1,12 +1,11 @@
 import plugin from '../../../lib/plugins/plugin.js'
-import { ChatGPTAPI, getOpenAIAuth } from 'chatgpt'
+import { ChatGPTAPIBrowser } from 'chatgpt'
 import _ from 'lodash'
 import { Config } from '../config/index.js'
 import showdown from 'showdown'
 import mjAPI from 'mathjax-node'
-import puppeteer from '../utils/browser.js'
+// import puppeteer from '../utils/browser.js'
 // import showdownKatex from 'showdown-katex'
-const SESSION_TOKEN = Config.token
 const blockWords = '屏蔽词1,屏蔽词2,屏蔽词3'
 const converter = new showdown.Converter({
   extensions: [
@@ -175,72 +174,33 @@ export class chatgpt extends plugin {
     }
     let api = await redis.get('CHATGPT:API_OPTION')
     if (!api) {
-      let browser = await puppeteer.getBrowser()
-      const openAIAuth = await getOpenAIAuth((Config.username && Config.password)
-        ? {
-            email: Config.username,
-            password: Config.password,
-            browser
-          }
-        : {
-            browser
-          })
-      const userAgent = await browser.userAgent()
-      let config = { markdown: true, userAgent }
-      let option
-      if (Config.username && Config.password) {
-        option = { ...Object.assign(config, openAIAuth) }
-        this.chatGPTApi = new ChatGPTAPI(option)
-      } else {
-        config.sessionToken = Config.token
-        option = { ...Object.assign(config, openAIAuth) }
-        this.chatGPTApi = new ChatGPTAPI(option)
+      let option = { markdown: true }
+      if (Config['2captchaToken']) {
+        option.captchaToken = Config['2captchaToken']
       }
-      try {
-        await this.chatGPTApi.ensureAuth()
-        await redis.set('CHATGPT:API_OPTION', JSON.stringify(option))
-      } catch (e) {
-        logger.error(e)
-        await this.reply(`OpenAI认证失败，请检查Token：${e}`, true)
-        return
-      }
+      // option.debug = true
+      option.email = Config.username
+      option.password = Config.password
+      this.chatGPTApi = new ChatGPTAPIBrowser(option)
+      await redis.set('CHATGPT:API_OPTION', JSON.stringify(option))
     } else {
       let option = JSON.parse(api)
-      this.chatGPTApi = new ChatGPTAPI(option)
-      try {
-        await this.chatGPTApi.ensureAuth()
-      } catch (e) {
-        let browser = await puppeteer.getBrowser()
-        const openAIAuth = await getOpenAIAuth({
-          email: Config.username,
-          password: Config.password,
-          browser
-        })
-        const userAgent = await browser.userAgent()
-        let config = { markdown: true, userAgent }
-        let option = { ...Object.assign(config, openAIAuth) }
-        this.chatGPTApi = new ChatGPTAPI(option)
-        try {
-          await this.chatGPTApi.ensureAuth()
-          await redis.set('CHATGPT:API_OPTION', JSON.stringify(option))
-        } catch (e) {
-          logger.error(e)
-          await this.reply(`OpenAI认证失败，请检查Token：${e}`, true)
-          return
-        }
-      }
+      this.chatGPTApi = new ChatGPTAPIBrowser(option)
     }
     let question = e.msg.trimStart()
     await this.reply('我正在思考如何回复你，请稍等', true, { recallMsg: 5 })
-    let c
     logger.info(`chatgpt question: ${question}`)
+    try {
+      await this.chatGPTApi.init()
+    } catch (e) {
+      await this.reply('chatgpt初始化出错：' + e.msg, true)
+    }
     let previousConversation = await redis.get(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
+    let conversation = null
     if (!previousConversation) {
-      c = this.chatGPTApi.getConversation()
       let ctime = new Date()
       previousConversation = {
         sender: e.sender,
-        conversation: c,
         ctime,
         utime: ctime,
         num: 0
@@ -248,25 +208,28 @@ export class chatgpt extends plugin {
       await redis.set(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`, JSON.stringify(previousConversation), { EX: CONVERSATION_PRESERVE_TIME })
     } else {
       previousConversation = JSON.parse(previousConversation)
-      c = this.chatGPTApi.getConversation({
+      conversation = {
         conversationId: previousConversation.conversation.conversationId,
         parentMessageId: previousConversation.conversation.parentMessageId
-      })
+      }
     }
     try {
-      // console.log({ c })
-      let response = await c.sendMessage(question)
-      // console.log({c})
-      // console.log(response)
-      // 更新redis中的conversation对象，因为send后c已经被自动更新了
-      await redis.set(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`, JSON.stringify({
-        sender: e.sender,
-        conversation: c,
-        ctime: previousConversation.ctime,
-        utime: new Date(),
-        num: previousConversation.num + 1
-      }), { EX: CONVERSATION_PRESERVE_TIME })
-
+      let option = {
+        onConversationResponse: function (c) {
+          let pc = _.clone(previousConversation)
+          pc.conversation = {
+            conversationId: c.conversation_id,
+            parentMessageId: c.message.id
+          }
+          redis.set(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`, JSON.stringify(pc), { EX: CONVERSATION_PRESERVE_TIME }).then(res => {
+            logger.debug('redis set conversation')
+          })
+        }
+      }
+      if (conversation) {
+        option = Object.assign(option, conversation)
+      }
+      let response = await this.chatGPTApi.sendMessage(question, option)
       // 检索是否有屏蔽词
       const blockWord = blockWords.split(',').find(word => response.toLowerCase().includes(word.toLowerCase()))
       if (blockWord) {
@@ -284,12 +247,8 @@ export class chatgpt extends plugin {
       if (userSetting.usePicture) {
         let endTokens = ['.', '。', '……', '!', '！', ']', ')', '）', '】', '?', '？', '~', '"', "'"]
         while (!endTokens.find(token => response.trimEnd().endsWith(token))) {
-        // while (!response.trimEnd().endsWith('.') && !response.trimEnd().endsWith('。') && !response.trimEnd().endsWith('……') &&
-        //     !response.trimEnd().endsWith('！') && !response.trimEnd().endsWith('!') && !response.trimEnd().endsWith(']') && !response.trimEnd().endsWith('】')
-        // ) {
           await this.reply('内容有点多，我正在奋笔疾书，请再等一会', true, { recallMsg: 5 })
-          const responseAppend = await c.sendMessage('Continue')
-          // console.log(responseAppend)
+          const responseAppend = await this.chatGPTApi.sendMessage('Continue')
           // 检索是否有屏蔽词
           const blockWord = blockWords.split(',').find(word => responseAppend.toLowerCase().includes(word.toLowerCase()))
           if (blockWord) {
@@ -300,15 +259,6 @@ export class chatgpt extends plugin {
             logger.warn('chatgpt might forget what it had said')
             break
           }
-          // 更新redis中的conversation对象，因为send后c已经被自动更新了
-          await redis.set(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`, JSON.stringify({
-            sender: e.sender,
-            conversation: c,
-            ctime: previousConversation.ctime,
-            utime: new Date(),
-            num: previousConversation.num + 1
-          }), { EX: CONVERSATION_PRESERVE_TIME })
-
           response = response + responseAppend
         }
         // logger.info(response)
