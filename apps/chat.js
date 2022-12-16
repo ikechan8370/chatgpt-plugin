@@ -205,7 +205,7 @@ export class chatgpt extends plugin {
         utime: ctime,
         num: 0
       }
-      await redis.set(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`, JSON.stringify(previousConversation), { EX: CONVERSATION_PRESERVE_TIME })
+      // await redis.set(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`, JSON.stringify(previousConversation), { EX: CONVERSATION_PRESERVE_TIME })
     } else {
       previousConversation = JSON.parse(previousConversation)
       conversation = {
