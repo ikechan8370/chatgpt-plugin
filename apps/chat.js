@@ -195,7 +195,6 @@ export class chatgpt extends plugin {
       await this.chatGPTApi.init()
     } catch (e) {
       await this.reply('chatgpt初始化出错：' + e.msg, true)
-      await this.chatGPTApi.close()
     }
     let previousConversation = await redis.get(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
     let conversation = null
@@ -236,7 +235,6 @@ export class chatgpt extends plugin {
       const blockWord = blockWords.split(',').find(word => response.toLowerCase().includes(word.toLowerCase()))
       if (blockWord) {
         await this.reply('返回内容存在敏感词，我不想回答你', true)
-        await this.chatGPTApi.close()
         return
       }
       let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
@@ -260,7 +258,6 @@ export class chatgpt extends plugin {
           const blockWord = blockWords.split(',').find(word => responseAppend.toLowerCase().includes(word.toLowerCase()))
           if (blockWord) {
             await this.reply('返回内容存在敏感词，我不想回答你', true)
-            await this.chatGPTApi.close()
             return
           }
           if (responseAppend.indexOf('conversation') > -1 || responseAppend.startsWith("I'm sorry")) {
@@ -284,6 +281,5 @@ export class chatgpt extends plugin {
       logger.error(e)
       await this.reply(`与OpenAI通信异常，请稍后重试：${e}`, true, { recallMsg: e.isGroup ? 10 : 0 })
     }
-    await this.chatGPTApi.close()
   }
 }

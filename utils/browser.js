@@ -4,9 +4,6 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth'
 import { getOpenAIAuth } from './openai-auth.js'
 import delay from 'delay'
 import { v4 as uuidv4 } from 'uuid'
-import pTimeout, { TimeoutError } from 'p-timeout'
-import { getBrowser } from 'chatgpt'
-import { PuppeteerExtraPluginRecaptcha } from 'puppeteer-extra-plugin-recaptcha'
 const chatUrl = 'https://chat.openai.com/chat'
 let puppeteer = {}
 
@@ -15,7 +12,8 @@ class Puppeteer {
     let args = [
       '--exclude-switches',
       '--no-sandbox',
-      'enable-automation'
+      'enable-automation',
+      '--remote-debugging-port=51777'
       // '--shm-size=1gb'
     ]
     if (Config.proxy) {
@@ -63,15 +61,18 @@ class Puppeteer {
     this.lock = true
 
     logger.mark('puppeteer Chromium 启动中...')
-
-    /** 初始化puppeteer */
-    this.browser = await puppeteer.launch(this.config).catch((err) => {
-      logger.error(err.toString())
-      if (String(err).includes('correct Chromium')) {
-        logger.error('没有正确安装Chromium，可以尝试执行安装命令：node ./node_modules/puppeteer/install.js')
-      }
-    })
-
+    const browserURL = 'http://127.0.0.1:51777'
+    try {
+      this.browser = await puppeteer.connect({ browserURL })
+    } catch (e) {
+      /** 初始化puppeteer */
+      this.browser = await puppeteer.launch(this.config).catch((err) => {
+        logger.error(err.toString())
+        if (String(err).includes('correct Chromium')) {
+          logger.error('没有正确安装Chromium，可以尝试执行安装命令：node ./node_modules/puppeteer/install.js')
+        }
+      })
+    }
     this.lock = false
 
     if (!this.browser) {
@@ -126,7 +127,7 @@ export class ChatGPTPuppeteer extends Puppeteer {
 
   async init () {
     if (this.inited) {
-      return
+      return true
     }
     try {
       // this.browser = await getBrowser({
@@ -147,8 +148,14 @@ export class ChatGPTPuppeteer extends Puppeteer {
       await this._page.goto(chatUrl, {
         waitUntil: 'networkidle2'
       })
+      while ((await this._page.title()).toLowerCase().indexOf('moment') > -1) {
+        // if meet captcha
+        // await this._page.solveRecaptchas()
+        await delay(300)
+      }
+      await delay(300)
       if (!await this.getIsAuthenticated()) {
-        console.log('需要登录，准备进行自动化登录')
+        logger.info('需要登录，准备进行自动化登录')
         await getOpenAIAuth({
           email: this._email,
           password: this._password,
@@ -156,7 +163,9 @@ export class ChatGPTPuppeteer extends Puppeteer {
           page: this._page,
           isGoogleLogin: this._isGoogleLogin
         })
-        console.log('登陆完成')
+        logger.info('登陆完成')
+      } else {
+        logger.info('无需登录')
       }
       this.inited = true
     } catch (err) {
@@ -524,7 +533,9 @@ export class ChatGPTPuppeteer extends Puppeteer {
   }
 
   async close () {
-    await this.browser.close()
+    if (this.browser) {
+      await this.browser.close()
+    }
     this._page = null
     this.browser = null
   }
@@ -533,7 +544,7 @@ export class ChatGPTPuppeteer extends Puppeteer {
 
   async _getInputBox () {
     // [data-id="root"]
-    return this._page.$('textarea')
+    return this._page?.$('textarea')
   }
 }
 
