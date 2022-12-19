@@ -4,6 +4,7 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth'
 import { getOpenAIAuth } from './openai-auth.js'
 import delay from 'delay'
 import { v4 as uuidv4 } from 'uuid'
+
 const chatUrl = 'https://chat.openai.com/chat'
 let puppeteer = {}
 
@@ -126,9 +127,9 @@ export class ChatGPTPuppeteer extends Puppeteer {
   }
 
   async init () {
-    if (this.inited) {
-      return true
-    }
+    // if (this.inited) {
+    //   return true
+    // }
     try {
       // this.browser = await getBrowser({
       //   captchaToken: this._captchaToken,
@@ -148,13 +149,22 @@ export class ChatGPTPuppeteer extends Puppeteer {
       await this._page.goto(chatUrl, {
         waitUntil: 'networkidle2'
       })
-      while ((await this._page.title()).toLowerCase().indexOf('moment') > -1) {
-        // if meet captcha
-        // await this._page.solveRecaptchas()
-        await delay(300)
+      try {
+        while ((await this._page.title()).toLowerCase().indexOf('moment') > -1) {
+          // if meet captcha
+          // await this._page.solveRecaptchas()
+          await delay(300)
+        }
+      } catch (e) {
+        // navigation后获取title会报错，报错说明已经在navigation了正合我意。
       }
-      await delay(300)
+      try {
+        await this._page.waitForNavigation({ timeout: 3000 })
+      } catch (e) {
+        logger.error(e)
+      }
       if (!await this.getIsAuthenticated()) {
+        await redis.del('CHATGPT:RAW_COOKIES')
         logger.info('需要登录，准备进行自动化登录')
         await getOpenAIAuth({
           email: this._email,
@@ -167,7 +177,6 @@ export class ChatGPTPuppeteer extends Puppeteer {
       } else {
         logger.info('无需登录')
       }
-      this.inited = true
     } catch (err) {
       if (this.browser) {
         await this.browser.close()
@@ -929,6 +938,7 @@ export async function browserPostEventStream (
       }
     }
   }
+
   function hasBom (buffer) {
     return BOM.every(
       (charCode, index) => buffer.charCodeAt(index) === charCode
@@ -973,7 +983,7 @@ export async function browserPostEventStream (
     const cancelablePromise = new Promise((resolve, reject) => {
       if (typeof milliseconds !== 'number' || Math.sign(milliseconds) !== 1) {
         throw new TypeError(
-                        `Expected \`milliseconds\` to be a positive number, got \`${milliseconds}\``
+                    `Expected \`milliseconds\` to be a positive number, got \`${milliseconds}\``
         )
       }
 
@@ -1007,11 +1017,11 @@ export async function browserPostEventStream (
           }
 
           const errorMessage =
-                            typeof message === 'string'
-                              ? message
-                              : `Promise timed out after ${milliseconds} milliseconds`
+                        typeof message === 'string'
+                          ? message
+                          : `Promise timed out after ${milliseconds} milliseconds`
           const timeoutError =
-                            message instanceof Error ? message : new TimeoutError(errorMessage)
+                        message instanceof Error ? message : new TimeoutError(errorMessage)
 
           if (typeof promise.cancel === 'function') {
             promise.cancel()
