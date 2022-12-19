@@ -191,11 +191,11 @@ export class chatgpt extends plugin {
     let question = e.msg.trimStart()
     await this.reply('我正在思考如何回复你，请稍等', true, { recallMsg: 5 })
     logger.info(`chatgpt question: ${question}`)
-    try {
-      await this.chatGPTApi.init()
-    } catch (e) {
-      await this.reply('chatgpt初始化出错：' + e.msg, true)
-    }
+    // try {
+    //   await this.chatGPTApi.init()
+    // } catch (e) {
+    //   await this.reply('chatgpt初始化出错：' + e.msg, true)
+    // }
     let previousConversation = await redis.get(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
     let conversation = null
     if (!previousConversation) {
@@ -217,12 +217,11 @@ export class chatgpt extends plugin {
     try {
       let option = {
         onConversationResponse: function (c) {
-          let pc = _.clone(previousConversation)
-          pc.conversation = {
+          previousConversation.conversation = {
             conversationId: c.conversation_id,
             parentMessageId: c.message.id
           }
-          redis.set(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`, JSON.stringify(pc), { EX: CONVERSATION_PRESERVE_TIME }).then(res => {
+          redis.set(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`, JSON.stringify(previousConversation), { EX: CONVERSATION_PRESERVE_TIME }).then(res => {
             logger.debug('redis set conversation')
           })
         }
@@ -252,7 +251,19 @@ export class chatgpt extends plugin {
         //     !response.trimEnd().endsWith('！') && !response.trimEnd().endsWith('!') && !response.trimEnd().endsWith(']') && !response.trimEnd().endsWith('】')
         // ) {
           await this.reply('内容有点多，我正在奋笔疾书，请再等一会', true, { recallMsg: 5 })
-          const responseAppend = await this.chatGPTApi.sendMessage('Continue')
+          option = {
+            onConversationResponse: function (c) {
+              previousConversation.conversation = {
+                conversationId: c.conversation_id,
+                parentMessageId: c.message.id
+              }
+              redis.set(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`, JSON.stringify(previousConversation), { EX: CONVERSATION_PRESERVE_TIME }).then(res => {
+                logger.debug('redis set conversation')
+              })
+            }
+          }
+          option = Object.assign(option, previousConversation.conversation)
+          const responseAppend = await this.chatGPTApi.sendMessage('Continue', option)
           // console.log(responseAppend)
           // 检索是否有屏蔽词
           const blockWord = blockWords.split(',').find(word => responseAppend.toLowerCase().includes(word.toLowerCase()))
