@@ -1,5 +1,4 @@
 import plugin from '../../../lib/plugins/plugin.js'
-import { ChatGPTAPIBrowser } from 'chatgpt'
 import _ from 'lodash'
 import { Config } from '../config/index.js'
 import showdown from 'showdown'
