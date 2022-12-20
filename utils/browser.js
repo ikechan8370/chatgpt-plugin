@@ -130,6 +130,7 @@ export class ChatGPTPuppeteer extends Puppeteer {
     // if (this.inited) {
     //   return true
     // }
+    logger.info('init chatgpt browser')
     try {
       // this.browser = await getBrowser({
       //   captchaToken: this._captchaToken,
@@ -146,23 +147,32 @@ export class ChatGPTPuppeteer extends Puppeteer {
       if (preCookies) {
         await this._page.setCookie(...JSON.parse(preCookies))
       }
+      // const url = this._page.url().replace(/\/$/, '')
+
       await this._page.goto(chatUrl, {
         waitUntil: 'networkidle2'
       })
+      let timeout = 30000
       try {
-        while ((await this._page.title()).toLowerCase().indexOf('moment') > -1) {
+        while (timeout > 0 && (await this._page.title()).toLowerCase().indexOf('moment') > -1) {
           // if meet captcha
-          // await this._page.solveRecaptchas()
+          if (Config['2captchaToken']) {
+            await this._page.solveRecaptchas()
+          }
           await delay(300)
+          timeout = timeout - 300
         }
       } catch (e) {
         // navigation后获取title会报错，报错说明已经在navigation了正合我意。
       }
+      if (timeout < 0) {
+        logger.error('wait for cloudflare navigation timeout. 可能遇见验证码')
+        throw new Error('wait for cloudflare navigation timeout. 可能遇见验证码')
+      }
       try {
         await this._page.waitForNavigation({ timeout: 3000 })
-      } catch (e) {
-        logger.error(e)
-      }
+      } catch (e) {}
+
       if (!await this.getIsAuthenticated()) {
         await redis.del('CHATGPT:RAW_COOKIES')
         logger.info('需要登录，准备进行自动化登录')
@@ -173,7 +183,7 @@ export class ChatGPTPuppeteer extends Puppeteer {
           page: this._page,
           isGoogleLogin: this._isGoogleLogin
         })
-        logger.info('登陆完成')
+        logger.info('登录完成')
       } else {
         logger.info('无需登录')
       }
@@ -304,7 +314,6 @@ export class ChatGPTPuppeteer extends Puppeteer {
         await this.handle403Error()
       } else {
         const session = body
-
         if (session?.accessToken) {
           this._accessToken = session.accessToken
         }
@@ -431,9 +440,21 @@ export class ChatGPTPuppeteer extends Puppeteer {
                     `chatgpt error re-authenticating ${this._email}`,
                     err.toString()
         )
+        throw err
       }
-
-      if (!isAuthenticated || !this._accessToken) {
+      let timeout = 10000
+      if (isAuthenticated) {
+        while (!this._accessToken) {
+          // wait for async response hook result
+          await delay(300)
+          timeout = timeout - 300
+          if (timeout < 0) {
+            const error = new Error('Not signed in')
+            error.statusCode = 401
+            throw error
+          }
+        }
+      } else if (!this._accessToken) {
         const error = new Error('Not signed in')
         error.statusCode = 401
         throw error
