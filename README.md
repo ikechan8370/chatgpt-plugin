@@ -42,6 +42,17 @@ openai目前开放chatgpt模型的免费试用，在此期间本项目应该都�
 
 如果在linux系统上发现emoj无法正常显示，可以搜索安装支持emoj的字体，如Ubuntu可以使用`sudo apt install fonts-noto-color-emoji`
 
+使用服务器没有界面的，可以尝试安装Xserver和桌面，本人使用轻量级的xvfb+fluxbox：
+```
+$ sudo apt-get install x11vnc xvfb fluxbox
+$ x11vnc -create -env FD_PROG=/usr/bin/fluxbox \
+	-env X11VNC_FINDDISPLAY_ALWAYS_FAILS=1 \
+  -env X11VNC_CREATE_GEOM=${1:-1024x768x16} \
+  -gone 'killall Xvfb' \
+  -bg -nopw
+```
+然后远程连接其vnc（默认5900）运行Yunzai即可调用非无头浏览器，除了chrome之外，还推荐brave浏览器，据说出验证码概率低。
+
 ## 感谢
 * https://github.com/transitive-bullshit/chatgpt-api
 * https://chat.openai.com/
