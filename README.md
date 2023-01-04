@@ -5,7 +5,7 @@ Node.js >= 16.8
 进入yunzai根目录
 1. 安装依赖
 ```
-pnpm install -w undici showdown mathjax-node puppeteer-extra puppeteer-extra-plugin-stealth puppeteer-extra-plugin-recaptcha delay
+pnpm install -w undici showdown mathjax-node puppeteer-extra puppeteer-extra-plugin-stealth puppeteer-extra-plugin-recaptcha delay uuid
 ```
 2. 克隆项目
 ```
