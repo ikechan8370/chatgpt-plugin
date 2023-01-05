@@ -24,6 +24,11 @@ git clone https://github.com/ikechan8370/chatgpt-plugin.git ./plugins/chatgpt-pl
 ### 获取帮助
 发送#chatgpt帮助
 
+## TODO
+* 触发方式优化
+* 更灵活的Conversation管理
+* 全局锁和冷却，避免429
+
 ## 关于openai token获取
 1. 注册openai账号
 进入https://chat.openai.com/ ，选择signup注册。目前openai不对包括俄罗斯、乌克兰、伊朗、中国等国家和地区提供服务，所以自行寻找办法使用其他国家和地区的ip登录。此外，注册可能需要验证所在国家和地区的手机号码，如果没有国外手机号可以试试解码网站，收费的推荐https://sms-activate.org/。
