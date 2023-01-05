@@ -48,8 +48,7 @@ $ sudo apt-get install x11vnc xvfb fluxbox
 $ x11vnc -create -env FD_PROG=/usr/bin/fluxbox \
 	-env X11VNC_FINDDISPLAY_ALWAYS_FAILS=1 \
   -env X11VNC_CREATE_GEOM=${1:-1024x768x16} \
-  -gone 'killall Xvfb' \
-  -bg -nopw
+  -nopw
 ```
 然后远程连接其vnc（默认5900）运行Yunzai即可调用非无头浏览器，除了chrome之外，还推荐brave浏览器，据说出验证码概率低。
 
