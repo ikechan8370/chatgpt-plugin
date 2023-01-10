@@ -697,7 +697,12 @@ export async function browserPostEventStream (
               conversationResponse
             })
           }
-
+          try {
+            const checkJson = JSON.parse(data)
+          } catch (error) {
+            console.log('warning: parse error.')
+            return
+          }
           try {
             const convoResponseEvent =
                             JSON.parse(data)
