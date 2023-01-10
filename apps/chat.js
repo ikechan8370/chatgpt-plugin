@@ -24,7 +24,7 @@ const converter = new showdown.Converter({
  * 单位：秒
  * @type {number}
  */
-const CONVERSATION_PRESERVE_TIME = 600
+const CONVERSATION_PRESERVE_TIME = Config.conversationPreserveTime
 
 mjAPI.config({
   MathJax: {
