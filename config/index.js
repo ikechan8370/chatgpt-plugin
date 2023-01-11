@@ -4,7 +4,7 @@ const SESSION_TOKEN = ''
 // CFtoken，每小时刷新一般不用填
 const CF_CLEARANCE = ''
 
-const PROXY = 'http://127.0.0.1:7890'
+const PROXY = ''
 
 export const Config = {
   token: SESSION_TOKEN,
