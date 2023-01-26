@@ -4,6 +4,8 @@ import { Config } from '../config/index.js'
 import showdown from 'showdown'
 import mjAPI from 'mathjax-node'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
+import { uuid } from 'oicq/lib/common.js'
+import delay from "delay";
 // import puppeteer from '../utils/browser.js'
 // import showdownKatex from 'showdown-katex'
 const blockWords = '屏蔽词1,屏蔽词2,屏蔽词3'
@@ -188,7 +190,25 @@ export class chatgpt extends plugin {
       this.chatGPTApi = new ChatGPTPuppeteer(option)
     }
     let question = e.msg.trimStart()
-    await this.reply('我正在思考如何回复你，请稍等', true, { recallMsg: 5 })
+
+    let randomId = uuid()
+    // 队列队尾插入，开始排队
+    await redis.rPush('CHATGPT:CHAT_QUEUE', [randomId])
+    if (await redis.lIndex('CHATGPT:CHAT_QUEUE', 0) === randomId) {
+      await this.reply('我正在思考如何回复你，请稍等', true, { recallMsg: 120 })
+    } else {
+      let length = await redis.lLen('CHATGPT:CHAT_QUEUE') - 1
+      await this.reply(`我正在思考如何回复你，请稍等，当前队列前方还有${length}个问题`, true, { recallMsg: 120 })
+      // 开始排队
+      while (true) {
+        if (await redis.lIndex('CHATGPT:CHAT_QUEUE', 0) === randomId) {
+          break
+        } else {
+          await delay(1500)
+        }
+      }
+    }
+
     logger.info(`chatgpt question: ${question}`)
     // try {
     //   await this.chatGPTApi.init()
@@ -213,6 +233,7 @@ export class chatgpt extends plugin {
         parentMessageId: previousConversation.conversation.parentMessageId
       }
     }
+
     try {
       let option = {
         onConversationResponse: function (c) {
@@ -229,6 +250,8 @@ export class chatgpt extends plugin {
         option = Object.assign(option, conversation)
       }
       let response = await this.chatGPTApi.sendMessage(question, option)
+      // 移除队列首位，释放锁
+      await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
       // 检索是否有屏蔽词
       const blockWord = blockWords.split(',').find(word => response.toLowerCase().includes(word.toLowerCase()))
       if (blockWord) {
@@ -289,6 +312,8 @@ export class chatgpt extends plugin {
       }
     } catch (e) {
       logger.error(e)
+      // 异常了也要腾地方（todo 大概率后面的也会异常，要不要一口气全杀了）
+      await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
       await this.reply(`与OpenAI通信异常，请稍后重试：${e}`, true, { recallMsg: e.isGroup ? 10 : 0 })
     }
   }
