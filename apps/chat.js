@@ -244,7 +244,8 @@ export class chatgpt extends plugin {
           redis.set(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`, JSON.stringify(previousConversation), { EX: CONVERSATION_PRESERVE_TIME }).then(res => {
             logger.debug('redis set conversation')
           })
-        }
+        },
+        timeoutMs: 120000
       }
       if (conversation) {
         option = Object.assign(option, conversation)
