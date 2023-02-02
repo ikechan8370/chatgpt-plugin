@@ -334,7 +334,7 @@ export class chatgpt extends plugin {
     }
     this.chatGPTApi = new ChatGPTAPI({
       apiKey: Config.apiKey,
-      debug: true,
+      debug: false,
       upsertMessage,
       getMessageById
     })
