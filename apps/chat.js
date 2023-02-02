@@ -234,7 +234,6 @@ export class chatgpt extends plugin {
       if (conversation) {
         option = Object.assign(option, conversation)
       }
-      console.log(conversation)
       let chatMessage = await this.chatGPTApi.sendMessage(prompt, option)
       previousConversation.conversation = {
         conversationId: chatMessage.conversationId,
