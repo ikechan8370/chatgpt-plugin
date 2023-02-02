@@ -1,12 +1,13 @@
 云崽qq机器人的chatgpt插件
 ## 版本要求
-Node.js >= 16.8
+Node.js >= 18
 ## 安装
 进入yunzai根目录
 1. 安装依赖
 ```
-pnpm install -w undici showdown mathjax-node puppeteer-extra puppeteer-extra-plugin-stealth puppeteer-extra-plugin-recaptcha delay uuid
+pnpm install -w undici chatgpt showdown mathjax-node delay uuid
 ```
+chatgpt的版本号注意要大于4.0.0
 2. 克隆项目
 ```
 git clone https://github.com/ikechan8370/chatgpt-plugin.git ./plugins/chatgpt-plugin
