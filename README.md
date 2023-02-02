@@ -5,7 +5,7 @@ Node.js >= 18
 进入yunzai根目录
 1. 安装依赖
 ```
-pnpm install -w undici chatgpt showdown mathjax-node delay uuid
+pnpm install -w undici chatgpt showdown mathjax-node delay uuid remark strip-markdown
 ```
 chatgpt的版本号注意要大于4.0.0
 2. 克隆项目
