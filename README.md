@@ -8,6 +8,7 @@ Node.js >= 18
 pnpm install -w undici chatgpt showdown mathjax-node delay uuid remark strip-markdown
 ```
 chatgpt的版本号注意要大于4.0.0
+
 2. 克隆项目
 ```
 git clone https://github.com/ikechan8370/chatgpt-plugin.git ./plugins/chatgpt-plugin
@@ -28,14 +29,12 @@ git clone https://github.com/ikechan8370/chatgpt-plugin.git ./plugins/chatgpt-pl
 ## TODO
 * 触发方式优化
 * 更灵活的Conversation管理
-* 全局锁和冷却，避免429
 
 ## 关于openai token获取
 1. 注册openai账号
 进入https://chat.openai.com/ ，选择signup注册。目前openai不对包括俄罗斯、乌克兰、伊朗、中国等国家和地区提供服务，所以自行寻找办法使用其他国家和地区的ip登录。此外，注册可能需要验证所在国家和地区的手机号码，如果没有国外手机号可以试试解码网站，收费的推荐https://sms-activate.org/。
-2. 获取token
-注册并登录后进入https://chat.openai.com/chat ，打开浏览器检查界面（按F12），找到图中所示的token值完整复制即可。
-![image](https://user-images.githubusercontent.com/21212372/205806905-a4bd2c47-0114-4815-85e4-ba63a10cf1b5.png)
+2. 获取API key
+进入账户后台创建API key：https://platform.openai.com/account/api-keys
 
 其他问题可以参考使用的api库https://github.com/transitive-bullshit/chatgpt-api
 
@@ -47,16 +46,6 @@ git clone https://github.com/ikechan8370/chatgpt-plugin.git ./plugins/chatgpt-pl
 openai目前开放chatgpt模型的免费试用，在此期间本项目应该都可用，后续如果openai调整其收费策略，到时候视情况进行调整。
 
 如果在linux系统上发现emoj无法正常显示，可以搜索安装支持emoj的字体，如Ubuntu可以使用`sudo apt install fonts-noto-color-emoji`
-
-使用服务器没有界面的，可以尝试安装Xserver和桌面，本人使用轻量级的xvfb+fluxbox：
-```
-$ sudo apt-get install x11vnc xvfb fluxbox
-$ x11vnc -create -env FD_PROG=/usr/bin/fluxbox \
-	-env X11VNC_FINDDISPLAY_ALWAYS_FAILS=1 \
-  -env X11VNC_CREATE_GEOM=${1:-1024x768x16} \
-  -nopw
-```
-然后远程连接其vnc（默认5900）运行Yunzai即可调用非无头浏览器，除了chrome之外，还推荐brave浏览器，据说出验证码概率低。
 
 ## 感谢
 * https://github.com/transitive-bullshit/chatgpt-api
