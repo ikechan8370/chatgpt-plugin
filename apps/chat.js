@@ -3,7 +3,6 @@ import _ from 'lodash'
 import { Config } from '../config/index.js'
 import showdown from 'showdown'
 import mjAPI from 'mathjax-node'
-import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { uuid } from 'oicq/lib/common.js'
 import delay from 'delay'
 import { ChatGPTAPI } from 'chatgpt'
@@ -53,7 +52,7 @@ export class chatgpt extends plugin {
           /** 命令正则匹配 */
           reg: '^[^#][sS]*',
           /** 执行方法 */
-          fnc: 'chatgptNew'
+          fnc: 'chatgpt'
         },
         {
           reg: '#chatgpt对话列表',
@@ -170,162 +169,6 @@ export class chatgpt extends plugin {
    * @param e oicq传递的事件参数e
    */
   async chatgpt (e) {
-    if (!e.msg || e.msg.startsWith('#')) {
-      return
-    }
-    if (e.isGroup && !e.atme) {
-      return
-    }
-    let api = await redis.get('CHATGPT:API_OPTION')
-    if (!api) {
-      let option = { markdown: true }
-      if (Config['2captchaToken']) {
-        option.captchaToken = Config['2captchaToken']
-      }
-      // option.debug = true
-      option.email = Config.username
-      option.password = Config.password
-      this.chatGPTApi = new ChatGPTPuppeteer(option)
-      await redis.set('CHATGPT:API_OPTION', JSON.stringify(option))
-    } else {
-      let option = JSON.parse(api)
-      this.chatGPTApi = new ChatGPTPuppeteer(option)
-    }
-    let question = e.msg.trimStart()
-
-    let randomId = uuid()
-    // 队列队尾插入，开始排队
-    await redis.rPush('CHATGPT:CHAT_QUEUE', [randomId])
-    if (await redis.lIndex('CHATGPT:CHAT_QUEUE', 0) === randomId) {
-      await this.reply('我正在思考如何回复你，请稍等', true, { recallMsg: 60 })
-    } else {
-      let length = await redis.lLen('CHATGPT:CHAT_QUEUE') - 1
-      await this.reply(`我正在思考如何回复你，请稍等，当前队列前方还有${length}个问题`, true, { recallMsg: 120 })
-      // 开始排队
-      while (true) {
-        if (await redis.lIndex('CHATGPT:CHAT_QUEUE', 0) === randomId) {
-          break
-        } else {
-          await delay(1500)
-        }
-      }
-    }
-
-    logger.info(`chatgpt question: ${question}`)
-    // try {
-    //   await this.chatGPTApi.init()
-    // } catch (e) {
-    //   await this.reply('chatgpt初始化出错：' + e.msg, true)
-    // }
-    let previousConversation = await redis.get(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
-    let conversation = null
-    if (!previousConversation) {
-      let ctime = new Date()
-      previousConversation = {
-        sender: e.sender,
-        ctime,
-        utime: ctime,
-        num: 0
-      }
-      // await redis.set(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`, JSON.stringify(previousConversation), { EX: CONVERSATION_PRESERVE_TIME })
-    } else {
-      previousConversation = JSON.parse(previousConversation)
-      conversation = {
-        conversationId: previousConversation.conversation.conversationId,
-        parentMessageId: previousConversation.conversation.parentMessageId
-      }
-    }
-
-    try {
-      let option = {
-        onConversationResponse: function (c) {
-          previousConversation.conversation = {
-            conversationId: c.conversation_id,
-            parentMessageId: c.message.id
-          }
-          redis.set(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`, JSON.stringify(previousConversation), { EX: CONVERSATION_PRESERVE_TIME }).then(res => {
-            logger.debug('redis set conversation')
-          })
-        },
-        timeoutMs: 120000
-      }
-      if (conversation) {
-        option = Object.assign(option, conversation)
-      }
-      let response = await this.chatGPTApi.sendMessage(question, option)
-      // 移除队列首位，释放锁
-      await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
-      // 检索是否有屏蔽词
-      const blockWord = blockWords.split(',').find(word => response.toLowerCase().includes(word.toLowerCase()))
-      if (blockWord) {
-        await this.reply('返回内容存在敏感词，我不想回答你', true)
-        return
-      }
-      let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
-      if (userSetting) {
-        userSetting = JSON.parse(userSetting)
-      } else {
-        userSetting = {
-          usePicture: false
-        }
-      }
-      if (userSetting.usePicture) {
-        let endTokens = ['.', '。', '……', '!', '！', ']', ')', '）', '】', '?', '？', '~', '"', "'"]
-        while (!endTokens.find(token => response.trimEnd().endsWith(token))) {
-        // while (!response.trimEnd().endsWith('.') && !response.trimEnd().endsWith('。') && !response.trimEnd().endsWith('……') &&
-        //     !response.trimEnd().endsWith('！') && !response.trimEnd().endsWith('!') && !response.trimEnd().endsWith(']') && !response.trimEnd().endsWith('】')
-        // ) {
-          await this.reply('内容有点多，我正在奋笔疾书，请再等一会', true, { recallMsg: 5 })
-          option = {
-            onConversationResponse: function (c) {
-              previousConversation.conversation = {
-                conversationId: c.conversation_id,
-                parentMessageId: c.message.id
-              }
-              redis.set(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`, JSON.stringify(previousConversation), { EX: CONVERSATION_PRESERVE_TIME }).then(res => {
-                logger.debug('redis set conversation')
-              })
-            }
-          }
-          option = Object.assign(option, previousConversation.conversation)
-          const responseAppend = await this.chatGPTApi.sendMessage('Continue', option)
-          // console.log(responseAppend)
-          // 检索是否有屏蔽词
-          const blockWord = blockWords.split(',').find(word => responseAppend.toLowerCase().includes(word.toLowerCase()))
-          if (blockWord) {
-            await this.reply('返回内容存在敏感词，我不想回答你', true)
-            return
-          }
-          if (responseAppend.indexOf('conversation') > -1 || responseAppend.startsWith("I'm sorry")) {
-            logger.warn('chatgpt might forget what it had said')
-            break
-          }
-
-          response = response + responseAppend
-        }
-        // logger.info(response)
-        // markdown转为html
-        // todo部分数学公式可能还有问题
-        let converted = converter.makeHtml(response)
-
-        /** 最后回复消息 */
-        await e.runtime.render('chatgpt-plugin', 'content/index', { content: converted, question, senderName: e.sender.nickname })
-      } else {
-        await this.reply(`${response}`, e.isGroup)
-      }
-    } catch (e) {
-      logger.error(e)
-      // 异常了也要腾地方（todo 大概率后面的也会异常，要不要一口气全杀了）
-      await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
-      await this.reply(`与OpenAI通信异常，请稍后重试：${e}`, true, { recallMsg: e.isGroup ? 10 : 0 })
-    }
-  }
-
-  /**
-   * #chatgpt
-   * @param e oicq传递的事件参数e
-   */
-  async chatgptNew (e) {
     if (!e.msg || e.msg.startsWith('#')) {
       return
     }
