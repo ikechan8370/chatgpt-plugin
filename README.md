@@ -48,6 +48,8 @@ git clone https://github.com/ikechan8370/chatgpt-plugin.git ./plugins/chatgpt-pl
 
 修改 Yunzai根目录/node_modules/.pnpm/chatgpt\@4.1.0/node_modules/chatgpt/build/index.js 
 
+**此处 chatgpt\@4.1.0 路径不是绝对的！请根据自己安装的版本进行替换！**
+
 **将 // src/fetch.ts 部分修改成如下样子，其他部分不要动**
 ```
 // src/fetch.ts
