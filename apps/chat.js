@@ -241,9 +241,7 @@ export class chatgpt extends plugin {
       }
       let response = chatMessage?.text
       previousConversation.num = previousConversation.num + 1
-      await redis.set(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`, JSON.stringify(previousConversation), { EX: CONVERSATION_PRESERVE_TIME })
-      // 移除队列首位，释放锁
-      await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
+      await redis.set(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`, JSON.stringify(previousConversation), CONVERSATION_PRESERVE_TIME > 0 ? { EX: CONVERSATION_PRESERVE_TIME } : {})
       // 检索是否有屏蔽词
       const blockWord = blockWords.split(',').find(word => response.toLowerCase().includes(word.toLowerCase()))
       if (blockWord) {
@@ -260,37 +258,37 @@ export class chatgpt extends plugin {
       }
       if (userSetting.usePicture) {
         let endTokens = ['.', '。', '……', '!', '！', ']', ')', '）', '】', '?', '？', '~', '"', "'"]
-        while (!endTokens.find(token => response.trimEnd().endsWith(token))) {
+        let maxTries = 3
+        while (maxTries >= 0 && !endTokens.find(token => response.trimEnd().endsWith(token))) {
+          maxTries--
           // while (!response.trimEnd().endsWith('.') && !response.trimEnd().endsWith('。') && !response.trimEnd().endsWith('……') &&
           //     !response.trimEnd().endsWith('！') && !response.trimEnd().endsWith('!') && !response.trimEnd().endsWith(']') && !response.trimEnd().endsWith('】')
           // ) {
           await this.reply('内容有点多，我正在奋笔疾书，请再等一会', true, { recallMsg: 5 })
           option = {
-            onConversationResponse: function (c) {
-              previousConversation.conversation = {
-                conversationId: c.conversation_id,
-                parentMessageId: c.message.id
-              }
-              redis.set(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`, JSON.stringify(previousConversation), { EX: CONVERSATION_PRESERVE_TIME }).then(res => {
-                logger.debug('redis set conversation')
-              })
-            }
+            timeoutMs: 120000
           }
           option = Object.assign(option, previousConversation.conversation)
           const responseAppend = await this.chatGPTApi.sendMessage('Continue', option)
+          previousConversation.conversation = {
+            conversationId: responseAppend.conversationId,
+            parentMessageId: responseAppend.id
+          }
+          let responseAppendText = responseAppend?.text
+          await redis.set(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`, JSON.stringify(previousConversation), CONVERSATION_PRESERVE_TIME > 0 ? { EX: CONVERSATION_PRESERVE_TIME } : {})
           // console.log(responseAppend)
           // 检索是否有屏蔽词
-          const blockWord = blockWords.split(',').find(word => responseAppend.toLowerCase().includes(word.toLowerCase()))
+          const blockWord = blockWords.split(',').find(word => responseAppendText.toLowerCase().includes(word.toLowerCase()))
           if (blockWord) {
             await this.reply('返回内容存在敏感词，我不想回答你', true)
             return
           }
-          if (responseAppend.indexOf('conversation') > -1 || responseAppend.startsWith("I'm sorry")) {
+          if (responseAppendText.indexOf('conversation') > -1 || responseAppendText.startsWith("I'm sorry")) {
             logger.warn('chatgpt might forget what it had said')
             break
           }
 
-          response = response + responseAppend
+          response = response + responseAppendText
         }
         // logger.info(response)
         // markdown转为html
@@ -302,6 +300,8 @@ export class chatgpt extends plugin {
       } else {
         await this.reply(`${response}`, e.isGroup)
       }
+      // 移除队列首位，释放锁
+      await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
     } catch (e) {
       logger.error(e)
       // 异常了也要腾地方（todo 大概率后面的也会异常，要不要一口气全杀了）
