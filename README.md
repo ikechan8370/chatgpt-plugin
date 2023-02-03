@@ -14,7 +14,7 @@ chatgpt的版本号注意要大于4.0.0
 git clone https://github.com/ikechan8370/chatgpt-plugin.git ./plugins/chatgpt-plugin
 ```
 3. 修改配置
-编辑`plugins/chatgpt/config/index.js`文件主要修改其中的`apiKey`
+编辑`plugins/chatgpt-plugin/config/index.js`文件主要修改其中的`apiKey`
 
 ## 使用
 
