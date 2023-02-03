@@ -29,7 +29,7 @@ git clone https://github.com/ikechan8370/chatgpt-plugin.git ./plugins/chatgpt-pl
 
 ---
 
-### Node.js >= 14
+### Node.js >= 14 (并且 <18)
 **如果不是 CentOS 7, RHEL 7, Ubuntu 18 请自行搜索并升级你的 Node.js 版本！**
 
 **此教程是为了因 glibc 不支持升级 Node.js 的Linux发行版准备的。**
