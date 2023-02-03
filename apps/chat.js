@@ -74,6 +74,14 @@ export class chatgpt extends plugin {
         {
           reg: '#chatgpt文本模式',
           fnc: 'switch2Text'
+        },
+        {
+          reg: '#清空(chat)?队列',
+          fnc: 'emptyQueue'
+        },
+        {
+          reg: '#移出(chat)?队列首位',
+          fnc: 'removeQueueFirst'
         }
       ]
     })
@@ -307,6 +315,20 @@ export class chatgpt extends plugin {
       // 异常了也要腾地方（todo 大概率后面的也会异常，要不要一口气全杀了）
       await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
       await this.reply(`与OpenAI通信异常，请稍后重试：${e}`, true, { recallMsg: e.isGroup ? 10 : 0 })
+    }
+  }
+
+  async emptyQueue (e) {
+    await redis.lTrim('CHATGPT:CHAT_QUEUE', 1, 0)
+    await this.reply('已清空当前等待队列')
+  }
+
+  async removeQueueFirst (e) {
+    let uid = await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
+    if (!uid) {
+      await this.reply('当前等待队列为空')
+    } else {
+      await this.reply('已移出等待队列首位: ' + uid)
     }
   }
 }

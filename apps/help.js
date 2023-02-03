@@ -46,6 +46,16 @@ let helpData = [
         desc: '结束该用户当前对话，下次开启对话机器人将遗忘掉本次对话内容。'
       },
       {
+        icon: 'destroy',
+        title: '#清空chat队列',
+        desc: '清空当前对话等待队列。仅建议前方卡死时使用。'
+      },
+      {
+        icon: 'destroy-other',
+        title: '#移出chat队列首位',
+        desc: '移出当前对话等待队列中的首位。若前方对话卡死可使用本命令。'
+      },
+      {
         icon: 'help',
         title: '#chatgpt帮助',
         desc: '获取本帮助'
