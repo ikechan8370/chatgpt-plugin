@@ -9,7 +9,7 @@ import { ChatGPTAPI } from 'chatgpt'
 import { getMessageById, upsertMessage } from '../utils/common.js'
 // import puppeteer from '../utils/browser.js'
 // import showdownKatex from 'showdown-katex'
-const blockWords = '屏蔽词1,屏蔽词2,屏蔽词3'
+const blockWords = Config.blockWords
 const converter = new showdown.Converter({
   extensions: [
     // showdownKatex({
@@ -38,6 +38,7 @@ mjAPI.start()
 
 export class chatgpt extends plugin {
   constructor () {
+    let toggleMode = Config.toggleMode
     super({
       /** 功能名称 */
       name: 'chatgpt',
@@ -50,7 +51,7 @@ export class chatgpt extends plugin {
       rule: [
         {
           /** 命令正则匹配 */
-          reg: '^[^#][sS]*',
+          reg: toggleMode === 'at' ? '^[^#][sS]*' : '#chat[sS]*',
           /** 执行方法 */
           fnc: 'chatgpt'
         },
@@ -85,6 +86,7 @@ export class chatgpt extends plugin {
         }
       ]
     })
+    this.toggleMode = toggleMode
   }
 
   /**
@@ -177,29 +179,49 @@ export class chatgpt extends plugin {
    * @param e oicq传递的事件参数e
    */
   async chatgpt (e) {
-    if (!e.msg || e.msg.startsWith('#')) {
-      return
+    let prompt
+    if (this.toggleMode === 'at') {
+      if (!e.msg || e.msg.startsWith('#')) {
+        return false
+      }
+      if (e.isGroup && !e.atme) {
+        return false
+      }
+      prompt = e.msg.trim()
+    } else {
+      prompt = _.trimStart(e.msg.trimStart(), '#chat').trim()
+      if (prompt.length === 0) {
+        return false
+      }
     }
-    if (e.isGroup && !e.atme) {
-      return
+    let completionParams = {}
+    if (Config.model) {
+      completionParams.model = Config.model
     }
+
     this.chatGPTApi = new ChatGPTAPI({
       apiKey: Config.apiKey,
       debug: false,
       upsertMessage,
-      getMessageById
+      getMessageById,
+      completionParams,
+      assistantLabel: Config.assistantLabel
     })
-
-    let prompt = e.msg.trimStart()
 
     let randomId = uuid()
     // 队列队尾插入，开始排队
     await redis.rPush('CHATGPT:CHAT_QUEUE', [randomId])
+    let confirm = await redis.get('CHATGPT:CONFIRM')
+    let confirmOn = confirm === 'on'
     if (await redis.lIndex('CHATGPT:CHAT_QUEUE', 0) === randomId) {
-      await this.reply('我正在思考如何回复你，请稍等', true, { recallMsg: 8 })
+      if (confirmOn) {
+        await this.reply('我正在思考如何回复你，请稍等', true, { recallMsg: 8 })
+      }
     } else {
-      let length = await redis.lLen('CHATGPT:CHAT_QUEUE') - 1
-      await this.reply(`我正在思考如何回复你，请稍等，当前队列前方还有${length}个问题`, true, { recallMsg: 8 })
+      if (confirmOn) {
+        let length = await redis.lLen('CHATGPT:CHAT_QUEUE') - 1
+        await this.reply(`我正在思考如何回复你，请稍等，当前队列前方还有${length}个问题`, true, { recallMsg: 8 })
+      }
       // 开始排队
       while (true) {
         if (await redis.lIndex('CHATGPT:CHAT_QUEUE', 0) === randomId) {
@@ -234,10 +256,15 @@ export class chatgpt extends plugin {
         parentMessageId: previousConversation.conversation.parentMessageId
       }
     }
-
+    const currentDate = new Date().toISOString().split('T')[0]
+    let defaultPropmtPrefix = 'You answer as concisely as possible for each response (e.g. don’t be verbose). It is very important that you answer as concisely as possible, so please remember this. If you are generating a list, do not have too many items. Keep the number of items short.'
+    let promptPrefix = `You are ${Config.assistantLabel}, a large language model trained by OpenAI. ${Config.promptPrefixOverride || defaultPropmtPrefix}
+        Knowledge cutoff: 2021-09
+        Current date: ${currentDate}`
     try {
       let option = {
-        timeoutMs: 120000
+        timeoutMs: 120000,
+        promptPrefix
       }
       if (conversation) {
         option = Object.assign(option, conversation)
@@ -254,7 +281,7 @@ export class chatgpt extends plugin {
       const blockWord = blockWords.split(',').find(word => response.toLowerCase().includes(word.toLowerCase()))
       if (blockWord) {
         await this.reply('返回内容存在敏感词，我不想回答你', true)
-        return
+        return false
       }
       let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
       if (userSetting) {
@@ -274,7 +301,8 @@ export class chatgpt extends plugin {
           // ) {
           await this.reply('内容有点多，我正在奋笔疾书，请再等一会', true, { recallMsg: 5 })
           option = {
-            timeoutMs: 120000
+            timeoutMs: 120000,
+            promptPrefix
           }
           option = Object.assign(option, previousConversation.conversation)
           const responseAppend = await this.chatGPTApi.sendMessage('Continue', option)

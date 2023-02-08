@@ -23,7 +23,7 @@ let helpData = [
         icon: 'text',
         title: '#chatgpt文本模式',
         desc: '机器人以文本形式回答，默认选项'
-      },
+      }
 
     ]
   },
@@ -54,6 +54,11 @@ let helpData = [
         icon: 'destroy-other',
         title: '#移出chat队列首位',
         desc: '移出当前对话等待队列中的首位。若前方对话卡死可使用本命令。'
+      },
+      {
+        icon: 'destroy-other',
+        title: '#chatgpt开启/关闭问题确认',
+        desc: '开启或关闭机器人收到消息后的确认回复消息。私聊无效。'
       },
       {
         icon: 'help',
