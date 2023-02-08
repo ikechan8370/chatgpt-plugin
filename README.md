@@ -76,6 +76,8 @@ globalThis.fetch = fetch;
 * `promptPrefixOverride`：通常保持空即可。如果你想调整机器人回复的风格，可以在这里加入对机器人的一些暗示，比如要求用中文，要求回答长一点/短一点。甚至可以让它有自己的小脾气。下图为我让他不要回答太简单的问题，并且表现出不耐烦。
 
 ![)T@~XY~NWXUM S1)D$7%I3H](https://user-images.githubusercontent.com/21212372/217540723-0b97553a-f4ba-41df-ae0c-0449f73657fc.png)
+![image](https://user-images.githubusercontent.com/21212372/217545618-3793d9f8-7941-476b-81f8-4255ac216cf7.png)
+
 
 * `assistantLabel`：默认为ChatGPT，表示机器人认知中的自己的名字。你可以修改为其他名字。
 
