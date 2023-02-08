@@ -66,8 +66,18 @@ globalThis.fetch = fetch;
 
 ### 基本使用
 @机器人 发送聊内容即可
+将配置文件中的toggleMode修改为prefix，可以将触发方式改为【#chat+问题】，可以避免指令冲突。
 ![img.png](resources/img/example1.png)
 发挥你的想象力吧！
+
+关于配置中的一些模型的配置项：
+* `model`：通常保持空即可，除非你想调用特定的模型，比如你用gpt-3微调的学到特定领域知识的机器人。
+
+* `promptPrefixOverride`：通常保持空即可。如果你想调整机器人回复的风格，可以在这里加入对机器人的一些暗示，比如要求用中文，要求回答长一点/短一点。甚至可以让它有自己的小脾气。下图为我让他不要回答太简单的问题，并且表现出不耐烦。
+
+![)T@~XY~NWXUM S1)D$7%I3H](https://user-images.githubusercontent.com/21212372/217540723-0b97553a-f4ba-41df-ae0c-0449f73657fc.png)
+
+* `assistantLabel`：默认为ChatGPT，表示机器人认知中的自己的名字。你可以修改为其他名字。
 
 ### 获取帮助
 发送#chatgpt帮助
