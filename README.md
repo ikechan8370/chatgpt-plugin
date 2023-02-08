@@ -83,7 +83,6 @@ globalThis.fetch = fetch;
 发送#chatgpt帮助
 
 ## TODO
-* 触发方式优化
 * 更灵活的Conversation管理
 
 ## 关于openai token获取
