@@ -1,4 +1,10 @@
-云崽qq机器人的chatgpt插件
+# 云崽qq机器人的chatgpt插件
+
+* 支持单人连续对话Conversation
+* 目前使用 GPT-3 API尽可能逼近ChatGPT体验，支持模型参数调整
+* 支持问答图片截图
+* 仅需OpenAI Api Key，开箱即用
+
 ## 版本要求
 Node.js >= 18 / Node.js >= 14(with node-fetch)
 
@@ -46,7 +52,7 @@ git clone https://github.com/ikechan8370/chatgpt-plugin.git ./plugins/chatgpt-pl
 ```
 4. 修改配置
 
-修改 Yunzai根目录/node_modules/.pnpm/chatgpt\@4.1.0/node_modules/chatgpt/build/index.js 
+修改 Yunzai根目录/node_modules/.pnpm/chatgpt\@4.1.0/node_modules/chatgpt/build/index.js
 
 **此处 chatgpt\@4.1.0 路径不是绝对的！请根据自己安装的版本进行替换！**
 
@@ -86,6 +92,8 @@ globalThis.fetch = fetch;
 
 ## TODO
 * 更灵活的Conversation管理
+* 恢复网页版支持 (Browser Based Solution)
+* 支持Bing版本
 
 ## 关于openai token获取
 1. 注册openai账号
@@ -98,11 +106,11 @@ globalThis.fetch = fetch;
 
 ## 其他
 
-OpenAI 已开放其官方API，并增加了定价策略，请等待此部分内容更新。
+OpenAI 即将开放其官方ChatGPT API，请等待此部分内容更新。
 
-> 该api响应速度可能由于模型本身及网络原因不会太快，请勿频繁重发。后续准备加入限速等功能。因网络问题和模型响应速度问题可能出现500、503、404等各种异常状态码，此时等待官方恢复即可。实测复杂的中文对话更容易触发503错误（超时）。如出现429则意味着超出了免费账户调用频率，只能暂时停用，放置一段时间再继续使用。
+> 该api响应速度可能由于模型本身及网络原因不会太快，请勿频繁重发。因网络问题和模型响应速度问题可能出现500、503、404等各种异常状态码，此时等待官方恢复即可。实测复杂的中文对话更容易触发503错误（超时）。如出现429则意味着超出了免费账户调用频率，只能暂时停用，放置一段时间再继续使用。
 >
-> openai目前开放chatgpt模型的免费试用，在此期间本项目应该都可用，后续如果openai调整其收费策略，到时候视情况进行调整。
+> ~~openai目前开放chatgpt模型的免费试用，在此期间本项目应该都可用，后续如果openai调整其收费策略，到时候视情况进行调整。~~ GPT-3的API调用是收费的，新用户有18美元试用金可用于支付，价格为`$0.0200/ 1K tokens`，问题和回答加起来算。
 >
 > 如果在linux系统上发现emoj无法正常显示，可以搜索安装支持emoj的字体，如Ubuntu可以使用`sudo apt install fonts-noto-color-emoji`
 

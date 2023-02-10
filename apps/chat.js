@@ -6,7 +6,7 @@ import mjAPI from 'mathjax-node'
 import { uuid } from 'oicq/lib/common.js'
 import delay from 'delay'
 import { ChatGPTAPI } from 'chatgpt'
-import {getMessageById, tryTimes, upsertMessage} from '../utils/common.js'
+import { getMessageById, tryTimes, upsertMessage } from '../utils/common.js'
 // import puppeteer from '../utils/browser.js'
 // import showdownKatex from 'showdown-katex'
 const blockWords = Config.blockWords
