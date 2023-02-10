@@ -6,7 +6,7 @@ import mjAPI from 'mathjax-node'
 import { uuid } from 'oicq/lib/common.js'
 import delay from 'delay'
 import { ChatGPTAPI } from 'chatgpt'
-import { getMessageById, upsertMessage } from '../utils/common.js'
+import {getMessageById, tryTimes, upsertMessage} from '../utils/common.js'
 // import puppeteer from '../utils/browser.js'
 // import showdownKatex from 'showdown-katex'
 const blockWords = Config.blockWords
@@ -28,7 +28,7 @@ const converter = new showdown.Converter({
  * @type {number}
  */
 const CONVERSATION_PRESERVE_TIME = Config.conversationPreserveTime
-
+const defaultPropmtPrefix = 'You answer as concisely as possible for each response (e.g. don’t be verbose). It is very important that you answer as concisely as possible, so please remember this. If you are generating a list, do not have too many items. Keep the number of items short.'
 mjAPI.config({
   MathJax: {
     // traditional MathJax configuration
@@ -51,7 +51,7 @@ export class chatgpt extends plugin {
       rule: [
         {
           /** 命令正则匹配 */
-          reg: toggleMode === 'at' ? '^[^#][sS]*' : '#chat[sS]*',
+          reg: toggleMode === 'at' ? '^[^#][sS]*' : '#chat[^gpt][sS]*',
           /** 执行方法 */
           fnc: 'chatgpt'
         },
@@ -256,20 +256,9 @@ export class chatgpt extends plugin {
         parentMessageId: previousConversation.conversation.parentMessageId
       }
     }
-    const currentDate = new Date().toISOString().split('T')[0]
-    let defaultPropmtPrefix = 'You answer as concisely as possible for each response (e.g. don’t be verbose). It is very important that you answer as concisely as possible, so please remember this. If you are generating a list, do not have too many items. Keep the number of items short.'
-    let promptPrefix = `You are ${Config.assistantLabel}, a large language model trained by OpenAI. ${Config.promptPrefixOverride || defaultPropmtPrefix}
-        Knowledge cutoff: 2021-09
-        Current date: ${currentDate}`
+
     try {
-      let option = {
-        timeoutMs: 120000,
-        promptPrefix
-      }
-      if (conversation) {
-        option = Object.assign(option, conversation)
-      }
-      let chatMessage = await this.chatGPTApi.sendMessage(prompt, option)
+      let chatMessage = await this.sendMessage(prompt, conversation, this.chatGPTApi)
       previousConversation.conversation = {
         conversationId: chatMessage.conversationId,
         parentMessageId: chatMessage.id
@@ -300,12 +289,7 @@ export class chatgpt extends plugin {
           //     !response.trimEnd().endsWith('！') && !response.trimEnd().endsWith('!') && !response.trimEnd().endsWith(']') && !response.trimEnd().endsWith('】')
           // ) {
           await this.reply('内容有点多，我正在奋笔疾书，请再等一会', true, { recallMsg: 5 })
-          option = {
-            timeoutMs: 120000,
-            promptPrefix
-          }
-          option = Object.assign(option, previousConversation.conversation)
-          const responseAppend = await this.chatGPTApi.sendMessage('Continue', option)
+          let responseAppend = await this.sendMessage('Continue', conversation, this.chatGPTApi)
           previousConversation.conversation = {
             conversationId: responseAppend.conversationId,
             parentMessageId: responseAppend.id
@@ -344,6 +328,20 @@ export class chatgpt extends plugin {
       await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
       await this.reply(`与OpenAI通信异常，请稍后重试：${e}`, true, { recallMsg: e.isGroup ? 10 : 0 })
     }
+  }
+
+  async sendMessage (prompt, conversation, api) {
+    const currentDate = new Date().toISOString().split('T')[0]
+    let promptPrefix = `You are ${Config.assistantLabel}, a large language model trained by OpenAI. ${Config.promptPrefixOverride || defaultPropmtPrefix}
+        Current date: ${currentDate}`
+    let option = {
+      timeoutMs: 120000,
+      promptPrefix
+    }
+    if (conversation) {
+      option = Object.assign(option, conversation)
+    }
+    return await tryTimes(async () => await api.sendMessage(prompt, option), 5)
   }
 
   async emptyQueue (e) {

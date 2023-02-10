@@ -9,11 +9,11 @@ export class ChatgptManagement extends plugin {
       priority: 500,
       rule: [
         {
-          reg: '#chatgpt开启(问题)?确认',
+          reg: '#chatgpt开启(问题)?(回复)?确认',
           fnc: 'turnOnConfirm'
         },
         {
-          reg: '#chatgpt关闭(问题)?确认',
+          reg: '#chatgpt关闭(问题)?(回复)?确认',
           fnc: 'turnOffConfirm'
         }
       ]
@@ -23,10 +23,12 @@ export class ChatgptManagement extends plugin {
   async turnOnConfirm (e) {
     await redis.set('CHATGPT:CONFIRM', 'on')
     await this.reply('已开启消息确认', true)
+    return false
   }
 
   async turnOffConfirm (e) {
     await redis.set('CHATGPT:CONFIRM', 'off')
     await this.reply('已关闭消息确认', true)
+    return false
   }
 }

@@ -16,9 +16,9 @@ export const Config = {
   // 触发方式 可选值：at 或 prefix 。at模式下只有at机器人才会回复。prefix模式下不需要at，但需要添加前缀#chat
   toggleMode: 'at',
   // 默认完整值：`You are ${this._assistantLabel}, a large language model trained by OpenAI. You answer as concisely as possible for each response (e.g. don’t be verbose). It is very important that you answer as concisely as possible, so please remember this. If you are generating a list, do not have too many items. Keep the number of items short. Current date: ${currentDate}\n\n
-  // 此项配置会覆盖掉中间部分
-  // 你可以在这里写入你希望AI回答的风格，比如希望优先回答中文，去掉尽可能简洁的要求等
+  // 此项配置会覆盖掉中间部分。保持为空将使用网友从对话中推测出的指令。
+  // 你可以在这里写入你希望AI回答的风格，比如希望优先回答中文，回答长一点等
   promptPrefixOverride: '',
-  // AI认为的自己的名字。
+  // AI认为的自己的名字，当你问他你是谁是他会回答这里的名字。
   assistantLabel: 'ChatGPT'
 }
