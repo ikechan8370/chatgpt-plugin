@@ -1,4 +1,5 @@
 import plugin from '../../../lib/plugins/plugin.js'
+import { Config } from '../config/index.js'
 
 let helpData = [
   {
@@ -6,7 +7,7 @@ let helpData = [
     list: [
       {
         icon: 'chat',
-        title: '@我+聊天内容',
+        title: Config.toggleMode === 'at' ? '@我+聊天内容' : '#chat+聊天内容',
         desc: '与机器人聊天'
       },
       {
