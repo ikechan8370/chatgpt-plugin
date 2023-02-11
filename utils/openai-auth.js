@@ -61,14 +61,16 @@ export async function getOpenAIAuth (opt) {
       await delay(500)
 
       // click login button and wait for navigation to finish
-      await Promise.all([
-        page.waitForNavigation({
-          waitUntil: 'networkidle2',
-          timeout: timeoutMs
-        }),
-
-        page.click('#__next .btn-primary')
-      ])
+      do {
+        await Promise.all([
+          page.waitForNavigation({
+            waitUntil: 'networkidle2',
+            timeout: timeoutMs
+          }),
+          page.click('#__next .btn-primary')
+        ])
+        await delay(500)
+      } while (page.url().endsWith('/auth/login'))
 
       await checkForChatGPTAtCapacity(page)
 
