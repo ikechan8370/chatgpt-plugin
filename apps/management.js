@@ -10,11 +10,13 @@ export class ChatgptManagement extends plugin {
       rule: [
         {
           reg: '#chatgpt开启(问题)?(回复)?确认',
-          fnc: 'turnOnConfirm'
+          fnc: 'turnOnConfirm',
+          permission: 'master'
         },
         {
           reg: '#chatgpt关闭(问题)?(回复)?确认',
-          fnc: 'turnOffConfirm'
+          fnc: 'turnOffConfirm',
+          permission: 'master'
         }
       ]
     })

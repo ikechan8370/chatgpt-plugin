@@ -13,13 +13,13 @@
 body {
   font-family: sans-serif;
   font-size: 16px;
-  width: 530px;
+  width: 630px;
   color: #1e1f20;
   transform: scale(1.5);
   transform-origin: 0 0;
 }
 .container {
-  width: 530px;
+  width: 630px;
   padding: 20px 15px 10px 15px;
   background-color: #f5f6fb;
 }
@@ -98,7 +98,7 @@ body {
 }
 
 .list .item {
-  width: 235px;
+  width: 285px;
   display: flex;
   align-items: center;
   background: #f1f1f1;

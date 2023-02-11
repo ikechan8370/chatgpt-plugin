@@ -7,6 +7,7 @@ import { uuid } from 'oicq/lib/common.js'
 import delay from 'delay'
 import { ChatGPTAPI } from 'chatgpt'
 import { getMessageById, tryTimes, upsertMessage } from '../utils/common.js'
+import { ChatGPTPuppeteer } from '../utils/browser.js'
 // import puppeteer from '../utils/browser.js'
 // import showdownKatex from 'showdown-katex'
 const blockWords = Config.blockWords
@@ -78,11 +79,23 @@ export class chatgpt extends plugin {
         },
         {
           reg: '#清空(chat)?队列',
-          fnc: 'emptyQueue'
+          fnc: 'emptyQueue',
+          permission: 'master'
         },
         {
           reg: '#移出(chat)?队列首位',
-          fnc: 'removeQueueFirst'
+          fnc: 'removeQueueFirst',
+          permission: 'master'
+        },
+        {
+          reg: '#chatgpt切换浏览器',
+          fnc: 'useBrowserBasedSolution',
+          permission: 'master'
+        },
+        {
+          reg: '#chatgpt切换[(api)|(API)]',
+          fnc: 'useOpenAIAPIBasedSolution',
+          permission: 'master'
         }
       ]
     })
@@ -194,19 +207,6 @@ export class chatgpt extends plugin {
         return false
       }
     }
-    let completionParams = {}
-    if (Config.model) {
-      completionParams.model = Config.model
-    }
-
-    this.chatGPTApi = new ChatGPTAPI({
-      apiKey: Config.apiKey,
-      debug: false,
-      upsertMessage,
-      getMessageById,
-      completionParams,
-      assistantLabel: Config.assistantLabel
-    })
 
     let randomId = uuid()
     // 队列队尾插入，开始排队
@@ -258,16 +258,17 @@ export class chatgpt extends plugin {
     }
 
     try {
-      let chatMessage = await this.sendMessage(prompt, conversation, this.chatGPTApi)
+      let chatMessage = await this.sendMessage(prompt, conversation)
       previousConversation.conversation = {
         conversationId: chatMessage.conversationId,
         parentMessageId: chatMessage.id
       }
+      console.log(chatMessage)
       let response = chatMessage?.text
       previousConversation.num = previousConversation.num + 1
       await redis.set(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`, JSON.stringify(previousConversation), CONVERSATION_PRESERVE_TIME > 0 ? { EX: CONVERSATION_PRESERVE_TIME } : {})
       // 检索是否有屏蔽词
-      const blockWord = blockWords.split(',').find(word => response.toLowerCase().includes(word.toLowerCase()))
+      const blockWord = blockWords.find(word => response.toLowerCase().includes(word.toLowerCase()))
       if (blockWord) {
         await this.reply('返回内容存在敏感词，我不想回答你', true)
         return false
@@ -289,7 +290,7 @@ export class chatgpt extends plugin {
           //     !response.trimEnd().endsWith('！') && !response.trimEnd().endsWith('!') && !response.trimEnd().endsWith(']') && !response.trimEnd().endsWith('】')
           // ) {
           await this.reply('内容有点多，我正在奋笔疾书，请再等一会', true, { recallMsg: 5 })
-          let responseAppend = await this.sendMessage('Continue', conversation, this.chatGPTApi)
+          let responseAppend = await this.sendMessage('Continue', conversation)
           previousConversation.conversation = {
             conversationId: responseAppend.conversationId,
             parentMessageId: responseAppend.id
@@ -298,7 +299,7 @@ export class chatgpt extends plugin {
           await redis.set(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`, JSON.stringify(previousConversation), CONVERSATION_PRESERVE_TIME > 0 ? { EX: CONVERSATION_PRESERVE_TIME } : {})
           // console.log(responseAppend)
           // 检索是否有屏蔽词
-          const blockWord = blockWords.split(',').find(word => responseAppendText.toLowerCase().includes(word.toLowerCase()))
+          const blockWord = blockWords.find(word => responseAppendText.toLowerCase().includes(word.toLowerCase()))
           if (blockWord) {
             await this.reply('返回内容存在敏感词，我不想回答你', true)
             return
@@ -330,18 +331,46 @@ export class chatgpt extends plugin {
     }
   }
 
-  async sendMessage (prompt, conversation, api) {
-    const currentDate = new Date().toISOString().split('T')[0]
-    let promptPrefix = `You are ${Config.assistantLabel}, a large language model trained by OpenAI. ${Config.promptPrefixOverride || defaultPropmtPrefix}
+  async sendMessage (prompt, conversation) {
+    const use = await redis.get('CHATGPT:USE')
+    console.log(use)
+    if (use === 'browser') {
+      return await this.chatgptBrowserBased(prompt, conversation)
+    } else {
+      let completionParams = {}
+      if (Config.model) {
+        completionParams.model = Config.model
+      }
+      this.chatGPTApi = new ChatGPTAPI({
+        apiKey: Config.apiKey,
+        debug: false,
+        upsertMessage,
+        getMessageById,
+        completionParams,
+        assistantLabel: Config.assistantLabel
+      })
+      const currentDate = new Date().toISOString().split('T')[0]
+      let promptPrefix = `You are ${Config.assistantLabel}, a large language model trained by OpenAI. ${Config.promptPrefixOverride || defaultPropmtPrefix}
         Current date: ${currentDate}`
-    let option = {
-      timeoutMs: 120000,
-      promptPrefix
+      let option = {
+        timeoutMs: 120000,
+        promptPrefix
+      }
+      if (conversation) {
+        option = Object.assign(option, conversation)
+      }
+      return await tryTimes(async () => await this.chatGPTApi.sendMessage(prompt, option), 5)
     }
-    if (conversation) {
-      option = Object.assign(option, conversation)
-    }
-    return await tryTimes(async () => await api.sendMessage(prompt, option), 5)
+  }
+
+  async useBrowserBasedSolution (e) {
+    await redis.set('CHATGPT:USE', 'browser')
+    await this.reply('已切换到基于浏览器的解决方案')
+  }
+
+  async useOpenAIAPIBasedSolution (e) {
+    await redis.set('CHATGPT:USE', 'api')
+    await this.reply('已切换到基于OpenAI API的解决方案')
   }
 
   async emptyQueue (e) {
@@ -356,5 +385,29 @@ export class chatgpt extends plugin {
     } else {
       await this.reply('已移出等待队列首位: ' + uid)
     }
+  }
+
+  /**
+   * #chatgpt
+   * @param prompt 问题
+   * @param conversation 对话
+   */
+  async chatgptBrowserBased (prompt, conversation) {
+    let option = { markdown: true }
+    if (Config['2captchaToken']) {
+      option.captchaToken = Config['2captchaToken']
+    }
+    // option.debug = true
+    option.email = Config.username
+    option.password = Config.password
+    this.chatGPTApi = new ChatGPTPuppeteer(option)
+    logger.info(`chatgpt prompt: ${prompt}`)
+    let sendMessageOption = {
+      timeoutMs: 120000
+    }
+    if (conversation) {
+      sendMessageOption = Object.assign(sendMessageOption, conversation)
+    }
+    return await this.chatGPTApi.sendMessage(prompt, sendMessageOption)
   }
 }

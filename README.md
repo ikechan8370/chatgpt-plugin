@@ -1,29 +1,40 @@
 # 云崽qq机器人的chatgpt插件
 
 * 支持单人连续对话Conversation
-* 目前使用 GPT-3 API尽可能逼近ChatGPT体验，支持模型参数调整 ~~使用`text-chat-davinci-002-sh-alpha-aoruigiofdj83`模型，原汁原味ChatGPT体验(只存活了五分钟)~~
+* API模式下，使用 GPT-3 API及相关模型配置尽可能逼近ChatGPT体验，支持自定义部分模型参数 ~~使用`text-chat-davinci-002-sh-alpha-aoruigiofdj83`模型，原汁原味ChatGPT体验(20230211只存活了五分钟)~~
 * 支持问答图片截图
 * 仅需OpenAI Api Key，开箱即用
+* 提供基于浏览器的解决方案作为备选，有条件且希望得到更好回答质量可以选择使用浏览器模式。
 
 ## 版本要求
 Node.js >= 18 / Node.js >= 14(with node-fetch)
 
-
 ## 安装
+首先判断自己需要使用哪种模式，本插件支持API和浏览器两种模式。也可以选择**我全都要**，通过qq发送命令`#chatgpt切换浏览器/API`实时切换。对于轻量用户可以先使用API模式，有较高要求再转为使用浏览器模式。
+
+> API模式和浏览器模式如何选择？
+>
+> * API模式会调用OpenAI官方提供的GPT-3 LLM API，只需要提供API Key。一般情况下，该种方式响应速度更快，可配置项多，且不会像chatGPT官网一样总出现不可用的现象，但其聊天效果明显较官网差。但注意GPT-3的API调用是收费的，新用户有18美元试用金可用于支付，价格为`$0.0200/ 1K tokens`.(问题和回答加起来算token)
+> * 浏览器模式通过在本地启动Chrome等浏览器模拟用户访问ChatGPT网站，使得获得和官方一模一样的回复质量。缺点是本方法对环境要求较高，需要提供桌面环境和一个可用的代理（能够访问ChatGPT的IP地址），且响应速度不如API，而且高峰期容易无法使用。
+
 1. 进入 Yunzai根目录
 2. 检查 Node.js 版本，并根据对应的 Node.js 版本选择安装教程。
+
 ```
 node -v
 ```
----
-
 ### Node.js >= 18
+
 1. 进入 Yunzai根目录
 2. 安装依赖
+
 ```
-pnpm install -w undici chatgpt showdown mathjax-node delay uuid remark strip-markdown
+pnpm install -w undici chatgpt showdown mathjax-node delay uuid remark strip-markdown random puppeteer-extra-plugin-recaptcha puppeteer-extra puppeteer-extra-plugin-stealth
 ```
-**chatgpt的版本号注意要大于4.0.0**
+
+**若使用API模式，chatgpt的版本号注意要大于4.2.0**
+
+若不使用浏览器模式，可以不安装`random puppeteer-extra-plugin-recaptcha puppeteer-extra puppeteer-extra-plugin-stealth`这几个
 
 3. 克隆项目
 ```
@@ -31,7 +42,7 @@ git clone https://github.com/ikechan8370/chatgpt-plugin.git ./plugins/chatgpt-pl
 ```
 4. 修改配置
 
-编辑`plugins/chatgpt-plugin/config/index.js`文件主要修改其中的`apiKey`
+编辑`plugins/chatgpt-plugin/config/index.js`文件，根据其中的注释修改必要配置项。
 
 ---
 
@@ -44,7 +55,9 @@ git clone https://github.com/ikechan8370/chatgpt-plugin.git ./plugins/chatgpt-pl
 ```
 pnpm install -w undici chatgpt showdown mathjax-node delay uuid remark strip-markdown node-fetch
 ```
-**chatgpt的版本号注意要大于4.0.0**
+**若使用API模式，chatgpt的版本号注意要大于4.2.0**
+
+若不使用浏览器模式，可以不安装`random puppeteer-extra-plugin-recaptcha puppeteer-extra puppeteer-extra-plugin-stealth`这几个
 
 3. 克隆项目
 ```
@@ -63,7 +76,7 @@ import fetch from 'node-fetch';
 globalThis.fetch = fetch;
 ```
 
-再编辑`Yunzai根目录/plugins/chatgpt-plugin/config/index.js`文件，主要修改其中的`apiKey`
+再编辑`Yunzai根目录/plugins/chatgpt-plugin/config/index.js`文件，根据其中的注释修改必要配置项。
 
 ---
 
@@ -92,27 +105,38 @@ globalThis.fetch = fetch;
 
 ## TODO
 * 更灵活的Conversation管理
-* 恢复网页版支持 (Browser Based Solution)
 * 支持Bing版本
 
-## 关于openai token获取
+## 关于openai账号
 1. 注册openai账号
 进入https://chat.openai.com/ ，选择signup注册。目前openai不对包括俄罗斯、乌克兰、伊朗、中国等国家和地区提供服务，所以自行寻找办法使用其他国家和地区的ip登录。此外，注册可能需要验证所在国家和地区的手机号码，如果没有国外手机号可以试试解码网站，收费的推荐https://sms-activate.org/。
 2. 获取API key
 进入账户后台创建API key：https://platform.openai.com/account/api-keys
 
-其他问题可以参考使用的api库https://github.com/transitive-bullshit/chatgpt-api
+其他问题可以参考使用的api库 https://github.com/transitive-bullshit/chatgpt-api
 
 
 ## 其他
 
-OpenAI 即将开放其官方ChatGPT API，请等待此部分内容更新。
+### 关于未来更新
 
-> 该api响应速度可能由于模型本身及网络原因不会太快，请勿频繁重发。因网络问题和模型响应速度问题可能出现500、503、404等各种异常状态码，此时等待官方恢复即可。实测复杂的中文对话更容易触发503错误（超时）。如出现429则意味着超出了免费账户调用频率，只能暂时停用，放置一段时间再继续使用。
->
-> ~~openai目前开放chatgpt模型的免费试用，在此期间本项目应该都可用，后续如果openai调整其收费策略，到时候视情况进行调整。~~ GPT-3的API调用是收费的，新用户有18美元试用金可用于支付，价格为`$0.0200/ 1K tokens`，问题和回答加起来算。
->
-> 如果在linux系统上发现emoj无法正常显示，可以搜索安装支持emoj的字体，如Ubuntu可以使用`sudo apt install fonts-noto-color-emoji`
+OpenAI 即将开放其官方ChatGPT API，且微软必应也公开发布了基于ChatGPT的问答搜索，能够为实现更好、更快的聊天机器人提供更多途径。
+
+### 常见问题
+
+1. 如果在linux系统上发现图片模式下emoj无法正常显示，可以搜索安装支持emoj的字体，如Ubuntu可以使用`sudo apt install fonts-noto-color-emoji`
+
+2. linux云服务器可以安装窗口管理器和vnc创建并访问虚拟桌面环境。
+
+  > 以ubuntu为例给出一个可行的方案：
+  >
+  > 1. 安装xvfb和fluxbox
+  >    `sudo apt-get install x11vnc xvfb fluxbox`
+  > 2. 启动桌面环境。建议用tmux或screen等使其能够后台运行。注意本命令使用默认5900端口和无密码，注意通过防火墙等保护。
+  >    `x11vnc -create -env FD_PROG=/usr/bin/fluxbox -env X11VNC_FINDDISPLAY_ALWAYS_FAILS=1   -env X11VNC_CREATE_GEOM=${1:-1024x768x16}   -nopw -forever`
+  > 3. 使用vnc客户端连接至云桌面，右键Applications > Shells > Bash打开终端，然后进入Yunzai目录下运行node app即可。
+  >
+  > 实测该方案资源占用低，运行稳定，基本1核2G的轻量云服务器就足够了。
 
 ## 感谢
 * https://github.com/transitive-bullshit/chatgpt-api

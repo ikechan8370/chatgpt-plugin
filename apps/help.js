@@ -46,19 +46,24 @@ let helpData = [
         desc: '结束该用户当前对话，下次开启对话机器人将遗忘掉本次对话内容。'
       },
       {
-        icon: 'destroy',
+        icon: 'queue',
         title: '#清空chat队列',
         desc: '清空当前对话等待队列。仅建议前方卡死时使用。'
       },
       {
-        icon: 'destroy-other',
+        icon: 'queue',
         title: '#移出chat队列首位',
         desc: '移出当前对话等待队列中的首位。若前方对话卡死可使用本命令。'
       },
       {
-        icon: 'destroy-other',
+        icon: 'confirm',
         title: '#chatgpt开启/关闭问题确认',
-        desc: '开启或关闭机器人收到消息后的确认回复消息。私聊无效。'
+        desc: '开启或关闭机器人收到消息后的确认回复消息。'
+      },
+      {
+        icon: 'switch',
+        title: '#chatgpt切换浏览器/API',
+        desc: '切换使用的后端为浏览器或OpenAI API'
       },
       {
         icon: 'help',
