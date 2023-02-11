@@ -3,7 +3,8 @@ const API_KEY = ''
 
 export const Config = {
   // 模型名称。如无特殊需求保持默认即可，会使用chatgpt-api库提供的当前可用的最适合的默认值。保底可用的是 text-davinci-003。当发现新的可用的chatGPT模型会更新这里的值
-  model: 'text-chat-davinci-002-sh-alpha-aoruigiofdj83',
+  // 20230211： text-chat-davinci-002-sh-alpha-aoruigiofdj83 中午存活了几分钟
+  model: '',
   // 如果回答包括屏蔽词，就不返回。例如：'屏蔽词1,屏蔽词2,屏蔽词3'
   blockWords: '',
   apiKey: API_KEY,
