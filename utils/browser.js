@@ -13,7 +13,6 @@ class Puppeteer {
     let args = [
       '--exclude-switches',
       '--no-sandbox',
-      'enable-automation',
       '--remote-debugging-port=51777',
       '--disable-setuid-sandbox',
       '--disable-infobars',
