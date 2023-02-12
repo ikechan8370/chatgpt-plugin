@@ -113,6 +113,9 @@ OpenAI 即将开放其官方ChatGPT API，且微软必应也公开发布了基�
 3. 我和机器人聊天但没有任何反应怎么办？
 可能是由于Yunzai-bot异常退出等原因造成Redis 队列中有残留的等待问题。使用`#清空队列`命令清除队列后再试。
 
+4.  Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'xxx'.
+请参照本文档前面的安装依赖部分重新依赖。随着项目更新可能引入新的依赖。
+
 ## 感谢
 * https://github.com/transitive-bullshit/chatgpt-api
 * https://github.com/waylaidwanderer/node-chatgpt-api
