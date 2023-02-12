@@ -360,7 +360,7 @@ export class chatgpt extends plugin {
       }
       let accessToken = await redis.get('CHATGPT:TOKEN')
       if (!accessToken) {
-        throw new Error('未绑定ChatGPT AccessToken')
+        throw new Error('未绑定ChatGPT AccessToken，请使用#chatgpt设置token命令绑定token')
       }
       // console.log(accessToken)
       this.chatGPTApi = new ChatGPTClient(accessToken, clientOptions, cacheOptions)
