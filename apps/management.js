@@ -78,17 +78,17 @@ export class ChatgptManagement extends plugin {
 
   async useBrowserBasedSolution (e) {
     await redis.set('CHATGPT:USE', 'browser')
-    await this.reply('已切换到基于浏览器的解决方案')
+    await this.reply('已切换到基于浏览器的解决方案，如果已经对话过建议执行`#结束对话`避免引起404错误')
   }
 
   async useOpenAIAPIBasedSolution (e) {
     await redis.set('CHATGPT:USE', 'api')
-    await this.reply('已切换到基于OpenAI API的解决方案')
+    await this.reply('已切换到基于OpenAI API的解决方案，如果已经对话过建议执行`#结束对话`避免引起404错误')
   }
 
   async useReversedAPIBasedSolution (e) {
     await redis.set('CHATGPT:USE', 'apiReverse')
-    await this.reply('已切换到基于第三方Reversed API的解决方案')
+    await this.reply('已切换到基于第三方Reversed API的解决方案，如果已经对话过建议执行`#结束对话`避免引起404错误')
   }
 
   async modeHelp () {
