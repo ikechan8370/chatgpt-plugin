@@ -367,7 +367,7 @@ export class chatgpt extends plugin {
       let response = await tryTimes(async () => await this.chatGPTApi.sendMessage(prompt, conversation || {}), 5)
       return {
         text: response.response,
-        conversationId: response.response,
+        conversationId: response.conversationId,
         id: response.messageId,
         parentMessageId: conversation?.parentMessageId
       }
@@ -397,7 +397,6 @@ export class chatgpt extends plugin {
       return await tryTimes(async () => await this.chatGPTApi.sendMessage(prompt, option), 5)
     }
   }
-
 
   async emptyQueue (e) {
     await redis.lTrim('CHATGPT:CHAT_QUEUE', 1, 0)
