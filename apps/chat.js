@@ -6,8 +6,10 @@ import mjAPI from 'mathjax-node'
 import { uuid } from 'oicq/lib/common.js'
 import delay from 'delay'
 import { ChatGPTAPI } from 'chatgpt'
+import { ChatGPTClient } from '@waylaidwanderer/chatgpt-api'
 import { getMessageById, tryTimes, upsertMessage } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
+import { KeyvFile } from 'keyv-file'
 // import puppeteer from '../utils/browser.js'
 // import showdownKatex from 'showdown-katex'
 const blockWords = Config.blockWords
@@ -86,17 +88,8 @@ export class chatgpt extends plugin {
           reg: '#移出(chat)?队列首位',
           fnc: 'removeQueueFirst',
           permission: 'master'
-        },
-        {
-          reg: '#chatgpt切换浏览器',
-          fnc: 'useBrowserBasedSolution',
-          permission: 'master'
-        },
-        {
-          reg: '#chatgpt切换[(api)|(API)]',
-          fnc: 'useOpenAIAPIBasedSolution',
-          permission: 'master'
         }
+
       ]
     })
     this.toggleMode = toggleMode
@@ -221,6 +214,7 @@ export class chatgpt extends plugin {
       if (confirmOn) {
         let length = await redis.lLen('CHATGPT:CHAT_QUEUE') - 1
         await this.reply(`我正在思考如何回复你，请稍等，当前队列前方还有${length}个问题`, true, { recallMsg: 8 })
+        logger.info(`chatgpt队列前方还有${length}个问题。管理员可通过#清空队列来强制清除所有等待的问题。`)
       }
       // 开始排队
       while (true) {
@@ -331,11 +325,52 @@ export class chatgpt extends plugin {
     }
   }
 
-  async sendMessage (prompt, conversation) {
+  async sendMessage (prompt, conversation = {}) {
     const use = await redis.get('CHATGPT:USE')
-    console.log(use)
+    // console.log(use)
     if (use === 'browser') {
       return await this.chatgptBrowserBased(prompt, conversation)
+    } else if (use === 'apiReverse') {
+      const currentDate = new Date().toISOString().split('T')[0]
+      let promptPrefix = `You are ${Config.assistantLabel}, a large language model trained by OpenAI. ${Config.promptPrefixOverride || defaultPropmtPrefix}
+        Current date: ${currentDate}`
+      const clientOptions = {
+        // (Optional) Support for a reverse proxy for the completions endpoint (private API server).
+        // Warning: This will expose your `openaiApiKey` to a third-party. Consider the risks before using this.
+        reverseProxyUrl: 'https://chatgpt.pawan.krd/api/completions',
+        // (Optional) Parameters as described in https://platform.openai.com/docs/api-reference/completions
+        modelOptions: {
+          // You can override the model name and any other parameters here.
+          model: Config.plus ? 'text-davinci-002-render-paid' : 'text-davinci-002-render'
+        },
+        // (Optional) Set custom instructions instead of "You are ChatGPT...".
+        promptPrefix,
+        // (Optional) Set a custom name for the user
+        // userLabel: 'User',
+        // (Optional) Set a custom name for ChatGPT
+        chatGptLabel: Config.assistantLabel,
+        // (Optional) Set to true to enable `console.debug()` logging
+        debug: false
+      }
+      const cacheOptions = {
+        // Options for the Keyv cache, see https://www.npmjs.com/package/keyv
+        // This is used for storing conversations, and supports additional drivers (conversations are stored in memory by default)
+        // For example, to use a JSON file (`npm i keyv-file`) as a database:
+        store: new KeyvFile({ filename: 'cache.json' })
+      }
+      let accessToken = await redis.get('CHATGPT:TOKEN')
+      if (!accessToken) {
+        throw new Error('未绑定ChatGPT AccessToken')
+      }
+      // console.log(accessToken)
+      this.chatGPTApi = new ChatGPTClient(accessToken, clientOptions, cacheOptions)
+      let response = await tryTimes(async () => await this.chatGPTApi.sendMessage(prompt, conversation || {}), 5)
+      return {
+        text: response.response,
+        conversationId: response.response,
+        id: response.messageId,
+        parentMessageId: conversation?.parentMessageId
+      }
     } else {
       let completionParams = {}
       if (Config.model) {
@@ -363,15 +398,6 @@ export class chatgpt extends plugin {
     }
   }
 
-  async useBrowserBasedSolution (e) {
-    await redis.set('CHATGPT:USE', 'browser')
-    await this.reply('已切换到基于浏览器的解决方案')
-  }
-
-  async useOpenAIAPIBasedSolution (e) {
-    await redis.set('CHATGPT:USE', 'api')
-    await this.reply('已切换到基于OpenAI API的解决方案')
-  }
 
   async emptyQueue (e) {
     await redis.lTrim('CHATGPT:CHAT_QUEUE', 1, 0)

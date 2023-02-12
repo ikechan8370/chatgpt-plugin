@@ -63,8 +63,13 @@ let helpData = [
       },
       {
         icon: 'switch',
-        title: '#chatgpt切换浏览器/API',
-        desc: '切换使用的后端为浏览器或OpenAI API'
+        title: '#chatgpt切换浏览器/API/API2',
+        desc: '切换使用的后端为浏览器或OpenAI API/第三方API'
+      },
+      {
+        icon: 'help',
+        title: '#chatgpt模式帮助',
+        desc: '查看多种聊天模式的区别及当前使用的模式'
       },
       {
         icon: 'help',

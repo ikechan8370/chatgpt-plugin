@@ -13,7 +13,7 @@ export const Config = {
   // 每个人发起的对话保留时长。超过这个时长没有进行对话，再进行对话将开启新的对话。单位：秒
   conversationPreserveTime: 0,
   // 触发方式 可选值：at 或 prefix 。at模式下只有at机器人才会回复。prefix模式下不需要at，但需要添加前缀#chat
-  toggleMode: 'prefix',
+  toggleMode: 'at',
   // ***********************************************************************************************************************************
   //                                                     以下为API方式(默认)的配置                                                          *
   // ***********************************************************************************************************************************
@@ -21,7 +21,15 @@ export const Config = {
   // 模型名称，选填。如无特殊需求保持默认即可，会使用chatgpt-api库提供的当前可用的最适合的默认值。保底可用的是 text-davinci-003。当发现新的可用的chatGPT模型会更新这里的值
   // 20230211： text-chat-davinci-002-sh-alpha-aoruigiofdj83 中午存活了几分钟
   model: '',
-  // 给模型的暗示promt。选填。默认完整值：`You are ${this._assistantLabel}, a large language model trained by OpenAI. You answer as concisely as possible for each response (e.g. don’t be verbose). It is very important that you answer as concisely as possible, so please remember this. If you are generating a list, do not have too many items. Keep the number of items short. Current date: ${currentDate}\n\n
+  // ***********************************************************************************************************************************
+  //                                                        以下为API2方式的配置                                                          *
+  // ***********************************************************************************************************************************
+  // 如果购买了plus，改为true将使用收费模型，响应更快
+  plus: false,
+  // ***********************************************************************************************************************************
+  //                                                   以下为API/API2方式公用的配置                                                       *
+  // ***********************************************************************************************************************************
+  // 给模型的前言promt。选填。默认完整值：`You are ${this._assistantLabel}, a large language model trained by OpenAI. You answer as concisely as possible for each response (e.g. don’t be verbose). It is very important that you answer as concisely as possible, so please remember this. If you are generating a list, do not have too many items. Keep the number of items short. Current date: ${currentDate}\n\n
   // 此项配置会覆盖掉中间部分。保持为空将使用网友从对话中推测出的指令。
   // 你可以在这里写入你希望AI回答的风格，比如希望优先回答中文，回答长一点等
   promptPrefixOverride: 'Your answer shouldn\'t be too verbose. If you are generating a list, do not have too many items. Keep the number of items short. Prefer to answer in Chinese.',
