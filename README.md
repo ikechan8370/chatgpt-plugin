@@ -121,4 +121,8 @@ OpenAI 即将开放其官方ChatGPT API，且微软必应也公开发布了基�
 * https://github.com/waylaidwanderer/node-chatgpt-api
 * https://chat.openai.com/
 
+## 由于issue实在较多且大多重复，建了个QQ群，欢迎各位小白大佬来玩
+
+![0AC75C5D0DD03D46962B38C8C1FBFD4F的副本](https://user-images.githubusercontent.com/21212372/218388938-637eeb82-cd3c-472e-b157-40d19c74d69c.png)
+
 ![Alt](https://repobeats.axiom.co/api/embed/076d597ede41432208435f233d18cb20052fb90a.svg "Repobeats analytics image")
