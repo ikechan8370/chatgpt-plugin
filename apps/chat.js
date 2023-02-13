@@ -364,7 +364,7 @@ export class chatgpt extends plugin {
       }
       // console.log(accessToken)
       this.chatGPTApi = new ChatGPTClient(accessToken, clientOptions, cacheOptions)
-      let response = await tryTimes(async () => await this.chatGPTApi.sendMessage(prompt, conversation || {}), 5)
+      let response = await tryTimes(async () => await this.chatGPTApi.sendMessage(prompt, conversation || {}), 1)
       return {
         text: response.response,
         conversationId: response.conversationId,
