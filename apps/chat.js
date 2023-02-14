@@ -390,7 +390,7 @@ export class chatgpt extends plugin {
         userToken: bingToken, // "_U" cookie from bing.com
         debug: Config.debug
       })
-      let response = await bingAIClient.sendMessage(prompt, conversation)
+      let response = await bingAIClient.sendMessage(prompt, conversation || {})
       return {
         text: response.response,
         conversationId: response.conversationId,
