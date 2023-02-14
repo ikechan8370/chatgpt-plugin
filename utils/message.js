@@ -40,7 +40,7 @@ export class OfficialChatGPTClient {
           }
         }
       ],
-      conversationId,
+      conversation_id: conversationId,
       model: Config.plus ? 'text-davinci-002-render-sha' : 'text-davinci-002-render-sha',
       parent_message_id: parentMessageId
     }

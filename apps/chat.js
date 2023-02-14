@@ -234,7 +234,7 @@ export class chatgpt extends plugin {
     //   await this.reply('chatgpt初始化出错：' + e.msg, true)
     // }
     let previousConversation = await redis.get(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
-    let conversation = null
+    let conversation = {}
     if (!previousConversation) {
       let ctime = new Date()
       previousConversation = {
@@ -256,6 +256,9 @@ export class chatgpt extends plugin {
     }
     const use = await redis.get('CHATGPT:USE')
     try {
+      if (Config.debug) {
+        logger.mark(conversation)
+      }
       let chatMessage = await this.sendMessage(prompt, conversation, use)
       previousConversation.conversation = {
         conversationId: chatMessage.conversationId
