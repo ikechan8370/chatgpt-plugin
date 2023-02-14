@@ -442,7 +442,7 @@ export class ChatGPTPuppeteer extends Puppeteer {
   ) {
     const {
       conversationId,
-      parentMessageId = uuidv4(),
+      parentMessageId,
       messageId = uuidv4(),
       action = 'next',
       // TODO
@@ -497,7 +497,7 @@ export class ChatGPTPuppeteer extends Puppeteer {
           }
         }
       ],
-      model: Config.plus ? 'text-davinci-002-render-paid' : 'text-davinci-002-render-sha',
+      model: Config.plus ? 'text-davinci-002-render-sha' : 'text-davinci-002-render-sha',
       parent_message_id: parentMessageId
     }
 
