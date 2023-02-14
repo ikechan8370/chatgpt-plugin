@@ -68,7 +68,7 @@ export class OfficialChatGPTClient {
     let fullResponse = events[events.length - 2]
     fullResponse = _.trimStart(fullResponse, 'data: ')
     if (Config.debug) {
-      logger.debug(fullResponse)
+      logger.mark(fullResponse)
     }
     fullResponse = JSON.parse(fullResponse)
     if (!fullResponse.message) {
