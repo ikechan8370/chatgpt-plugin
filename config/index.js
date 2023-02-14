@@ -60,5 +60,5 @@ export const Config = {
   '2captchaToken': '',
   // http或socks5代理
   proxy: PROXY,
-  debug: false
+  debug: true
 }

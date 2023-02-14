@@ -71,8 +71,9 @@ export class OfficialChatGPTClient {
       logger.mark(fullResponse)
     }
     fullResponse = JSON.parse(fullResponse)
-    if (!fullResponse.message) {
-      throw new Error(fullResponse.detail || 'unkown error')
+    if (!fullResponse?.message) {
+      let detail = JSON.parse(bodyText)
+      throw new Error(detail.detail || 'unkown error')
     }
     return {
       text: fullResponse.message.content.parts[0],
