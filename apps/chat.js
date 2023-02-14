@@ -413,7 +413,7 @@ export class chatgpt extends plugin {
         upsertMessage,
         getMessageById,
         completionParams,
-        apiBaseUrl: Config.api || 'https://api.openai.com',
+        apiReverseProxyUrl: Config.api,
         assistantLabel: Config.assistantLabel
       })
       const currentDate = new Date().toISOString().split('T')[0]
