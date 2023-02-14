@@ -412,7 +412,7 @@ export class chatgpt extends plugin {
       this.chatGPTApi = new OfficialChatGPTClient({
         accessToken,
         apiReverseUrl: Config.api,
-        timeoutMs: 12000
+        timeoutMs: 120000
       })
       return await this.chatGPTApi.sendMessage(prompt, conversation)
     } else {
