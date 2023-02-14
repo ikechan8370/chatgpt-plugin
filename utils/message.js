@@ -18,7 +18,7 @@ export class OfficialChatGPTClient {
   async sendMessage (prompt, opts = {}) {
     let {
       timeoutMs = this._timeoutMs,
-      conversationId = uuidv4(),
+      conversationId,
       parentMessageId = uuidv4(),
       messageId = uuidv4(),
       action = 'next'
@@ -40,9 +40,11 @@ export class OfficialChatGPTClient {
           }
         }
       ],
-      conversation_id: conversationId,
       model: Config.plus ? 'text-davinci-002-render-sha' : 'text-davinci-002-render-sha',
       parent_message_id: parentMessageId
+    }
+    if (conversationId) {
+      body.conversation_id = conversationId
     }
     let option = {
       method: 'POST',
