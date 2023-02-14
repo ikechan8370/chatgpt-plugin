@@ -26,6 +26,11 @@ export const Config = {
   // ***********************************************************************************************************************************
   // 如果购买了plus，改为true将使用收费模型，响应更快
   plus: false,
+  // 使用谁提供的第三方API。github开源的有几个，没特别要求保持默认就好
+  // https://chatgpt.pawan.krd/api/completions 来自https://github.com/PawanOsman 使用Cloudflare CDN，三网延迟可能都较高。目前看起来最稳定
+  // https://chatgpt.roki.best/api/completions 对上面那个的二次反代，搭建在Hong Kong（本人自建，不保证稳定性）
+  // https://chatgpt.hato.ai/completions 来自https://github.com/waylaidwanderer（本插件使用的chatgpt库之一的作者）
+  reverseProxy: 'https://chatgpt.pawan.krd/api/completions',
   // ***********************************************************************************************************************************
   //                                                   以下为API/API2方式公用的配置                                                       *
   // ***********************************************************************************************************************************
