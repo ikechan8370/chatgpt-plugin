@@ -442,7 +442,7 @@ export class ChatGPTPuppeteer extends Puppeteer {
   ) {
     const {
       conversationId,
-      parentMessageId,
+      parentMessageId = uuidv4(),
       messageId = uuidv4(),
       action = 'next',
       // TODO
