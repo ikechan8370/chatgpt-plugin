@@ -49,5 +49,6 @@ export const Config = {
   // 可注册2captcha实现跳过验证码，收费服务但很便宜。否则可能会遇到验证码而卡住。
   '2captchaToken': '',
   // http或socks5代理
-  proxy: PROXY
+  proxy: PROXY,
+  debug: false
 }

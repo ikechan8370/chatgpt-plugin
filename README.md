@@ -5,9 +5,11 @@
 * 支持问答图片截图
 * 仅需OpenAI Api Key，开箱即用
 * 提供基于浏览器的解决方案作为备选，有条件且希望得到更好回答质量可以选择使用浏览器模式。
+* 支持新Bing（Beta）
 
 ## 版本要求
 Node.js >= 18 / Node.js >= 14(with node-fetch)
+小白尽可能使用18版本以上的nodejs
 
 ## 安装
 首先判断自己需要使用哪种模式，本插件支持官方API、第三方API和浏览器两种模式。也可以选择**我全都要**，通过qq发送命令`#chatgpt切换浏览器/API/API2`实时切换。对于轻量用户可以先使用API模式，有较高要求再转为使用其他模式。
@@ -15,9 +17,9 @@ Node.js >= 18 / Node.js >= 14(with node-fetch)
 > API模式和浏览器模式如何选择？
 >
 > * API模式会调用OpenAI官方提供的GPT-3 LLM API，只需要提供API Key。一般情况下，该种方式响应速度更快，可配置项多，且不会像chatGPT官网一样总出现不可用的现象，但其聊天效果明显较官网差。但注意GPT-3的API调用是收费的，新用户有18美元试用金可用于支付，价格为`$0.0200/ 1K tokens`.(问题和回答加起来算token)
-> * API2模式会调用第三方提供的基于OpenAI text-davinci-002-render模型（官网同款）的API，需要提供ChatGPT的Token。效果比单纯的GPT-3 API好很多，但同时将Token提供给了第三方API，其中风险自行承担。
+> * API2模式会调用第三方提供的基于OpenAI text-davinci-002-render模型（官网同款）的API，需要提供ChatGPT的Token。效果比单纯的GPT-3 API好很多，但同时将Token提供给了第三方API，其中风险自行承担。#chatgpt设置token
 > * 浏览器模式通过在本地启动Chrome等浏览器模拟用户访问ChatGPT网站，使得获得和官方以及API2模式一模一样的回复质量，同时保证安全性。缺点是本方法对环境要求较高，需要提供桌面环境和一个可用的代理（能够访问ChatGPT的IP地址），且响应速度不如API，而且高峰期容易无法使用。
-
+> * 必应（Bing）将调用微软新必应接口进行对话。需要在必应网页能够正常使用新必应且设置有效的Bing 登录Cookie方可使用。#chatgpt设置必应token. ("_U" cookie from bing.com)
 1. 进入 Yunzai根目录
 2. 检查 Node.js 版本
 
@@ -74,7 +76,6 @@ git clone https://github.com/ikechan8370/chatgpt-plugin.git ./plugins/chatgpt-pl
 
 ## TODO
 * 更灵活的Conversation管理
-* 支持Bing版本
 * 版本号和归档
 * API2模式下自动获取/刷新Token
 

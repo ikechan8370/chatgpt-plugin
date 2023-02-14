@@ -6,7 +6,7 @@ import mjAPI from 'mathjax-node'
 import { uuid } from 'oicq/lib/common.js'
 import delay from 'delay'
 import { ChatGPTAPI } from 'chatgpt'
-import { ChatGPTClient } from '@waylaidwanderer/chatgpt-api'
+import { ChatGPTClient, BingAIClient  } from '@waylaidwanderer/chatgpt-api'
 import { getMessageById, tryTimes, upsertMessage } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
@@ -247,15 +247,25 @@ export class chatgpt extends plugin {
       previousConversation = JSON.parse(previousConversation)
       conversation = {
         conversationId: previousConversation.conversation.conversationId,
-        parentMessageId: previousConversation.conversation.parentMessageId
+        parentMessageId: previousConversation.conversation.parentMessageId,
+        clientId: previousConversation.clientId,
+        invocationId: previousConversation.invocationId,
+        conversationSignature: previousConversation.conversationSignature
       }
     }
-
+    const use = await redis.get('CHATGPT:USE')
     try {
-      let chatMessage = await this.sendMessage(prompt, conversation)
+      let chatMessage = await this.sendMessage(prompt, conversation, use)
       previousConversation.conversation = {
-        conversationId: chatMessage.conversationId,
-        parentMessageId: chatMessage.id
+        conversationId: chatMessage.conversationId
+      }
+      if (use === 'bing') {
+        previousConversation.clientId = chatMessage.clientId
+        previousConversation.invocationId = chatMessage.invocationId
+        previousConversation.conversationSignature = chatMessage.conversationSignature
+      } else {
+        // 或许这样切换回来不会404？
+        previousConversation.conversation.parentMessageId = chatMessage.id
       }
       console.log(chatMessage)
       let response = chatMessage?.text
@@ -284,7 +294,7 @@ export class chatgpt extends plugin {
           //     !response.trimEnd().endsWith('！') && !response.trimEnd().endsWith('!') && !response.trimEnd().endsWith(']') && !response.trimEnd().endsWith('】')
           // ) {
           await this.reply('内容有点多，我正在奋笔疾书，请再等一会', true, { recallMsg: 5 })
-          let responseAppend = await this.sendMessage('Continue', conversation)
+          let responseAppend = await this.sendMessage('Continue', conversation, use)
           previousConversation.conversation = {
             conversationId: responseAppend.conversationId,
             parentMessageId: responseAppend.id
@@ -325,8 +335,8 @@ export class chatgpt extends plugin {
     }
   }
 
-  async sendMessage (prompt, conversation = {}) {
-    const use = await redis.get('CHATGPT:USE')
+  async sendMessage (prompt, conversation = {}, use) {
+
     // console.log(use)
     if (use === 'browser') {
       return await this.chatgptBrowserBased(prompt, conversation)
@@ -350,7 +360,7 @@ export class chatgpt extends plugin {
         // (Optional) Set a custom name for ChatGPT
         chatGptLabel: Config.assistantLabel,
         // (Optional) Set to true to enable `console.debug()` logging
-        debug: false
+        debug: Config.debug
       }
       const cacheOptions = {
         // Options for the Keyv cache, see https://www.npmjs.com/package/keyv
@@ -370,6 +380,23 @@ export class chatgpt extends plugin {
         conversationId: response.conversationId,
         id: response.messageId,
         parentMessageId: conversation?.parentMessageId
+      }
+    } else if (use === 'bing') {
+      let bingToken = await redis.get('CHATGPT:BING_TOKEN')
+      if (!bingToken) {
+        throw new Error('未绑定Bing Cookie，请使用#chatgpt设置Bing Cookie命令绑定Bing Cookie')
+      }
+      const bingAIClient = new BingAIClient({
+        userToken: bingToken, // "_U" cookie from bing.com
+        debug: Config.debug
+      })
+      let response = await bingAIClient.sendMessage(prompt, conversation)
+      return {
+        text: response.response,
+        conversationId: response.conversationId,
+        clientId: response.clientId,
+        invocationId: response.invocationId,
+        conversationSignature: response.conversationSignature
       }
     } else {
       let completionParams = {}
