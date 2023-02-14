@@ -133,7 +133,7 @@ export class ChatgptManagement extends plugin {
 
   async useReversedBingSolution (e) {
     await redis.set('CHATGPT:USE', 'bing')
-    await this.reply('已切换到基于第三方Reversed API的解决方案，如果已经对话过务必执行`#结束对话`避免引起404错误')
+    await this.reply('已切换到基于微软新必应的解决方案，如果已经对话过务必执行`#结束对话`避免引起404错误')
   }
 
   async modeHelp () {
