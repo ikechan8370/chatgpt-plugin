@@ -384,7 +384,7 @@ export class chatgpt extends plugin {
     } else if (use === 'bing') {
       let bingToken = await redis.get('CHATGPT:BING_TOKEN')
       if (!bingToken) {
-        throw new Error('未绑定Bing Cookie，请使用#chatgpt设置Bing Cookie命令绑定Bing Cookie')
+        throw new Error('未绑定Bing Cookie，请使用#chatgpt设置必应token命令绑定Bing Cookie')
       }
       const bingAIClient = new BingAIClient({
         userToken: bingToken, // "_U" cookie from bing.com
