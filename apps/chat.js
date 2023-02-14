@@ -10,6 +10,7 @@ import { ChatGPTClient, BingAIClient } from '@waylaidwanderer/chatgpt-api'
 import { getMessageById, tryTimes, upsertMessage } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
+import {OfficialChatGPTClient} from "../utils/message.js";
 // import puppeteer from '../utils/browser.js'
 // import showdownKatex from 'showdown-katex'
 const blockWords = Config.blockWords
@@ -402,6 +403,18 @@ export class chatgpt extends plugin {
         invocationId: response.invocationId,
         conversationSignature: response.conversationSignature
       }
+    } else if (use === 'api3') {
+      // official without cloudflare
+      let accessToken = await redis.get('CHATGPT:TOKEN')
+      if (!accessToken) {
+        throw new Error('未绑定ChatGPT AccessToken，请使用#chatgpt设置token命令绑定token')
+      }
+      this.chatGPTApi = new OfficialChatGPTClient({
+        accessToken,
+        apiReverseUrl: Config.api,
+        timeoutMs: 120000
+      })
+      return await this.chatGPTApi.sendMessage(prompt, conversation)
     } else {
       let completionParams = {}
       if (Config.model) {

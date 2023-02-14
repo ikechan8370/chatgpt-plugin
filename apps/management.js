@@ -44,6 +44,11 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
+          reg: '^#chatgpt切换API3$',
+          fnc: 'useReversedAPIBasedSolution2',
+          permission: 'master'
+        },
+        {
           reg: '^#chatgpt切换(必应|Bing)$',
           fnc: 'useReversedBingSolution',
           permission: 'master'
@@ -118,7 +123,12 @@ export class ChatgptManagement extends plugin {
 
   async useReversedAPIBasedSolution (e) {
     await redis.set('CHATGPT:USE', 'apiReverse')
-    await this.reply('已切换到基于第三方Reversed API的解决方案，如果已经对话过建议执行`#结束对话`避免引起404错误')
+    await this.reply('已切换到基于第三方Reversed CompletionAPI的解决方案，如果已经对话过建议执行`#结束对话`避免引起404错误')
+  }
+
+  async useReversedAPIBasedSolution2 (e) {
+    await redis.set('CHATGPT:USE', 'api3')
+    await this.reply('已切换到基于第三方Reversed ConversastionAPI的解决方案，如果已经对话过建议执行`#结束对话`避免引起404错误')
   }
 
   async useReversedBingSolution (e) {
