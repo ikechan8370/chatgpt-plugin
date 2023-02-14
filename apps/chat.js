@@ -336,7 +336,7 @@ export class chatgpt extends plugin {
   }
 
   async sendMessage (prompt, conversation = {}, use) {
-
+    conversation.timeoutMs = 120000
     // console.log(use)
     if (use === 'browser') {
       return await this.chatgptBrowserBased(prompt, conversation)
@@ -409,6 +409,7 @@ export class chatgpt extends plugin {
         upsertMessage,
         getMessageById,
         completionParams,
+        apiBaseUrl: Config.api || 'https://api.openai.com',
         assistantLabel: Config.assistantLabel
       })
       const currentDate = new Date().toISOString().split('T')[0]
