@@ -99,6 +99,7 @@ export class ChatgptManagement extends plugin {
     if (!token.startsWith('ey') || token.length < 20) {
       await this.reply('ChatGPT AccessToken格式错误', true)
       this.finish('saveToken')
+      return
     }
     await redis.set('CHATGPT:TOKEN', token)
     await this.reply('ChatGPT AccessToken设置成功', true)
