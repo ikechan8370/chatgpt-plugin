@@ -6,7 +6,7 @@ import mjAPI from 'mathjax-node'
 import { uuid } from 'oicq/lib/common.js'
 import delay from 'delay'
 import { ChatGPTAPI } from 'chatgpt'
-import { ChatGPTClient, BingAIClient  } from '@waylaidwanderer/chatgpt-api'
+import { ChatGPTClient, BingAIClient } from '@waylaidwanderer/chatgpt-api'
 import { getMessageById, tryTimes, upsertMessage } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
@@ -336,7 +336,11 @@ export class chatgpt extends plugin {
   }
 
   async sendMessage (prompt, conversation = {}, use) {
-    conversation.timeoutMs = 120000
+    if (!conversation) {
+      conversation = {
+        timeoutMs: 120000
+      }
+    }
     // console.log(use)
     if (use === 'browser') {
       return await this.chatgptBrowserBased(prompt, conversation)
