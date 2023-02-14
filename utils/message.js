@@ -44,8 +44,7 @@ export class OfficialChatGPTClient {
       model: Config.plus ? 'text-davinci-002-render-sha' : 'text-davinci-002-render-sha',
       parent_message_id: parentMessageId
     }
-
-    const res = await fetch(url, {
+    let option = {
       method: 'POST',
       body: JSON.stringify(body),
       signal: abortController?.signal,
@@ -56,9 +55,12 @@ export class OfficialChatGPTClient {
         'content-type': 'application/json',
         referer: 'https://chat.openai.com/chat'
       },
-      referrer: 'https://chat.openai.com/chat',
-      agent: new HttpsProxyAgent(Config.proxy)
-    })
+      referrer: 'https://chat.openai.com/chat'
+    }
+    if (Config.proxy) {
+      option.agent = new HttpsProxyAgent(Config.proxy)
+    }
+    const res = await fetch(url, option)
     const decoder = new TextDecoder('utf-8')
     const bodyBytes = await res.arrayBuffer()
     const bodyText = decoder.decode(bodyBytes)
