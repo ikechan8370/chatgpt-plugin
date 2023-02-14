@@ -497,7 +497,7 @@ export class ChatGPTPuppeteer extends Puppeteer {
           }
         }
       ],
-      model: Config.plus ? 'text-davinci-002-render-paid' : 'text-davinci-002-render',
+      model: Config.plus ? 'text-davinci-002-render-paid' : 'text-davinci-002-render-sha',
       parent_message_id: parentMessageId
     }
 
