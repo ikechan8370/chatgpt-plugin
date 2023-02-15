@@ -68,7 +68,7 @@ export async function makeForwardMsg (e, msg = [], dec = '') {
 }
 
 // @see https://github.com/sindresorhus/p-timeout
-export function pTimeout (
+export async function pTimeout (
   promise,
   options
 ) {
@@ -149,4 +149,23 @@ export function pTimeout (
   }
 
   return cancelablePromise
+}
+/**
+     TODO: Remove below function and just 'reject(signal.reason)' when targeting Node 18.
+     */
+function getAbortedReason (signal) {
+  const reason =
+            signal.reason === undefined
+              ? getDOMException('This operation was aborted.')
+              : signal.reason
+
+  return reason instanceof Error ? reason : getDOMException(reason)
+}
+/**
+     TODO: Remove AbortError and just throw DOMException when targeting Node 18.
+     */
+function getDOMException (errorMessage) {
+  return globalThis.DOMException === undefined
+    ? new Error(errorMessage)
+    : new DOMException(errorMessage)
 }

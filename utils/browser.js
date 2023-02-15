@@ -5,7 +5,7 @@ import { getOpenAIAuth } from './openai-auth.js'
 import delay from 'delay'
 import { v4 as uuidv4 } from 'uuid'
 import { pTimeout } from './common.js'
-
+console.log({ pTimeout })
 const chatUrl = 'https://chat.openai.com/chat'
 let puppeteer = {}
 
@@ -776,7 +776,7 @@ export async function browserPostEventStream (
           abortController.abort()
         }
       }
-
+      console.log({ pTimeout })
       return await pTimeout(responseP, {
         milliseconds: timeoutMs,
         message: 'ChatGPT timed out waiting for response'
@@ -817,9 +817,9 @@ export async function browserPostEventStream (
       conversationResponse
     }
   }
-//  async function pTimeout (promise, option) {
-//    return await pTimeout(promise, option)
-//  }
+  //  async function pTimeout (promise, option) {
+  //    return await pTimeout(promise, option)
+  //  }
   async function * streamAsyncIterable (stream) {
     const reader = stream.getReader()
     try {
@@ -1002,15 +1002,89 @@ export async function browserPostEventStream (
     )
   }
 
-  /**
-     TODO: Remove AbortError and just throw DOMException when targeting Node 18.
-     */
-  function getDOMException (errorMessage) {
-    return globalThis.DOMException === undefined
-      ? new Error(errorMessage)
-      : new DOMException(errorMessage)
-  }
+  // @see https://github.com/sindresorhus/p-timeout
+  function pTimeout (
+    promise,
+    options
+  ) {
+    const {
+      milliseconds,
+      fallback,
+      message,
+      customTimers = { setTimeout, clearTimeout }
+    } = options
 
+    let timer
+
+    const cancelablePromise = new Promise((resolve, reject) => {
+      if (typeof milliseconds !== 'number' || Math.sign(milliseconds) !== 1) {
+        throw new TypeError(
+              `Expected \`milliseconds\` to be a positive number, got \`${milliseconds}\``
+        )
+      }
+
+      if (milliseconds === Number.POSITIVE_INFINITY) {
+        resolve(promise)
+        return
+      }
+
+      if (options.signal) {
+        const { signal } = options
+        if (signal.aborted) {
+          reject(getAbortedReason(signal))
+        }
+
+        signal.addEventListener('abort', () => {
+          reject(getAbortedReason(signal))
+        })
+      }
+
+      timer = customTimers.setTimeout.call(
+        undefined,
+        () => {
+          if (fallback) {
+            try {
+              resolve(fallback())
+            } catch (error) {
+              reject(error)
+            }
+
+            return
+          }
+
+          const errorMessage =
+                        typeof message === 'string'
+                          ? message
+                          : `Promise timed out after ${milliseconds} milliseconds`
+          const timeoutError =
+                        message instanceof Error ? message : new Error(errorMessage)
+
+          if (typeof promise.cancel === 'function') {
+            promise.cancel()
+          }
+
+          reject(timeoutError)
+        },
+        milliseconds
+      )
+      ;(async () => {
+        try {
+          resolve(await promise)
+        } catch (error) {
+          reject(error)
+        } finally {
+          customTimers.clearTimeout.call(undefined, timer)
+        }
+      })()
+    })
+
+    cancelablePromise.clear = () => {
+      customTimers.clearTimeout.call(undefined, timer)
+      timer = undefined
+    }
+
+    return cancelablePromise
+  }
   /**
      TODO: Remove below function and just 'reject(signal.reason)' when targeting Node 18.
      */
@@ -1021,5 +1095,13 @@ export async function browserPostEventStream (
               : signal.reason
 
     return reason instanceof Error ? reason : getDOMException(reason)
+  }
+  /**
+     TODO: Remove AbortError and just throw DOMException when targeting Node 18.
+     */
+  function getDOMException (errorMessage) {
+    return globalThis.DOMException === undefined
+      ? new Error(errorMessage)
+      : new DOMException(errorMessage)
   }
 }

@@ -69,9 +69,9 @@ export async function getOpenAIAuth (opt) {
           }),
           page.click('#__next .btn-primary')
         ])
-        await delay(500)
+        await delay(1000)
       } while (page.url().endsWith('/auth/login'))
-
+      logger.mark('进入登录页面')
       await checkForChatGPTAtCapacity(page)
 
       let submitP
