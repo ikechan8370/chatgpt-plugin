@@ -350,7 +350,7 @@ export class ChatGPTPuppeteer extends Puppeteer {
       await maximizePage(this._page)
       await this._page.reload({
         waitUntil: 'networkidle2',
-        timeout: 2 * 60 * 1000 // 2 minutes
+        timeout: Config.chromeTimeoutMS // 2 minutes
       })
       if (this._minimize) {
         await minimizePage(this._page)
@@ -465,7 +465,7 @@ export class ChatGPTPuppeteer extends Puppeteer {
         )
         throw err
       }
-      let timeout = 10000
+      let timeout = 100000
       if (isAuthenticated) {
         while (!this._accessToken) {
           // wait for async response hook result
