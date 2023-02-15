@@ -62,7 +62,7 @@ export const Config = {
   proxy: PROXY,
   debug: false,
   // 各个地方的默认超时时间
-  defaultTimeoutMs: 12000,
+  defaultTimeoutMs: 1000 * 60 * 2,
   // 浏览器默认超时，浏览器可能需要更高的超时时间
   chromeTimeoutMS: 120000
 }
