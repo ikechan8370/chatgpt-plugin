@@ -412,7 +412,9 @@ export class chatgpt extends plugin {
       try {
         const responseP = new Promise(
           async (resolve, reject) => {
-            let bingResponse = await bingAIClient.sendMessage(prompt, conversation || {})
+            let bingResponse = await bingAIClient.sendMessage(prompt, conversation || {},(token) => {
+                console.debug(token);
+            })
             return resolve(bingResponse)
           })
         response = await pTimeout(responseP, {
