@@ -415,7 +415,7 @@ export class chatgpt extends plugin {
             return resolve(bingResponse)
           })
         response = await pTimeout(responseP, {
-          milliseconds: Config.defaultTimeoutMs,
+          milliseconds: Config.bingTimeoutMs,
           message: 'Bing timed out waiting for response'
         })
         if (response.details.adaptiveCards?.[0]?.body?.[0]?.text?.trim()) {
