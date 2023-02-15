@@ -7,8 +7,8 @@ import { uuid } from 'oicq/lib/common.js'
 import delay from 'delay'
 import { ChatGPTAPI } from 'chatgpt'
 import { ChatGPTClient, BingAIClient } from '@waylaidwanderer/chatgpt-api'
-import { getMessageById, makeForwardMsg, tryTimes, upsertMessage } from '../utils/common.js'
-import { ChatGPTPuppeteer, pTimeout } from '../utils/browser.js'
+import { getMessageById, makeForwardMsg, tryTimes, upsertMessage, pTimeout } from '../utils/common.js'
+import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
 import { OfficialChatGPTClient } from '../utils/message.js'
 // import puppeteer from '../utils/browser.js'
@@ -416,7 +416,7 @@ export class chatgpt extends plugin {
             return resolve(bingResponse)
           })
         response = await pTimeout(responseP, {
-          milliseconds: Config.defaultTimeoutMs,
+          milliseconds: Config.bingTimeoutMs,
           message: 'Bing timed out waiting for response'
         })
         if (response.details.adaptiveCards?.[0]?.body?.[0]?.text?.trim()) {
