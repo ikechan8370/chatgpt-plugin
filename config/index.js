@@ -60,5 +60,7 @@ export const Config = {
   '2captchaToken': '',
   // http或socks5代理
   proxy: PROXY,
-  debug: true
+  debug: false,
+  // 各个地方的默认超时时间
+  defaultTimeoutMs: 12000
 }

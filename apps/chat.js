@@ -7,10 +7,10 @@ import { uuid } from 'oicq/lib/common.js'
 import delay from 'delay'
 import { ChatGPTAPI } from 'chatgpt'
 import { ChatGPTClient, BingAIClient } from '@waylaidwanderer/chatgpt-api'
-import { getMessageById, tryTimes, upsertMessage } from '../utils/common.js'
-import { ChatGPTPuppeteer } from '../utils/browser.js'
+import { getMessageById, makeForwardMsg, tryTimes, upsertMessage } from '../utils/common.js'
+import { ChatGPTPuppeteer, pTimeout } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
-import {OfficialChatGPTClient} from "../utils/message.js";
+import { OfficialChatGPTClient } from '../utils/message.js'
 // import puppeteer from '../utils/browser.js'
 // import showdownKatex from 'showdown-katex'
 const blockWords = Config.blockWords
@@ -328,6 +328,15 @@ export class chatgpt extends plugin {
         await e.runtime.render('chatgpt-plugin', 'content/index', { content: converted, prompt, senderName: e.sender.nickname })
       } else {
         await this.reply(`${response}`, e.isGroup)
+        if (chatMessage?.quote) {
+          let quotemessage = []
+          chatMessage.quote.forEach(function (item, index) {
+            if (item) {
+              quotemessage.push(`${item}\n`)
+            }
+          })
+          this.reply(await makeForwardMsg(this.e, quotemessage))
+        }
       }
       // 移除队列首位，释放锁
       await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
@@ -342,7 +351,7 @@ export class chatgpt extends plugin {
   async sendMessage (prompt, conversation = {}, use) {
     if (!conversation) {
       conversation = {
-        timeoutMs: 120000
+        timeoutMs: Config.defaultTimeoutMs
       }
     }
     // console.log(use)
@@ -398,9 +407,37 @@ export class chatgpt extends plugin {
         userToken: bingToken, // "_U" cookie from bing.com
         debug: Config.debug
       })
-      let response = await bingAIClient.sendMessage(prompt, conversation || {})
+      let response
+      try {
+        const responseP = new Promise(
+          async (resolve, reject) => {
+            let bingResponse = await bingAIClient.sendMessage(prompt, conversation || {})
+            return resolve(bingResponse)
+          })
+        response = await pTimeout(responseP, {
+          milliseconds: Config.defaultTimeoutMs,
+          message: 'Bing timed out waiting for response'
+        })
+        if (response.details.adaptiveCards?.[0]?.body?.[0]?.text?.trim()) {
+          response.response = response.response.replace(/\[\^[0-9]+\^\]/g, (str) => {
+            return str.replace(/[/^]/g, '')
+          })
+          response.quote = response.details.adaptiveCards?.[0]?.body?.[0]?.text?.trim().replace(/\[\^[0-9]+\^\]/g, '').replace(response.response, '').split('\n')
+        }
+      } catch (error) {
+        const code = error?.data?.code || 503
+        if (code === 503) {
+          logger.error(error)
+        }
+        console.error(error)
+        const message = error?.message || error?.data?.message || '与Bing通信时出错.'
+        return {
+          text: message
+        }
+      }
       return {
         text: response.response,
+        quote: response.quote,
         conversationId: response.conversationId,
         clientId: response.clientId,
         invocationId: response.invocationId,
