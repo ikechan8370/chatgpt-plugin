@@ -466,7 +466,6 @@ export class chatgpt extends plugin {
         upsertMessage,
         getMessageById,
         completionParams,
-        apiReverseProxyUrl: Config.api,
         assistantLabel: Config.assistantLabel
       })
       const currentDate = new Date().toISOString().split('T')[0]
