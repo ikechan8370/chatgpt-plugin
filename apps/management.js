@@ -1,4 +1,6 @@
 import plugin from '../../../lib/plugins/plugin.js'
+import {Config} from "../config/index.js";
+import { BingAIClient } from '@waylaidwanderer/chatgpt-api'
 
 export class ChatgptManagement extends plugin {
   constructor (e) {
@@ -92,11 +94,29 @@ export class ChatgptManagement extends plugin {
   async saveBingToken () {
     if (!this.e.msg) return
     let token = this.e.msg
-    if (token.length<215) {
-      await this.reply('ChatGPT AccessToken格式错误', true)
+    if (token.length < 215) {
+      await this.reply('Bing Token格式错误，请确定获取了有效的_U Cookie或完整的Cookie', true)
       this.finish('saveToken')
       return
     }
+    let cookie = undefined
+    if (token?.indexOf('=') > -1) {
+      cookie = token
+    }
+    const bingAIClient = new BingAIClient({
+      userToken: token, // "_U" cookie from bing.com
+      cookie,
+      debug: Config.debug
+    })
+    // 异步就好了，不卡着这个context了
+    bingAIClient.createNewConversation().then(async res => {
+      if (res.clientId) {
+        logger.info("bing token 有效")
+      } else {
+        logger.error('bing token 无效', res)
+        await this.reply(`经检测，Bing Token无效。来自Bing的错误提示：${res.result?.message}`)
+      }
+    })
     await redis.set('CHATGPT:BING_TOKEN', token)
     await this.reply('Bing Token设置成功', true)
     this.finish('saveBingToken')
