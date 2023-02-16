@@ -1,5 +1,5 @@
 // 例如http://127.0.0.1:7890
-const PROXY = ''
+const PROXY = 'http://127.0.0.1:7890'
 const API_KEY = ''
 
 export const Config = {
