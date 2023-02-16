@@ -92,7 +92,11 @@ export class ChatgptManagement extends plugin {
   async saveBingToken () {
     if (!this.e.msg) return
     let token = this.e.msg
-    // todo 未知bing token是什么样的，有号的可以加个校验在这
+    if (token.length<215) {
+      await this.reply('ChatGPT AccessToken格式错误', true)
+      this.finish('saveToken')
+      return
+    }
     await redis.set('CHATGPT:BING_TOKEN', token)
     await this.reply('Bing Token设置成功', true)
     this.finish('saveBingToken')
