@@ -433,7 +433,7 @@ export class chatgpt extends plugin {
           message: reply != '' ? `${reply}\n不行了，我的大脑过载了，处理不过来了!` : '必应的小脑子不好使了，不知道怎么回答！'
         })
         */
-        response = await bingAIClient.sendMessage(prompt, conversation || {},(token) => {
+        response = await bingAIClient.sendMessage(prompt, conversation || {}, (token) => {
             reply += token
         })
         if (response.details.adaptiveCards?.[0]?.body?.[0]?.text?.trim()) {
