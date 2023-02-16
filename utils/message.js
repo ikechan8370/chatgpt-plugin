@@ -18,7 +18,7 @@ export class OfficialChatGPTClient {
   async sendMessage (prompt, opts = {}) {
     let {
       timeoutMs = this._timeoutMs,
-      conversationId = uuidv4(),
+      conversationId,
       parentMessageId = uuidv4(),
       messageId = uuidv4(),
       action = 'next'
@@ -40,9 +40,11 @@ export class OfficialChatGPTClient {
           }
         }
       ],
-      conversationId,
       model: Config.plus ? 'text-davinci-002-render-sha' : 'text-davinci-002-render-sha',
       parent_message_id: parentMessageId
+    }
+    if (conversationId) {
+      body.conversation_id = conversationId
     }
     let option = {
       method: 'POST',
@@ -68,11 +70,15 @@ export class OfficialChatGPTClient {
     let fullResponse = events[events.length - 2]
     fullResponse = _.trimStart(fullResponse, 'data: ')
     if (Config.debug) {
-      logger.debug(fullResponse)
+      logger.mark(fullResponse)
     }
-    fullResponse = JSON.parse(fullResponse)
-    if (!fullResponse.message) {
-      throw new Error(fullResponse.detail || 'unkown error')
+    try {
+      fullResponse = JSON.parse(fullResponse)
+    } catch (e) {
+      throw new Error(bodyText || 'unkown error, please check log')
+    }
+    if (!fullResponse?.message) {
+      throw new Error(bodyText || 'unkown error, please check log')
     }
     return {
       text: fullResponse.message.content.parts[0],

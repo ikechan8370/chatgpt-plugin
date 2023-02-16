@@ -64,7 +64,7 @@ let helpData = [
       {
         icon: 'switch',
         title: '#chatgpt切换浏览器/API/API2/API3/Bing',
-        desc: '切换使用的后端为浏览器或OpenAI API/第三方API/官方ChatGPT API(绕过CF)/Bing'
+        desc: '切换使用的后端为浏览器或OpenAI API/第三方API/反代官网API/Bing'
       },
       {
         icon: 'help',

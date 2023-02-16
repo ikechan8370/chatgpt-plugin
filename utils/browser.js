@@ -4,7 +4,8 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth'
 import { getOpenAIAuth } from './openai-auth.js'
 import delay from 'delay'
 import { v4 as uuidv4 } from 'uuid'
-
+import { pTimeout } from './common.js'
+console.log({ pTimeout })
 const chatUrl = 'https://chat.openai.com/chat'
 let puppeteer = {}
 
@@ -350,7 +351,7 @@ export class ChatGPTPuppeteer extends Puppeteer {
       await maximizePage(this._page)
       await this._page.reload({
         waitUntil: 'networkidle2',
-        timeout: 2 * 60 * 1000 // 2 minutes
+        timeout: Config.chromeTimeoutMS // 2 minutes
       })
       if (this._minimize) {
         await minimizePage(this._page)
@@ -465,7 +466,7 @@ export class ChatGPTPuppeteer extends Puppeteer {
         )
         throw err
       }
-      let timeout = 10000
+      let timeout = 100000
       if (isAuthenticated) {
         while (!this._accessToken) {
           // wait for async response hook result
@@ -775,7 +776,7 @@ export async function browserPostEventStream (
           abortController.abort()
         }
       }
-
+      console.log({ pTimeout })
       return await pTimeout(responseP, {
         milliseconds: timeoutMs,
         message: 'ChatGPT timed out waiting for response'
@@ -816,7 +817,9 @@ export async function browserPostEventStream (
       conversationResponse
     }
   }
-
+  //  async function pTimeout (promise, option) {
+  //    return await pTimeout(promise, option)
+  //  }
   async function * streamAsyncIterable (stream) {
     const reader = stream.getReader()
     try {
@@ -999,27 +1002,6 @@ export async function browserPostEventStream (
     )
   }
 
-  /**
-     TODO: Remove AbortError and just throw DOMException when targeting Node 18.
-     */
-  function getDOMException (errorMessage) {
-    return globalThis.DOMException === undefined
-      ? new Error(errorMessage)
-      : new DOMException(errorMessage)
-  }
-
-  /**
-     TODO: Remove below function and just 'reject(signal.reason)' when targeting Node 18.
-     */
-  function getAbortedReason (signal) {
-    const reason =
-            signal.reason === undefined
-              ? getDOMException('This operation was aborted.')
-              : signal.reason
-
-    return reason instanceof Error ? reason : getDOMException(reason)
-  }
-
   // @see https://github.com/sindresorhus/p-timeout
   function pTimeout (
     promise,
@@ -1037,7 +1019,7 @@ export async function browserPostEventStream (
     const cancelablePromise = new Promise((resolve, reject) => {
       if (typeof milliseconds !== 'number' || Math.sign(milliseconds) !== 1) {
         throw new TypeError(
-                `Expected \`milliseconds\` to be a positive number, got \`${milliseconds}\``
+              `Expected \`milliseconds\` to be a positive number, got \`${milliseconds}\``
         )
       }
 
@@ -1102,5 +1084,24 @@ export async function browserPostEventStream (
     }
 
     return cancelablePromise
+  }
+  /**
+     TODO: Remove below function and just 'reject(signal.reason)' when targeting Node 18.
+     */
+  function getAbortedReason (signal) {
+    const reason =
+            signal.reason === undefined
+              ? getDOMException('This operation was aborted.')
+              : signal.reason
+
+    return reason instanceof Error ? reason : getDOMException(reason)
+  }
+  /**
+     TODO: Remove AbortError and just throw DOMException when targeting Node 18.
+     */
+  function getDOMException (errorMessage) {
+    return globalThis.DOMException === undefined
+      ? new Error(errorMessage)
+      : new DOMException(errorMessage)
   }
 }

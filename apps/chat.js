@@ -7,10 +7,10 @@ import { uuid } from 'oicq/lib/common.js'
 import delay from 'delay'
 import { ChatGPTAPI } from 'chatgpt'
 import { ChatGPTClient, BingAIClient } from '@waylaidwanderer/chatgpt-api'
-import { getMessageById, tryTimes, upsertMessage } from '../utils/common.js'
+import { getMessageById, makeForwardMsg, tryTimes, upsertMessage, pTimeout } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
-import {OfficialChatGPTClient} from "../utils/message.js";
+import { OfficialChatGPTClient } from '../utils/message.js'
 // import puppeteer from '../utils/browser.js'
 // import showdownKatex from 'showdown-katex'
 const blockWords = Config.blockWords
@@ -201,32 +201,33 @@ export class chatgpt extends plugin {
         return false
       }
     }
-
-    let randomId = uuid()
-    // 队列队尾插入，开始排队
-    await redis.rPush('CHATGPT:CHAT_QUEUE', [randomId])
-    let confirm = await redis.get('CHATGPT:CONFIRM')
-    let confirmOn = confirm === 'on'
-    if (await redis.lIndex('CHATGPT:CHAT_QUEUE', 0) === randomId) {
-      if (confirmOn) {
-        await this.reply('我正在思考如何回复你，请稍等', true, { recallMsg: 8 })
-      }
-    } else {
-      if (confirmOn) {
-        let length = await redis.lLen('CHATGPT:CHAT_QUEUE') - 1
-        await this.reply(`我正在思考如何回复你，请稍等，当前队列前方还有${length}个问题`, true, { recallMsg: 8 })
-        logger.info(`chatgpt队列前方还有${length}个问题。管理员可通过#清空队列来强制清除所有等待的问题。`)
-      }
-      // 开始排队
-      while (true) {
-        if (await redis.lIndex('CHATGPT:CHAT_QUEUE', 0) === randomId) {
-          break
-        } else {
-          await delay(1500)
+    const use = await redis.get('CHATGPT:USE')
+    if (use != 'bing') {
+      let randomId = uuid()
+      // 队列队尾插入，开始排队
+      await redis.rPush('CHATGPT:CHAT_QUEUE', [randomId])
+      let confirm = await redis.get('CHATGPT:CONFIRM')
+      let confirmOn = confirm === 'on'
+      if (await redis.lIndex('CHATGPT:CHAT_QUEUE', 0) === randomId) {
+        if (confirmOn) {
+          await this.reply('我正在思考如何回复你，请稍等', true, { recallMsg: 8 })
+        }
+      } else {
+        if (confirmOn) {
+          let length = await redis.lLen('CHATGPT:CHAT_QUEUE') - 1
+          await this.reply(`我正在思考如何回复你，请稍等，当前队列前方还有${length}个问题`, true, { recallMsg: 8 })
+          logger.info(`chatgpt队列前方还有${length}个问题。管理员可通过#清空队列来强制清除所有等待的问题。`)
+        }
+        // 开始排队
+        while (true) {
+          if (await redis.lIndex('CHATGPT:CHAT_QUEUE', 0) === randomId) {
+            break
+          } else {
+            await delay(1500)
+          }
         }
       }
     }
-
     logger.info(`chatgpt prompt: ${prompt}`)
     // try {
     //   await this.chatGPTApi.init()
@@ -234,7 +235,7 @@ export class chatgpt extends plugin {
     //   await this.reply('chatgpt初始化出错：' + e.msg, true)
     // }
     let previousConversation = await redis.get(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
-    let conversation = null
+    let conversation = {}
     if (!previousConversation) {
       let ctime = new Date()
       previousConversation = {
@@ -254,8 +255,10 @@ export class chatgpt extends plugin {
         conversationSignature: previousConversation.conversationSignature
       }
     }
-    const use = await redis.get('CHATGPT:USE')
     try {
+      if (Config.debug) {
+        logger.mark(conversation)
+      }
       let chatMessage = await this.sendMessage(prompt, conversation, use)
       previousConversation.conversation = {
         conversationId: chatMessage.conversationId
@@ -325,21 +328,35 @@ export class chatgpt extends plugin {
         await e.runtime.render('chatgpt-plugin', 'content/index', { content: converted, prompt, senderName: e.sender.nickname })
       } else {
         await this.reply(`${response}`, e.isGroup)
+        if (chatMessage?.quote) {
+          let quotemessage = []
+          chatMessage.quote.forEach(function (item, index) {
+            if (item != '') {
+              quotemessage.push(`${item}\n`)
+            }
+          })
+          if(quotemessage.length > 0)
+          this.reply(await makeForwardMsg(this.e, quotemessage))
+        }
       }
-      // 移除队列首位，释放锁
-      await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
+      if (use !== 'bing') {
+        // 移除队列首位，释放锁
+        await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
+      }    
     } catch (e) {
       logger.error(e)
-      // 异常了也要腾地方（todo 大概率后面的也会异常，要不要一口气全杀了）
-      await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
-      await this.reply(`与OpenAI通信异常，请稍后重试：${e}`, true, { recallMsg: e.isGroup ? 10 : 0 })
+      if (use !== 'bing') {
+        // 异常了也要腾地方（todo 大概率后面的也会异常，要不要一口气全杀了）
+        await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
+      }
+      await this.reply(`通信异常，请稍后重试：${e}`, true, { recallMsg: e.isGroup ? 10 : 0 })
     }
   }
 
   async sendMessage (prompt, conversation = {}, use) {
     if (!conversation) {
       conversation = {
-        timeoutMs: 120000
+        timeoutMs: Config.defaultTimeoutMs
       }
     }
     // console.log(use)
@@ -395,9 +412,39 @@ export class chatgpt extends plugin {
         userToken: bingToken, // "_U" cookie from bing.com
         debug: Config.debug
       })
-      let response = await bingAIClient.sendMessage(prompt, conversation || {})
+      let response
+      try {
+        const responseP = new Promise(
+          async (resolve, reject) => {
+            let bingResponse = await bingAIClient.sendMessage(prompt, conversation || {},(token) => {
+                console.debug(token);
+            })
+            return resolve(bingResponse)
+          })
+        response = await pTimeout(responseP, {
+          milliseconds: Config.bingTimeoutMs,
+          message: 'Bing timed out waiting for response'
+        })
+        if (response.details.adaptiveCards?.[0]?.body?.[0]?.text?.trim()) {
+          response.response = response.response.replace(/\[\^[0-9]+\^\]/g, (str) => {
+            return str.replace(/[/^]/g, '')
+          })
+          response.quote = response.details.adaptiveCards?.[0]?.body?.[0]?.text?.replace(/\[\^[0-9]+\^\]/g, '').replace(response.response, '').split('\n')
+        }
+      } catch (error) {
+        const code = error?.data?.code || 503
+        if (code === 503) {
+          logger.error(error)
+        }
+        console.error(error)
+        const message = error?.message || error?.data?.message || '与Bing通信时出错.'
+        return {
+          text: message
+        }
+      }
       return {
         text: response.response,
+        quote: response.quote,
         conversationId: response.conversationId,
         clientId: response.clientId,
         invocationId: response.invocationId,
@@ -426,7 +473,6 @@ export class chatgpt extends plugin {
         upsertMessage,
         getMessageById,
         completionParams,
-        apiReverseProxyUrl: Config.api,
         assistantLabel: Config.assistantLabel
       })
       const currentDate = new Date().toISOString().split('T')[0]

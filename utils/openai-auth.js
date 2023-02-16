@@ -10,7 +10,7 @@ export async function getOpenAIAuth (opt) {
     password,
     browser,
     page,
-    timeoutMs = 2 * 60 * 1000,
+    timeoutMs = Config.chromeTimeoutMS,
     isGoogleLogin = false,
     captchaToken = Config['2captchaToken'],
     executablePath = Config.chromePath
@@ -48,7 +48,7 @@ export async function getOpenAIAuth (opt) {
       while (retry > 0) {
         try {
           await waitForConditionOrAtCapacity(page, () =>
-            page.waitForSelector('#__next .btn-primary', { timeout: 2000 })
+            page.waitForSelector('#__next .btn-primary', { timeout: timeoutMs / 3 })
           )
         } catch (e) {
           await checkForChatGPTAtCapacity(page)
@@ -56,7 +56,7 @@ export async function getOpenAIAuth (opt) {
         retry--
       }
       await waitForConditionOrAtCapacity(page, () =>
-        page.waitForSelector('#__next .btn-primary', { timeout: 2000 })
+        page.waitForSelector('#__next .btn-primary', { timeout: timeoutMs / 3 })
       )
       await delay(500)
 
@@ -69,9 +69,9 @@ export async function getOpenAIAuth (opt) {
           }),
           page.click('#__next .btn-primary')
         ])
-        await delay(500)
+        await delay(1000)
       } while (page.url().endsWith('/auth/login'))
-
+      logger.mark('进入登录页面')
       await checkForChatGPTAtCapacity(page)
 
       let submitP
@@ -156,7 +156,7 @@ export async function getOpenAIAuth (opt) {
 
 async function checkForChatGPTAtCapacity (page, opts = {}) {
   const {
-    timeoutMs = 2 * 60 * 1000, // 2 minutes
+    timeoutMs = Config.chromeTimeoutMS, // 2 minutes
     pollingIntervalMs = 3000,
     retries = 10
   } = opts
