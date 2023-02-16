@@ -1,10 +1,10 @@
 # 云崽qq机器人的chatgpt插件
 
 * 支持单人连续对话Conversation
-* API模式下，使用 GPT-3 API及相关模型配置尽可能逼近ChatGPT体验，支持自定义部分模型参数 ~~使用`text-chat-davinci-002-sh-alpha-aoruigiofdj83`模型，原汁原味ChatGPT体验(20230211只存活了五分钟)~~
+* API模式下，使用 GPT-3 API及相关模型配置尽可能逼近ChatGPT体验，支持自定义部分模型参数，仅需OpenAI Api Key，开箱即用
 * 支持问答图片截图
-* 仅需OpenAI Api Key，开箱即用
-* 提供基于浏览器的解决方案作为备选，有条件且希望得到更好回答质量可以选择使用浏览器模式。
+* API3模式下，绕过Cloudflare防护直接访问ChatGPT的SSE API，与官方体验一致，且保留对话记录，在官网可查。
+* 提供基于浏览器的解决方案作为备选，API3不可用的情况下或担心账户安全的用户可以选择使用浏览器模式。
 * 支持新Bing（Beta）
 
 ## 版本要求
@@ -17,9 +17,10 @@ Node.js >= 18 / Node.js >= 14(with node-fetch)
 > API模式和浏览器模式如何选择？
 >
 > * API模式会调用OpenAI官方提供的GPT-3 LLM API，只需要提供API Key。一般情况下，该种方式响应速度更快，可配置项多，且不会像chatGPT官网一样总出现不可用的现象，但其聊天效果明显较官网差。但注意GPT-3的API调用是收费的，新用户有18美元试用金可用于支付，价格为`$0.0200/ 1K tokens`.(问题和回答加起来算token)
-> * API2模式会调用第三方提供的基于OpenAI text-davinci-002-render模型（官网同款）的API，需要提供ChatGPT的Token。效果比单纯的GPT-3 API好很多，但同时将Token提供给了第三方API，其中风险自行承担。#chatgpt设置token
-> * 浏览器模式通过在本地启动Chrome等浏览器模拟用户访问ChatGPT网站，使得获得和官方以及API2模式一模一样的回复质量，同时保证安全性。缺点是本方法对环境要求较高，需要提供桌面环境和一个可用的代理（能够访问ChatGPT的IP地址），且响应速度不如API，而且高峰期容易无法使用。
-> * 必应（Bing）将调用微软新必应接口进行对话。需要在必应网页能够正常使用新必应且设置有效的Bing登录Cookie方可使用，具体方法为[1]登录bing.com，[2]点击左上角的“聊天”，[3]按F12进入开发者模式，[4]刷新页面，[5]在“网络”中搜索“_U”字段并从右侧标头信息里找到cookie内容。#chatgpt设置必应token. ("_U" cookie from bing.com)
+> * 【当前不可用】API2模式会调用第三方提供的基于OpenAI text-davinci-002-render模型（官网同款）的API，需要提供ChatGPT的Token。效果比单纯的GPT-3 API好很多，但同时将Token提供给了第三方API，其中风险自行承担。#chatgpt设置token
+> * API3模式会调用第三方提供的官网反代API，他会帮你绕过CF防护，需要提供ChatGPT的Token。效果与官网和浏览器一致，但稳定性不一定。设置token和API2方法一样。#chatgpt设置token
+> * 浏览器模式通过在本地启动Chrome等浏览器模拟用户访问ChatGPT网站，使得获得和官方以及API2模式一模一样的回复质量，同时保证安全性。缺点是本方法对环境要求较高，需要提供桌面环境和一个可用的代理（能够访问ChatGPT的IP地址），且响应速度不如API，而且高峰期容易无法使用。一般作为API3的下位替代。
+> * 必应（Bing）将调用微软新必应接口进行对话。需要在必应网页能够正常使用新必应且设置有效的Bing登录Cookie方可使用，具体方法为[1]登录bing.com，[2]点击左上角的“聊天”，[3]按F12进入开发者模式，[4]刷新页面，[5]在“网络”中任意请求的请求头（request headers）的cookie字段中，找到“_U”字段，复制其值即可。#chatgpt设置必应token. 
 1. 进入 Yunzai根目录
 2. 检查 Node.js 版本
 
@@ -35,8 +36,8 @@ node -v
 pnpm install -w undici chatgpt showdown mathjax-node delay uuid remark strip-markdown random puppeteer-extra-plugin-recaptcha puppeteer-extra puppeteer-extra-plugin-stealth @waylaidwanderer/chatgpt-api keyv-file
 ```
 
-**若使用API模式，chatgpt的版本号注意要大于4.2.0**
-
+** 若使用API模式，chatgpt的版本号注意要大于4.4.0 **
+** 若使用Bing模式，@waylaidwanderer/chatgpt-api 尽可能保持最新版本。**
 若不使用浏览器模式，可以不安装`random puppeteer-extra-plugin-recaptcha puppeteer-extra puppeteer-extra-plugin-stealth`这几个依赖，这几个依赖仅用于模拟浏览器登录。
 
 3. 克隆项目
@@ -77,7 +78,8 @@ git clone https://github.com/ikechan8370/chatgpt-plugin.git ./plugins/chatgpt-pl
 ## TODO
 * 更灵活的Conversation管理
 * 版本号和归档
-* API2模式下自动获取/刷新Token
+* API2/3模式下自动获取/刷新Token
+* API2/3模式下多token管理和切换
 
 ## 关于openai账号
 1. 注册openai账号
