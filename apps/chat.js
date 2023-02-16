@@ -339,13 +339,17 @@ export class chatgpt extends plugin {
           this.reply(await makeForwardMsg(this.e, quotemessage))
         }
       }
-      // 移除队列首位，释放锁
-      await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
+      if (use !== 'bing') {
+        // 移除队列首位，释放锁
+        await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
+      }    
     } catch (e) {
       logger.error(e)
-      // 异常了也要腾地方（todo 大概率后面的也会异常，要不要一口气全杀了）
-      await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
-      await this.reply(`与OpenAI通信异常，请稍后重试：${e}`, true, { recallMsg: e.isGroup ? 10 : 0 })
+      if (use !== 'bing') {
+        // 异常了也要腾地方（todo 大概率后面的也会异常，要不要一口气全杀了）
+        await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
+      }
+      await this.reply(`通信异常，请稍后重试：${e}`, true, { recallMsg: e.isGroup ? 10 : 0 })
     }
   }
 
