@@ -11,6 +11,7 @@ import { getMessageById, makeForwardMsg, tryTimes, upsertMessage, pTimeout } fro
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
 import { OfficialChatGPTClient } from '../utils/message.js'
+import fetch from 'node-fetch'
 // import puppeteer from '../utils/browser.js'
 // import showdownKatex from 'showdown-katex'
 const blockWords = Config.blockWords
@@ -492,7 +493,8 @@ export class chatgpt extends plugin {
         upsertMessage,
         getMessageById,
         completionParams,
-        assistantLabel: Config.assistantLabel
+        assistantLabel: Config.assistantLabel,
+        fetch
       })
       const currentDate = new Date().toISOString().split('T')[0]
       let promptPrefix = `You are ${Config.assistantLabel}, a large language model trained by OpenAI. ${Config.promptPrefixOverride || defaultPropmtPrefix}
