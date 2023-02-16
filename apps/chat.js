@@ -408,8 +408,13 @@ export class chatgpt extends plugin {
       if (!bingToken) {
         throw new Error('未绑定Bing Cookie，请使用#chatgpt设置必应token命令绑定Bing Cookie')
       }
+      let cookie = undefined
+      if (bingToken?.indexOf('=') > -1) {
+        cookie = bingToken
+      }
       const bingAIClient = new BingAIClient({
         userToken: bingToken, // "_U" cookie from bing.com
+        cookie,
         debug: Config.debug
       })
       let response
