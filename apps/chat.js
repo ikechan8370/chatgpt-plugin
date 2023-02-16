@@ -327,11 +327,16 @@ export class chatgpt extends plugin {
         /** 最后回复消息 */
         await e.runtime.render('chatgpt-plugin', 'content/index', { content: converted, prompt, senderName: e.sender.nickname })
       } else {
+        if (response.length > 1000 ) {
+          // 文字过多时自动切换到图片模式输出
+          let converted = converter.makeHtml(response)
+          await e.runtime.render('chatgpt-plugin', 'content/index', { content: converted, prompt, quote: chatMessage.quote, senderName: e.sender.nickname })
+        } else
         await this.reply(`${response}`, e.isGroup)
         if (chatMessage?.quote) {
           let quotemessage = []
           chatMessage.quote.forEach(function (item, index) {
-            if (item != '') {
+            if (item.trim() != '') {
               quotemessage.push(`${item}\n`)
             }
           })
@@ -413,19 +418,28 @@ export class chatgpt extends plugin {
         debug: Config.debug
       })
       let response
+      let reply = ''
       try {
+        /* bingAIClient中设置了无响应2分钟超时，应该不用单独处理了,后续看情况可以删掉这些代码
         const responseP = new Promise(
           async (resolve, reject) => {
             let bingResponse = await bingAIClient.sendMessage(prompt, conversation || {},(token) => {
-                console.debug(token);
+                reply += token
             })
             return resolve(bingResponse)
           })
         response = await pTimeout(responseP, {
           milliseconds: Config.bingTimeoutMs,
-          message: 'Bing timed out waiting for response'
+          message: reply != '' ? `${reply}\n不行了，我的大脑过载了，处理不过来了!` : '必应的小脑子不好使了，不知道怎么回答！'
+        })
+        */
+        response = await bingAIClient.sendMessage(prompt, conversation || {},(token) => {
+            reply += token
         })
         if (response.details.adaptiveCards?.[0]?.body?.[0]?.text?.trim()) {
+          if (response.response === undefined) {
+            response.response = response.details.adaptiveCards?.[0]?.body?.[0]?.text?.trim()
+          }
           response.response = response.response.replace(/\[\^[0-9]+\^\]/g, (str) => {
             return str.replace(/[/^]/g, '')
           })
@@ -439,7 +453,7 @@ export class chatgpt extends plugin {
         console.error(error)
         const message = error?.message || error?.data?.message || '与Bing通信时出错.'
         return {
-          text: message
+          text: message === 'Timed out waiting for response. Try enabling debug mode to see more information.' ? (reply != '' ? `${reply}\n不行了，我的大脑过载了，处理不过来了!` : '必应的小脑瓜不好使了，不知道怎么回答！') : message
         }
       }
       return {

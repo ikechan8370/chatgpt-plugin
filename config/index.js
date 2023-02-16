@@ -60,11 +60,11 @@ export const Config = {
   '2captchaToken': '',
   // http或socks5代理
   proxy: PROXY,
-  debug: true,
+  debug: false,
   // 各个地方的默认超时时间
   defaultTimeoutMs: 120000,
   // bing默认超时时间，bing太慢了有的时候
-  bingTimeoutMs: 360000,
+  //bingTimeoutMs: 360000,
   // 浏览器默认超时，浏览器可能需要更高的超时时间
   chromeTimeoutMS: 120000
 }
