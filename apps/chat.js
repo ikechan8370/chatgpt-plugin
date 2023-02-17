@@ -11,6 +11,7 @@ import { getMessageById, makeForwardMsg, tryTimes, upsertMessage, pTimeout } fro
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
 import { OfficialChatGPTClient } from '../utils/message.js'
+import fetch from 'node-fetch'
 // import puppeteer from '../utils/browser.js'
 // import showdownKatex from 'showdown-katex'
 const blockWords = Config.blockWords
@@ -415,8 +416,13 @@ export class chatgpt extends plugin {
       if (!bingToken) {
         throw new Error('未绑定Bing Cookie，请使用#chatgpt设置必应token命令绑定Bing Cookie')
       }
+      let cookie = undefined
+      if (bingToken?.indexOf('=') > -1) {
+        cookie = bingToken
+      }
       const bingAIClient = new BingAIClient({
         userToken: bingToken, // "_U" cookie from bing.com
+        cookie,
         debug: Config.debug
       })
       let response
@@ -435,7 +441,7 @@ export class chatgpt extends plugin {
           message: reply != '' ? `${reply}\n不行了，我的大脑过载了，处理不过来了!` : '必应的小脑子不好使了，不知道怎么回答！'
         })
         */
-        response = await bingAIClient.sendMessage(prompt, conversation || {},(token) => {
+        response = await bingAIClient.sendMessage(prompt, conversation || {}, (token) => {
             reply += token
         })
         if (response.details.adaptiveCards?.[0]?.body?.[0]?.text?.trim()) {
@@ -489,7 +495,8 @@ export class chatgpt extends plugin {
         upsertMessage,
         getMessageById,
         completionParams,
-        assistantLabel: Config.assistantLabel
+        assistantLabel: Config.assistantLabel,
+        fetch
       })
       const currentDate = new Date().toISOString().split('T')[0]
       let promptPrefix = `You are ${Config.assistantLabel}, a large language model trained by OpenAI. ${Config.promptPrefixOverride || defaultPropmtPrefix}
