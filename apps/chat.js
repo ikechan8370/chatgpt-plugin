@@ -325,23 +325,25 @@ export class chatgpt extends plugin {
         let converted = converter.makeHtml(response)
 
         /** 最后回复消息 */
-        await e.runtime.render('chatgpt-plugin', 'content/index', { content: converted, prompt, senderName: e.sender.nickname })
+        await e.runtime.render('chatgpt-plugin', use != 'bing' ? 'content/index' : 'content/Bing/index', { content: converted, prompt, senderName: e.sender.nickname })
       } else {
-        if (response.length > 1000 ) {
-          // 文字过多时自动切换到图片模式输出
-          let converted = converter.makeHtml(response)
-          await e.runtime.render('chatgpt-plugin', 'content/index', { content: converted, prompt, quote: chatMessage.quote, senderName: e.sender.nickname })
-        } else
-        await this.reply(`${response}`, e.isGroup)
+        let quotemessage = []
         if (chatMessage?.quote) {
-          let quotemessage = []
           chatMessage.quote.forEach(function (item, index) {
             if (item.trim() != '') {
-              quotemessage.push(`${item}\n`)
+              quotemessage.push(item)
             }
           })
-          if(quotemessage.length > 0)
-          this.reply(await makeForwardMsg(this.e, quotemessage))
+        }
+        if (response.length > 1000 ) {
+          // 文字过多时自动切换到图片模式输出
+          let converted = response
+          await e.runtime.render('chatgpt-plugin', use != 'bing' ? 'content/index' : 'content/Bing/index', { content: converted, prompt, quote: quotemessage, senderName: e.sender.nickname })
+        } else {
+          await this.reply(`${response}`, e.isGroup)
+          if (quotemessage.length > 0) {
+            this.reply(await makeForwardMsg(this.e, quotemessage))
+          }
         }
       }
       if (use !== 'bing') {

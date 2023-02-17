@@ -1,0 +1,145 @@
+﻿<!doctype html>
+<html class="no-js" lang="zxx">
+
+<head>
+    <!--========= Required meta tags =========-->
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <!--====== CSS Here ======-->
+    <link rel="stylesheet" href="{{pluResPath}}content/Bing/static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{pluResPath}}content/Bing/static/css/font-awesome.min.css">
+    <link rel="stylesheet" href="{{pluResPath}}content/Bing/static/css/lightcase.css">
+    <link rel="stylesheet" href="{{pluResPath}}content/Bing/static/css/meanmenu.css">
+    <link rel="stylesheet" href="{{pluResPath}}content/Bing/static/css/nice-select.css">
+    <link rel="stylesheet" href="{{pluResPath}}content/Bing/static/css/owl.carousel.min.css">
+    <link rel="stylesheet" href="{{pluResPath}}content/Bing/static/css/animate.min.css">
+    <link rel="stylesheet" href="{{pluResPath}}content/Bing/static/css/hljs.css">
+    <link rel="stylesheet" href="{{pluResPath}}content/Bing/static/css/style.css">
+
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-3 col-4 my-auto">
+                    <a href="index.html" class="site-logo">
+                        <img src="{{pluResPath}}content/Bing/static/picture/bing.png" alt="LOGO">
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+    <section class="about-area pt-232">
+        <div class="container">
+            <div class="row justify-content-end">
+                <div class="col-xl-5 col-lg-5 text-right">
+                    <div class="section-heading">
+                        <h2>New Bing</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-xl-12">
+                    <div class="hero-content">
+                        <h4>{{senderName}}</h4>
+                    </div>
+                    <div class="about-content">
+                        <h2>{{@ prompt}}</h2>
+                        <span class="height-50"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-xl-12">
+                    <div class="hero-content">
+                        <h4>必应</h4>
+                    </div>
+                    <div class="about-content">
+                        <p class="markdown">{{@ content}}</p>
+                        <span class="height-50"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-xl-12">
+                    <div class="hero-content">
+                        <h4>引用</h4>
+                    </div>
+                    <div class="about-content">
+                        {{each quote item}}
+                        <p class="markdown">{{item}}</p>
+                        {{/each}}
+                        <span class="height-50"></span>
+                    </div>
+                </div>
+            </div>
+            <!--
+            <div class="row">
+                <div class="col-xl-12">
+                    <div class="work-top mb-90">
+                        <div class="work-nav">
+                            <ul>
+                                {{each quote item}}
+                                <li>{{item}}</li>
+                                {{/each}}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            -->
+        </div>
+    </section>
+    <!-- footer start -->
+    <footer class="site-footer mt-175">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12 my-auto text-right">
+                    <div class="copyright-text">
+                        <p>Response to {{senderName}} Created By Yunzai-Bot and ChatGPT-Plugin</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <!-- footer end -->
+
+    <!--========= JS Here =========-->
+    <script src="{{pluResPath}}content/Bing/static/js/jquery-2.2.4.min.js"></script>
+    <script src="{{pluResPath}}content/Bing/static/js/bootstrap.min.js"></script>
+    <script src="{{pluResPath}}content/Bing/static/js/jquery.meanmenu.min.js"></script>
+    <script src="{{pluResPath}}content/Bing/static/js/jquery.nice-select.min.js"></script>
+    <script src="{{pluResPath}}content/Bing/static/js/lightcase.js"></script>
+    <script src="{{pluResPath}}content/Bing/static/js/owl.carousel.min.js"></script>
+    <script src="{{pluResPath}}content/Bing/static/js/tilt.jquery.min.js"></script>
+    <script src="{{pluResPath}}content/Bing/static/js/wow.min.js"></script>
+    <script src="{{pluResPath}}content/Bing/static/js/jquery.easing.min.js"></script>
+    <script src="{{pluResPath}}content/Bing/static/js/waypoint.js"></script>
+    <script src="{{pluResPath}}content/Bing/static/js/imagesloaded.pkgd.min.js"></script>
+    <script src="{{pluResPath}}content/Bing/static/js/isotope.pkgd.min.js"></script>
+    <script src="{{pluResPath}}content/Bing/static/js/highlight.min.js"></script>
+    <script src="{{pluResPath}}content/Bing/static/js/marked.min.js"></script>
+    <script src="{{pluResPath}}content/Bing/static/js/main.js"></script>
+
+    <script>
+        marked.setOptions({
+            renderer: new marked.Renderer(),
+            gfm: true,
+            tables: true,
+            breaks: false,
+            pedantic: false,
+            sanitize: false,
+            smartLists: true,
+            smartypants: false,
+            highlight: function (code,lang) {
+                return hljs.highlightAuto(code,[lang]).value;
+            }
+        });
+
+        let text = marked.parse($(".markdown").text());
+        $(".markdown").html(text);
+    </script>
+</body>
+
+</html>
