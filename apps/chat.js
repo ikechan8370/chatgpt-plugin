@@ -42,7 +42,7 @@ mjAPI.config({
 mjAPI.start()
 
 export class chatgpt extends plugin {
-  constructor () {
+  constructor() {
     let toggleMode = Config.toggleMode
     super({
       /** 功能名称 */
@@ -90,6 +90,11 @@ export class chatgpt extends plugin {
           reg: '#移出(chat)?队列首位',
           fnc: 'removeQueueFirst',
           permission: 'master'
+        },
+        {
+          reg: '#OpenAI(剩余)?(余额|额度)',
+          fnc: 'totalAvailable',
+          permission: 'master'
         }
 
       ]
@@ -102,7 +107,7 @@ export class chatgpt extends plugin {
    * @param e
    * @returns {Promise<void>}
    */
-  async getConversations (e) {
+  async getConversations(e) {
     let keys = await redis.keys('CHATGPT:CONVERSATIONS:*')
     if (!keys || keys.length === 0) {
       await this.reply('当前没有人正在与机器人对话', true)
@@ -124,7 +129,7 @@ export class chatgpt extends plugin {
    * @param e
    * @returns {Promise<void>}
    */
-  async destroyConversations (e) {
+  async destroyConversations(e) {
     let ats = e.message.filter(m => m.type === 'at')
     if (ats.length === 0) {
       let c = await redis.get(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
@@ -148,17 +153,17 @@ export class chatgpt extends plugin {
     }
   }
 
-  async help (e) {
+  async help(e) {
     let response = 'chatgpt-plugin使用帮助文字版\n' +
-        '@我+聊天内容: 发起对话与AI进行聊天\n' +
-        '#chatgpt对话列表: 查看当前发起的对话\n' +
-        '#结束对话: 结束自己或@用户的对话\n' +
-        '#chatgpt帮助: 查看本帮助\n' +
-        '源代码：https://github.com/ikechan8370/chatgpt-plugin'
+      '@我+聊天内容: 发起对话与AI进行聊天\n' +
+      '#chatgpt对话列表: 查看当前发起的对话\n' +
+      '#结束对话: 结束自己或@用户的对话\n' +
+      '#chatgpt帮助: 查看本帮助\n' +
+      '源代码：https://github.com/ikechan8370/chatgpt-plugin'
     await this.reply(response)
   }
 
-  async switch2Picture (e) {
+  async switch2Picture(e) {
     let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
     if (!userSetting) {
       userSetting = { usePicture: true }
@@ -170,7 +175,7 @@ export class chatgpt extends plugin {
     await this.reply('ChatGPT回复已转换为图片模式')
   }
 
-  async switch2Text (e) {
+  async switch2Text(e) {
     let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
     if (!userSetting) {
       userSetting = { usePicture: false }
@@ -186,7 +191,7 @@ export class chatgpt extends plugin {
    * #chatgpt
    * @param e oicq传递的事件参数e
    */
-  async chatgpt (e) {
+  async chatgpt(e) {
     let prompt
     if (this.toggleMode === 'at') {
       if (!e.msg || e.msg.startsWith('#')) {
@@ -328,12 +333,12 @@ export class chatgpt extends plugin {
         /** 最后回复消息 */
         await e.runtime.render('chatgpt-plugin', 'content/index', { content: converted, prompt, senderName: e.sender.nickname })
       } else {
-        if (response.length > 1000 ) {
+        if (response.length > 1000) {
           // 文字过多时自动切换到图片模式输出
           let converted = converter.makeHtml(response)
           await e.runtime.render('chatgpt-plugin', 'content/index', { content: converted, prompt, quote: chatMessage.quote, senderName: e.sender.nickname })
         } else
-        await this.reply(`${response}`, e.isGroup)
+          await this.reply(`${response}`, e.isGroup)
         if (chatMessage?.quote) {
           let quotemessage = []
           chatMessage.quote.forEach(function (item, index) {
@@ -341,14 +346,14 @@ export class chatgpt extends plugin {
               quotemessage.push(`${item}\n`)
             }
           })
-          if(quotemessage.length > 0)
-          this.reply(await makeForwardMsg(this.e, quotemessage))
+          if (quotemessage.length > 0)
+            this.reply(await makeForwardMsg(this.e, quotemessage))
         }
       }
       if (use !== 'bing') {
         // 移除队列首位，释放锁
         await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
-      }    
+      }
     } catch (e) {
       logger.error(e)
       if (use !== 'bing') {
@@ -359,7 +364,7 @@ export class chatgpt extends plugin {
     }
   }
 
-  async sendMessage (prompt, conversation = {}, use) {
+  async sendMessage(prompt, conversation = {}, use) {
     if (!conversation) {
       conversation = {
         timeoutMs: Config.defaultTimeoutMs
@@ -440,7 +445,7 @@ export class chatgpt extends plugin {
         })
         */
         response = await bingAIClient.sendMessage(prompt, conversation || {}, (token) => {
-            reply += token
+          reply += token
         })
         if (response.details.adaptiveCards?.[0]?.body?.[0]?.text?.trim()) {
           if (response.response === undefined) {
@@ -510,12 +515,12 @@ export class chatgpt extends plugin {
     }
   }
 
-  async emptyQueue (e) {
+  async emptyQueue(e) {
     await redis.lTrim('CHATGPT:CHAT_QUEUE', 1, 0)
     await this.reply('已清空当前等待队列')
   }
 
-  async removeQueueFirst (e) {
+  async removeQueueFirst(e) {
     let uid = await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
     if (!uid) {
       await this.reply('当前等待队列为空')
@@ -524,12 +529,32 @@ export class chatgpt extends plugin {
     }
   }
 
+  async totalAvailable(e) {
+    // 查询OpenAI Plus剩余试用额度
+    fetch('https://api.openai.com/dashboard/billing/credit_grants', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + Config.apiKey,
+      }
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          console.log(data.error)
+          return false
+        } else {
+          this.reply('总额度：$' + data.total_granted + '\n已使用额度：$' + data.total_used + '\n当前剩余额度：$' + data.total_available)
+        }
+      })
+  }
+
   /**
    * #chatgpt
    * @param prompt 问题
    * @param conversation 对话
    */
-  async chatgptBrowserBased (prompt, conversation) {
+  async chatgptBrowserBased(prompt, conversation) {
     let option = { markdown: true }
     if (Config['2captchaToken']) {
       option.captchaToken = Config['2captchaToken']
