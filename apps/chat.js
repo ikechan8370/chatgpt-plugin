@@ -208,7 +208,7 @@ export class chatgpt extends plugin {
       }
     }
     const use = await redis.get('CHATGPT:USE')
-    if (use != 'bing') {
+    if (use !== 'bing') {
       let randomId = uuid()
       // 队列队尾插入，开始排队
       await redis.rPush('CHATGPT:CHAT_QUEUE', [randomId])
@@ -240,27 +240,38 @@ export class chatgpt extends plugin {
     // } catch (e) {
     //   await this.reply('chatgpt初始化出错：' + e.msg, true)
     // }
-    let previousConversation = await redis.get(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
-    let conversation = {}
-    if (!previousConversation) {
-      let ctime = new Date()
-      previousConversation = {
-        sender: e.sender,
-        ctime,
-        utime: ctime,
-        num: 0
+    if (use === 'api3') {
+      let conversationId = await redis.get(`CHATGPT:QQ_CONVERSATION:${e.sender.user_id}`)
+      if (conversationId) {
+        let lastMessageId = await redis.get(`CHATGPT:CONVERSATION_LAST_MESSAGE_ID:${conversationId}`)
+        let lastMessagePrompt = await redis.get(`CHATGPT:CONVERSATION_LAST_MESSAGE_PROMPT:${conversationId}`)
+
       }
-      // await redis.set(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`, JSON.stringify(previousConversation), { EX: CONVERSATION_PRESERVE_TIME })
     } else {
-      previousConversation = JSON.parse(previousConversation)
-      conversation = {
-        conversationId: previousConversation.conversation.conversationId,
-        parentMessageId: previousConversation.conversation.parentMessageId,
-        clientId: previousConversation.clientId,
-        invocationId: previousConversation.invocationId,
-        conversationSignature: previousConversation.conversationSignature
+      let previousConversation = await redis.get(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
+      let conversation = {}
+      if (!previousConversation) {
+        let ctime = new Date()
+        previousConversation = {
+          sender: e.sender,
+          ctime,
+          utime: ctime,
+          num: 0
+        }
+        // await redis.set(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`, JSON.stringify(previousConversation), { EX: CONVERSATION_PRESERVE_TIME })
+      } else {
+        previousConversation = JSON.parse(previousConversation)
+        conversation = {
+          conversationId: previousConversation.conversation.conversationId,
+          parentMessageId: previousConversation.conversation.parentMessageId,
+          clientId: previousConversation.clientId,
+          invocationId: previousConversation.invocationId,
+          conversationSignature: previousConversation.conversationSignature
+        }
       }
     }
+
+
     try {
       if (Config.debug) {
         logger.mark(conversation)
