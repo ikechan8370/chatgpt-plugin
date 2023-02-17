@@ -328,26 +328,28 @@ export class chatgpt extends plugin {
         // logger.info(response)
         // markdown转为html
         // todo部分数学公式可能还有问题
-        let converted = converter.makeHtml(response)
+        let converted = response //converter.makeHtml(response)
 
         /** 最后回复消息 */
-        await e.runtime.render('chatgpt-plugin', 'content/index', { content: converted, prompt, senderName: e.sender.nickname })
+        await e.runtime.render('chatgpt-plugin', use != 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: converted, prompt, senderName: e.sender.nickname })
       } else {
-        if (response.length > 1000) {
-          // 文字过多时自动切换到图片模式输出
-          let converted = converter.makeHtml(response)
-          await e.runtime.render('chatgpt-plugin', 'content/index', { content: converted, prompt, quote: chatMessage.quote, senderName: e.sender.nickname })
-        } else
-          await this.reply(`${response}`, e.isGroup)
+        let quotemessage = []
         if (chatMessage?.quote) {
-          let quotemessage = []
           chatMessage.quote.forEach(function (item, index) {
             if (item.trim() != '') {
-              quotemessage.push(`${item}\n`)
+              quotemessage.push(item)
             }
           })
-          if (quotemessage.length > 0)
+        }
+        if (response.length > 1000 ) {
+          // 文字过多时自动切换到图片模式输出
+          let converted = response
+          await e.runtime.render('chatgpt-plugin', use != 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: converted, prompt, quote: quotemessage, senderName: e.sender.nickname })
+        } else {
+          await this.reply(`${response}`, e.isGroup)
+          if (quotemessage.length > 0) {
             this.reply(await makeForwardMsg(this.e, quotemessage))
+          }
         }
       }
       if (use !== 'bing') {
@@ -360,6 +362,10 @@ export class chatgpt extends plugin {
         // 异常了也要腾地方（todo 大概率后面的也会异常，要不要一口气全杀了）
         await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
       }
+      if ( e === 'Error: {"detail":"Conversation not found"}') {
+        destroyConversations (e)
+        await this.reply(`当前对话异常，已经清除，请重试`, true, { recallMsg: e.isGroup ? 10 : 0 })
+      } else 
       await this.reply(`通信异常，请稍后重试：${e}`, true, { recallMsg: e.isGroup ? 10 : 0 })
     }
   }
