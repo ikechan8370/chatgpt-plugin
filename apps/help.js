@@ -73,6 +73,11 @@ let helpData = [
       },
       {
         icon: 'help',
+        title: '#OpenAI剩余额度',
+        desc: '查询OpenAI Plus剩余试用额度'
+      },
+      {
+        icon: 'help',
         title: '#chatgpt模式帮助',
         desc: '查看多种聊天模式的区别及当前使用的模式'
       },
