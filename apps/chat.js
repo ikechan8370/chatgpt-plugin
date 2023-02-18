@@ -363,7 +363,7 @@ export class chatgpt extends plugin {
         await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
       }
       if ( e === 'Error: {"detail":"Conversation not found"}') {
-        destroyConversations (e)
+        await this.destroyConversations (e)
         await this.reply(`当前对话异常，已经清除，请重试`, true, { recallMsg: e.isGroup ? 10 : 0 })
       } else 
       await this.reply(`通信异常，请稍后重试：${e}`, true, { recallMsg: e.isGroup ? 10 : 0 })
