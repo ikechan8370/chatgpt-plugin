@@ -11,7 +11,7 @@ import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
 import { OfficialChatGPTClient } from '../utils/message.js'
 import fetch from 'node-fetch'
-import { getConversations, getLatestMessageIdByConversationId } from '../utils/conversation.js'
+import { deleteConversation, getConversations, getLatestMessageIdByConversationId } from '../utils/conversation.js'
 const blockWords = Config.blockWords
 
 /**
@@ -90,6 +90,11 @@ export class chatgpt extends plugin {
         {
           reg: '^#chatgpt加入对话',
           fnc: 'joinConversation'
+        },
+        {
+          reg: '^#chatgpt删除对话',
+          fnc: 'deleteConversation',
+          permission: 'master'
         }
       ]
     })
@@ -153,6 +158,58 @@ export class chatgpt extends plugin {
         } else {
           await redis.del(`CHATGPT:CONVERSATIONS:${qq}`)
           await this.reply(`已结束${atUser}的对话，TA仍可以@我进行聊天以开启新的对话`, true)
+        }
+      }
+    }
+  }
+
+  async deleteConversation (e) {
+    let ats = e.message.filter(m => m.type === 'at')
+    let use = await redis.get('CHATGPT:USE')
+    if (use !== 'api3') {
+      await this.reply('本功能当前仅支持API3模式', true)
+      return false
+    }
+    if (ats.length === 0) {
+      let conversationId = _.trimStart(e.msg, '#chatgpt删除对话').trim()
+      if (!conversationId) {
+        await this.reply('指令格式错误，请同时加上对话id或@某人以删除他当前进行的对话', true)
+        return false
+      } else {
+        let deleteResponse = await deleteConversation(conversationId)
+        console.log(deleteResponse)
+        let qcs = await redis.keys('CHATGPT:QQ_CONVERSATION:*')
+        for (let i = 0; i < qcs.length; i++) {
+          if (await redis.get(qcs[i]) === conversationId) {
+            await redis.del(qcs[i])
+            if (Config.debug) {
+              logger.info('delete conversation bind: ' + qcs[i])
+            }
+          }
+        }
+        await this.reply(`对话删除成功，同时清理了${qcs.length}个同一对话中用户的对话。`, true)
+      }
+    } else {
+      for (let u = 0; u < ats.length; u++) {
+        let at = ats[u]
+        let qq = at.qq
+        let atUser = _.trimStart(at.text, '@')
+        let conversationId = await redis.get('CHATGPT:QQ_CONVERSATION:' + qq)
+        if (conversationId) {
+          let deleteResponse = await deleteConversation(conversationId)
+          console.log(deleteResponse)
+          let qcs = await redis.keys('CHATGPT:QQ_CONVERSATION:*')
+          for (let i = 0; i < qcs.length; i++) {
+            if (await redis.get(qcs[i]) === conversationId) {
+              await redis.del(qcs[i])
+              if (Config.debug) {
+                logger.info('delete conversation bind: ' + qcs[i])
+              }
+            }
+          }
+          await this.reply(`${atUser}的对话${conversationId}删除成功，同时清理了${qcs.length}个同一对话中用户的对话。`)
+        } else {
+          await this.reply(`${atUser}当前已没有进行对话`)
         }
       }
     }
@@ -621,8 +678,9 @@ export class chatgpt extends plugin {
       await this.reply(`加入${atUser}的对话成功，当前对话id为` + conversationId)
     }
   }
+
   async attachConversation (e) {
-    const use = await redis.get('CHATGPT:USE')
+    const use = await reeletis.get('CHATGPT:USE')
     if (use !== 'api3') {
       await this.reply('该功能目前仅支持API3模式')
     } else {

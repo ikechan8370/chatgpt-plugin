@@ -115,3 +115,21 @@ export async function getLatestMessageIdByConversationId (conversationId) {
   await redis.set(`CHATGPT:CONVERSATION_LAST_MESSAGE_ID:${conversationId}`, messages[0].id)
   return messages[0].id
 }
+
+// 调用chat.open.com删除某一个对话。该操作不可逆。
+export async function deleteConversation (conversationId) {
+  let accessToken = await redis.get('CHATGPT:TOKEN')
+  if (!accessToken) {
+    throw new Error('未绑定ChatGPT AccessToken，请使用#chatgpt设置token命令绑定token')
+  }
+  let response = await fetch(`${Config.apiBaseUrl}/api/conversation/${conversationId}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + accessToken
+    },
+    body: JSON.stringify({ is_visible: false })
+  })
+  let responseText = await response.text()
+  return JSON.parse(responseText)
+}
