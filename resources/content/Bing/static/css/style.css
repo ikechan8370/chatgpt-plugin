@@ -1,4 +1,4 @@
-﻿@charset "UTF-8";
+@charset "UTF-8";
 /*-----------------------------------------------------------------------------------
 
     Template Name: Aiden - Creative Portfolio HTML5 Template
@@ -37,14 +37,14 @@ html {
 }
 
 body {
-  font-family: "Open Sans", sans-serif;
-  font-size: 15px;
+  font-family: "Josefin Sans", sans-serif;
+  font-size: 18px;
   padding: 0;
   margin: 0;
   font-weight: 400;
   position: relative;
   line-height: 26px;
-  background: #090A1A;
+  background: #f5feff;
 }
 
 img {
@@ -241,7 +241,7 @@ p, li, span {
   display: inline-block;
   position: relative;
   padding-right: 15px;
-  color: #242B58;
+  color: rgb(0 123 255 / 25%);
   text-transform: uppercase;
 }
 @media (max-width: 767px) {
@@ -263,7 +263,7 @@ p, li, span {
   content: "";
   position: absolute;
   bottom: 0px;
-  background: #12152F;
+  background: #b8dee094;
   z-index: -1;
 }
 .section-heading__left h2 {
@@ -2188,7 +2188,7 @@ input.form-control-sm {
   position: relative;
   font-size: 24px;
   font-weight: 600;
-  color: #ffffff;
+  color: #12152f;
   padding-left: 65px;
   line-height: 29px;
 }
@@ -2303,18 +2303,18 @@ input.form-control-sm {
 }
 
 .about-content h6 {
-  color: #ffffff;
+  color: #12152f;
   font-size: 14px;
   font-weight: 400;
   line-height: 24px;
   margin-bottom: 10px;
 }
 .about-content h2 {
-  color: #ffffff;
+  color: #12152f;
   font-size: 28px;
 }
 .about-content p {
-  color: #B0B0B2;
+  color: #12152f;
   line-height: 24px;
 }
 
@@ -3523,7 +3523,7 @@ input.form-control-sm {
 
 /*Footer css*/
 .site-footer {
-  border-top: 1px solid #1B2044;
+  border-top: 1px solid #007bff;
   padding: 30px 0px;
 }
 @media (max-width: 767px) {
@@ -3542,7 +3542,7 @@ input.form-control-sm {
   }
 }
 .copyright-text p {
-  color: #B0B0B2;
+  color: #17a2b8;
 }
 
 /*# sourceMappingURL=style.css.map */
