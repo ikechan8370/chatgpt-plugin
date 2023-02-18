@@ -42,7 +42,7 @@ node -v
 
 ```sh
 git clone --depth=1 https://github.com/ikechan8370/chatgpt-plugin.git ./plugins/chatgpt-plugin/
-pnpm install -w undici chatgpt showdown mathjax-node delay uuid remark strip-markdown @waylaidwanderer/chatgpt-api keyv-file
+pnpm install -w undici chatgpt showdown mathjax-node delay uuid remark strip-markdown random puppeteer-extra-plugin-recaptcha puppeteer-extra puppeteer-extra-plugin-stealth @waylaidwanderer/chatgpt-api keyv-file
 ```
 
 如果是手工下载的 zip 压缩包，请将解压后的 chatgpt-plugin 文件夹（请删除压缩自带的-master后缀）放置在 Yunzai-Bot 目录下的 plugins 文件夹内
@@ -50,12 +50,6 @@ pnpm install -w undici chatgpt showdown mathjax-node delay uuid remark strip-mar
 如果您需要使用基于浏览器的访问模式，请运行下述指令
 
 > 浏览器模式仅为备选，如您需要使用浏览器模式，您还需要有**桌面环境**，优先级建议：必应>API>浏览器
-
-其中`random puppeteer-extra-plugin-recaptcha puppeteer-extra puppeteer-extra-plugin-stealth`为用于模拟浏览器登录的依赖
-
-```sh
-pnpm install -w undici chatgpt showdown mathjax-node delay uuid remark strip-markdown random puppeteer-extra-plugin-recaptcha puppeteer-extra puppeteer-extra-plugin-stealth @waylaidwanderer/chatgpt-api keyv-file
-```
 
 请注意：**若使用API模式，chatgpt的版本号注意要大于4.4.0**
 **若使用Bing模式，@waylaidwanderer/chatgpt-api 尽可能保持最新版本**
