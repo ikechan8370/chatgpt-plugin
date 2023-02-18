@@ -170,7 +170,7 @@ export class chatgpt extends plugin {
       await this.reply('本功能当前仅支持API3模式', true)
       return false
     }
-    if (ats.length === 0) {
+    if (ats.length === 0 || (ats.length === 1 && e.atme)) {
       let conversationId = _.trimStart(e.msg, '#chatgpt删除对话').trim()
       if (!conversationId) {
         await this.reply('指令格式错误，请同时加上对话id或@某人以删除他当前进行的对话', true)
