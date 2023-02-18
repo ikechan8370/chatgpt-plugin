@@ -6,7 +6,7 @@ import { v4 as uuid } from 'uuid'
 import delay from 'delay'
 import { ChatGPTAPI } from 'chatgpt'
 import { ChatGPTClient, BingAIClient } from '@waylaidwanderer/chatgpt-api'
-import { getMessageById, makeForwardMsg, tryTimes, upsertMessage } from '../utils/common.js'
+import {escapeHtml, getMessageById, makeForwardMsg, tryTimes, upsertMessage} from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
 import { OfficialChatGPTClient } from '../utils/message.js'
@@ -275,12 +275,12 @@ export class chatgpt extends plugin {
       }
     }
 
-    if (prompt.indexOf('<script>') != -1)
-    {
-      await this.reply('坏人，我要报告给主人', e.isGroup)
-      Bot.pickUser(cfg.masterQQ[0]).sendMsg(`主人,我在${this.e.group_id ? '群' + this.e.group_id : '私聊' }被${e.sender.nickname}使用代码攻击了，请警惕`)
-      return false
-    }
+//    if (prompt.indexOf('<script>') != -1)
+//    {
+//      await this.reply('坏人，我要报告给主人', e.isGroup)
+//      Bot.pickUser(cfg.masterQQ[0]).sendMsg(`主人,我在${this.e.group_id ? '群' + this.e.group_id : '私聊' }被${e.sender.nickname}使用代码攻击了，请警惕`)
+//      return false
+//    }
 
     const use = await redis.get('CHATGPT:USE')
     if (use !== 'bing') {
@@ -448,7 +448,6 @@ export class chatgpt extends plugin {
         // logger.info(response)
         // markdown转为html
         // todo部分数学公式可能还有问题
-        let converted = response // converter.makeHtml(response)
 
         /** 最后回复消息 */
         if (Config.showQRCode) {
@@ -459,7 +458,7 @@ export class chatgpt extends plugin {
             },
             body: JSON.stringify({
               content: {
-                content: converted,
+                content: response,
                 prompt,
                 senderName: e.sender.nickname
                 // quote: quotemessage
@@ -469,9 +468,9 @@ export class chatgpt extends plugin {
           }
           )
           let cache = await cacheres.json()
-          await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: converted, prompt, senderName: e.sender.nickname, cache: cache.file })
+          await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: escapeHtml(response), prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache: cache.file })
         } else {
-          await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: converted, prompt, senderName: e.sender.nickname })
+          await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: escapeHtml(response), prompt: escapeHtml(prompt), senderName: e.sender.nickname })
         }
       } else {
         let quotemessage = []
@@ -502,9 +501,9 @@ export class chatgpt extends plugin {
             }
             )
             let cache = await cacheres.json()
-            await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: converted, prompt, senderName: e.sender.nickname, cache: cache.file })
+            await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: escapeHtml(response), prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache: cache.file })
           } else {
-            await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: converted, prompt, senderName: e.sender.nickname })
+            await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: escapeHtml(response), prompt: escapeHtml(prompt), senderName: e.sender.nickname })
           }
         } else {
           await this.reply(`${response}`, e.isGroup)

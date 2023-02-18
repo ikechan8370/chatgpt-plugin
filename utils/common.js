@@ -6,6 +6,17 @@
 //    .processSync(markdown ?? '')
 //    .toString()
 // }
+export function escapeHtml (str) {
+  const htmlEntities = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+    '/': '&#x2F;'
+  }
+  return str.replace(/[&<>"'/]/g, (match) => htmlEntities[match])
+}
 
 export async function upsertMessage (message) {
   await redis.set(`CHATGPT:MESSAGE:${message.id}`, JSON.stringify(message))
