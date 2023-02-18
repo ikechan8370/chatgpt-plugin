@@ -12,6 +12,7 @@ import { KeyvFile } from 'keyv-file'
 import { OfficialChatGPTClient } from '../utils/message.js'
 import fetch from 'node-fetch'
 import { deleteConversation, getConversations, getLatestMessageIdByConversationId } from '../utils/conversation.js'
+import cfg from '../../../lib/config/config.js'
 const blockWords = Config.blockWords
 
 /**
@@ -273,6 +274,14 @@ export class chatgpt extends plugin {
         return false
       }
     }
+
+    if (prompt.indexOf('<script>') != -1)
+    {
+      await this.reply('坏人，我要报告给主人', e.isGroup)
+      Bot.pickUser(cfg.masterQQ[0]).sendMsg(`主人,我在${this.e.group_id ? '群' + this.e.group_id : '私聊' }被${e.sender.nickname}使用代码攻击了，请警惕`)
+      return false
+    }
+
     const use = await redis.get('CHATGPT:USE')
     if (use !== 'bing') {
       let randomId = uuid()
