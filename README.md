@@ -2,7 +2,7 @@
 
 ## 特点
 
-* 支持单人连续对话Conversation
+* 支持单人连续对话Conversation，群聊中支持加入其他人的对话
 * API模式下，使用 GPT-3 API及相关模型配置尽可能逼近ChatGPT体验，支持自定义部分模型参数，仅需OpenAI Api Key，开箱即用
 * 支持问答图片截图
 * API3模式下，绕过Cloudflare防护直接访问ChatGPT的SSE API，与官方体验一致，且保留对话记录，在官网可查。
