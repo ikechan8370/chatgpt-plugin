@@ -178,6 +178,7 @@ export class chatgpt extends plugin {
       } else {
         let deleteResponse = await deleteConversation(conversationId)
         console.log(deleteResponse)
+        let deleted = 0
         let qcs = await redis.keys('CHATGPT:QQ_CONVERSATION:*')
         for (let i = 0; i < qcs.length; i++) {
           if (await redis.get(qcs[i]) === conversationId) {
@@ -185,9 +186,10 @@ export class chatgpt extends plugin {
             if (Config.debug) {
               logger.info('delete conversation bind: ' + qcs[i])
             }
+            deleted++
           }
         }
-        await this.reply(`对话删除成功，同时清理了${qcs.length}个同一对话中用户的对话。`, true)
+        await this.reply(`对话删除成功，同时清理了${deleted}个同一对话中用户的对话。`, true)
       }
     } else {
       for (let u = 0; u < ats.length; u++) {
@@ -198,6 +200,7 @@ export class chatgpt extends plugin {
         if (conversationId) {
           let deleteResponse = await deleteConversation(conversationId)
           console.log(deleteResponse)
+          let deleted = 0
           let qcs = await redis.keys('CHATGPT:QQ_CONVERSATION:*')
           for (let i = 0; i < qcs.length; i++) {
             if (await redis.get(qcs[i]) === conversationId) {
@@ -205,9 +208,10 @@ export class chatgpt extends plugin {
               if (Config.debug) {
                 logger.info('delete conversation bind: ' + qcs[i])
               }
+              deleted++
             }
           }
-          await this.reply(`${atUser}的对话${conversationId}删除成功，同时清理了${qcs.length}个同一对话中用户的对话。`)
+          await this.reply(`${atUser}的对话${conversationId}删除成功，同时清理了${deleted}个同一对话中用户的对话。`)
         } else {
           await this.reply(`${atUser}当前已没有进行对话`)
         }
