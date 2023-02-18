@@ -10,8 +10,10 @@ export const Config = {
   blockWords: ['屏蔽词1', '屏蔽词b'],
   // 改为true后，全局默认以图片形式回复，并自动发出Continue命令补全回答。长回复可能会有bug。
   defaultUsePicture: false,
-  // 如果true，字数大于阈值会自动用图片发送，即使是文本模式。
+  // 如果true，字数大于阈值（autoUsePictureThreshold）会自动用图片发送，即使是文本模式。
   autoUsePicture: true,
+  // 仅当autoUsePicture为true时生效，字数大于该阈值会自动用图片发送，即使是文本模式。
+  autoUsePictureThreshold: 1200,
   // 每个人发起的对话保留时长。超过这个时长没有进行对话，再进行对话将开启新的对话。单位：秒
   conversationPreserveTime: 0,
   // 触发方式 可选值：at 或 prefix 。at模式下只有at机器人才会回复。prefix模式下不需要at，但需要添加前缀#chat

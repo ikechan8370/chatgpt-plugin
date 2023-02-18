@@ -20,7 +20,9 @@ export async function getConversations (qq = '') {
   let conversations = JSON.parse(json)
   let result = conversations.items?.sort((a, b) => b.create_time - a.create_time)
   let map = {}
-  let promises = conversations.items?.map(async item => {
+  for (let i = 0; i < conversations.items.length; i++) {
+    // 老用户初次更新该功能，这里频繁请求可能会429。由并行改为串行以尽量降低频率。必要时可可能还要等待。
+    let item = conversations.items[i]
     let cachedConversationLastMessage = await redis.get(`CHATGPT:CONVERSATION_LAST_MESSAGE_PROMPT:${item.id}`)
     if (!cachedConversationLastMessage) {
       map[item.id] = cachedConversationLastMessage
@@ -60,8 +62,7 @@ export async function getConversations (qq = '') {
       await redis.set(`CHATGPT:CONVERSATION_CREATE_TIME:${item.id}`, new Date(conversationDetail.create_time * 1000).toLocaleString())
       map[item.id] = lastMessage
     }
-  })
-  await Promise.all(promises)
+  }
   let res = []
   let usingConversationId
   if (qq) {
@@ -79,8 +80,8 @@ export async function getConversations (qq = '') {
     } else {
       conversation.status = 'normal'
     }
-    if (conversation.lastPrompt.length > 80) {
-      conversation.lastPrompt = conversation.lastPrompt.slice(0, 40) + '......'
+    if (conversation.lastPrompt?.length > 80) {
+      conversation.lastPrompt = conversation.lastPrompt.slice(0, 80) + '......'
     }
     res.push(conversation)
   })

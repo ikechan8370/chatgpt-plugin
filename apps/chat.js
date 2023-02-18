@@ -321,7 +321,7 @@ export class chatgpt extends plugin {
       }
       if (userSetting.usePicture) {
         let endTokens = ['.', '。', '……', '!', '！', ']', ')', '）', '】', '?', '？', '~', '"', "'"]
-        let maxTries = 3
+        let maxTries = use === 'api3' ? 3 : 0
         while (maxTries >= 0 && !endTokens.find(token => response.trimEnd().endsWith(token))) {
           maxTries--
           // while (!response.trimEnd().endsWith('.') && !response.trimEnd().endsWith('。') && !response.trimEnd().endsWith('……') &&
@@ -365,7 +365,7 @@ export class chatgpt extends plugin {
             }
           })
         }
-        if (response.length > 1000) {
+        if (Config.autoUsePicture && response.length > Config.autoUsePictureThreshold) {
           // 文字过多时自动切换到图片模式输出
           await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt, quote: quotemessage, senderName: e.sender.nickname })
         } else {

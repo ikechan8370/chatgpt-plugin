@@ -1,5 +1,5 @@
 import plugin from '../../../lib/plugins/plugin.js'
-import {Config} from "../config/index.js";
+import { Config } from '../config/index.js'
 import { BingAIClient } from '@waylaidwanderer/chatgpt-api'
 
 export class ChatgptManagement extends plugin {
@@ -99,7 +99,7 @@ export class ChatgptManagement extends plugin {
       this.finish('saveToken')
       return
     }
-    let cookie = undefined
+    let cookie
     if (token?.indexOf('=') > -1) {
       cookie = token
     }
@@ -111,7 +111,7 @@ export class ChatgptManagement extends plugin {
     // 异步就好了，不卡着这个context了
     bingAIClient.createNewConversation().then(async res => {
       if (res.clientId) {
-        logger.info("bing token 有效")
+        logger.info('bing token 有效')
       } else {
         logger.error('bing token 无效', res)
         await this.reply(`经检测，Bing Token无效。来自Bing的错误提示：${res.result?.message}`)
@@ -141,8 +141,13 @@ export class ChatgptManagement extends plugin {
   }
 
   async useOpenAIAPIBasedSolution (e) {
-    await redis.set('CHATGPT:USE', 'api')
-    await this.reply('已切换到基于OpenAI API的解决方案，如果已经对话过建议执行`#结束对话`避免引起404错误')
+    let use = await redis.get('CHATGPT:USE')
+    if (use !== 'api') {
+      await redis.set('CHATGPT:USE', 'api')
+      await this.reply('已切换到基于OpenAI API的解决方案，如果已经对话过建议执行`#结束对话`避免引起404错误')
+    } else {
+      await this.reply('当前已经是API模式了')
+    }
   }
 
   async useReversedAPIBasedSolution (e) {
@@ -151,13 +156,33 @@ export class ChatgptManagement extends plugin {
   }
 
   async useReversedAPIBasedSolution2 (e) {
-    await redis.set('CHATGPT:USE', 'api3')
-    await this.reply('已切换到基于第三方Reversed ConversastionAPI的解决方案，如果已经对话过建议执行`#结束对话`避免引起404错误')
+    let use = await redis.get('CHATGPT:USE')
+    if (use !== 'api3') {
+      await redis.set('CHATGPT:USE', 'api3')
+      await this.reply('已切换到基于第三方Reversed Conversastion API(API3)的解决方案')
+    } else {
+      await this.reply('当前已经是API3模式了')
+    }
   }
 
   async useReversedBingSolution (e) {
-    await redis.set('CHATGPT:USE', 'bing')
-    await this.reply('已切换到基于微软新必应的解决方案，如果已经对话过务必执行`#结束对话`避免引起404错误')
+    let use = await redis.get('CHATGPT:USE')
+    if (use !== 'bing') {
+      await redis.set('CHATGPT:USE', 'bing')
+      // 结束所有人的对话
+      const keys = await redis.keys('CHATGPT:CONVERSATIONS:*')
+      if (keys.length) {
+        const response = await redis.del(keys)
+        if (Config.debug) {
+          console.log('Deleted keys:', response)
+        }
+      } else {
+        console.log('No keys matched the pattern')
+      }
+      await this.reply('已切换到基于微软新必应的解决方案，如果已经对话过务必执行`#结束对话`避免引起404错误')
+    } else {
+      await this.reply('当前已经是必应Bing模式了')
+    }
   }
 
   async modeHelp () {
