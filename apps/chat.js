@@ -122,24 +122,35 @@ export class chatgpt extends plugin {
    */
   async destroyConversations (e) {
     let ats = e.message.filter(m => m.type === 'at')
+    let use = await redis.get('CHATGPT:USE')
     if (ats.length === 0) {
-      let c = await redis.get(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
-      if (!c) {
-        await this.reply('当前没有开启对话', true)
-      } else {
-        await redis.del(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
+      if (use === 'api3') {
+        await redis.del(`CHATGPT:QQ_CONVERSATION:${e.sender.user_id}`)
         await this.reply('已结束当前对话，请@我进行聊天以开启新的对话', true)
+      } else {
+        let c = await redis.get(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
+        if (!c) {
+          await this.reply('当前没有开启对话', true)
+        } else {
+          await redis.del(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
+          await this.reply('已结束当前对话，请@我进行聊天以开启新的对话', true)
+        }
       }
     } else {
       let at = ats[0]
       let qq = at.qq
       let atUser = _.trimStart(at.text, '@')
-      let c = await redis.get(`CHATGPT:CONVERSATIONS:${qq}`)
-      if (!c) {
-        await this.reply(`当前${atUser}没有开启对话`, true)
-      } else {
-        await redis.del(`CHATGPT:CONVERSATIONS:${qq}`)
+      if (use === 'api3') {
+        await redis.del(`CHATGPT:QQ_CONVERSATION:${qq}`)
         await this.reply(`已结束${atUser}的对话，他仍可以@我进行聊天以开启新的对话`, true)
+      } else {
+        let c = await redis.get(`CHATGPT:CONVERSATIONS:${qq}`)
+        if (!c) {
+          await this.reply(`当前${atUser}没有开启对话`, true)
+        } else {
+          await redis.del(`CHATGPT:CONVERSATIONS:${qq}`)
+          await this.reply(`已结束${atUser}的对话，他仍可以@我进行聊天以开启新的对话`, true)
+        }
       }
     }
   }
@@ -385,11 +396,10 @@ export class chatgpt extends plugin {
         // 异常了也要腾地方（todo 大概率后面的也会异常，要不要一口气全杀了）
         await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
       }
-      if ( e === 'Error: {"detail":"Conversation not found"}') {
-        await this.destroyConversations (e)
-        await this.reply(`当前对话异常，已经清除，请重试`, true, { recallMsg: e.isGroup ? 10 : 0 })
-      } else 
-      await this.reply(`通信异常，请稍后重试：${e}`, true, { recallMsg: e.isGroup ? 10 : 0 })
+      if (e === 'Error: {"detail":"Conversation not found"}') {
+        await this.destroyConversations(e)
+        await this.reply('当前对话异常，已经清除，请重试', true, { recallMsg: e.isGroup ? 10 : 0 })
+      } else { await this.reply(`通信异常，请稍后重试：${e}`, true, { recallMsg: e.isGroup ? 10 : 0 }) }
     }
   }
 
