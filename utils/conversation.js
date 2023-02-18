@@ -24,7 +24,7 @@ export async function getConversations (qq = '') {
     // 老用户初次更新该功能，这里频繁请求可能会429。由并行改为串行以尽量降低频率。必要时可可能还要等待。
     let item = conversations.items[i]
     let cachedConversationLastMessage = await redis.get(`CHATGPT:CONVERSATION_LAST_MESSAGE_PROMPT:${item.id}`)
-    if (!cachedConversationLastMessage) {
+    if (cachedConversationLastMessage) {
       map[item.id] = cachedConversationLastMessage
     } else {
       // 缓存中没有，就去查官方api
