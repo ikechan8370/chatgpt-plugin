@@ -48,6 +48,11 @@ let helpData = [
       },
       {
         icon: 'destroy',
+        title: '#chatgpt删除对话+对话id或@用户',
+        desc: '删除指定对话，并清空与用户的关联信息。@用户时支持多个用户'
+      },
+      {
+        icon: 'destroy',
         title: '#结束对话',
         desc: '结束自己当前对话，下次开启对话机器人将遗忘掉本次对话内容。'
       },
