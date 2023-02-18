@@ -86,8 +86,11 @@ export class chatgpt extends plugin {
         {
           reg: '^#chatgpt切换对话',
           fnc: 'attachConversation'
+        },
+        {
+          reg: '^#chatgpt加入对话',
+          fnc: 'joinConversation'
         }
-
       ]
     })
     this.toggleMode = toggleMode
@@ -588,13 +591,36 @@ export class chatgpt extends plugin {
       conversations.forEach(c => {
         text += c.id + '|' + (c.creater || '未知') + '\n'
       })
-      text += '您可以通过使用命令#chatgpt切换对话+对话id来加入指定对话'
+      text += '您可以通过使用命令#chatgpt切换对话+对话id来切换到指定对话，也可以通过命令#chatgpt加入对话+@某人来加入指定人当前进行的对话中。'
       await this.reply(text)
     } else {
       return await this.getConversations(e)
     }
   }
 
+  async joinConversation (e) {
+    let ats = e.message.filter(m => m.type === 'at')
+    let use = await redis.get('CHATGPT:USE')
+    if (use !== 'api3') {
+      await this.reply('本功能当前仅支持API3模式', true)
+      return false
+    }
+    if (ats.length === 0) {
+      await this.reply('指令错误，使用本指令时请同时@某人', true)
+      return false
+    } else {
+      let at = ats[0]
+      let qq = at.qq
+      let atUser = _.trimStart(at.text, '@')
+      let conversationId = await redis.get('CHATGPT:QQ_CONVERSATION:' + qq)
+      if (!conversationId) {
+        await this.reply(`${atUser}当前未开启对话，无法加入`, true)
+        return false
+      }
+      await redis.set(`CHATGPT:QQ_CONVERSATION:${e.sender.user_id}`, conversationId)
+      await this.reply(`加入${atUser}的对话成功，当前对话id为` + conversationId)
+    }
+  }
   async attachConversation (e) {
     const use = await redis.get('CHATGPT:USE')
     if (use !== 'api3') {

@@ -42,6 +42,11 @@ let helpData = [
         desc: '目前仅API3模式下可用，切换到指定的对话中'
       },
       {
+        icon: 'switch',
+        title: '#chatgpt加入对话+@某人',
+        desc: '目前仅API3模式下可用，加入到某人当前进行的对话中'
+      },
+      {
         icon: 'destroy',
         title: '#结束对话',
         desc: '结束自己当前对话，下次开启对话机器人将遗忘掉本次对话内容。'
