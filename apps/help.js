@@ -89,7 +89,7 @@ let helpData = [
       {
         icon: 'help',
         title: '#OpenAI剩余额度',
-        desc: '查询OpenAI Plus剩余试用额度'
+        desc: '查询OpenAI API剩余试用额度'
       },
       {
         icon: 'help',
