@@ -31,8 +31,7 @@ export const Config = {
   //                                                        以下为API3方式的配置                                                          *
   // ***********************************************************************************************************************************
   // from https://github.com/acheong08/ChatGPT
-  api: 'https://chatgpt.roki.best/backend-api/conversation',
-  // api: 'https://chatgpt.duti.tech/api/conversation',
+  api: 'https://chatgpt.duti.tech/api/conversation',
   apiBaseUrl: 'https://chatgpt.duti.tech',
   // ***********************************************************************************************************************************
   //                                                        以下为API2方式的配置                                                          *
