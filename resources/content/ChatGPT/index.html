@@ -21,7 +21,7 @@
                     <a href="#" class="site-logo">
                         <img src="{{pluResPath}}content/ChatGPT/static/picture/openai.png" alt="LOGO">
                     </a>
-                    
+
                 </div>
             </div>
         </div>
@@ -88,6 +88,7 @@
     <script src="{{pluResPath}}content/ChatGPT/static/js/marked.min.js"></script>
     <script src="{{pluResPath}}content/Bing/static/js/tex-mml-chtml.js"></script>
     <script src="{{pluResPath}}content/ChatGPT/static/js/main.js"></script>
+    <script src="{{pluResPath}}content/ChatGPT/static/js/purify.min.js"></script>
 
     <script>
         marked.setOptions({
@@ -103,9 +104,11 @@
                 return hljs.highlightAuto(code,[lang]).value;
             }
         });
+        const markdown = $(".markdown").text();
+        const html = marked.parse(markdown);
+        const sanitizedHtml = DOMPurify.sanitize(html);
 
-        let text = marked.parse($(".markdown").text());
-        $(".markdown").html(text);
+        $(".markdown").html(sanitizedHtml);
         jQuery('#qrcode').qrcode({width: 128,height: 128,text: "http://content.alcedogroup.com/{{cache}}"});
     </script>
 </body>
