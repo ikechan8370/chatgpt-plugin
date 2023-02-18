@@ -18,9 +18,10 @@
         <div class="container">
             <div class="row">
                 <div class="col-lg-3 col-4 my-auto">
-                    <a href="index.html" class="site-logo">
+                    <a href="#" class="site-logo">
                         <img src="{{pluResPath}}content/ChatGPT/static/picture/openai.png" alt="LOGO">
                     </a>
+                    
                 </div>
             </div>
         </div>
@@ -31,6 +32,9 @@
                 <div class="col-xl-5 col-lg-5 text-right">
                     <div class="section-heading">
                         <h2>Open AI</h2>
+                        {{if cache != ''}}
+                        <p> {{cache}} </p>
+                        {{/if}}
                     </div>
                 </div>
             </div>
@@ -56,15 +60,18 @@
                     </div>
                 </div>
             </div>
+            {{if cache != ''}}
+            <div id="qrcode" class="row justify-content-end"></div>
+            {{/if}}
         </div>
     </section>
     <!-- footer start -->
     <footer class="site-footer mt-175">
         <div class="container">
             <div class="row">
-                <div class="col-md-3">
+                <div class="col-md-2">
                 </div>
-                <div class="col-md-9 my-auto text-right">
+                <div class="col-md-10 my-auto text-right">
                     <div class="copyright-text">
                         <p>Response to {{senderName}} Created By Yunzai-Bot and ChatGPT-Plugin</a></p>
                     </div>
@@ -76,8 +83,10 @@
 
     <!--========= JS Here =========-->
     <script src="{{pluResPath}}content/ChatGPT/static/js/jquery-2.2.4.min.js"></script>
+    <script src="{{pluResPath}}content/Bing/static/js/jquery.qrcode.min.js"></script>
     <script src="{{pluResPath}}content/ChatGPT/static/js/highlight.min.js"></script>
     <script src="{{pluResPath}}content/ChatGPT/static/js/marked.min.js"></script>
+    <script src="{{pluResPath}}content/Bing/static/js/tex-mml-chtml.js"></script>
     <script src="{{pluResPath}}content/ChatGPT/static/js/main.js"></script>
 
     <script>
@@ -97,6 +106,7 @@
 
         let text = marked.parse($(".markdown").text());
         $(".markdown").html(text);
+        jQuery('#qrcode').qrcode({width: 128,height: 128,text: "http://content.alcedogroup.com/{{cache}}"});
     </script>
 </body>
 
