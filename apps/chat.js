@@ -391,7 +391,7 @@ export class chatgpt extends plugin {
         userSetting = JSON.parse(userSetting)
       } else {
         userSetting = {
-          usePicture: false
+          usePicture: Config.defaultUsePicture
         }
       }
       if (userSetting.usePicture) {
@@ -404,12 +404,24 @@ export class chatgpt extends plugin {
           // ) {
           await this.reply('内容有点多，我正在奋笔疾书，请再等一会', true, { recallMsg: 5 })
           let responseAppend = await this.sendMessage('Continue', conversation, use, e)
-          previousConversation.conversation = {
-            conversationId: responseAppend.conversationId,
-            parentMessageId: responseAppend.id
+          if (use !== 'api3') {
+            previousConversation.conversation = {
+              conversationId: responseAppend.conversationId
+            }
+            if (use === 'bing') {
+              previousConversation.clientId = responseAppend.clientId
+              previousConversation.invocationId = responseAppend.invocationId
+              previousConversation.conversationSignature = responseAppend.conversationSignature
+            } else {
+              // 或许这样切换回来不会404？
+              previousConversation.conversation.parentMessageId = responseAppend.id
+            }
+            console.log(responseAppend)
+            previousConversation.num = previousConversation.num + 1
+            await redis.set(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`, JSON.stringify(previousConversation), CONVERSATION_PRESERVE_TIME > 0 ? { EX: CONVERSATION_PRESERVE_TIME } : {})
           }
           let responseAppendText = responseAppend?.text
-          await redis.set(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`, JSON.stringify(previousConversation), CONVERSATION_PRESERVE_TIME > 0 ? { EX: CONVERSATION_PRESERVE_TIME } : {})
+
           // console.log(responseAppend)
           // 检索是否有屏蔽词
           const blockWord = blockWords.find(word => responseAppendText.toLowerCase().includes(word.toLowerCase()))
