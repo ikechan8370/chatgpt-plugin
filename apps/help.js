@@ -34,7 +34,22 @@ let helpData = [
       {
         icon: 'list',
         title: '#chatgpt对话列表',
-        desc: '查询当前哪些人正在与机器人聊天'
+        desc: '查询当前哪些人正在与机器人聊天.目前API3模式下支持切换对话'
+      },
+      {
+        icon: 'switch',
+        title: '#chatgpt切换对话+对话id',
+        desc: '目前仅API3模式下可用，切换到指定的对话中'
+      },
+      {
+        icon: 'switch',
+        title: '#chatgpt加入对话+@某人',
+        desc: '目前仅API3模式下可用，加入到某人当前进行的对话中'
+      },
+      {
+        icon: 'destroy',
+        title: '#chatgpt删除对话+对话id或@用户',
+        desc: '删除指定对话，并清空与用户的关联信息。@用户时支持多个用户'
       },
       {
         icon: 'destroy',

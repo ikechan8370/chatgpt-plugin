@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="content-type" content="text/html;charset=utf-8" />
+    <link rel="stylesheet" type="text/css" href="{{pluResPath}}conversation/conversation.css" />
+    <link rel="shortcut icon" href="#" />
+</head>
+{{@headStyle}}
+
+<body>
+<div class="container" id="container">
+    <div class="head_box">
+        <div class="id_text">ChatGPT-Plugin</div>
+        <h2 class="day_text">最近对话列表</h2>
+        <img class="chatgpt_logo" src="{{pluResPath}}img/icon/chatgpt.png"/>
+    </div>
+    <div class="data_box">
+        <div class="list">
+            {{each conversations item}}
+            <div class="item-{{item.status}}">
+                <img class="icon" src="{{pluResPath}}img/icon/chat.png" />
+                <div class="title">
+                    <div class="text">{{item.id}}</div>
+                    <div class="dec">最近问题：{{item.lastPrompt}}</div>
+                    <div class="creater">发起者：{{item.creater}}</div>
+                </div>
+            </div>
+            {{/each}}
+        </div>
+    </div>
+    <div class="logo">Created By Yunzai-Bot and ChatGPT-Plugin</div>
+</div>
+</body>
+
+</html>

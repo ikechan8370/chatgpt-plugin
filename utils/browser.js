@@ -4,8 +4,6 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth'
 import { getOpenAIAuth } from './openai-auth.js'
 import delay from 'delay'
 import { v4 as uuidv4 } from 'uuid'
-import { pTimeout } from './common.js'
-console.log({ pTimeout })
 const chatUrl = 'https://chat.openai.com/chat'
 let puppeteer = {}
 

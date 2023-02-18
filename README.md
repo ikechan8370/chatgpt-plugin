@@ -2,7 +2,7 @@
 
 ## 特点
 
-* 支持单人连续对话Conversation
+* 支持单人连续对话Conversation，群聊中支持加入其他人的对话
 * API模式下，使用 GPT-3 API及相关模型配置尽可能逼近ChatGPT体验，支持自定义部分模型参数，仅需OpenAI Api Key，开箱即用
 * 支持问答图片截图
 * API3模式下，绕过Cloudflare防护直接访问ChatGPT的SSE API，与官方体验一致，且保留对话记录，在官网可查。
@@ -42,7 +42,7 @@ node -v
 
 ```sh
 git clone --depth=1 https://github.com/ikechan8370/chatgpt-plugin.git ./plugins/chatgpt-plugin/
-pnpm install -w undici chatgpt showdown mathjax-node delay uuid remark strip-markdown @waylaidwanderer/chatgpt-api keyv-file
+pnpm install -w undici chatgpt showdown mathjax-node delay uuid remark strip-markdown random puppeteer-extra-plugin-recaptcha puppeteer-extra puppeteer-extra-plugin-stealth @waylaidwanderer/chatgpt-api keyv-file
 ```
 
 如果是手工下载的 zip 压缩包，请将解压后的 chatgpt-plugin 文件夹（请删除压缩自带的-master后缀）放置在 Yunzai-Bot 目录下的 plugins 文件夹内
@@ -50,12 +50,6 @@ pnpm install -w undici chatgpt showdown mathjax-node delay uuid remark strip-mar
 如果您需要使用基于浏览器的访问模式，请运行下述指令
 
 > 浏览器模式仅为备选，如您需要使用浏览器模式，您还需要有**桌面环境**，优先级建议：必应>API>浏览器
-
-其中`random puppeteer-extra-plugin-recaptcha puppeteer-extra puppeteer-extra-plugin-stealth`为用于模拟浏览器登录的依赖
-
-```sh
-pnpm install -w undici chatgpt showdown mathjax-node delay uuid remark strip-markdown random puppeteer-extra-plugin-recaptcha puppeteer-extra puppeteer-extra-plugin-stealth @waylaidwanderer/chatgpt-api keyv-file
-```
 
 请注意：**若使用API模式，chatgpt的版本号注意要大于4.4.0**
 **若使用Bing模式，@waylaidwanderer/chatgpt-api 尽可能保持最新版本**
@@ -261,10 +255,6 @@ OpenAI 即将开放其官方ChatGPT API，且微软必应也公开发布了基�
 * https://github.com/transitive-bullshit/chatgpt-api
 * https://github.com/waylaidwanderer/node-chatgpt-api
 * https://chat.openai.com/
-
-## 由于issue实在较多且大多重复，建了个QQ群，欢迎各位小白大佬来玩
-
-![0AC75C5D0DD03D46962B38C8C1FBFD4F的副本](https://user-images.githubusercontent.com/21212372/218388938-637eeb82-cd3c-472e-b157-40d19c74d69c.png)
 
 ## 贡献者
 
