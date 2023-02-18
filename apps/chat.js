@@ -79,7 +79,7 @@ export class chatgpt extends plugin {
           permission: 'master'
         },
         {
-          reg: '#OpenAI(剩余)?(余额|额度)',
+          reg: '#(OpenAI|openai)(剩余)?(余额|额度)',
           fnc: 'totalAvailable',
           permission: 'master'
         },
@@ -705,7 +705,7 @@ export class chatgpt extends plugin {
       this.reply('当前未配置OpenAI API key，请在插件配置文件config/index.js中配置。若使用免费的API3则无需关心计费。')
       return false
     }
-    // 查询OpenAI Plus剩余试用额度
+    // 查询OpenAI API剩余试用额度
     fetch('https://api.openai.com/dashboard/billing/credit_grants', {
       method: 'GET',
       headers: {
@@ -716,10 +716,15 @@ export class chatgpt extends plugin {
       .then(response => response.json())
       .then(data => {
         if (data.error) {
-          console.log(data.error)
+          // console.log(data.error)
+          this.reply('获取失败：' + data.error.code)
           return false
         } else {
-          this.reply('总额度：$' + data.total_granted + '\n已使用额度：$' + data.total_used + '\n当前剩余额度：$' + data.total_available)
+          let total_granted = data.total_granted.toFixed(2)
+          let total_used = data.total_used.toFixed(2)
+          let total_available = data.total_available.toFixed(2)
+          let expires_at = new Date(data.grants.data[0].expires_at * 1000).toLocaleDateString().replace(/\//g, '-')
+          this.reply('总额度：$' + total_granted + '\n已经使用额度：$' + total_used + '\n当前剩余额度：$' + total_available + '\n到期日期(UTC)：' + expires_at)
         }
       })
   }
