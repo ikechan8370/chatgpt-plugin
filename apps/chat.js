@@ -391,7 +391,7 @@ export class chatgpt extends plugin {
         userSetting = JSON.parse(userSetting)
       } else {
         userSetting = {
-          usePicture: false
+          usePicture: Config.defaultUsePicture
         }
       }
       if (userSetting.usePicture) {
