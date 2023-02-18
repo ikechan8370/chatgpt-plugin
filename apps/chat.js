@@ -564,25 +564,30 @@ export class chatgpt extends plugin {
   }
 
   async getAllConversations (e) {
-    let conversations = await getConversations(e.sender.user_id)
-    if (Config.debug) {
-      logger.mark('all conversations: ', conversations)
+    const use = await redis.get('CHATGPT:USE')
+    if (use === 'api3') {
+      let conversations = await getConversations(e.sender.user_id)
+      if (Config.debug) {
+        logger.mark('all conversations: ', conversations)
+      }
+      //    let conversationsFirst10 = conversations.slice(0, 10)
+      await e.runtime.render('chatgpt-plugin', 'conversation/chatgpt', { conversations })
+      let text = '对话列表\n'
+      text += '对话id | 对话发起者 \n'
+      conversations.forEach(c => {
+        text += c.id + '|' + (c.creater || '未知') + '\n'
+      })
+      text += '您可以通过使用命令#chatgpt切换对话+对话id来加入指定对话'
+      await this.reply(text)
+    } else {
+      return await this.getConversations(e)
     }
-    //    let conversationsFirst10 = conversations.slice(0, 10)
-    await e.runtime.render('chatgpt-plugin', 'conversation/chatgpt', { conversations })
-    let text = '对话列表\n'
-    text += '对话id | 对话发起者 \n'
-    conversations.forEach(c => {
-      text += c.id + '|' + (c.creater || '未知') + '\n'
-    })
-    text += '您可以通过使用命令#chatgpt切换对话+对话id来加入指定对话'
-    await this.reply(text)
   }
 
   async attachConversation (e) {
     const use = await redis.get('CHATGPT:USE')
     if (use !== 'api3') {
-      await this.reply('目前仅支持API3模式')
+      await this.reply('该功能目前仅支持API3模式')
     } else {
       let conversationId = _.trimStart(e.msg.trimStart(), '#chatgpt切换对话').trim()
       if (!conversationId) {

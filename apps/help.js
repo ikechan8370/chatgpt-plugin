@@ -34,7 +34,12 @@ let helpData = [
       {
         icon: 'list',
         title: '#chatgpt对话列表',
-        desc: '查询当前哪些人正在与机器人聊天'
+        desc: '查询当前哪些人正在与机器人聊天.目前API3模式下支持切换对话'
+      },
+      {
+        icon: 'switch',
+        title: '#chatgpt切换对话+对话id',
+        desc: '目前仅API3模式下可用，切换到指定的对话中'
       },
       {
         icon: 'destroy',
