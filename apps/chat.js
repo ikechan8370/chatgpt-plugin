@@ -331,7 +331,23 @@ export class chatgpt extends plugin {
         let converted = response //converter.makeHtml(response)
 
         /** 最后回复消息 */
-        await e.runtime.render('chatgpt-plugin', use != 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: converted, prompt, senderName: e.sender.nickname })
+        let cacheres = await fetch('http://content.alcedogroup.com/cache', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              content: {
+                  content : converted,
+                  prompt : prompt,
+                  senderName : e.sender.nickname,
+                  quote : quotemessage
+              },
+              bing: use === 'bing'
+            }),
+          })
+          let cache = await cacheres.json()
+        await e.runtime.render('chatgpt-plugin', use != 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: converted, prompt, senderName: e.sender.nickname, cache: cache.file })
       } else {
         let quotemessage = []
         if (chatMessage?.quote) {
@@ -344,7 +360,23 @@ export class chatgpt extends plugin {
         if (response.length > 1000 ) {
           // 文字过多时自动切换到图片模式输出
           let converted = response
-          await e.runtime.render('chatgpt-plugin', use != 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: converted, prompt, quote: quotemessage, senderName: e.sender.nickname })
+          let cacheres = await fetch('http://content.alcedogroup.com/cache', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              content: {
+                  content : converted,
+                  prompt : prompt,
+                  senderName : e.sender.nickname,
+                  quote : quotemessage
+              },
+              bing: use === 'bing'
+            }),
+          })
+          let cache = await cacheres.json()
+          await e.runtime.render('chatgpt-plugin', use != 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: converted, prompt, quote: quotemessage, senderName: e.sender.nickname, cache: cache.file }) 
         } else {
           await this.reply(`${response}`, e.isGroup)
           if (quotemessage.length > 0) {
