@@ -1,3 +1,4 @@
+import fs from 'fs'
 const defaultConfig = {
   blockWords: ['屏蔽词1', '屏蔽词b'],
   defaultUsePicture: false,
@@ -25,15 +26,15 @@ const defaultConfig = {
   defaultTimeoutMs: 120000,
   chromeTimeoutMS: 120000
 }
-
+const _path = process.cwd()
 let config = {}
-if (fs.existsSync('../config/config.js')) {
-  const fullPath = fs.realpathSync(path);
-  config = (await import(pathToFileURL(fullPath).toString())).default;
-} else if (fs.existsSync('../config/index.js')) {
+if (fs.existsSync(`${_path}/plugins/chatgpt-plugin/config/config.js`)) {
+  const fullPath = fs.realpathSync(`${_path}/plugins/chatgpt-plugin/config/config.js`);
+  config = (await import(fullPath)).default;
+} else if (fs.existsSync(`${_path}/plugins/chatgpt-plugin/config/index.js`)) {
   // 兼容旧版本
-  const fullPath = fs.realpathSync(path);
-  config = (await import(pathToFileURL(fullPath).toString())).Config;
+  const fullPath = fs.realpathSync(`${_path}/plugins/chatgpt-plugin/config/index.js`);
+  config = (await import(fullPath)).Config;
 }
 
 export const Config = Object.assign({}, defaultConfig, config);
