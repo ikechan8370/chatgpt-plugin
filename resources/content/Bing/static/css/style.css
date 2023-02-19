@@ -37,7 +37,7 @@ html {
 }
 
 body {
-  font-family: "Josefin Sans", sans-serif;
+  font-family: "Microsoft YaHei", "微软雅黑", "Josefin Sans", sans-serif;
   font-size: 18px;
   padding: 0;
   margin: 0;
@@ -196,7 +196,7 @@ p, li, span {
   transition: 0.3s;
   z-index: 2;
   position: relative;
-  font-family: "Josefin Sans", sans-serif;
+  font-family: "Microsoft YaHei", "微软雅黑", "Josefin Sans", sans-serif;
 }
 @media (max-width: 767px) {
   .site-btn {

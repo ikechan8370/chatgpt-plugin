@@ -37,7 +37,7 @@ html {
 }
 
 body {
-  font-family: "Josefin Sans", sans-serif;
+  font-family: "Microsoft YaHei", "微软雅黑", "Josefin Sans", sans-serif;
   font-size: 18px;
   padding: 0;
   margin: 0;
@@ -176,7 +176,7 @@ h1, h2, h3, h4, h5, h6 {
   color: #242B58;
   margin: 0;
   line-height: 1.4;
-  font-family: "Josefin Sans", sans-serif;
+  font-family: "Microsoft YaHei", "微软雅黑", "Josefin Sans", sans-serif;
 }
 
 h2 {
