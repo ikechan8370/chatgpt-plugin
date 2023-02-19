@@ -451,7 +451,7 @@ export class chatgpt extends plugin {
 
         /** 最后回复消息 */
         if (Config.showQRCode) {
-          let cacheres = await fetch(Config.cacheUrl, {
+          let cacheres = await fetch(`${Config.cacheUrl}/cache`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -470,7 +470,7 @@ export class chatgpt extends plugin {
           let cache = {file:''}
           if (cacheres.ok) 
             cache = await cacheres.json()
-          await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: escapeHtml(response), prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache: cache.file })
+          await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: escapeHtml(response), prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache: `${Config.cacheUrl}/${cache.file}` })
         } else {
           await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: escapeHtml(response), prompt: escapeHtml(prompt), senderName: e.sender.nickname })
         }
@@ -486,7 +486,7 @@ export class chatgpt extends plugin {
         if (Config.autoUsePicture && response.length > Config.autoUsePictureThreshold) {
           // 文字过多时自动切换到图片模式输出
           if (Config.showQRCode) {
-            let cacheres = await fetch(Config.cacheUrl, {
+            let cacheres = await fetch(`${Config.cacheUrl}/cache`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json'
@@ -505,7 +505,7 @@ export class chatgpt extends plugin {
             let cache = {file:''}
             if (cacheres.ok) 
               cache = await cacheres.json()
-            await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: escapeHtml(response), prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache: cache.file })
+            await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: escapeHtml(response), prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache: `${Config.cacheUrl}/${cache.file}` })
           } else {
             await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: escapeHtml(response), prompt: escapeHtml(prompt), senderName: e.sender.nickname })
           }

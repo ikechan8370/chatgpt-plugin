@@ -7,7 +7,7 @@ const defaultConfig = {
   conversationPreserveTime: 0,
   toggleMode: 'at',
   showQRCode: true,
-  cacheUrl: 'http://content.alcedogroup.com/cache',
+  cacheUrl: 'http://content.alcedogroup.com',
   apiKey: '',
   model: '',
   api: 'https://chatgpt.duti.tech/api/conversation',

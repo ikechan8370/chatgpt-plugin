@@ -6,10 +6,10 @@
     <meta charset="utf-8">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     <!--====== CSS Here ======-->
-    <link rel="stylesheet" href="{{pluResPath}}content/ChatGPT/static/css/bootstrap.min.css">
-    <link rel="stylesheet" href="{{pluResPath}}content/ChatGPT/static/css/font-awesome.min.css">
-    <link rel="stylesheet" href="{{pluResPath}}content/ChatGPT/static/css/hljs.css">
-    <link rel="stylesheet" href="{{pluResPath}}content/ChatGPT/static/css/style.css">
+    <link rel="stylesheet" href="{{pluResPath}}content/static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{pluResPath}}content/static/css/font-awesome.min.css">
+    <link rel="stylesheet" href="{{pluResPath}}content/static/css/hljs.css">
+    <link rel="stylesheet" href="{{pluResPath}}content/ChatGPT/style.css">
 
 </head>
 
@@ -19,7 +19,7 @@
             <div class="row">
                 <div class="col-lg-3 col-4 my-auto">
                     <a href="#" class="site-logo">
-                        <img src="{{pluResPath}}content/ChatGPT/static/picture/openai.png" alt="LOGO">
+                        <img src="{{pluResPath}}content/static/picture/openai.png" alt="LOGO">
                     </a>
 
                 </div>
@@ -82,13 +82,13 @@
     <!-- footer end -->
 
     <!--========= JS Here =========-->
-    <script src="{{pluResPath}}content/ChatGPT/static/js/jquery-2.2.4.min.js"></script>
-    <script src="{{pluResPath}}content/Bing/static/js/jquery.qrcode.min.js"></script>
-    <script src="{{pluResPath}}content/ChatGPT/static/js/highlight.min.js"></script>
-    <script src="{{pluResPath}}content/ChatGPT/static/js/marked.min.js"></script>
-    <script src="{{pluResPath}}content/Bing/static/js/tex-mml-chtml.js"></script>
-    <script src="{{pluResPath}}content/ChatGPT/static/js/main.js"></script>
-    <script src="{{pluResPath}}content/ChatGPT/static/js/purify.min.js"></script>
+    <script src="{{pluResPath}}content/static/js/jquery-2.2.4.min.js"></script>
+    <script src="{{pluResPath}}content/static/js/jquery.qrcode.min.js"></script>
+    <script src="{{pluResPath}}content/static/js/highlight.min.js"></script>
+    <script src="{{pluResPath}}content/static/js/marked.min.js"></script>
+    <script src="{{pluResPath}}content/static/js/tex-mml-chtml.js"></script>
+    <script src="{{pluResPath}}content/static/js/main.js"></script>
+    <script src="{{pluResPath}}content/static/js/purify.min.js"></script>
 
     <script>
         marked.setOptions({
@@ -109,7 +109,7 @@
         const sanitizedHtml = DOMPurify.sanitize(html);
 
         $(".markdown").html(sanitizedHtml);
-        jQuery('#qrcode').qrcode({width: 128,height: 128,text: "http://content.alcedogroup.com/{{cache}}"});
+        jQuery('#qrcode').qrcode({width: 128,height: 128,text: "{{cache}}"});
     </script>
 </body>
 
