@@ -258,6 +258,9 @@ OpenAI 即将开放其官方ChatGPT API，且微软必应也公开发布了基�
 * https://github.com/acheong08/ChatGPT
 * https://github.com/PawanOsman
 
+图片模式支持 @HalcyonAlcedo
+* https://github.com/HalcyonAlcedo/ChatGPT-Plugin-PageCache
+
 以及ChatGPT
 * https://chat.openai.com/
 
