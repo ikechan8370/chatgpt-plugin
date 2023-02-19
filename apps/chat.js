@@ -1,6 +1,6 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import _ from 'lodash'
-import { Config } from '../config/index.js'
+import { Config } from '../utils/config.js'
 import mjAPI from 'mathjax-node'
 import { v4 as uuid } from 'uuid'
 import delay from 'delay'
@@ -451,7 +451,7 @@ export class chatgpt extends plugin {
 
         /** 最后回复消息 */
         if (Config.showQRCode) {
-          let cacheres = await fetch('http://content.alcedogroup.com/cache', {
+          let cacheres = await fetch(Config.cacheUrl, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -486,7 +486,7 @@ export class chatgpt extends plugin {
         if (Config.autoUsePicture && response.length > Config.autoUsePictureThreshold) {
           // 文字过多时自动切换到图片模式输出
           if (Config.showQRCode) {
-            let cacheres = await fetch('http://content.alcedogroup.com/cache', {
+            let cacheres = await fetch(Config.cacheUrl, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json'
@@ -768,7 +768,7 @@ export class chatgpt extends plugin {
 
   async totalAvailable (e) {
     if (!Config.apiKey) {
-      this.reply('当前未配置OpenAI API key，请在插件配置文件config/index.js中配置。若使用免费的API3则无需关心计费。')
+      this.reply('当前未配置OpenAI API key，请在插件配置文件config/config.js中配置。若使用免费的API3则无需关心计费。')
       return false
     }
     // 查询OpenAI API剩余试用额度

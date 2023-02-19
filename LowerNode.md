@@ -31,6 +31,6 @@ import fetch from 'node-fetch';
 globalThis.fetch = fetch;
 ```
 
-再编辑`Yunzai根目录/plugins/chatgpt-plugin/config/index.js`文件，根据其中的注释修改必要配置项。
+再编辑`Yunzai根目录/plugins/chatgpt-plugin/config/config.js`文件，根据其中的注释修改必要配置项。
 
 ---

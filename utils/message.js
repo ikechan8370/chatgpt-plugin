@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid'
-import { Config } from '../config/index.js'
+import { Config } from '../utils/config.js'
 import HttpsProxyAgent from 'https-proxy-agent'
 import _ from 'lodash'
 import fetch from 'node-fetch'

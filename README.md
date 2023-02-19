@@ -56,7 +56,8 @@ pnpm install -w undici chatgpt showdown mathjax-node delay uuid remark strip-mar
 
 3. 修改配置
 
-编辑`plugins/chatgpt-plugin/config/index.js`文件，根据其中的注释修改必要配置项
+复制`plugins/chatgpt-plugin/config/config.example.js`并将其改名为`config.js`
+编辑`plugins/chatgpt-plugin/config/config.js`文件，根据其中的注释修改必要配置项
 
 4. 重启Yunzai-Bot
 
@@ -91,7 +92,7 @@ pnpm install -w undici chatgpt showdown mathjax-node delay uuid remark strip-mar
 
 #### 配置文件相关
 
-配置文件位置：`plugins/chatgpt-plugin/config/index.js`
+配置文件位置：`plugins/chatgpt-plugin/config/config.js`
 
 部分关键配置项，其他请参照文件内注释：
 
