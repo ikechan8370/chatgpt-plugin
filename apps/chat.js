@@ -750,7 +750,7 @@ export class chatgpt extends plugin {
   }
 
   async attachConversation (e) {
-    const use = await reeletis.get('CHATGPT:USE')
+    const use = await redis.get('CHATGPT:USE')
     if (use !== 'api3') {
       await this.reply('该功能目前仅支持API3模式')
     } else {
