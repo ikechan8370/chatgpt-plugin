@@ -252,8 +252,13 @@ OpenAI 即将开放其官方ChatGPT API，且微软必应也公开发布了基�
 
 ## 感谢
 
+本项目使用或参考了以下开源项目\
 * https://github.com/transitive-bullshit/chatgpt-api
 * https://github.com/waylaidwanderer/node-chatgpt-api
+* https://github.com/acheong08/ChatGPT
+* https://github.com/PawanOsman
+
+以及ChatGPT\
 * https://chat.openai.com/
 
 ## 贡献者
