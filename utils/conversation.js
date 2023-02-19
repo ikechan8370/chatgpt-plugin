@@ -17,7 +17,12 @@ export async function getConversations (qq = '') {
   if (Config.debug) {
     logger.mark(json)
   }
-  let conversations = JSON.parse(json)
+  let conversations
+  try {
+    conversations = JSON.parse(json)
+  } catch (e) {
+    throw new Error(json)
+  }
   let result = conversations.items?.sort((a, b) => b.create_time - a.create_time)
   let map = {}
   for (let i = 0; i < conversations.items.length; i++) {
