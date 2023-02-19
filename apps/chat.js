@@ -467,7 +467,9 @@ export class chatgpt extends plugin {
             })
           }
           )
-          let cache = await cacheres.json()
+          let cache = {file:''}
+          if (cacheres.ok) 
+            cache = await cacheres.json()
           await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: escapeHtml(response), prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache: cache.file })
         } else {
           await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: escapeHtml(response), prompt: escapeHtml(prompt), senderName: e.sender.nickname })
@@ -500,7 +502,9 @@ export class chatgpt extends plugin {
               })
             }
             )
-            let cache = await cacheres.json()
+            let cache = {file:''}
+            if (cacheres.ok) 
+              cache = await cacheres.json()
             await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: escapeHtml(response), prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache: cache.file })
           } else {
             await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: escapeHtml(response), prompt: escapeHtml(prompt), senderName: e.sender.nickname })
