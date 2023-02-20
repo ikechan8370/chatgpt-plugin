@@ -214,7 +214,7 @@ export class ChatgptManagement extends plugin {
       e.reply('正在执行更新操作，请稍等')
     }
     const _path = process.cwd()
-    exec(command, { cwd: `${_path}/plugins/miao-plugin/` }, async function (error, stdout, stderr) {
+    exec(command, { cwd: `${_path}/plugins/chatgpt-plugin/` }, async function (error, stdout, stderr) {
       if (/(Already up[ -]to[ -]date|已经是最新的)/.test(stdout)) {
         e.reply('目前已经是最新版ChatGPT了~')
         return true
@@ -227,8 +227,8 @@ export class ChatgptManagement extends plugin {
       timer && clearTimeout(timer)
 
       let data = JSON.stringify({
-        isGroup: !!this.e.isGroup,
-        id: this.e.isGroup ? this.e.group_id : this.e.user_id,
+        isGroup: !!e.isGroup,
+        id: e.isGroup ? e.group_id : e.user_id,
         time: new Date().getTime()
       })
       await redis.set('Yz:restart', data, { EX: 120 })
