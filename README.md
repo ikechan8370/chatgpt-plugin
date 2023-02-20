@@ -262,8 +262,11 @@ OpenAI 即将开放其官方ChatGPT API，且微软必应也公开发布了基�
 
 ## 贡献者
 
+感谢以下贡献者
+
 <a href="https://github.com/ikechan8370/chatgpt-plugin/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=ikechan8370/chatgpt-plugin" />
 </a>
+
 
 ![Alt](https://repobeats.axiom.co/api/embed/076d597ede41432208435f233d18cb20052fb90a.svg "Repobeats analytics image")
