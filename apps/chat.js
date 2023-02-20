@@ -1,6 +1,6 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import _ from 'lodash'
-import { Config } from '../config/index.js'
+import { Config } from '../utils/config.js'
 import mjAPI from 'mathjax-node'
 import { v4 as uuid } from 'uuid'
 import delay from 'delay'
@@ -451,7 +451,7 @@ export class chatgpt extends plugin {
 
         /** 最后回复消息 */
         if (Config.showQRCode) {
-          let cacheres = await fetch('http://content.alcedogroup.com/cache', {
+          let cacheres = await fetch(`${Config.cacheUrl}/cache`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -467,8 +467,11 @@ export class chatgpt extends plugin {
             })
           }
           )
-          let cache = await cacheres.json()
-          await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: escapeHtml(response), prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache: cache.file })
+          let cache = {file:'',cacheUrl:Config.cacheUrl}
+          if (cacheres.ok) 
+            cache = await cacheres.json()
+          cache.cacheUrl = Config.cacheUrl
+          await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: escapeHtml(response), prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache: cache })
         } else {
           await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: escapeHtml(response), prompt: escapeHtml(prompt), senderName: e.sender.nickname })
         }
@@ -484,7 +487,7 @@ export class chatgpt extends plugin {
         if (Config.autoUsePicture && response.length > Config.autoUsePictureThreshold) {
           // 文字过多时自动切换到图片模式输出
           if (Config.showQRCode) {
-            let cacheres = await fetch('http://content.alcedogroup.com/cache', {
+            let cacheres = await fetch(`${Config.cacheUrl}/cache`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json'
@@ -500,10 +503,13 @@ export class chatgpt extends plugin {
               })
             }
             )
-            let cache = await cacheres.json()
-            await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: escapeHtml(response), prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache: cache.file })
+            let cache = {file:'',cacheUrl:Config.cacheUrl}
+            if (cacheres.ok) 
+              cache = await cacheres.json()
+            cache.cacheUrl = Config.cacheUrl
+            await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: escapeHtml(response), prompt: escapeHtml(prompt), senderName: e.sender.nickname, quote: quotemessage.length > 0 , quotes: quotemessage, cache: cache })
           } else {
-            await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: escapeHtml(response), prompt: escapeHtml(prompt), senderName: e.sender.nickname })
+            await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: escapeHtml(response), prompt: escapeHtml(prompt), senderName: e.sender.nickname, quote: quotemessage.length > 0 , quotes: quotemessage })
           }
         } else {
           await this.reply(`${response}`, e.isGroup)
@@ -764,7 +770,7 @@ export class chatgpt extends plugin {
 
   async totalAvailable (e) {
     if (!Config.apiKey) {
-      this.reply('当前未配置OpenAI API key，请在插件配置文件config/index.js中配置。若使用免费的API3则无需关心计费。')
+      this.reply('当前未配置OpenAI API key，请在插件配置文件config/config.js中配置。若使用免费的API3则无需关心计费。')
       return false
     }
     // 查询OpenAI API剩余试用额度

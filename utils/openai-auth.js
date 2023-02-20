@@ -1,4 +1,4 @@
-import { Config } from '../config/index.js'
+import { Config } from '../utils/config.js'
 import delay from 'delay'
 import random from 'random'
 

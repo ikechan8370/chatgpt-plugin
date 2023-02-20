@@ -1,5 +1,5 @@
 import plugin from '../../../lib/plugins/plugin.js'
-import { Config } from '../config/index.js'
+import { Config } from '../utils/config.js'
 import { BingAIClient } from '@waylaidwanderer/chatgpt-api'
 
 export class ChatgptManagement extends plugin {

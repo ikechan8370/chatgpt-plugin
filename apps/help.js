@@ -1,5 +1,5 @@
 import plugin from '../../../lib/plugins/plugin.js'
-import { Config } from '../config/index.js'
+import { Config } from '../utils/config.js'
 
 let helpData = [
   {

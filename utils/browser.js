@@ -1,5 +1,5 @@
 import lodash from 'lodash'
-import { Config } from '../config/index.js'
+import { Config } from '../utils/config.js'
 import StealthPlugin from 'puppeteer-extra-plugin-stealth'
 import { getOpenAIAuth } from './openai-auth.js'
 import delay from 'delay'

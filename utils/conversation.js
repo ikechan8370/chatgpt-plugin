@@ -1,5 +1,5 @@
 import fetch from 'node-fetch'
-import { Config } from '../config/index.js'
+import { Config } from '../utils/config.js'
 
 export async function getConversations (qq = '') {
   let accessToken = await redis.get('CHATGPT:TOKEN')
