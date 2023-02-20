@@ -67,7 +67,7 @@
                     </div>
                     <div class="about-content">
                         {{each quotes item}}
-                        <p class="markdown">{{item}}</p>
+                        <p>{{item}}</p>
                         {{/each}}
                         <span class="height-50"></span>
                     </div>
@@ -123,6 +123,7 @@
         const sanitizedHtml = DOMPurify.sanitize(html);
 
         $(".markdown").html(sanitizedHtml);
+        $(".quotemarkdown").html(quotesanitizedHtml);
         jQuery('#qrcode').qrcode({width: 128,height: 128,text: "{{cache.cacheUrl}}/{{cache.file}}"});
     </script>
 </body>
