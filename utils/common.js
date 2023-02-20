@@ -180,3 +180,10 @@ function getDOMException (errorMessage) {
     ? new Error(errorMessage)
     : new DOMException(errorMessage)
 }
+
+export async function checkPnpm () {
+  let npm = 'npm'
+  let ret = await this.execSync('pnpm -v')
+  if (ret.stdout) npm = 'pnpm'
+  return npm
+}

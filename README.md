@@ -29,14 +29,8 @@ Node.js >= 18 / Node.js >= 14(with node-fetch)
 > * 浏览器模式通过在本地启动Chrome等浏览器模拟用户访问ChatGPT网站，使得获得和官方以及API2模式一模一样的回复质量，同时保证安全性。缺点是本方法对环境要求较高，需要提供桌面环境和一个可用的代理（能够访问ChatGPT的IP地址），且响应速度不如API，而且高峰期容易无法使用。一般作为API3的下位替代。
 > * 必应（Bing）将调用微软新必应接口进行对话。需要在必应网页能够正常使用新必应且设置有效的Bing登录Cookie方可使用。
 1. 进入 Yunzai根目录
-2. 检查 Node.js 版本
 
-```
-node -v
-```
-若 Node.js >= 18，根据下方步骤安装即可。否则参考[这里](LowerNode.md)
-
-3. 请将 chatgpt-plugin 放置在 Yunzai-Bot 的 plugins 目录下
+2. 请将 chatgpt-plugin 放置在 Yunzai-Bot 的 plugins 目录下
 
 推荐使用 git 进行安装，以方便后续升级。在 Yunzai-Bot 根目录夹打开终端，运行下述指令进行安装
 
@@ -49,7 +43,8 @@ pnpm install -w undici chatgpt showdown mathjax-node delay uuid remark strip-mar
 
 如果您需要使用基于浏览器的访问模式，请运行下述指令
 
-> 浏览器模式仅为备选，如您需要使用浏览器模式，您还需要有**桌面环境**，优先级建议：必应>API>浏览器
+> 浏览器模式仅为备选，如您需要使用浏览器模式，您还需要有**桌面环境**，优先级建议：必应>API3>浏览器
+> 2.20更新：必应被大削，变得蠢了，建议还是API3优先
 
 请注意：**若使用API模式，chatgpt的版本号注意要大于4.4.0**
 **若使用Bing模式，@waylaidwanderer/chatgpt-api 尽可能保持最新版本**

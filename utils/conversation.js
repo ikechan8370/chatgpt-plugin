@@ -6,7 +6,7 @@ export async function getConversations (qq = '') {
   if (!accessToken) {
     throw new Error('未绑定ChatGPT AccessToken，请使用#chatgpt设置token命令绑定token')
   }
-  let response = await fetch(`${Config.apiBaseUrl}/api/conversations?offset=0&limit=20`, {
+  let response = await fetch(`${Config.apiBaseUrl}/conversations?offset=0&limit=20`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
