@@ -1,5 +1,6 @@
 // import { remark } from 'remark'
 // import stripMarkdown from 'strip-markdown'
+import { exec } from 'child_process'
 // export function markdownToText (markdown) {
 //  return remark()
 //    .use(stripMarkdown)
@@ -179,4 +180,19 @@ function getDOMException (errorMessage) {
   return globalThis.DOMException === undefined
     ? new Error(errorMessage)
     : new DOMException(errorMessage)
+}
+
+export async function checkPnpm () {
+  let npm = 'npm'
+  let ret = await execSync('pnpm -v')
+  if (ret.stdout) npm = 'pnpm'
+  return npm
+}
+
+async function execSync (cmd) {
+  return new Promise((resolve, reject) => {
+    exec(cmd, { windowsHide: true }, (error, stdout, stderr) => {
+      resolve({ error, stdout, stderr })
+    })
+  })
 }
