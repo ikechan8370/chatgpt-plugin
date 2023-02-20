@@ -3,6 +3,7 @@
   "type": "module",
   "author": "ikechan8370",
   "dependencies": {
+    "@waylaidwanderer/chatgpt-api": "^1.20.2",
     "chatgpt": "^4.4.1",
     "delay": "^5.0.0",
     "keyv-file": "^0.2.0",

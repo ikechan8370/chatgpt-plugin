@@ -34,9 +34,10 @@ Node.js >= 18 / Node.js >= 14(with node-fetch)
 
 推荐使用 git 进行安装，以方便后续升级。在 Yunzai-Bot 根目录夹打开终端，运行下述指令进行安装
 
-```sh
+```shell
 git clone --depth=1 https://github.com/ikechan8370/chatgpt-plugin.git ./plugins/chatgpt-plugin/
-pnpm install -w undici chatgpt showdown mathjax-node delay uuid remark strip-markdown random puppeteer-extra-plugin-recaptcha puppeteer-extra puppeteer-extra-plugin-stealth @waylaidwanderer/chatgpt-api keyv-file
+cd plugins/chatgpt-plugin
+pnpm i
 ```
 
 如果是手工下载的 zip 压缩包，请将解压后的 chatgpt-plugin 文件夹（请删除压缩自带的-master后缀）放置在 Yunzai-Bot 目录下的 plugins 文件夹内
