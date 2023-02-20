@@ -200,6 +200,7 @@ export class ChatgptManagement extends plugin {
     return true
   }
 
+  // modified from miao-plugin
   async updateChatGPTPlugin (e) {
     let timer
     if (!await this.checkAuth(e)) {
