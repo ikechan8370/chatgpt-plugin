@@ -225,6 +225,7 @@ export class ChatgptManagement extends plugin {
         return true
       }
       e.reply('ChatGPT更新成功，正在尝试重新启动Yunzai以应用更新...')
+      e.reply('更新日志：\n' + stdout)
       timer && clearTimeout(timer)
 
       let data = JSON.stringify({
