@@ -54,7 +54,7 @@
                         <h4>必应</h4>
                     </div>
                     <div class="about-content">
-                        <p class="markdown">{{@ content}}</p>
+                        <p class="markdown"></p>
                         <span class="height-50"></span>
                     </div>
                 </div>
@@ -101,6 +101,7 @@
     <script src="{{pluResPath}}content/static/js/highlight.min.js"></script>
     <script src="{{pluResPath}}content/static/js/marked.min.js"></script>
     <script src="{{pluResPath}}content/static/js/tex-mml-chtml.js"></script>
+    <script src="{{pluResPath}}content/static/js/base64.min.js"></script>
     <script src="{{pluResPath}}content/static/js/main.js"></script>
     <script src="{{pluResPath}}content/static/js/purify.min.js"></script>
 
@@ -118,8 +119,8 @@
                 return hljs.highlightAuto(code,[lang]).value;
             }
         });
-        const markdown = $(".markdown").text();
-        const html = marked.parse(markdown);
+        const markdown = '{{@ content}}';
+        const html = marked.parse(Base64.decode(markdown));
         const sanitizedHtml = DOMPurify.sanitize(html);
 
         $(".markdown").html(sanitizedHtml);

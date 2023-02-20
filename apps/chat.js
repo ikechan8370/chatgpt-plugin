@@ -450,6 +450,7 @@ export class chatgpt extends plugin {
         // todo部分数学公式可能还有问题
 
         /** 最后回复消息 */
+        response = new Buffer.from(response).toString("base64")
         if (Config.showQRCode) {
           let cacheres = await fetch(`${Config.cacheUrl}/cache`, {
             method: 'POST',
@@ -471,9 +472,9 @@ export class chatgpt extends plugin {
           if (cacheres.ok) {
             cache = Object.assign({}, cache, await cacheres.json())
           }
-          await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: escapeHtml(response), prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache: cache })
+          await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache: cache })
         } else {
-          await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: escapeHtml(response), prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache: {file:'',cacheUrl:Config.cacheUrl} })
+          await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache: {file:'',cacheUrl:Config.cacheUrl} })
         }
       } else {
         let quotemessage = []
@@ -485,6 +486,7 @@ export class chatgpt extends plugin {
           })
         }
         if (Config.autoUsePicture && response.length > Config.autoUsePictureThreshold) {
+          response = new Buffer.from(response).toString("base64")
           // 文字过多时自动切换到图片模式输出
           if (Config.showQRCode) {
             let cacheres = await fetch(`${Config.cacheUrl}/cache`, {
@@ -507,9 +509,9 @@ export class chatgpt extends plugin {
             if (cacheres.ok) {
               cache = Object.assign({}, cache, await cacheres.json())
             }
-            await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: escapeHtml(response), prompt: escapeHtml(prompt), senderName: e.sender.nickname, quote: quotemessage.length > 0 , quotes: quotemessage, cache: cache })
+            await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt: escapeHtml(prompt), senderName: e.sender.nickname, quote: quotemessage.length > 0 , quotes: quotemessage, cache: cache })
           } else {
-            await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: escapeHtml(response), prompt: escapeHtml(prompt), senderName: e.sender.nickname, quote: quotemessage.length > 0 , quotes: quotemessage, cache: {file:'',cacheUrl:Config.cacheUrl} })
+            await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt: escapeHtml(prompt), senderName: e.sender.nickname, quote: quotemessage.length > 0 , quotes: quotemessage, cache: {file:'',cacheUrl:Config.cacheUrl} })
           }
         } else {
           await this.reply(`${response}`, e.isGroup)
