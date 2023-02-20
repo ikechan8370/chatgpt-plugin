@@ -66,7 +66,7 @@ export class ChatgptManagement extends plugin {
           fnc: 'modeHelp'
         },
         {
-          reg: '^#chatgpt(强制)更新$',
+          reg: '^#chatgpt(强制)?更新$',
           fnc: 'updateChatGPTPlugin'
         }
       ]
