@@ -16,6 +16,7 @@ const defaultConfig = {
   reverseProxy: 'https://chatgpt.pawan.krd/api/completions',
   promptPrefixOverride: 'Your answer shouldn\'t be too verbose. If you are generating a list, do not have too many items. Keep the number of items short. Prefer to answer in Chinese.',
   assistantLabel: 'ChatGPT',
+  thinkingTips: true,
   username: '',
   password: '',
   headless: false,
@@ -30,11 +31,11 @@ const _path = process.cwd()
 let config = {}
 if (fs.existsSync(`${_path}/plugins/chatgpt-plugin/config/config.js`)) {
   const fullPath = fs.realpathSync(`${_path}/plugins/chatgpt-plugin/config/config.js`);
-  config = (await import(fullPath)).default;
+  config = (await import(`file://${fullPath}`)).default;
 } else if (fs.existsSync(`${_path}/plugins/chatgpt-plugin/config/index.js`)) {
   // 兼容旧版本
   const fullPath = fs.realpathSync(`${_path}/plugins/chatgpt-plugin/config/index.js`);
-  config = (await import(fullPath)).Config;
+  config = (await import(`file://${fullPath}`)).Config;
 }
 
 export const Config = Object.assign({}, defaultConfig, config);

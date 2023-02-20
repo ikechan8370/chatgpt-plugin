@@ -288,7 +288,7 @@ export class chatgpt extends plugin {
       // 队列队尾插入，开始排队
       await redis.rPush('CHATGPT:CHAT_QUEUE', [randomId])
       let confirm = await redis.get('CHATGPT:CONFIRM')
-      let confirmOn = !confirm || confirm === 'on'
+      let confirmOn = (!confirm || confirm === 'on') && Config.thinkingTips
       if (await redis.lIndex('CHATGPT:CHAT_QUEUE', 0) === randomId) {
         if (confirmOn) {
           await this.reply('我正在思考如何回复你，请稍等', true, { recallMsg: 8 })
@@ -468,12 +468,12 @@ export class chatgpt extends plugin {
           }
           )
           let cache = {file:'',cacheUrl:Config.cacheUrl}
-          if (cacheres.ok) 
-            cache = await cacheres.json()
-          cache.cacheUrl = Config.cacheUrl
+          if (cacheres.ok) {
+            cache = Object.assign({}, cache, await cacheres.json())
+          }
           await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: escapeHtml(response), prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache: cache })
         } else {
-          await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: escapeHtml(response), prompt: escapeHtml(prompt), senderName: e.sender.nickname })
+          await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: escapeHtml(response), prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache: {file:'',cacheUrl:Config.cacheUrl} })
         }
       } else {
         let quotemessage = []
@@ -504,12 +504,12 @@ export class chatgpt extends plugin {
             }
             )
             let cache = {file:'',cacheUrl:Config.cacheUrl}
-            if (cacheres.ok) 
-              cache = await cacheres.json()
-            cache.cacheUrl = Config.cacheUrl
+            if (cacheres.ok) {
+              cache = Object.assign({}, cache, await cacheres.json())
+            }
             await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: escapeHtml(response), prompt: escapeHtml(prompt), senderName: e.sender.nickname, quote: quotemessage.length > 0 , quotes: quotemessage, cache: cache })
           } else {
-            await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: escapeHtml(response), prompt: escapeHtml(prompt), senderName: e.sender.nickname, quote: quotemessage.length > 0 , quotes: quotemessage })
+            await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: escapeHtml(response), prompt: escapeHtml(prompt), senderName: e.sender.nickname, quote: quotemessage.length > 0 , quotes: quotemessage, cache: {file:'',cacheUrl:Config.cacheUrl} })
           }
         } else {
           await this.reply(`${response}`, e.isGroup)
