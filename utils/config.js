@@ -16,6 +16,7 @@ const defaultConfig = {
   reverseProxy: 'https://chatgpt.pawan.krd/api/completions',
   promptPrefixOverride: 'Your answer shouldn\'t be too verbose. If you are generating a list, do not have too many items. Keep the number of items short. Prefer to answer in Chinese.',
   assistantLabel: 'ChatGPT',
+  thinkingTips: true,
   username: '',
   password: '',
   headless: false,

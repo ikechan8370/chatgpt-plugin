@@ -57,6 +57,8 @@ export default {
   // promptPrefixOverride: 'Your answer shouldn\'t be too verbose. If you are generating a list, do not have too many items. Keep the number of items short. Prefer to answer in Chinese.',
   // AI认为的自己的名字，当你问他你是谁是他会回答这里的名字。
   // assistantLabel: 'ChatGPT',
+  // 是否开启AI正在思考中的提示信息
+  // thinkingTips: true,
   // ***********************************************************************************************************************************
   //                                                         以下为浏览器方式的配置                                                        *
   // ***********************************************************************************************************************************
