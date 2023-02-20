@@ -32,8 +32,8 @@
                 <div class="col-xl-5 col-lg-5 text-right">
                     <div class="section-heading">
                         <h2>Open AI</h2>
-                        {{if cache != ''}}
-                        <p> {{cache}} </p>
+                        {{if cache.file != ''}}
+                        <p> {{cache.file}} </p>
                         {{/if}}
                     </div>
                 </div>
@@ -60,7 +60,7 @@
                     </div>
                 </div>
             </div>
-            {{if cache != ''}}
+            {{if cache.file != ''}}
             <div id="qrcode" class="row justify-content-end"></div>
             {{/if}}
         </div>
@@ -109,7 +109,7 @@
         const sanitizedHtml = DOMPurify.sanitize(html);
 
         $(".markdown").html(sanitizedHtml);
-        jQuery('#qrcode').qrcode({width: 128,height: 128,text: "{{cache}}"});
+        jQuery('#qrcode').qrcode({width: 128,height: 128,text: "{{cache.cacheUrl}}/{{cache.file}}"});
     </script>
 </body>
 
