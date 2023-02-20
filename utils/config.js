@@ -31,11 +31,11 @@ const _path = process.cwd()
 let config = {}
 if (fs.existsSync(`${_path}/plugins/chatgpt-plugin/config/config.js`)) {
   const fullPath = fs.realpathSync(`${_path}/plugins/chatgpt-plugin/config/config.js`);
-  config = (await import(fullPath)).default;
+  config = (await import(`file://${fullPath}`)).default;
 } else if (fs.existsSync(`${_path}/plugins/chatgpt-plugin/config/index.js`)) {
   // 兼容旧版本
   const fullPath = fs.realpathSync(`${_path}/plugins/chatgpt-plugin/config/index.js`);
-  config = (await import(fullPath)).Config;
+  config = (await import(`file://${fullPath}`)).Config;
 }
 
 export const Config = Object.assign({}, defaultConfig, config);
