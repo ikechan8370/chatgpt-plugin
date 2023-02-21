@@ -524,16 +524,23 @@ export class chatgpt extends plugin {
         // 移除队列首位，释放锁
         await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
       }
-    } catch (e) {
-      logger.error(e)
+    } catch (err) {
+      logger.error(err)
       if (use !== 'bing') {
         // 异常了也要腾地方（todo 大概率后面的也会异常，要不要一口气全杀了）
         await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
       }
-      if (e === 'Error: {"detail":"Conversation not found"}') {
-        await this.destroyConversations(e)
+      if (err === 'Error: {"detail":"Conversation not found"}') {
+        await this.destroyConversations(err)
         await this.reply('当前对话异常，已经清除，请重试', true, { recallMsg: e.isGroup ? 10 : 0 })
-      } else { await this.reply(`通信异常，请稍后重试：${e}`, true, { recallMsg: e.isGroup ? 10 : 0 }) }
+      } else {
+        if (err.length < 200) {
+          await this.reply(`通信异常，请稍后重试：${err}`, true, { recallMsg: e.isGroup ? 10 : 0 }) 
+        } else {
+          //这里是否还需要上传到缓存服务器呐？多半是代理服务器的问题，本地也修不了，应该不用吧。
+          await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: new Buffer.from(`通信异常,错误信息如下 ${err}`).toString("base64"), prompt: escapeHtml(prompt), senderName: e.sender.nickname, quote: false , quotes: [], cache: {file:'',cacheUrl:Config.cacheUrl} })
+        }
+      }
     }
   }
 
