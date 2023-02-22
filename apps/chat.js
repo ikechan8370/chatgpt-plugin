@@ -6,7 +6,7 @@ import { v4 as uuid } from 'uuid'
 import delay from 'delay'
 import { ChatGPTAPI } from 'chatgpt'
 import { ChatGPTClient, BingAIClient } from '@waylaidwanderer/chatgpt-api'
-import {escapeHtml, getMessageById, makeForwardMsg, tryTimes, upsertMessage} from '../utils/common.js'
+import { escapeHtml, getMessageById, makeForwardMsg, tryTimes, upsertMessage } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
 import { OfficialChatGPTClient } from '../utils/message.js'
@@ -275,12 +275,12 @@ export class chatgpt extends plugin {
       }
     }
 
-//    if (prompt.indexOf('<script>') != -1)
-//    {
-//      await this.reply('坏人，我要报告给主人', e.isGroup)
-//      Bot.pickUser(cfg.masterQQ[0]).sendMsg(`主人,我在${this.e.group_id ? '群' + this.e.group_id : '私聊' }被${e.sender.nickname}使用代码攻击了，请警惕`)
-//      return false
-//    }
+    //    if (prompt.indexOf('<script>') != -1)
+    //    {
+    //      await this.reply('坏人，我要报告给主人', e.isGroup)
+    //      Bot.pickUser(cfg.masterQQ[0]).sendMsg(`主人,我在${this.e.group_id ? '群' + this.e.group_id : '私聊' }被${e.sender.nickname}使用代码攻击了，请警惕`)
+    //      return false
+    //    }
 
     const use = await redis.get('CHATGPT:USE')
     if (use !== 'bing') {
@@ -404,53 +404,8 @@ export class chatgpt extends plugin {
         }
       }
       if (userSetting.usePicture) {
-        let endTokens = ['.', '。', '……', '!', '！', ']', ')', '）', '】', '?', '？', '~', '"', "'"]
-        let maxTries = use === 'api3' ? 3 : 0
-        while (maxTries >= 0 && !endTokens.find(token => response.trimEnd().endsWith(token))) {
-          maxTries--
-          // while (!response.trimEnd().endsWith('.') && !response.trimEnd().endsWith('。') && !response.trimEnd().endsWith('……') &&
-          //     !response.trimEnd().endsWith('！') && !response.trimEnd().endsWith('!') && !response.trimEnd().endsWith(']') && !response.trimEnd().endsWith('】')
-          // ) {
-          await this.reply('内容有点多，我正在奋笔疾书，请再等一会', true, { recallMsg: 5 })
-          let responseAppend = await this.sendMessage('Continue', conversation, use, e)
-          if (use !== 'api3') {
-            previousConversation.conversation = {
-              conversationId: responseAppend.conversationId
-            }
-            if (use === 'bing') {
-              previousConversation.clientId = responseAppend.clientId
-              previousConversation.invocationId = responseAppend.invocationId
-              previousConversation.conversationSignature = responseAppend.conversationSignature
-            } else {
-              // 或许这样切换回来不会404？
-              previousConversation.conversation.parentMessageId = responseAppend.id
-            }
-            console.log(responseAppend)
-            previousConversation.num = previousConversation.num + 1
-            await redis.set(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`, JSON.stringify(previousConversation), CONVERSATION_PRESERVE_TIME > 0 ? { EX: CONVERSATION_PRESERVE_TIME } : {})
-          }
-          let responseAppendText = responseAppend?.text
-
-          // console.log(responseAppend)
-          // 检索是否有屏蔽词
-          const blockWord = blockWords.find(word => responseAppendText.toLowerCase().includes(word.toLowerCase()))
-          if (blockWord) {
-            await this.reply('返回内容存在敏感词，我不想回答你', true)
-            return
-          }
-          if (responseAppendText.indexOf('conversation') > -1 || responseAppendText.startsWith("I'm sorry")) {
-            logger.warn('chatgpt might forget what it had said')
-            break
-          }
-
-          response = response + responseAppendText
-        }
-        // logger.info(response)
-        // markdown转为html
-        // todo部分数学公式可能还有问题
-
-        /** 最后回复消息 */
-        response = new Buffer.from(response).toString("base64")
+        // todo use next api of chatgpt to complete incomplete respoonse
+        response = new Buffer.from(response).toString('base64')
         if (Config.showQRCode) {
           let cacheres = await fetch(`${Config.cacheUrl}/cache`, {
             method: 'POST',
@@ -468,13 +423,13 @@ export class chatgpt extends plugin {
             })
           }
           )
-          let cache = {file:'',cacheUrl:Config.cacheUrl}
+          let cache = { file: '', cacheUrl: Config.cacheUrl }
           if (cacheres.ok) {
             cache = Object.assign({}, cache, await cacheres.json())
           }
-          await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache: cache })
+          await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache })
         } else {
-          await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache: {file:'',cacheUrl:Config.cacheUrl} })
+          await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache: { file: '', cacheUrl: Config.cacheUrl } })
         }
       } else {
         let quotemessage = []
@@ -486,7 +441,7 @@ export class chatgpt extends plugin {
           })
         }
         if (Config.autoUsePicture && response.length > Config.autoUsePictureThreshold) {
-          response = new Buffer.from(response).toString("base64")
+          response = new Buffer.from(response).toString('base64')
           // 文字过多时自动切换到图片模式输出
           if (Config.showQRCode) {
             let cacheres = await fetch(`${Config.cacheUrl}/cache`, {
@@ -505,13 +460,13 @@ export class chatgpt extends plugin {
               })
             }
             )
-            let cache = {file:'',cacheUrl:Config.cacheUrl}
+            let cache = { file: '', cacheUrl: Config.cacheUrl }
             if (cacheres.ok) {
               cache = Object.assign({}, cache, await cacheres.json())
             }
-            await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt: escapeHtml(prompt), senderName: e.sender.nickname, quote: quotemessage.length > 0 , quotes: quotemessage, cache: cache })
+            await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt: escapeHtml(prompt), senderName: e.sender.nickname, quote: quotemessage.length > 0, quotes: quotemessage, cache })
           } else {
-            await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt: escapeHtml(prompt), senderName: e.sender.nickname, quote: quotemessage.length > 0 , quotes: quotemessage, cache: {file:'',cacheUrl:Config.cacheUrl} })
+            await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt: escapeHtml(prompt), senderName: e.sender.nickname, quote: quotemessage.length > 0, quotes: quotemessage, cache: { file: '', cacheUrl: Config.cacheUrl } })
           }
         } else {
           await this.reply(`${response}`, e.isGroup)
