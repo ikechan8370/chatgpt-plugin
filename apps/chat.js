@@ -458,8 +458,8 @@ export class chatgpt extends plugin {
                   content: {
                     content: response,
                     prompt,
-                    senderName: e.sender.nickname
-                  // quote: quotemessage
+                    senderName: e.sender.nickname,
+                    quote: quotemessage
                   },
                   bing: use === 'bing'
                 })
