@@ -1,4 +1,5 @@
 import fs from 'fs'
+import lodash from 'lodash'
 const defaultConfig = {
   blockWords: ['屏蔽词1', '屏蔽词b'],
   defaultUsePicture: false,
@@ -37,5 +38,21 @@ if (fs.existsSync(`${_path}/plugins/chatgpt-plugin/config/config.js`)) {
   const fullPath = fs.realpathSync(`${_path}/plugins/chatgpt-plugin/config/index.js`);
   config = (await import(`file://${fullPath}`)).Config;
 }
-
-export const Config = Object.assign({}, defaultConfig, config);
+config = Object.assign({}, defaultConfig, config)
+export const Config = new Proxy(config, {
+  set(target, property, value) {
+    target[property] = value;
+    const change = lodash.transform(target, function(result, value, key) {
+        if (!lodash.isEqual(value, defaultConfig[key])) {
+            result[key] = (lodash.isObject(value) && lodash.isObject(defaultConfig[key])) ? changes(value, defaultConfig[key]) : value;
+        }
+    });
+    try {
+      fs.writeFileSync(`${_path}/plugins/chatgpt-plugin/config/config.js`, `export default ${JSON.stringify(change, '', '\t')}`, { flag: 'w' })
+    } catch (err) {
+      console.error(err)
+      return false;
+    }
+    return true;
+  },
+});
