@@ -108,16 +108,6 @@ export function supportGuoba() {
             },
         },
         {
-            field: 'bingTimeoutMs',
-            label: 'Bing超时时间',
-            helpMessage: '单位：毫秒',
-            bottomHelpMessage: 'bing默认超时时间，bing太慢了有的时候。',
-            component: 'InputNumber',
-            componentProps: {
-              min: 0,
-            },
-        },
-        {
             field: 'chromeTimeoutMS',
             label: '浏览器超时时间',
             helpMessage: '单位：毫秒',
