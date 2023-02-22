@@ -434,9 +434,9 @@ export class chatgpt extends plugin {
               cache = Object.assign({}, cache, await cacheres.json())
             }
             await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache })
-          } catch (e) {
+          } catch (err) {
             logger.warn('error happened while uploading content to the cache server. QR Code will not be showed in this picture.')
-            logger.error(e)
+            logger.error(err)
             await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache: { file: '', cacheUrl: Config.cacheUrl } })
           }
         } else {
@@ -477,9 +477,9 @@ export class chatgpt extends plugin {
                 cache = Object.assign({}, cache, await cacheres.json())
               }
               await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache })
-            } catch (e) {
+            } catch (err) {
               logger.warn('error happened while uploading content to the cache server. QR Code will not be showed in this picture.')
-              logger.error(e)
+              logger.error(err)
               await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache: { file: '', cacheUrl: Config.cacheUrl } })
             }
           } else {
