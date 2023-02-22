@@ -12,8 +12,8 @@ import { KeyvFile } from 'keyv-file'
 import { OfficialChatGPTClient } from '../utils/message.js'
 import fetch from 'node-fetch'
 import { deleteConversation, getConversations, getLatestMessageIdByConversationId } from '../utils/conversation.js'
-import cfg from '../../../lib/config/config.js'
 const blockWords = Config.blockWords
+const promptBlockWords = Config.promptBlockWords
 
 /**
  * 每个对话保留的时长。单个对话内ai是保留上下文的。超时后销毁对话，再次对话创建新的对话。
@@ -274,7 +274,12 @@ export class chatgpt extends plugin {
         return false
       }
     }
-
+    // 检索是否有屏蔽词
+    const promtBlockWord = promptBlockWords.find(word => prompt.toLowerCase().includes(word.toLowerCase()))
+    if (promtBlockWord) {
+      await this.reply('主人不让我回答你这种问题，真是抱歉了呢', true)
+      return false
+    }
     //    if (prompt.indexOf('<script>') != -1)
     //    {
     //      await this.reply('坏人，我要报告给主人', e.isGroup)
