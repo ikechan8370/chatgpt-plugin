@@ -1,7 +1,6 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import _ from 'lodash'
 import { Config } from '../utils/config.js'
-import mjAPI from 'mathjax-node'
 import { v4 as uuid } from 'uuid'
 import delay from 'delay'
 import { ChatGPTAPI } from 'chatgpt'
@@ -22,12 +21,6 @@ const promptBlockWords = Config.promptBlockWords
  */
 const CONVERSATION_PRESERVE_TIME = Config.conversationPreserveTime
 const defaultPropmtPrefix = 'You answer as concisely as possible for each response (e.g. don’t be verbose). It is very important that you answer as concisely as possible, so please remember this. If you are generating a list, do not have too many items. Keep the number of items short.'
-mjAPI.config({
-  MathJax: {
-    // traditional MathJax configuration
-  }
-})
-mjAPI.start()
 
 export class chatgpt extends plugin {
   constructor () {
