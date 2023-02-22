@@ -45,7 +45,7 @@ export async function getConversations (qq = '') {
         logger.mark('conversation detail for conversation ' + item.id, conversationDetail)
       }
       conversationDetail = JSON.parse(conversationDetail)
-      let messages = Object.values(conversationDetail.mapping)
+      let messages = Object.values(conversationDetail.mapping || {})
 
       messages = messages
         .filter(message => message.message)
@@ -60,12 +60,12 @@ export async function getConversations (qq = '') {
       if (messagesUser.length > 0) {
         lastMessage = messagesUser[0].content.parts[0]
         await redis.set(`CHATGPT:CONVERSATION_LAST_MESSAGE_PROMPT:${item.id}`, lastMessage)
+        map[item.id] = lastMessage
       }
       if (messagesAssistant.length > 0) {
         await redis.set(`CHATGPT:CONVERSATION_LAST_MESSAGE_ID:${item.id}`, messagesAssistant[0].id)
       }
       await redis.set(`CHATGPT:CONVERSATION_CREATE_TIME:${item.id}`, new Date(conversationDetail.create_time * 1000).toLocaleString())
-      map[item.id] = lastMessage
     }
   }
   let res = []
@@ -73,23 +73,25 @@ export async function getConversations (qq = '') {
   if (qq) {
     usingConversationId = await redis.get(`CHATGPT:QQ_CONVERSATION:${qq}`)
   }
-  let promisesPostProcess = result.map(async conversation => {
-    conversation.lastPrompt = map[conversation.id]
-    conversation.create_time = new Date(conversation.create_time).toLocaleString()
-    // 这里的时间格式还可以。不用管了。conversation.create_time =
-    // title 全是 New chat，不要了
-    delete conversation.title
-    conversation.creater = await redis.get(`CHATGPT:CONVERSATION_CREATER_NICK_NAME:${conversation.id}`)
-    if (qq && conversation.id === usingConversationId) {
-      conversation.status = 'using'
-    } else {
-      conversation.status = 'normal'
-    }
-    if (conversation.lastPrompt?.length > 80) {
-      conversation.lastPrompt = conversation.lastPrompt.slice(0, 80) + '......'
-    }
-    res.push(conversation)
-  })
+  let promisesPostProcess = result
+    .filter(conversation => map[conversation.id])
+    .map(async conversation => {
+      conversation.lastPrompt = map[conversation.id]
+      conversation.create_time = new Date(conversation.create_time).toLocaleString()
+      // 这里的时间格式还可以。不用管了。conversation.create_time =
+      // title 全是 New chat，不要了
+      delete conversation.title
+      conversation.creater = await redis.get(`CHATGPT:CONVERSATION_CREATER_NICK_NAME:${conversation.id}`)
+      if (qq && conversation.id === usingConversationId) {
+        conversation.status = 'using'
+      } else {
+        conversation.status = 'normal'
+      }
+      if (conversation.lastPrompt?.length > 80) {
+        conversation.lastPrompt = conversation.lastPrompt.slice(0, 80) + '......'
+      }
+      res.push(conversation)
+    })
   await Promise.all(promisesPostProcess)
   return res
 }
