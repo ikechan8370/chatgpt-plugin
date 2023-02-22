@@ -2,6 +2,7 @@ import fs from 'fs'
 import lodash from 'lodash'
 const defaultConfig = {
   blockWords: ['屏蔽词1', '屏蔽词b'],
+  promptBlockWords: ['屏蔽词1', '屏蔽词b'],
   defaultUsePicture: false,
   autoUsePicture: true,
   autoUsePictureThreshold: 1200,
