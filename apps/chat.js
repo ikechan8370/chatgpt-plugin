@@ -469,7 +469,7 @@ export class chatgpt extends plugin {
               if (cacheres.ok) {
                 cache = Object.assign({}, cache, await cacheres.json())
               }
-              await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache })
+              await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt: escapeHtml(prompt), senderName: e.sender.nickname, quote: quotemessage.length > 0, quotes: quotemessage, cache })
             } catch (err) {
               logger.warn('error happened while uploading content to the cache server. QR Code will not be showed in this picture.')
               logger.error(err)
