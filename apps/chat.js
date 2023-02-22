@@ -412,27 +412,33 @@ export class chatgpt extends plugin {
         // todo use next api of chatgpt to complete incomplete respoonse
         response = new Buffer.from(response).toString('base64')
         if (Config.showQRCode) {
-          let cacheres = await fetch(`${Config.cacheUrl}/cache`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              content: {
-                content: response,
-                prompt,
-                senderName: e.sender.nickname
-                // quote: quotemessage
+          try {
+            let cacheres = await fetch(`${Config.cacheUrl}/cache`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
               },
-              bing: use === 'bing'
-            })
+              body: JSON.stringify({
+                content: {
+                  content: response,
+                  prompt,
+                  senderName: e.sender.nickname
+                  // quote: quotemessage
+                },
+                bing: use === 'bing'
+              })
+            }
+            )
+            let cache = { file: '', cacheUrl: Config.cacheUrl }
+            if (cacheres.ok) {
+              cache = Object.assign({}, cache, await cacheres.json())
+            }
+            await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache })
+          } catch (e) {
+            logger.warn('error happened while uploading content to the cache server. QR Code will not be showed in this picture.')
+            logger.error(e)
+            await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache: { file: '', cacheUrl: Config.cacheUrl } })
           }
-          )
-          let cache = { file: '', cacheUrl: Config.cacheUrl }
-          if (cacheres.ok) {
-            cache = Object.assign({}, cache, await cacheres.json())
-          }
-          await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache })
         } else {
           await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache: { file: '', cacheUrl: Config.cacheUrl } })
         }
@@ -449,27 +455,33 @@ export class chatgpt extends plugin {
           response = new Buffer.from(response).toString('base64')
           // 文字过多时自动切换到图片模式输出
           if (Config.showQRCode) {
-            let cacheres = await fetch(`${Config.cacheUrl}/cache`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                content: {
-                  content: response,
-                  prompt,
-                  senderName: e.sender.nickname,
-                  quote: quotemessage
+            try {
+              let cacheres = await fetch(`${Config.cacheUrl}/cache`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
                 },
-                bing: use === 'bing'
-              })
+                body: JSON.stringify({
+                  content: {
+                    content: response,
+                    prompt,
+                    senderName: e.sender.nickname
+                  // quote: quotemessage
+                  },
+                  bing: use === 'bing'
+                })
+              }
+              )
+              let cache = { file: '', cacheUrl: Config.cacheUrl }
+              if (cacheres.ok) {
+                cache = Object.assign({}, cache, await cacheres.json())
+              }
+              await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache })
+            } catch (e) {
+              logger.warn('error happened while uploading content to the cache server. QR Code will not be showed in this picture.')
+              logger.error(e)
+              await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache: { file: '', cacheUrl: Config.cacheUrl } })
             }
-            )
-            let cache = { file: '', cacheUrl: Config.cacheUrl }
-            if (cacheres.ok) {
-              cache = Object.assign({}, cache, await cacheres.json())
-            }
-            await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt: escapeHtml(prompt), senderName: e.sender.nickname, quote: quotemessage.length > 0, quotes: quotemessage, cache })
           } else {
             await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt: escapeHtml(prompt), senderName: e.sender.nickname, quote: quotemessage.length > 0, quotes: quotemessage, cache: { file: '', cacheUrl: Config.cacheUrl } })
           }
