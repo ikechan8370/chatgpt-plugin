@@ -1,6 +1,7 @@
 // import { remark } from 'remark'
 // import stripMarkdown from 'strip-markdown'
 import { exec } from 'child_process'
+import lodash from 'lodash'
 // export function markdownToText (markdown) {
 //  return remark()
 //    .use(stripMarkdown)
@@ -17,6 +18,14 @@ export function escapeHtml (str) {
     '/': '&#x2F;'
   }
   return str.replace(/[&<>"'/]/g, (match) => htmlEntities[match])
+}
+
+export function randomString(length = 5) {
+  let str = ''
+  for (let i = 0; i < length; i++) {
+    str += lodash.random(36).toString(36)
+  }
+  return str.substr(0, length)
 }
 
 export async function upsertMessage (message) {

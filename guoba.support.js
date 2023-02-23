@@ -82,6 +82,12 @@ export function supportGuoba() {
           component: 'Input',
         },
         {
+            field: 'cacheEntry',
+            label: '预制渲染服务器访问代码',
+            bottomHelpMessage: '图片内容渲染服务器开启预制访问代码，当渲染服务器访问较慢时可以开启,但无法保证访问代码可以正常访问页面。',
+            component: 'Switch',
+        },
+        {
           field: 'proxy',
           label: '代理服务器地址',
           bottomHelpMessage: '数据通过代理服务器发送，http或socks5代理。',
@@ -102,16 +108,6 @@ export function supportGuoba() {
             label: '默认超时时间',
             helpMessage: '单位：毫秒',
             bottomHelpMessage: '各个地方的默认超时时间。',
-            component: 'InputNumber',
-            componentProps: {
-              min: 0,
-            },
-        },
-        {
-            field: 'bingTimeoutMs',
-            label: 'Bing超时时间',
-            helpMessage: '单位：毫秒',
-            bottomHelpMessage: 'bing默认超时时间，bing太慢了有的时候。',
             component: 'InputNumber',
             componentProps: {
               min: 0,
@@ -144,6 +140,12 @@ export function supportGuoba() {
           component: 'Input',
         },
         {
+            field: 'thinkingTips',
+            label: '思考提示',
+            bottomHelpMessage: '是否开启AI正在思考中的提示信息。',
+            component: 'Switch',
+        },
+        {
           label: '以下为API2方式的配置',
           component: 'Divider',
         },
@@ -173,6 +175,22 @@ export function supportGuoba() {
           field: 'apiBaseUrl',
           label: 'apiBaseUrl地址',
           bottomHelpMessage: 'apiBaseUrl地址',
+          component: 'Input',
+        },
+        {
+          label: '以下为API/API2方式公用的配置',
+          component: 'Divider',
+        },
+        {
+          field: 'promptPrefixOverride',
+          label: 'AI风格',
+          bottomHelpMessage: '你可以在这里写入你希望AI回答的风格，比如希望优先回答中文，回答长一点等。',
+          component: 'Input',
+        },
+        {
+          field: 'assistantLabel',
+          label: 'AI名字',
+          bottomHelpMessage: 'AI认为的自己的名字，当你问他你是谁是他会回答这里的名字。',
           component: 'Input',
         },
         {
