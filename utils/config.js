@@ -13,7 +13,7 @@ const defaultConfig = {
   cacheEntry: false,
   apiKey: '',
   model: '',
-  api: 'https://gpt.pawan.krd/backend-api/conversation',
+  api: 'https://chatgpt.duti.tech/api/conversation',
   apiBaseUrl: 'https://chatgpt.duti.tech/api',
   plus: false,
   reverseProxy: 'https://chatgpt.pawan.krd/api/completions',
