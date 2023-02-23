@@ -5,7 +5,7 @@ import { v4 as uuid } from 'uuid'
 import delay from 'delay'
 import { ChatGPTAPI } from 'chatgpt'
 import { ChatGPTClient, BingAIClient } from '@waylaidwanderer/chatgpt-api'
-import { escapeHtml, getMessageById, makeForwardMsg, tryTimes, upsertMessage } from '../utils/common.js'
+import { escapeHtml, getMessageById, makeForwardMsg, tryTimes, upsertMessage, randomString } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
 import { OfficialChatGPTClient } from '../utils/message.js'
@@ -289,15 +289,11 @@ export class chatgpt extends plugin {
       let confirmOn = (!confirm || confirm === 'on') && Config.thinkingTips
       if (await redis.lIndex('CHATGPT:CHAT_QUEUE', 0) === randomId) {
         // 添加超时设置
-        redis.psetex("CHATGPT:CHAT_QUEUE_TIMEOUT", Config.defaultTimeoutMs, randomId);
+        await redis.pSetEx("CHATGPT:CHAT_QUEUE_TIMEOUT", Config.defaultTimeoutMs, randomId);
         if (confirmOn) {
           await this.reply('我正在思考如何回复你，请稍等', true, { recallMsg: 8 })
         }
       } else {
-        // 超时检查
-        if (!redis.exists("CHATGPT:CHAT_QUEUE_TIMEOUT")) {
-          await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
-        }
         if (confirmOn) {
           let length = await redis.lLen('CHATGPT:CHAT_QUEUE') - 1
           await this.reply(`我正在思考如何回复你，请稍等，当前队列前方还有${length}个问题`, true, { recallMsg: 8 })
@@ -306,8 +302,19 @@ export class chatgpt extends plugin {
         // 开始排队
         while (true) {
           if (await redis.lIndex('CHATGPT:CHAT_QUEUE', 0) === randomId) {
+            await redis.pSetEx("CHATGPT:CHAT_QUEUE_TIMEOUT", Config.defaultTimeoutMs, randomId);
             break
           } else {
+            // 超时检查
+            if (await redis.exists("CHATGPT:CHAT_QUEUE_TIMEOUT") === 0) {
+              await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
+              await redis.pSetEx("CHATGPT:CHAT_QUEUE_TIMEOUT", Config.defaultTimeoutMs, await redis.lIndex('CHATGPT:CHAT_QUEUE', 0));
+              if (confirmOn) {
+                let length = await redis.lLen('CHATGPT:CHAT_QUEUE') - 1
+                await this.reply(`问题想不明白放弃了，开始思考下一个问题，当前队列前方还有${length}个问题`, true, { recallMsg: 8 })
+                logger.info(`问题超时已弹出，chatgpt队列前方还有${length}个问题。管理员可通过#清空队列来强制清除所有等待的问题。`)
+              }
+            }
             await delay(1500)
           }
         }
@@ -409,37 +416,12 @@ export class chatgpt extends plugin {
       }
       if (userSetting.usePicture) {
         // todo use next api of chatgpt to complete incomplete respoonse
-        response = new Buffer.from(response).toString('base64')
-        if (Config.showQRCode) {
-          try {
-            let cacheres = await fetch(`${Config.cacheUrl}/cache`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                content: {
-                  content: response,
-                  prompt,
-                  senderName: e.sender.nickname
-                  // quote: quotemessage
-                },
-                bing: use === 'bing'
-              })
-            }
-            )
-            let cache = { file: '', cacheUrl: Config.cacheUrl }
-            if (cacheres.ok) {
-              cache = Object.assign({}, cache, await cacheres.json())
-            }
-            await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache })
-          } catch (err) {
-            logger.warn('error happened while uploading content to the cache server. QR Code will not be showed in this picture.')
-            logger.error(err)
-            await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache: { file: '', cacheUrl: Config.cacheUrl } })
-          }
-        } else {
-          await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache: { file: '', cacheUrl: Config.cacheUrl } })
+        try {
+          await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', response, prompt, [], Config.showQRCode)
+        } catch (err) {
+          logger.warn('error happened while uploading content to the cache server. QR Code will not be showed in this picture.')
+          logger.error(err)
+          await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', response, prompt)
         }
       } else {
         let quotemessage = []
@@ -451,38 +433,13 @@ export class chatgpt extends plugin {
           })
         }
         if (Config.autoUsePicture && response.length > Config.autoUsePictureThreshold) {
-          response = new Buffer.from(response).toString('base64')
           // 文字过多时自动切换到图片模式输出
-          if (Config.showQRCode) {
-            try {
-              let cacheres = await fetch(`${Config.cacheUrl}/cache`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                  content: {
-                    content: response,
-                    prompt,
-                    senderName: e.sender.nickname,
-                    quote: quotemessage
-                  },
-                  bing: use === 'bing'
-                })
-              }
-              )
-              let cache = { file: '', cacheUrl: Config.cacheUrl }
-              if (cacheres.ok) {
-                cache = Object.assign({}, cache, await cacheres.json())
-              }
-              await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt: escapeHtml(prompt), senderName: e.sender.nickname, quote: quotemessage.length > 0, quotes: quotemessage, cache })
-            } catch (err) {
-              logger.warn('error happened while uploading content to the cache server. QR Code will not be showed in this picture.')
-              logger.error(err)
-              await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt: escapeHtml(prompt), senderName: e.sender.nickname, cache: { file: '', cacheUrl: Config.cacheUrl } })
-            }
-          } else {
-            await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: response, prompt: escapeHtml(prompt), senderName: e.sender.nickname, quote: quotemessage.length > 0, quotes: quotemessage, cache: { file: '', cacheUrl: Config.cacheUrl } })
+          try {
+            await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', response, prompt, quotemessage, Config.showQRCode)
+          } catch (err) {
+            logger.warn('error happened while uploading content to the cache server. QR Code will not be showed in this picture.')
+            logger.error(err)
+            await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', response, prompt)
           }
         } else {
           await this.reply(`${response}`, e.isGroup)
@@ -509,10 +466,50 @@ export class chatgpt extends plugin {
           await this.reply(`通信异常，请稍后重试：${err}`, true, { recallMsg: e.isGroup ? 10 : 0 }) 
         } else {
           //这里是否还需要上传到缓存服务器呐？多半是代理服务器的问题，本地也修不了，应该不用吧。
-          await e.runtime.render('chatgpt-plugin', use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', { content: new Buffer.from(`通信异常,错误信息如下 ${err}`).toString("base64"), prompt: escapeHtml(prompt), senderName: e.sender.nickname, quote: false , quotes: [], cache: {file:'',cacheUrl:Config.cacheUrl} })
+          await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', `通信异常,错误信息如下 ${err}`, prompt)
         }
       }
     }
+  }
+
+  async renderImage (e, template, content, prompt, quote = [], cache = false) {
+    let cacheData = { file: '', cacheUrl: Config.cacheUrl }
+    if (cache) {
+      if (Config.cacheEntry) cacheData.file = randomString()
+      const use = await redis.get('CHATGPT:USE')
+      const cacheresOption = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          content: {
+            content: new Buffer.from(content).toString('base64'),
+            prompt,
+            senderName: e.sender.nickname,
+            quote: quote
+          },
+          bing: use === 'bing',
+          entry: Config.cacheEntry ? cacheData.file : ''
+        })
+      }
+      if (Config.cacheEntry) {
+        fetch(`${Config.cacheUrl}/cache`, cacheresOption)
+      } else {
+        const cacheres = await fetch(`${Config.cacheUrl}/cache`, cacheresOption)
+        if (cacheres.ok) {
+          cacheData = Object.assign({}, cacheData, await cacheres.json())
+        }
+      }
+    }
+    await e.runtime.render('chatgpt-plugin', template, { 
+      content: new Buffer.from(content).toString("base64"),
+      prompt: escapeHtml(prompt),
+      senderName: e.sender.nickname,
+      quote: quote.length > 0,
+      quotes: quote,
+      cache: cacheData
+    })
   }
 
   async sendMessage (prompt, conversation = {}, use, e) {

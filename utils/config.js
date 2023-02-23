@@ -10,6 +10,7 @@ const defaultConfig = {
   toggleMode: 'at',
   showQRCode: true,
   cacheUrl: 'https://content.alcedogroup.com',
+  cacheEntry: false,
   apiKey: '',
   model: '',
   api: 'https://gpt.pawan.krd/backend-api/conversation',
