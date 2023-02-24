@@ -26,6 +26,18 @@ export function supportGuoba() {
       // 配置项 schemas
       schemas: [
         {
+          field: 'blockWords',
+          label: '输出黑名单',
+          bottomHelpMessage: '检查输出结果中是否有违禁词，如果存在黑名单中的违禁词则不输出',
+          component: 'Input',
+        },
+        {
+          field: 'promptBlockWords',
+          label: '输入黑名单',
+          bottomHelpMessage: '检查输入结果中是否有违禁词，如果存在黑名单中的违禁词则不输出',
+          component: 'Input',
+        },
+        {
           field: 'imgOcr',
           label: '图片识别',
           bottomHelpMessage: '是否识别消息中图片的文字内容，需要同时包含图片和消息才生效',
@@ -247,6 +259,9 @@ export function supportGuoba() {
       // 设置配置的方法（前端点确定后调用的方法）
       setConfigData(data, {Result}) {
         for (let [keyPath, value] of Object.entries(data)) {
+            // 处理黑名单
+            if (keyPath === 'blockWords' || keyPath === 'promptBlockWords')
+              value = value.toString().split(/[,，;；\|]/)
             if (Config[keyPath] != value)
                 Config[keyPath] = value
         }

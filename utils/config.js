@@ -48,7 +48,7 @@ export const Config = new Proxy(config, {
     target[property] = value;
     const change = lodash.transform(target, function(result, value, key) {
         if (!lodash.isEqual(value, defaultConfig[key])) {
-            result[key] = (lodash.isObject(value) && lodash.isObject(defaultConfig[key])) ? changes(value, defaultConfig[key]) : value;
+            result[key] = value;
         }
     });
     try {
