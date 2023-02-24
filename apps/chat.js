@@ -290,14 +290,16 @@ export class chatgpt extends plugin {
       }
       if (e.img) {
         try {
-          const imgorc = await Bot.imageOcr(e.img[0])
-          if (imgorc.language === 'zh' || imgorc.language === 'en') {
-            let imgtext = ''
-            for (let text of imgorc.wordslist) {
-              imgtext += `${text.words}\n`
+          let imgOcrText = ''
+          for (let i in e.img) {
+            const imgorc = await Bot.imageOcr(e.img[i])
+            if (imgorc.language === 'zh' || imgorc.language === 'en') {
+              for (let text of imgorc.wordslist) {
+                imgOcrText += `${text.words}\n`
+              }
             }
-            prompt = imgtext + prompt
           }
+          prompt = imgOcrText + prompt
         } catch (err) {}
       }
     }
@@ -508,7 +510,7 @@ export class chatgpt extends plugin {
         body: JSON.stringify({
           content: {
             content: new Buffer.from(content).toString('base64'),
-            prompt,
+            prompt: new Buffer.from(prompt).toString('base64'),
             senderName: e.sender.nickname,
             quote
           },
@@ -527,7 +529,7 @@ export class chatgpt extends plugin {
     }
     await e.runtime.render('chatgpt-plugin', template, {
       content: new Buffer.from(content).toString('base64'),
-      prompt: escapeHtml(prompt),
+      prompt: new Buffer.from(prompt).toString('base64'),
       senderName: e.sender.nickname,
       quote: quote.length > 0,
       quotes: quote,

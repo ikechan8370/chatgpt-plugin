@@ -43,7 +43,7 @@
                         <h4>{{senderName}}</h4>
                     </div>
                     <div class="about-content">
-                        <h2>{{@ prompt}}</h2>
+                        <p class="markdown_prompt"></p>
                         <span class="height-50"></span>
                     </div>
                 </div>
@@ -54,7 +54,7 @@
                         <h4>必应</h4>
                     </div>
                     <div class="about-content">
-                        <p class="markdown"></p>
+                        <p class="markdown_content"></p>
                         <span class="height-50"></span>
                     </div>
                 </div>
@@ -126,11 +126,13 @@
                 return hljs.highlightAuto(code,[lang]).value;
             }
         });
-        const markdown = '{{@ content}}';
-        const html = marked.parse(Base64.decode(markdown));
-        const sanitizedHtml = DOMPurify.sanitize(html);
+        const markdown_content = '{{@ content}}';
+        const html_content = marked.parse(Base64.decode(markdown_content));
+        const markdown_prompt = '{{@ prompt}}';
+        const html_prompt = marked.parse(Base64.decode(markdown_prompt));
 
-        $(".markdown").html(sanitizedHtml);
+        $(".markdown_content").html(DOMPurify.sanitize(html_content));
+        $(".markdown_prompt").html(DOMPurify.sanitize(html_prompt));
         jQuery('#qrcode').qrcode({width: 128,height: 128,text: "{{cache.cacheUrl}}/{{cache.file}}"});
     </script>
 </body>
