@@ -11,8 +11,6 @@ import { KeyvFile } from 'keyv-file'
 import { OfficialChatGPTClient } from '../utils/message.js'
 import fetch from 'node-fetch'
 import { deleteConversation, getConversations, getLatestMessageIdByConversationId } from '../utils/conversation.js'
-const blockWords = Config.blockWords
-const promptBlockWords = Config.promptBlockWords
 
 /**
  * 每个对话保留的时长。单个对话内ai是保留上下文的。超时后销毁对话，再次对话创建新的对话。
@@ -302,7 +300,7 @@ export class chatgpt extends plugin {
       }
     }
     // 检索是否有屏蔽词
-    const promtBlockWord = promptBlockWords.find(word => prompt.toLowerCase().includes(word.toLowerCase()))
+    const promtBlockWord = Config.promptBlockWords.find(word => prompt.toLowerCase().includes(word.toLowerCase()))
     if (promtBlockWord) {
       await this.reply('主人不让我回答你这种问题，真是抱歉了呢', true)
       return false
@@ -435,7 +433,7 @@ export class chatgpt extends plugin {
       }
       let response = chatMessage?.text
       // 检索是否有屏蔽词
-      const blockWord = blockWords.find(word => response.toLowerCase().includes(word.toLowerCase()))
+      const blockWord = Config.blockWords.find(word => response.toLowerCase().includes(word.toLowerCase()))
       if (blockWord) {
         await this.reply('返回内容存在敏感词，我不想回答你', true)
         return false
