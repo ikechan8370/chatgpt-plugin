@@ -267,37 +267,39 @@ export class chatgpt extends plugin {
         return false
       }
     }
-    // 取消息中的图片、at的头像、回复的图片，放入e.img
-    if (e.at && !e.source) {
-      e.img = [`https://q1.qlogo.cn/g?b=qq&s=0&nk=${e.at}`];
-    }
-    if (e.source) {
-      let reply;
-      if (e.isGroup) {
-        reply = (await e.group.getChatHistory(e.source.seq, 1)).pop()?.message;
-      } else {
-        reply = (await e.friend.getChatHistory(e.source.time, 1)).pop()?.message;
+    if (Config.imgOcr) {
+      // 取消息中的图片、at的头像、回复的图片，放入e.img
+      if (e.at && !e.source) {
+        e.img = [`https://q1.qlogo.cn/g?b=qq&s=0&nk=${e.at}`];
       }
-      if (reply) {
-        for (let val of reply) {
-          if (val.type == "image") {
-            e.img = [val.url];
-            break;
+      if (e.source) {
+        let reply;
+        if (e.isGroup) {
+          reply = (await e.group.getChatHistory(e.source.seq, 1)).pop()?.message;
+        } else {
+          reply = (await e.friend.getChatHistory(e.source.time, 1)).pop()?.message;
+        }
+        if (reply) {
+          for (let val of reply) {
+            if (val.type == "image") {
+              e.img = [val.url];
+              break;
+            }
           }
         }
       }
-    }
-    if (e.img) {
-      try {
-        const imgorc = await Bot.imageOcr(e.img[0])
-        if (imgorc.language === 'zh' || imgorc.language === 'en') {
-          let imgtext = ''
-          for (let text of imgorc.wordslist) {
-            imgtext += `${text.words}\n`
+      if (e.img) {
+        try {
+          const imgorc = await Bot.imageOcr(e.img[0])
+          if (imgorc.language === 'zh' || imgorc.language === 'en') {
+            let imgtext = ''
+            for (let text of imgorc.wordslist) {
+              imgtext += `${text.words}\n`
+            }
+            prompt = imgtext + prompt
           }
-          prompt = imgtext + prompt
-        }
-      } catch (err) {}
+        } catch (err) {}
+      }
     }
     // 检索是否有屏蔽词
     const promtBlockWord = promptBlockWords.find(word => prompt.toLowerCase().includes(word.toLowerCase()))

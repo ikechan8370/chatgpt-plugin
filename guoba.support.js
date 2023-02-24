@@ -26,6 +26,12 @@ export function supportGuoba() {
       // 配置项 schemas
       schemas: [
         {
+          field: 'imgOcr',
+          label: '图片识别',
+          bottomHelpMessage: '是否识别消息中图片的文字内容，需要同时包含图片和消息才生效',
+          component: 'Switch',
+        },
+        {
           field: 'defaultUsePicture',
           label: '全局图片模式',
           bottomHelpMessage: '全局默认以图片形式回复，并自动发出Continue命令补全回答。长回复可能会有bug。',
