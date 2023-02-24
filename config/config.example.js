@@ -11,6 +11,7 @@ export default {
   // blockWords: ['屏蔽词1', '屏蔽词b'],
   // 问题中如果触发屏蔽词，也会拒绝回答
   // promptBlockWords: ['屏蔽词1', '屏蔽词b'],
+  // imgOcr: true,
   // 改为true后，全局默认以图片形式回复，并自动发出Continue命令补全回答。长回复可能会有bug。
   // defaultUsePicture: false,
   // 如果true，字数大于阈值（autoUsePictureThreshold）会自动用图片发送，即使是文本模式。
