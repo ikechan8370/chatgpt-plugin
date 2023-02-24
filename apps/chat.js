@@ -270,20 +270,20 @@ export class chatgpt extends plugin {
     if (Config.imgOcr) {
       // 取消息中的图片、at的头像、回复的图片，放入e.img
       if (e.at && !e.source) {
-        e.img = [`https://q1.qlogo.cn/g?b=qq&s=0&nk=${e.at}`];
+        e.img = [`https://q1.qlogo.cn/g?b=qq&s=0&nk=${e.at}`]
       }
       if (e.source) {
-        let reply;
+        let reply
         if (e.isGroup) {
-          reply = (await e.group.getChatHistory(e.source.seq, 1)).pop()?.message;
+          reply = (await e.group.getChatHistory(e.source.seq, 1)).pop()?.message
         } else {
-          reply = (await e.friend.getChatHistory(e.source.time, 1)).pop()?.message;
+          reply = (await e.friend.getChatHistory(e.source.time, 1)).pop()?.message
         }
         if (reply) {
           for (let val of reply) {
-            if (val.type == "image") {
-              e.img = [val.url];
-              break;
+            if (val.type == 'image') {
+              e.img = [val.url]
+              break
             }
           }
         }
@@ -323,7 +323,7 @@ export class chatgpt extends plugin {
       let confirmOn = (!confirm || confirm === 'on') && Config.thinkingTips
       if (await redis.lIndex('CHATGPT:CHAT_QUEUE', 0) === randomId) {
         // 添加超时设置
-        await redis.pSetEx("CHATGPT:CHAT_QUEUE_TIMEOUT", Config.defaultTimeoutMs, randomId);
+        await redis.pSetEx('CHATGPT:CHAT_QUEUE_TIMEOUT', Config.defaultTimeoutMs, randomId)
         if (confirmOn) {
           await this.reply('我正在思考如何回复你，请稍等', true, { recallMsg: 8 })
         }
@@ -336,13 +336,13 @@ export class chatgpt extends plugin {
         // 开始排队
         while (true) {
           if (await redis.lIndex('CHATGPT:CHAT_QUEUE', 0) === randomId) {
-            await redis.pSetEx("CHATGPT:CHAT_QUEUE_TIMEOUT", Config.defaultTimeoutMs, randomId);
+            await redis.pSetEx('CHATGPT:CHAT_QUEUE_TIMEOUT', Config.defaultTimeoutMs, randomId)
             break
           } else {
             // 超时检查
-            if (await redis.exists("CHATGPT:CHAT_QUEUE_TIMEOUT") === 0) {
+            if (await redis.exists('CHATGPT:CHAT_QUEUE_TIMEOUT') === 0) {
               await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
-              await redis.pSetEx("CHATGPT:CHAT_QUEUE_TIMEOUT", Config.defaultTimeoutMs, await redis.lIndex('CHATGPT:CHAT_QUEUE', 0));
+              await redis.pSetEx('CHATGPT:CHAT_QUEUE_TIMEOUT', Config.defaultTimeoutMs, await redis.lIndex('CHATGPT:CHAT_QUEUE', 0))
               if (confirmOn) {
                 let length = await redis.lLen('CHATGPT:CHAT_QUEUE') - 1
                 await this.reply(`问题想不明白放弃了，开始思考下一个问题，当前队列前方还有${length}个问题`, true, { recallMsg: 8 })
@@ -448,38 +448,27 @@ export class chatgpt extends plugin {
           usePicture: Config.defaultUsePicture
         }
       }
-      if (userSetting.usePicture) {
+      let quotemessage = []
+      if (chatMessage?.quote) {
+        chatMessage.quote.forEach(function (item, index) {
+          if (item.trim() !== '') {
+            quotemessage.push(item)
+          }
+        })
+      }
+      if (userSetting.usePicture || (Config.autoUsePicture && response.length > Config.autoUsePictureThreshold)) {
         // todo use next api of chatgpt to complete incomplete respoonse
         try {
-          await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', response, prompt, [], Config.showQRCode)
+          await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', response, prompt, quotemessage, Config.showQRCode)
         } catch (err) {
           logger.warn('error happened while uploading content to the cache server. QR Code will not be showed in this picture.')
           logger.error(err)
           await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', response, prompt)
         }
       } else {
-        let quotemessage = []
-        if (chatMessage?.quote) {
-          chatMessage.quote.forEach(function (item, index) {
-            if (item.trim() !== '') {
-              quotemessage.push(item)
-            }
-          })
-        }
-        if (Config.autoUsePicture && response.length > Config.autoUsePictureThreshold) {
-          // 文字过多时自动切换到图片模式输出
-          try {
-            await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', response, prompt, quotemessage, Config.showQRCode)
-          } catch (err) {
-            logger.warn('error happened while uploading content to the cache server. QR Code will not be showed in this picture.')
-            logger.error(err)
-            await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', response, prompt)
-          }
-        } else {
-          await this.reply(`${response}`, e.isGroup)
-          if (quotemessage.length > 0) {
-            this.reply(await makeForwardMsg(this.e, quotemessage))
-          }
+        await this.reply(`${response}`, e.isGroup)
+        if (quotemessage.length > 0) {
+          this.reply(await makeForwardMsg(this.e, quotemessage))
         }
       }
       if (use !== 'bing') {
@@ -497,9 +486,9 @@ export class chatgpt extends plugin {
         await this.reply('当前对话异常，已经清除，请重试', true, { recallMsg: e.isGroup ? 10 : 0 })
       } else {
         if (err.length < 200) {
-          await this.reply(`通信异常，请稍后重试：${err}`, true, { recallMsg: e.isGroup ? 10 : 0 }) 
+          await this.reply(`通信异常，请稍后重试：${err}`, true, { recallMsg: e.isGroup ? 10 : 0 })
         } else {
-          //这里是否还需要上传到缓存服务器呐？多半是代理服务器的问题，本地也修不了，应该不用吧。
+          // 这里是否还需要上传到缓存服务器呐？多半是代理服务器的问题，本地也修不了，应该不用吧。
           await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', `通信异常,错误信息如下 ${err}`, prompt)
         }
       }
@@ -521,7 +510,7 @@ export class chatgpt extends plugin {
             content: new Buffer.from(content).toString('base64'),
             prompt,
             senderName: e.sender.nickname,
-            quote: quote
+            quote
           },
           bing: use === 'bing',
           entry: Config.cacheEntry ? cacheData.file : ''
@@ -536,8 +525,8 @@ export class chatgpt extends plugin {
         }
       }
     }
-    await e.runtime.render('chatgpt-plugin', template, { 
-      content: new Buffer.from(content).toString("base64"),
+    await e.runtime.render('chatgpt-plugin', template, {
+      content: new Buffer.from(content).toString('base64'),
       prompt: escapeHtml(prompt),
       senderName: e.sender.nickname,
       quote: quote.length > 0,
