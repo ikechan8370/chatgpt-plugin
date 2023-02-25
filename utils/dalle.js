@@ -58,7 +58,7 @@ async function resizeAndCropImage (inputFilePath, outputFilePath, size = 512) {
   // Determine the maximum dimension of the input image
   let sharp
   try {
-    sharp = await import('sharp')
+    sharp = (await import('sharp')).default
   } catch (e) {
     logger.error('sharp未安装，请执行 pnpm install sharp@0.31.3')
     throw new Error('sharp未安装，请执行 pnpm install sharp@0.31.3')
