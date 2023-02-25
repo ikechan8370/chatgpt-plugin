@@ -53,7 +53,8 @@ export class dalle extends plugin {
         this.reply(images[0], true)
       }
     } catch (err) {
-      this.reply(`绘图失败: err`, true)
+      logger.error(err)
+      this.reply(`绘图失败: ${err}`, true)
       await redis.del(`CHATGPT:DRAW:${e.sender.user_id}`)
     }
 
