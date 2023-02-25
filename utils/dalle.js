@@ -67,8 +67,8 @@ async function resizeAndCropImage (inputFilePath, outputFilePath, size = 512) {
   const maxDimension = Math.max(metadata.width, metadata.height)
   logger.mark(`original picture size is ${metadata.width} x ${metadata.height}`)
   // Calculate the required dimensions for the output image
-  const outputWidth = size * metadata.width / maxDimension
-  const outputHeight = size * metadata.height / maxDimension
+  const outputWidth = Math.round(size * metadata.width / maxDimension)
+  const outputHeight = Math.round(size * metadata.height / maxDimension)
 
   // Resize the image to the required dimensions
   await sharp(inputFilePath)
