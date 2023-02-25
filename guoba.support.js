@@ -29,13 +29,13 @@ export function supportGuoba() {
           field: 'blockWords',
           label: '输出黑名单',
           bottomHelpMessage: '检查输出结果中是否有违禁词，如果存在黑名单中的违禁词则不输出',
-          component: 'Input',
+          component: 'InputTextArea',
         },
         {
           field: 'promptBlockWords',
           label: '输入黑名单',
           bottomHelpMessage: '检查输入结果中是否有违禁词，如果存在黑名单中的违禁词则不输出',
-          component: 'Input',
+          component: 'InputTextArea',
         },
         {
           field: 'imgOcr',
@@ -203,7 +203,7 @@ export function supportGuoba() {
           field: 'promptPrefixOverride',
           label: 'AI风格',
           bottomHelpMessage: '你可以在这里写入你希望AI回答的风格，比如希望优先回答中文，回答长一点等。',
-          component: 'Input',
+          component: 'InputTextArea',
         },
         {
           field: 'assistantLabel',
@@ -223,7 +223,7 @@ export function supportGuoba() {
         },
         {
           field: 'password',
-          label: '用户名',
+          label: '密码',
           bottomHelpMessage: 'OpenAI密码。',
           component: 'InputPassword',
         },
@@ -231,7 +231,7 @@ export function supportGuoba() {
           field: 'UA',
           label: '浏览器UA',
           bottomHelpMessage: '模拟浏览器UA，无特殊需求保持默认即可。',
-          component: 'Input',
+          component: 'InputTextArea',
         },
         {
             field: 'headless',

@@ -16,8 +16,10 @@ import { deleteConversation, getConversations, getLatestMessageIdByConversationI
  * 每个对话保留的时长。单个对话内ai是保留上下文的。超时后销毁对话，再次对话创建新的对话。
  * 单位：秒
  * @type {number}
+ * 
+ * 这里使用动态数据获取，以便于锅巴动态更新数据
  */
-const CONVERSATION_PRESERVE_TIME = Config.conversationPreserveTime
+// const CONVERSATION_PRESERVE_TIME = Config.conversationPreserveTime
 const defaultPropmtPrefix = 'You answer as concisely as possible for each response (e.g. don’t be verbose). It is very important that you answer as concisely as possible, so please remember this. If you are generating a list, do not have too many items. Keep the number of items short.'
 
 export class chatgpt extends plugin {
@@ -288,14 +290,16 @@ export class chatgpt extends plugin {
       }
       if (e.img) {
         try {
-          const imgorc = await Bot.imageOcr(e.img[0])
-          if (imgorc.language === 'zh' || imgorc.language === 'en') {
-            let imgtext = ''
-            for (let text of imgorc.wordslist) {
-              imgtext += `${text.words}\n`
+          let imgOcrText = ''
+          for (let i in e.img) {
+            const imgorc = await Bot.imageOcr(e.img[i])
+            if (imgorc.language === 'zh' || imgorc.language === 'en') {
+              for (let text of imgorc.wordslist) {
+                imgOcrText += `${text.words}  \n`
+              }
             }
-            prompt = imgtext + prompt
           }
+          prompt = imgOcrText + prompt
         } catch (err) {}
       }
     }
@@ -429,7 +433,7 @@ export class chatgpt extends plugin {
         }
         console.log(chatMessage)
         previousConversation.num = previousConversation.num + 1
-        await redis.set(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`, JSON.stringify(previousConversation), CONVERSATION_PRESERVE_TIME > 0 ? { EX: CONVERSATION_PRESERVE_TIME } : {})
+        await redis.set(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`, JSON.stringify(previousConversation), Config.conversationPreserveTime > 0 ? { EX: Config.conversationPreserveTime } : {})
       }
       let response = chatMessage?.text
       // 检索是否有屏蔽词
@@ -506,7 +510,7 @@ export class chatgpt extends plugin {
         body: JSON.stringify({
           content: {
             content: new Buffer.from(content).toString('base64'),
-            prompt,
+            prompt: new Buffer.from(prompt).toString('base64'),
             senderName: e.sender.nickname,
             quote
           },
@@ -525,7 +529,7 @@ export class chatgpt extends plugin {
     }
     await e.runtime.render('chatgpt-plugin', template, {
       content: new Buffer.from(content).toString('base64'),
-      prompt: escapeHtml(prompt),
+      prompt: new Buffer.from(prompt).toString('base64'),
       senderName: e.sender.nickname,
       quote: quote.length > 0,
       quotes: quote,
