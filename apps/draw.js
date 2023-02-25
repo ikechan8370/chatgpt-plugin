@@ -19,6 +19,10 @@ export class dalle extends plugin {
         {
           reg: '#(chatgpt|ChatGPT|dalle|Dalle)(修图|图片变形|改图)',
           fnc: 'variation'
+        },
+        {
+          reg: '#(搞|改)(她|他)头像',
+          fnc: 'avatarVariation'
         }
       ]
     })
@@ -111,6 +115,28 @@ export class dalle extends plugin {
       console.log(err)
       this.reply(`绘图失败: ${err}`, true)
       await redis.del(`CHATGPT:VARIATION:${e.sender.user_id}`)
+    }
+  }
+
+  async avatarVariation (e) {
+    let ats = e.message.filter(m => m.type === 'at').filter(at => at.qq !== e.self_id)
+    if (ats.length > 0) {
+      for (let i = 0; i < ats.length; i++) {
+        let qq = ats[i].qq
+        let imgUrl = `https://q1.qlogo.cn/g?b=qq&s=0&nk=${qq}`
+        try {
+          let images = (await imageVariation(imgUrl)).map(image => segment.image(`base64://${image}`))
+          if (images.length > 1) {
+            this.reply(await makeForwardMsg(e, images))
+          } else {
+            this.reply(images[0], true)
+          }
+        } catch (err) {
+          console.log(err)
+          this.reply(`搞失败了: ${err}`, true)
+          await redis.del(`CHATGPT:VARIATION:${e.sender.user_id}`)
+        }
+      }
     }
   }
 }
