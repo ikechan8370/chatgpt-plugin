@@ -11,12 +11,12 @@ import { KeyvFile } from 'keyv-file'
 import { OfficialChatGPTClient } from '../utils/message.js'
 import fetch from 'node-fetch'
 import { deleteConversation, getConversations, getLatestMessageIdByConversationId } from '../utils/conversation.js'
-
+let version = Config.version
 /**
  * 每个对话保留的时长。单个对话内ai是保留上下文的。超时后销毁对话，再次对话创建新的对话。
  * 单位：秒
  * @type {number}
- * 
+ *
  * 这里使用动态数据获取，以便于锅巴动态更新数据
  */
 // const CONVERSATION_PRESERVE_TIME = Config.conversationPreserveTime
@@ -533,7 +533,8 @@ export class chatgpt extends plugin {
       senderName: e.sender.nickname,
       quote: quote.length > 0,
       quotes: quote,
-      cache: cacheData
+      cache: cacheData,
+      version
     })
   }
 
@@ -716,14 +717,14 @@ export class chatgpt extends plugin {
         logger.mark('all conversations: ', conversations)
       }
       //    let conversationsFirst10 = conversations.slice(0, 10)
-      await e.runtime.render('chatgpt-plugin', 'conversation/chatgpt', { conversations })
+      await e.runtime.render('chatgpt-plugin', 'conversation/chatgpt', { conversations, version })
       let text = '对话列表\n'
       text += '对话id | 对话发起者 \n'
       conversations.forEach(c => {
         text += c.id + '|' + (c.creater || '未知') + '\n'
       })
       text += '您可以通过使用命令#chatgpt切换对话+对话id来切换到指定对话，也可以通过命令#chatgpt加入对话+@某人来加入指定人当前进行的对话中。'
-      await this.reply(text)
+      this.reply(await makeForwardMsg(e, [text], '对话列表'))
     } else {
       return await this.getConversations(e)
     }

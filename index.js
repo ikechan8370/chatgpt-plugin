@@ -1,4 +1,5 @@
 import fs from 'node:fs'
+import {Config} from "./utils/config.js";
 
 const files = fs.readdirSync('./plugins/chatgpt-plugin/apps').filter(file => file.endsWith('.js'))
 
@@ -21,4 +22,10 @@ for (let i in files) {
   }
   apps[name] = ret[i].value[Object.keys(ret[i].value)[0]]
 }
+logger.info('**************************************')
+logger.info('chatgpt-plugin加载成功')
+logger.info(`当前版本${Config.version}`)
+logger.info('仓库地址 https://github.com/ikechan8370/chatgpt-plugin')
+logger.info('插件群号 559567232')
+logger.info('**************************************')
 export { apps }

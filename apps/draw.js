@@ -91,7 +91,8 @@ export class dalle extends plugin {
         }
       }
     } else if (e.img) {
-      imgUrl = e.img[0]?.url
+      console.log(e.img)
+      imgUrl = e.img[0]
     }
     if (!imgUrl) {
       this.reply('图呢？')

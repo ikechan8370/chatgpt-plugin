@@ -31,7 +31,8 @@ const defaultConfig = {
   proxy: '',
   debug: true,
   defaultTimeoutMs: 120000,
-  chromeTimeoutMS: 120000
+  chromeTimeoutMS: 120000,
+  version: '2.0.0'
 }
 const _path = process.cwd()
 let config = {}

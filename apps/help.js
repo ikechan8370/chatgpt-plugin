@@ -1,6 +1,6 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import { Config } from '../utils/config.js'
-
+let version = Config.version
 let helpData = [
   {
     group: '聊天',
@@ -29,8 +29,12 @@ let helpData = [
         icon: 'text',
         title: '#chatgpt画图+prompt(/张数/图片大小)',
         desc: '调用OpenAI Dalle API进行绘图，需要有API key并消耗余额。图片大小只能是256x256/512x512/1024x1024中的一个.默认为1张、512x512'
+      },
+      {
+        icon: 'text',
+        title: '#chatgpt改图',
+        desc: '调用OpenAI Dalle API进行改图，需要有API key并消耗余额。可同时发送图片或回复图片'
       }
-
     ]
   },
   {
@@ -127,6 +131,6 @@ export class help extends plugin {
   }
 
   async help (e) {
-    await e.runtime.render('chatgpt-plugin', 'help/index', { helpData })
+    await e.runtime.render('chatgpt-plugin', 'help/index', { helpData, version })
   }
 }
