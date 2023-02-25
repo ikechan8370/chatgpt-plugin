@@ -48,6 +48,10 @@ export class dalle extends plugin {
       '256x256': 0.016
     }
     num = parseInt(num, 10)
+    if (num > 5) {
+      this.reply('太多啦！你要花光我的余额吗！')
+      return false
+    }
     await this.reply(`正在为您绘制大小为${size}的${num}张图片，预计消耗${priceMap[size] * num}美元余额，请稍候……`)
     try {
       let images = (await createImage(prompt, num, size)).map(image => segment.image(`base64://${image}`))
