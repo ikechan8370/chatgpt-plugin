@@ -295,7 +295,7 @@ export class chatgpt extends plugin {
             const imgorc = await Bot.imageOcr(e.img[i])
             if (imgorc.language === 'zh' || imgorc.language === 'en') {
               for (let text of imgorc.wordslist) {
-                imgOcrText += `${text.words}\n`
+                imgOcrText += `${text.words}  \n`
               }
             }
           }
