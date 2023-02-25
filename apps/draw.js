@@ -1,7 +1,7 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import { segment } from 'oicq'
-import { createImage } from '../utils/dalle.js'
-import { makeForwardMsg} from "../utils/common.js";
+import { createImage, imageVariation } from '../utils/dalle.js'
+import { makeForwardMsg } from '../utils/common.js'
 import _ from 'lodash'
 
 export class dalle extends plugin {
@@ -15,6 +15,10 @@ export class dalle extends plugin {
         {
           reg: '#(chatgpt|ChatGPT|dalle|Dalle)(绘图|画图)',
           fnc: 'draw'
+        },
+        {
+          reg: '#(chatgpt|ChatGPT|dalle|Dalle)(修图|图片变形|改图)',
+          fnc: 'variation'
         }
       ]
     })
@@ -37,7 +41,7 @@ export class dalle extends plugin {
       this.reply('大小不符合要求，必须是256x256/512x512/1024x1024中的一个')
       return false
     }
-    await redis.set(`CHATGPT:DRAW:${e.sender.user_id}`, 'c', {EX: 30})
+    await redis.set(`CHATGPT:DRAW:${e.sender.user_id}`, 'c', { EX: 30 })
     let priceMap = {
       '1024x1024': 0.02,
       '512x512': 0.018,
@@ -57,7 +61,51 @@ export class dalle extends plugin {
       this.reply(`绘图失败: ${err}`, true)
       await redis.del(`CHATGPT:DRAW:${e.sender.user_id}`)
     }
+  }
 
-
+  async variation (e) {
+    let ttl = await redis.ttl(`CHATGPT:VARIATION:${e.sender.user_id}`)
+    if (ttl > 0 && !e.isMaster) {
+      this.reply(`冷却中，请${ttl}秒后再试`)
+      return false
+    }
+    let imgUrl
+    if (e.source) {
+      let reply
+      if (e.isGroup) {
+        reply = (await e.group.getChatHistory(e.source.seq, 1)).pop()?.message
+      } else {
+        reply = (await e.friend.getChatHistory(e.source.time, 1)).pop()?.message
+      }
+      if (reply) {
+        for (let val of reply) {
+          if (val.type === 'image') {
+            console.log(val)
+            imgUrl = val.url
+            break
+          }
+        }
+      }
+    } else if (e.img) {
+      imgUrl = e.img[0]?.url
+    }
+    if (!imgUrl) {
+      this.reply('图呢？')
+      return false
+    }
+    await redis.set(`CHATGPT:VARIATION:${e.sender.user_id}`, 'c', { EX: 30 })
+    await this.reply('正在为您生成图片变形，请稍候……')
+    try {
+      let images = (await imageVariation(imgUrl)).map(image => segment.image(`base64://${image}`))
+      if (images.length > 1) {
+        this.reply(await makeForwardMsg(e, images))
+      } else {
+        this.reply(images[0], true)
+      }
+    } catch (err) {
+      console.log(err)
+      this.reply(`绘图失败: ${err}`, true)
+      await redis.del(`CHATGPT:VARIATION:${e.sender.user_id}`)
+    }
   }
 }
