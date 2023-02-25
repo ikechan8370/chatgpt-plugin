@@ -106,6 +106,16 @@ export function supportGuoba() {
             component: 'Switch',
         },
         {
+            field: 'drawCD',
+            label: '绘图CD',
+            helpMessage: '单位：秒',
+            bottomHelpMessage: '绘图指令的CD时间，主人不受限制',
+            component: 'InputNumber',
+            componentProps: {
+              min: 0,
+            },
+        },
+        {
           field: 'proxy',
           label: '代理服务器地址',
           bottomHelpMessage: '数据通过代理服务器发送，http或socks5代理。',
