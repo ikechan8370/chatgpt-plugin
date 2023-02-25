@@ -281,7 +281,7 @@ export class chatgpt extends plugin {
         }
         if (reply) {
           for (let val of reply) {
-            if (val.type == 'image') {
+            if (val.type === 'image') {
               e.img = [val.url]
               break
             }

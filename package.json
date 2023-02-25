@@ -15,5 +15,8 @@
     "random": "^4.1.0",
     "undici": "^5.19.1",
     "uuid": "^9.0.0"
+  },
+  "optionalDependencies": {
+    "sharp": "^0.31.3"
   }
 }

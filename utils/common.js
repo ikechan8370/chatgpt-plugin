@@ -2,6 +2,8 @@
 // import stripMarkdown from 'strip-markdown'
 import { exec } from 'child_process'
 import lodash from 'lodash'
+import fs from 'node:fs'
+import path from 'node:path'
 // export function markdownToText (markdown) {
 //  return remark()
 //    .use(stripMarkdown)
@@ -204,4 +206,15 @@ async function execSync (cmd) {
       resolve({ error, stdout, stderr })
     })
   })
+}
+
+export function mkdirs (dirname) {
+  if (fs.existsSync(dirname)) {
+    return true
+  } else {
+    if (mkdirs(path.dirname(dirname))) {
+      fs.mkdirSync(dirname)
+      return true
+    }
+  }
 }
