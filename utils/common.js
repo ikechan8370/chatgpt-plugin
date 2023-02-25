@@ -20,7 +20,7 @@ export function escapeHtml (str) {
   return str.replace(/[&<>"'/]/g, (match) => htmlEntities[match])
 }
 
-export function randomString(length = 5) {
+export function randomString (length = 5) {
   let str = ''
   for (let i = 0; i < length; i++) {
     str += lodash.random(36).toString(36)
