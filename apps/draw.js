@@ -21,6 +21,11 @@ export class dalle extends plugin {
   }
 
   async draw (e) {
+    let ttl = await redis.ttl(`CHATGPT:DRAW:${e.sender.user_id}`)
+    if (ttl > 0 && !e.isMaster) {
+      this.reply(`冷却中，请${ttl}秒后再试`)
+      return false
+    }
     let splits = _.split(e.msg, '图', 2)
     if (splits.length < 2) {
       this.reply('请带上绘图要求')
@@ -32,6 +37,7 @@ export class dalle extends plugin {
       this.reply('大小不符合要求，必须是256x256/512x512/1024x1024中的一个')
       return false
     }
+    await redis.set(`CHATGPT:DRAW:${e.sender.user_id}`, 'c', {EX: 30})
     let priceMap = {
       '1024x1024': 0.02,
       '512x512': 0.018,
@@ -48,6 +54,7 @@ export class dalle extends plugin {
       }
     } catch (err) {
       this.reply(`绘图失败: err`, true)
+      await redis.del(`CHATGPT:DRAW:${e.sender.user_id}`)
     }
 
 

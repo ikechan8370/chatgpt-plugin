@@ -13,6 +13,7 @@ const defaultConfig = {
   cacheUrl: 'https://content.alcedogroup.com',
   cacheEntry: false,
   apiKey: '',
+  drawCD: 30,
   model: '',
   api: 'https://chatgpt.duti.tech/api/conversation',
   apiBaseUrl: 'https://chatgpt.duti.tech/api',
@@ -35,28 +36,28 @@ const defaultConfig = {
 const _path = process.cwd()
 let config = {}
 if (fs.existsSync(`${_path}/plugins/chatgpt-plugin/config/config.js`)) {
-  const fullPath = fs.realpathSync(`${_path}/plugins/chatgpt-plugin/config/config.js`);
-  config = (await import(`file://${fullPath}`)).default;
+  const fullPath = fs.realpathSync(`${_path}/plugins/chatgpt-plugin/config/config.js`)
+  config = (await import(`file://${fullPath}`)).default
 } else if (fs.existsSync(`${_path}/plugins/chatgpt-plugin/config/index.js`)) {
   // 兼容旧版本
-  const fullPath = fs.realpathSync(`${_path}/plugins/chatgpt-plugin/config/index.js`);
-  config = (await import(`file://${fullPath}`)).Config;
+  const fullPath = fs.realpathSync(`${_path}/plugins/chatgpt-plugin/config/index.js`)
+  config = (await import(`file://${fullPath}`)).Config
 }
 config = Object.assign({}, defaultConfig, config)
 export const Config = new Proxy(config, {
-  set(target, property, value) {
-    target[property] = value;
-    const change = lodash.transform(target, function(result, value, key) {
-        if (!lodash.isEqual(value, defaultConfig[key])) {
-            result[key] = value;
-        }
-    });
+  set (target, property, value) {
+    target[property] = value
+    const change = lodash.transform(target, function (result, value, key) {
+      if (!lodash.isEqual(value, defaultConfig[key])) {
+        result[key] = value
+      }
+    })
     try {
       fs.writeFileSync(`${_path}/plugins/chatgpt-plugin/config/config.js`, `export default ${JSON.stringify(change, '', '\t')}`, { flag: 'w' })
     } catch (err) {
       console.error(err)
-      return false;
+      return false
     }
-    return true;
-  },
-});
+    return true
+  }
+})
