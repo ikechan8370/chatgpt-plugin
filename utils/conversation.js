@@ -6,13 +6,17 @@ export async function getConversations (qq = '') {
   if (!accessToken) {
     throw new Error('未绑定ChatGPT AccessToken，请使用#chatgpt设置token命令绑定token')
   }
-  let response = await fetch(`${Config.apiBaseUrl}/conversations?offset=0&limit=20`, {
+  let option01 = {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
       Authorization: 'Bearer ' + accessToken
     }
-  })
+  }
+  if (Config.proxy) {
+    option01.agent = new HttpsProxyAgent(Config.proxy)
+  }
+  let response = await fetch(`${Config.apiBaseUrl}/conversations?offset=0&limit=20`, option01)
   let json = await response.text()
   if (Config.debug) {
     logger.mark(json)
@@ -32,14 +36,18 @@ export async function getConversations (qq = '') {
     if (cachedConversationLastMessage) {
       map[item.id] = cachedConversationLastMessage
     } else {
-      // 缓存中没有，就去查官方api
-      let conversationDetailResponse = await fetch(`${Config.apiBaseUrl}/api/conversation/${item.id}`, {
+      let option02 = {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           Authorization: 'Bearer ' + accessToken
         }
-      })
+      }
+      if (Config.proxy) {
+        option02.agent = new HttpsProxyAgent(Config.proxy)
+      }
+      // 缓存中没有，就去查官方api
+      let conversationDetailResponse = await fetch(`${Config.apiBaseUrl}/api/conversation/${item.id}`, option02)
       let conversationDetail = await conversationDetailResponse.text()
       if (Config.debug) {
         logger.mark('conversation detail for conversation ' + item.id, conversationDetail)
@@ -101,13 +109,17 @@ export async function getLatestMessageIdByConversationId (conversationId) {
   if (!accessToken) {
     throw new Error('未绑定ChatGPT AccessToken，请使用#chatgpt设置token命令绑定token')
   }
-  let conversationDetailResponse = await fetch(`${Config.apiBaseUrl}/api/conversation/${conversationId}`, {
+  let option03 = {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
       Authorization: 'Bearer ' + accessToken
     }
-  })
+  }
+  if (Config.proxy) {
+    option03.agent = new HttpsProxyAgent(Config.proxy)
+  }
+  let conversationDetailResponse = await fetch(`${Config.apiBaseUrl}/api/conversation/${conversationId}`, option03)
   let conversationDetail = await conversationDetailResponse.text()
   if (Config.debug) {
     logger.mark('conversation detail for conversation ' + conversationId, conversationDetail)
@@ -129,14 +141,18 @@ export async function deleteConversation (conversationId) {
   if (!accessToken) {
     throw new Error('未绑定ChatGPT AccessToken，请使用#chatgpt设置token命令绑定token')
   }
-  let response = await fetch(`${Config.apiBaseUrl}/api/conversation/${conversationId}`, {
+  let option04 = {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
       Authorization: 'Bearer ' + accessToken
     },
     body: JSON.stringify({ is_visible: false })
-  })
+  }
+  if (Config.proxy) {
+    option04.agent = new HttpsProxyAgent(Config.proxy)
+  }
+  let response = await fetch(`${Config.apiBaseUrl}/api/conversation/${conversationId}`, option04)
   let responseText = await response.text()
   return JSON.parse(responseText)
 }
