@@ -72,7 +72,11 @@ pnpm i
 > 3. 使用vnc客户端连接至云桌面
 >
 >    右键Applications > Shells > Bash打开终端，然后进入Yunzai目录下运行node app即可。
+> 
+> 4. 执行pnpm i时，sharp安装失败
 >
+>     sharp不影响chatgpt聊天，仅影响Dalle2绘图功能。ubuntu可以执行`apt install libvips-dev`之后再`pnpm i`
+> 
 > 实测该方案资源占用低，运行稳定，基本1核2G的轻量云服务器就足够了。
 
 ---

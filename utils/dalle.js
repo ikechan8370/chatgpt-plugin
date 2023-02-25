@@ -2,7 +2,7 @@ import { Configuration, OpenAIApi } from 'openai'
 import { Config } from './config.js'
 import fs from 'fs'
 import { mkdirs } from './common.js'
-import sharp from 'sharp'
+
 export async function createImage (prompt, n = 1, size = '512x512') {
   const configuration = new Configuration({
     apiKey: Config.apiKey
@@ -56,6 +56,13 @@ export async function imageVariation (imageUrl, n = 1, size = '512x512') {
 
 async function resizeAndCropImage (inputFilePath, outputFilePath, size = 512) {
   // Determine the maximum dimension of the input image
+  let sharp
+  try {
+    sharp = await import('sharp')
+  } catch (e) {
+    logger.error('sharp未安装，请执行 pnpm install sharp@0.31.3')
+    throw new Error('sharp未安装，请执行 pnpm install sharp@0.31.3')
+  }
   const metadata = await sharp(inputFilePath).metadata()
   const maxDimension = Math.max(metadata.width, metadata.height)
   logger.mark(`original picture size is ${metadata.width} x ${metadata.height}`)
