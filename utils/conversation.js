@@ -1,4 +1,5 @@
 import fetch from 'node-fetch'
+import HttpsProxyAgent from 'https-proxy-agent'
 import { Config } from '../utils/config.js'
 
 export async function getConversations (qq = '') {
