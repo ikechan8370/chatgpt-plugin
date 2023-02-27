@@ -5,7 +5,7 @@ import { v4 as uuid } from 'uuid'
 import delay from 'delay'
 import { ChatGPTAPI } from 'chatgpt'
 import { ChatGPTClient, BingAIClient } from '@waylaidwanderer/chatgpt-api'
-import { escapeHtml, getMessageById, makeForwardMsg, tryTimes, upsertMessage, randomString } from '../utils/common.js'
+import { render, getMessageById, makeForwardMsg, tryTimes, upsertMessage, randomString } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
 import { OfficialChatGPTClient } from '../utils/message.js'
@@ -527,7 +527,7 @@ export class chatgpt extends plugin {
         }
       }
     }
-    await e.runtime.render('chatgpt-plugin', template, {
+    await e.reply(await render(e, 'chatgpt-plugin', template, {
       content: new Buffer.from(content).toString('base64'),
       prompt: new Buffer.from(prompt).toString('base64'),
       senderName: e.sender.nickname,
@@ -535,7 +535,7 @@ export class chatgpt extends plugin {
       quotes: quote,
       cache: cacheData,
       version
-    })
+    },{retType: Config.quoteReply ? 'base64' : ''}), e.isGroup && Config.quoteReply)
   }
 
   async sendMessage (prompt, conversation = {}, use, e) {
@@ -717,7 +717,7 @@ export class chatgpt extends plugin {
         logger.mark('all conversations: ', conversations)
       }
       //    let conversationsFirst10 = conversations.slice(0, 10)
-      await e.runtime.render('chatgpt-plugin', 'conversation/chatgpt', { conversations, version })
+      await render(e, 'chatgpt-plugin', 'conversation/chatgpt', { conversations, version })
       let text = '对话列表\n'
       text += '对话id | 对话发起者 \n'
       conversations.forEach(c => {

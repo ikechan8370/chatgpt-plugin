@@ -22,6 +22,8 @@ export default {
   // conversationPreserveTime: 0,
   // 触发方式 可选值：at 或 prefix 。at模式下只有at机器人才会回复。prefix模式下不需要at，但需要添加前缀#chat
   // toggleMode: 'at',
+  // 是否在回复图片时引用原始消息
+  // quoteReply: true,
   // 是否在图片模式中启用二维码。该对话内容将被发送至第三方服务器以进行渲染展示。改为false关闭该功能
   // showQRCode: true,
   // 图片内容渲染服务器API地址

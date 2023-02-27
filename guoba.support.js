@@ -88,6 +88,12 @@ export function supportGuoba() {
           },
         },
         {
+            field: 'quoteReply',
+            label: '图片引用消息',
+            bottomHelpMessage: '在回复图片时引用原始消息',
+            component: 'Switch',
+        },
+        {
             field: 'showQRCode',
             label: '启用二维码',
             bottomHelpMessage: '在图片模式中启用二维码。该对话内容将被发送至第三方服务器以进行渲染展示，如果不希望对话内容被上传到第三方服务器请关闭此功能。',

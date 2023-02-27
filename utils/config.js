@@ -9,6 +9,7 @@ const defaultConfig = {
   autoUsePictureThreshold: 1200,
   conversationPreserveTime: 0,
   toggleMode: 'at',
+  quoteReply: true,
   showQRCode: true,
   cacheUrl: 'https://content.alcedogroup.com',
   cacheEntry: false,
