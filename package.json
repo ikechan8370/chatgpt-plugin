@@ -17,6 +17,7 @@
     "uuid": "^9.0.0"
   },
   "optionalDependencies": {
-    "sharp": "^0.31.3"
+    "sharp": "^0.31.3",
+    "jimp": "^0.22.7"
   }
 }

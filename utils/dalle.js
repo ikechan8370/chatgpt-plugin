@@ -83,3 +83,74 @@ async function resizeAndCropImage (inputFilePath, outputFilePath, size = 512) {
 
   console.log('Image resized and cropped successfully!')
 }
+
+export async function editImage (originalImage, mask = [], prompt, num = 1, size = '512x512') {
+  const configuration = new Configuration({
+    apiKey: Config.apiKey
+  })
+  const openai = new OpenAIApi(configuration)
+  if (Config.debug) {
+    logger.info({ originalImage, mask, num, size })
+  }
+  const imageResponse = await fetch(originalImage)
+  const fileType = imageResponse.headers.get('Content-Type').split('/')[1]
+  let fileLoc = `data/chatgpt/imagesAccept/${Date.now()}.${fileType}`
+  mkdirs('data/chatgpt/imagesAccept')
+  const blob = await imageResponse.blob()
+  const arrayBuffer = await blob.arrayBuffer()
+  const buffer = Buffer.from(arrayBuffer)
+  await fs.writeFileSync(fileLoc, buffer)
+
+  let croppedFileLoc = `data/chatgpt/imagesAccept/${Date.now()}_cropped.png`
+  await resizeAndCropImage(fileLoc, croppedFileLoc, 512)
+  let maskFileLoc = await createMask(croppedFileLoc, mask)
+  let response = await openai.createImageEdit(
+    fs.createReadStream(croppedFileLoc),
+    fs.createReadStream(maskFileLoc),
+    prompt,
+    num,
+    size,
+    'b64_json'
+  )
+  if (response.status !== 200) {
+    console.log(response.data.error)
+  }
+  await fs.unlinkSync(fileLoc)
+  await fs.unlinkSync(croppedFileLoc)
+  await fs.unlinkSync(maskFileLoc)
+  return response.data.data?.map(pic => pic.b64_json)
+}
+
+async function createMask (inputFilePath, mask = []) {
+  let sharp, Jimp
+  try {
+    sharp = (await import('sharp')).default
+  } catch (e) {
+    logger.error('sharp未安装，请执行 pnpm install sharp@0.31.3')
+    throw new Error('sharp未安装，请执行 pnpm install sharp@0.31.3')
+  }
+  try {
+    Jimp = (await import('jimp')).default
+  } catch (e) {
+    logger.error('jimp未安装，请执行 pnpm install jimp')
+    throw new Error('jimp未安装，请执行 pnpm install jimp')
+  }
+  let image = await sharp(inputFilePath)
+    .png()
+    .ensureAlpha()
+    .toBuffer()
+    .then(inputData => {
+      // Load the PNG input data with Jimp
+      return Jimp.read(inputData)
+    })
+  let [x, y, width, height] = mask
+  // Set the transparency for a specified rectangular area
+  image.scan(x, y, width, height, function (x, y, idx) {
+    this.bitmap.data[idx + 3] = 0 // set alpha to 0 to make transparent
+  })
+
+  // Write the modified PNG data to a new file
+  const outputFilePath = `data/chatgpt/imagesAccept/${Date.now()}_masked.png`
+  await image.writeAsync(outputFilePath)
+  return outputFilePath
+}

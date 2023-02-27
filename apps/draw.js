@@ -1,6 +1,6 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import { segment } from 'oicq'
-import { createImage, imageVariation } from '../utils/dalle.js'
+import { createImage, editImage, imageVariation } from '../utils/dalle.js'
 import { makeForwardMsg } from '../utils/common.js'
 import _ from 'lodash'
 
@@ -13,16 +13,20 @@ export class dalle extends plugin {
       priority: 500,
       rule: [
         {
-          reg: '#(chatgpt|ChatGPT|dalle|Dalle)(绘图|画图)',
+          reg: '^#(chatgpt|ChatGPT|dalle|Dalle)(绘图|画图)',
           fnc: 'draw'
         },
         {
-          reg: '#(chatgpt|ChatGPT|dalle|Dalle)(修图|图片变形|改图)',
+          reg: '^#(chatgpt|ChatGPT|dalle|Dalle)(修图|图片变形|改图)$',
           fnc: 'variation'
         },
         {
-          reg: '#(搞|改)(她|他)头像',
+          reg: '^#(搞|改)(她|他)头像',
           fnc: 'avatarVariation'
+        },
+        {
+          reg: '^#(chatgpt|dalle)编辑图片',
+          fnc: 'edit'
         }
       ]
     })
@@ -137,6 +141,69 @@ export class dalle extends plugin {
           await redis.del(`CHATGPT:VARIATION:${e.sender.user_id}`)
         }
       }
+    }
+  }
+
+  async edit (e) {
+    let ttl = await redis.ttl(`CHATGPT:EDIT:${e.sender.user_id}`)
+    if (ttl > 0 && !e.isMaster) {
+      this.reply(`冷却中，请${ttl}秒后再试`)
+      return false
+    }
+    let imgUrl
+    if (e.source) {
+      let reply
+      if (e.isGroup) {
+        reply = (await e.group.getChatHistory(e.source.seq, 1)).pop()?.message
+      } else {
+        reply = (await e.friend.getChatHistory(e.source.time, 1)).pop()?.message
+      }
+      if (reply) {
+        for (let val of reply) {
+          if (val.type === 'image') {
+            console.log(val)
+            imgUrl = val.url
+            break
+          }
+        }
+      }
+    } else if (e.img) {
+      console.log(e.img)
+      imgUrl = e.img[0]
+    }
+    if (!imgUrl) {
+      this.reply('图呢？')
+      return false
+    }
+    await redis.set(`CHATGPT:EDIT:${e.sender.user_id}`, 'c', { EX: 30 })
+    await this.reply('正在为您编辑图片，请稍候……')
+
+    let command = _.trimStart(e.msg, '#chatgpt编辑图片')
+    command = _.trimStart(command, '#dalle编辑图片')
+    // command = 'A bird on it/100,100,300,200/2/512x512'
+    let args = command.split('/')
+    let [prompt = '', position = '', num = '1', size = '512x512'] = args.slice(0, 4)
+    if (!prompt || !position) {
+      this.reply('编辑图片必须填写prompt和涂抹位置.参考格式：A bird on it/100,100,300,200/2/512x512')
+      return false
+    }
+    num = parseInt(num, 10)
+    if (num > 5) {
+      this.reply('太多啦！你要花光我的余额吗！')
+      return false
+    }
+    try {
+      let images = (await editImage(imgUrl, position.split(',').map(p => parseInt(p, 10)), prompt, num, size))
+        .map(image => segment.image(`base64://${image}`))
+      if (images.length > 1) {
+        this.reply(await makeForwardMsg(e, images, prompt))
+      } else {
+        this.reply(images[0], true)
+      }
+    } catch (err) {
+      logger.error(err)
+      this.reply(`图片编辑失败: ${err}`, true)
+      await redis.del(`CHATGPT:EDIT:${e.sender.user_id}`)
     }
   }
 }
