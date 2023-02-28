@@ -4,6 +4,7 @@ import { exec } from 'child_process'
 import lodash from 'lodash'
 import fs from 'node:fs'
 import path from 'node:path'
+import puppeteer from '../../../lib/puppeteer/puppeteer.js'
 // export function markdownToText (markdown) {
 //  return remark()
 //    .use(stripMarkdown)
@@ -217,4 +218,72 @@ export function mkdirs (dirname) {
       return true
     }
   }
+}
+
+/**
+   *
+   * @param pluginKey plugin key
+   * @param htmlPath html文件路径，相对于plugin resources目录
+   * @param data 渲染数据
+   * @param renderCfg 渲染配置
+   * @param renderCfg.retType 返回值类型
+   * * default/空：自动发送图片，返回true
+   * * msgId：自动发送图片，返回msg id
+   * * base64: 不自动发送图像，返回图像base64数据
+   * @param renderCfg.beforeRender({data}) 可改写渲染的data数据
+   * @returns {Promise<boolean>}
+   */
+export async function render (e, pluginKey, htmlPath, data = {}, renderCfg = {}) {
+  // 处理传入的path
+  htmlPath = htmlPath.replace(/.html$/, '')
+  let paths = lodash.filter(htmlPath.split('/'), (p) => !!p)
+  htmlPath = paths.join('/')
+  // 创建目录
+  const mkdir = (check) => {
+    let currDir = `${process.cwd()}/data`
+    for (let p of check.split('/')) {
+      currDir = `${currDir}/${p}`
+      if (!fs.existsSync(currDir)) {
+        fs.mkdirSync(currDir)
+      }
+    }
+    return currDir
+  }
+  mkdir(`html/${pluginKey}/${htmlPath}`)
+  // 自动计算pluResPath
+  let pluResPath = `../../../${lodash.repeat('../', paths.length)}plugins/${pluginKey}/resources/`
+  // 渲染data
+  data = {
+    ...data,
+    _plugin: pluginKey,
+    _htmlPath: htmlPath,
+    pluResPath,
+    tplFile: `./plugins/${pluginKey}/resources/${htmlPath}.html`,
+    saveId: data.saveId || data.save_id || paths[paths.length - 1],
+    pageGotoParams: {
+      waitUntil: 'networkidle0'
+    }
+  }
+  // 处理beforeRender
+  if (renderCfg.beforeRender) {
+    data = renderCfg.beforeRender({ data }) || data
+  }
+  // 保存模板数据
+  if (process.argv.includes('web-debug')) {
+    // debug下保存当前页面的渲染数据，方便模板编写与调试
+    // 由于只用于调试，开发者只关注自己当时开发的文件即可，暂不考虑app及plugin的命名冲突
+    let saveDir = mkdir(`ViewData/${pluginKey}`)
+    let file = `${saveDir}/${data._htmlPath.split('/').join('_')}.json`
+    fs.writeFileSync(file, JSON.stringify(data))
+  }
+  // 截图
+  let base64 = await puppeteer.screenshot(`${pluginKey}/${htmlPath}`, data)
+  if (renderCfg.retType === 'base64') {
+    return base64
+  }
+  let ret = true
+  if (base64) {
+    ret = await e.reply(base64)
+  }
+  return renderCfg.retType === 'msgId' ? ret : true
 }

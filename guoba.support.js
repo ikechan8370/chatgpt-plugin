@@ -88,6 +88,12 @@ export function supportGuoba() {
           },
         },
         {
+            field: 'quoteReply',
+            label: '图片引用消息',
+            bottomHelpMessage: '在回复图片时引用原始消息',
+            component: 'Switch',
+        },
+        {
             field: 'showQRCode',
             label: '启用二维码',
             bottomHelpMessage: '在图片模式中启用二维码。该对话内容将被发送至第三方服务器以进行渲染展示，如果不希望对话内容被上传到第三方服务器请关闭此功能。',
@@ -104,6 +110,16 @@ export function supportGuoba() {
             label: '预制渲染服务器访问代码',
             bottomHelpMessage: '图片内容渲染服务器开启预制访问代码，当渲染服务器访问较慢时可以开启,但无法保证访问代码可以正常访问页面。',
             component: 'Switch',
+        },
+        {
+            field: 'drawCD',
+            label: '绘图CD',
+            helpMessage: '单位：秒',
+            bottomHelpMessage: '绘图指令的CD时间，主人不受限制',
+            component: 'InputNumber',
+            componentProps: {
+              min: 0,
+            },
         },
         {
           field: 'proxy',
