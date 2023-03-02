@@ -3,21 +3,21 @@
   "type": "module",
   "author": "ikechan8370",
   "dependencies": {
-    "@waylaidwanderer/chatgpt-api": "^1.20.2",
-    "chatgpt": "^4.4.1",
+    "@waylaidwanderer/chatgpt-api": "^1.22.5",
+    "chatgpt": "^5.0.0",
     "delay": "^5.0.0",
     "keyv-file": "^0.2.0",
     "node-fetch": "^3.3.0",
-    "openai": "^3.1.0",
-    "puppeteer-extra": "^3.3.4",
-    "puppeteer-extra-plugin-recaptcha": "^3.6.6",
-    "puppeteer-extra-plugin-stealth": "^2.11.1",
+    "openai": "^3.2.1",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-recaptcha": "^3.6.8",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
     "random": "^4.1.0",
-    "undici": "^5.19.1",
+    "undici": "^5.20.0",
     "uuid": "^9.0.0"
   },
   "optionalDependencies": {
-    "sharp": "^0.31.3",
-    "jimp": "^0.22.7"
+    "jimp": "^0.22.7",
+    "sharp": "^0.31.3"
   }
 }
