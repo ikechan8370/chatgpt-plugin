@@ -14,7 +14,7 @@ const defaultConfig = {
   cacheUrl: 'https://content.alcedogroup.com',
   cacheEntry: false,
   apiKey: '',
-  openAiBaseUrl: "https://api.openai.com",
+  openAiBaseUrl: 'https://api.openai.com',
   drawCD: 30,
   model: '',
   temperature: 0.8,

@@ -775,11 +775,11 @@ export class chatgpt extends plugin {
 
   async totalAvailable (e) {
     if (!Config.apiKey) {
-      this.reply('当前未配置OpenAI API key，请在插件配置文件config/config.js中配置。若使用免费的API3则无需关心计费。')
+      this.reply('当前未配置OpenAI API key，请在锅巴面板或插件配置文件config/config.js中配置。若使用免费的API3则无需关心计费。')
       return false
     }
     // 查询OpenAI API剩余试用额度
-    fetch('https://api.openai.com/dashboard/billing/credit_grants', {
+    fetch(`${Config.openAiBaseUrl}/dashboard/billing/credit_grants`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
