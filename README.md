@@ -3,9 +3,9 @@
 ## 特点
 
 * 支持单人连续对话Conversation，群聊中支持加入其他人的对话
-* API模式下，使用 GPT-3 API及相关模型配置尽可能逼近ChatGPT体验，支持自定义部分模型参数，仅需OpenAI Api Key，开箱即用
+* API模式下，使用 gpt-3.5-turbo API，ChatGPT官网同款模型，仅需OpenAI Api Key，开箱即用。**注意收费**
 * 支持问答图片截图
-* API3模式下，绕过Cloudflare防护直接访问ChatGPT的SSE API，与官方体验一致，且保留对话记录，在官网可查。
+* API3模式下，绕过Cloudflare防护直接访问ChatGPT的SSE API，与官方体验一致，且保留对话记录，在官网可查。免费。
 * 提供基于浏览器的解决方案作为备选，API3不可用的情况下或担心账户安全的用户可以选择使用浏览器模式。
 * 支持新[必应](https://www.bing.com/new)（Beta）
 
@@ -17,14 +17,13 @@ Node.js >= 18 / Node.js >= 14(with node-fetch)
 
 ### 安装
 
-在安装之前，请先判断自己需要使用哪种模式，本插件支持官方API/第三方API/浏览器/必应四种模式。也可以选择**我全都要**(通过qq发送命令`#chatgpt切换浏览器/API/API2/API3/Bing`实时切换)
+在安装之前，请先判断自己需要使用哪种模式，本插件支持官方API/第三方API/浏览器/必应四种模式。也可以选择**我全都要**(通过qq发送命令`#chatgpt切换浏览器/API/API3/Bing`实时切换)
 
 对于轻量用户可以先使用API模式，有较高要求再转为使用其他模式。
 
 > #### API模式和浏览器模式如何选择？
 >
 > * API模式会调用OpenAI官方提供的GPT-3 LLM API，只需要提供API Key。一般情况下，该种方式响应速度更快，可配置项多，且不会像chatGPT官网一样总出现不可用的现象，但其聊天效果明显较官网差。但注意GPT-3的API调用是收费的，新用户有18美元试用金可用于支付，价格为`$0.0200/ 1K tokens`。（问题和回答**加起来**算token）
-> * 【当前不可用】API2模式会调用第三方提供的基于OpenAI text-davinci-002-render模型（官网同款）的API，需要提供ChatGPT的Token。效果比单纯的GPT-3 API好很多，但同时将Token提供给了第三方API，其中风险自行承担。
 > * API3模式会调用第三方提供的官网反代API，他会帮你绕过CF防护，需要提供ChatGPT的Token。效果与官网和浏览器一致，但稳定性不一定。设置token和API2方法一样。
 > * 浏览器模式通过在本地启动Chrome等浏览器模拟用户访问ChatGPT网站，使得获得和官方以及API2模式一模一样的回复质量，同时保证安全性。缺点是本方法对环境要求较高，需要提供桌面环境和一个可用的代理（能够访问ChatGPT的IP地址），且响应速度不如API，而且高峰期容易无法使用。一般作为API3的下位替代。
 > * 必应（Bing）将调用微软新必应接口进行对话。需要在必应网页能够正常使用新必应且设置有效的Bing登录Cookie方可使用。
@@ -43,7 +42,7 @@ pnpm i
 如果是手工下载的 zip 压缩包，请将解压后的 chatgpt-plugin 文件夹（请删除压缩自带的-master后缀）放置在 Yunzai-Bot 目录下的 plugins 文件夹内
 
 > 浏览器模式仅为备选，如您需要使用浏览器模式，您还需要有**桌面环境**，优先级建议：必应>API3>浏览器
-> 2.20更新：必应被大削，变得蠢了，建议还是API3优先
+> 2.20更新：必应被大削，变得蠢了，建议还是API/API3优先
 
 3. 修改配置
 
@@ -160,17 +159,6 @@ pnpm i
 发挥你的想象力吧，~~调教~~拟造出你自己的机器人风格！
 
 
-
-关于部分API模式下配置中的一些模型的配置项：
-
-* `model`：通常保持空即可，除非你想调用特定的模型，比如你用gpt-3微调的学到特定领域知识的机器人。API1模式下将强制使用chatGPT模型。
-
-* `promptPrefixOverride`：通常保持空即可。如果你想调整机器人回复的风格，可以在这里加入对机器人的一些暗示，比如要求用中文，要求回答长一点/短一点。甚至可以让它有自己的小脾气。
-
-* `assistantLabel`：默认为ChatGPT，表示机器人认知中的自己的名字。你可以修改为其他名字。
-
-* `plus`：如果你购买了ChatGPT Plus，将这个值改为true可以使响应速度更快。
-
 #### 文本/图片回复模式
 
 >  #chatgpt文本/图片模式
@@ -249,10 +237,6 @@ git stash pop
 
 ## 其他
 
-### 关于未来更新
-
-OpenAI 即将开放其官方ChatGPT API，且微软必应也公开发布了基于ChatGPT的问答搜索，能够为实现更好、更快的聊天机器人提供更多途径。
-
 ### 常见问题
 
 1. 如果在linux系统上发现图片模式下emoj无法正常显示，可以搜索安装支持emoj的字体，如Ubuntu可以使用`sudo apt install fonts-noto-color-emoji`
@@ -275,7 +259,7 @@ OpenAI 即将开放其官方ChatGPT API，且微软必应也公开发布了基�
    >
    > 原因：没装依赖
    >
-   > 解决方式：请参考文档用`pnmp install -w xxx`安装依赖，遇到的情况一般是`pnpm install -w undici chatgpt showdown mathjax-node delay uuid remark strip-markdown random puppeteer-extra-plugin-recaptcha puppeteer-extra puppeteer-extra-plugin-stealth @waylaidwanderer/chatgpt-api keyv-file`，安装完就不报错了
+   > 解决方式：请参考文档在本插件目录下用`pnmp install`安装依赖，安装完就不报错了
    
    
 
@@ -287,7 +271,7 @@ OpenAI 即将开放其官方ChatGPT API，且微软必应也公开发布了基�
 * https://github.com/acheong08/ChatGPT
 * https://github.com/PawanOsman
 
-图片模式支持 @HalcyonAlcedo
+图片以及Bing模式支持 @HalcyonAlcedo
 * https://github.com/HalcyonAlcedo/ChatGPT-Plugin-PageCache
 
 以及ChatGPT
