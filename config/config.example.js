@@ -37,7 +37,7 @@ export default {
   // ***********************************************************************************************************************************
   apiKey: API_KEY,
   // 如果有openai api的加速反代可以写
-  openAiBaseUrl: '',
+  // openAiBaseUrl: null,
   // 模型名称，选填。如无特殊需求保持默认即可，会使用chatgpt-api库提供的当前可用的最适合的默认值。保底可用的是 text-davinci-003。当发现新的可用的chatGPT模型会更新这里的值
   // 20230211： text-chat-davinci-002-sh-alpha-aoruigiofdj83 中午存活了几分钟
   // model: '',
