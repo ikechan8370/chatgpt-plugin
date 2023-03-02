@@ -671,21 +671,22 @@ export class chatgpt extends plugin {
         if (Config.model) {
           completionParams.model = Config.model
         }
+        const currentDate = new Date().toISOString().split('T')[0]
+        let promptPrefix = `You are ${Config.assistantLabel}, a large language model trained by OpenAI. ${Config.promptPrefixOverride || defaultPropmtPrefix}
+        Current date: ${currentDate}`
         this.chatGPTApi = new ChatGPTAPI({
           apiKey: Config.apiKey,
           debug: false,
           upsertMessage,
           getMessageById,
+          systemMessage: promptPrefix,
           completionParams,
           assistantLabel: Config.assistantLabel,
           fetch
         })
-        const currentDate = new Date().toISOString().split('T')[0]
-        let promptPrefix = `You are ${Config.assistantLabel}, a large language model trained by OpenAI. ${Config.promptPrefixOverride || defaultPropmtPrefix}
-        Current date: ${currentDate}`
         let option = {
           timeoutMs: 120000,
-          promptPrefix
+          systemMessage: promptPrefix
         }
         if (conversation) {
           option = Object.assign(option, conversation)
