@@ -168,6 +168,12 @@ export function supportGuoba () {
           component: 'InputPassword'
         },
         {
+          field: 'openAiBaseUrl',
+          label: 'OpenAI API服务器地址',
+          bottomHelpMessage: 'OpenAI的API服务器地址。默认为https://api.openai.com',
+          component: 'Input'
+        },
+        {
           field: 'model',
           label: '模型',
           bottomHelpMessage: '模型名称，如无特殊需求保持默认即可，会使用chatgpt-api库提供的当前可用的最适合的默认值。保底可用的是 text-davinci-003。当发现新的可用的chatGPT模型会更新这里的值。',

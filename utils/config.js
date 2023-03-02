@@ -14,6 +14,7 @@ const defaultConfig = {
   cacheUrl: 'https://content.alcedogroup.com',
   cacheEntry: false,
   apiKey: '',
+  openAiBaseUrl: '',
   drawCD: 30,
   model: '',
   temperature: 0.8,
@@ -33,7 +34,7 @@ const defaultConfig = {
   debug: true,
   defaultTimeoutMs: 120000,
   chromeTimeoutMS: 120000,
-  version: '2.0.6'
+  version: '2.0.7'
 }
 const _path = process.cwd()
 let config = {}

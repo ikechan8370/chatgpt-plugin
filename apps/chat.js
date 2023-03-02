@@ -675,6 +675,7 @@ export class chatgpt extends plugin {
         let promptPrefix = `You are ${Config.assistantLabel}, a large language model trained by OpenAI. ${Config.promptPrefixOverride || defaultPropmtPrefix}
         Current date: ${currentDate}`
         this.chatGPTApi = new ChatGPTAPI({
+          apiBaseUrl: Config.openAiBaseUrl,
           apiKey: Config.apiKey,
           debug: false,
           upsertMessage,
