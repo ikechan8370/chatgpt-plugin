@@ -130,6 +130,10 @@ export class chatgpt extends plugin {
       if (use === 'api3') {
         await redis.del(`CHATGPT:QQ_CONVERSATION:${e.sender.user_id}`)
         await this.reply('已退出当前对话，该对话仍然保留。请@我进行聊天以开启新的对话', true)
+      } else if (use === 'bing' && Config.bingStyle === 'Sydney') {
+        const conversation = new KeyvFile({ filename: 'cache.json' })
+        await conversation.delete(`SydneyUser_${e.sender.user_id}`);
+        await this.reply('已退出当前对话，该对话仍然保留。请@我进行聊天以开启新的对话', true)
       } else {
         let c = await redis.get(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
         if (!c) {
@@ -146,6 +150,10 @@ export class chatgpt extends plugin {
       if (use === 'api3') {
         await redis.del(`CHATGPT:QQ_CONVERSATION:${qq}`)
         await this.reply(`${atUser}已退出TA当前的对话，TA仍可以@我进行聊天以开启新的对话`, true)
+      } else if (use === 'bing' && Config.bingStyle === 'Sydney') {
+        const conversation = new KeyvFile({ filename: 'cache.json' })
+        await conversation.delete(`SydneyUser_${qq}`);
+        await this.reply('已退出当前对话，该对话仍然保留。请@我进行聊天以开启新的对话', true)
       } else {
         let c = await redis.get(`CHATGPT:CONVERSATIONS:${qq}`)
         if (!c) {
@@ -407,7 +415,7 @@ export class chatgpt extends plugin {
         previousConversation = JSON.parse(previousConversation)
         conversation = {
           conversationId: previousConversation.conversation.conversationId,
-          parentMessageId: previousConversation.conversation.parentMessageId,
+          parentMessageId: previousConversation.parentMessageId,
           clientId: previousConversation.clientId,
           invocationId: previousConversation.invocationId,
           conversationSignature: previousConversation.conversationSignature
@@ -607,15 +615,21 @@ export class chatgpt extends plugin {
         }
         let bingAIClient
         if (Config.bingStyle === 'Sydney') {
+          const cacheOptions = {
+            namespace: 'Sydney',
+            store: new KeyvFile({ filename: 'cache.json' }),
+          }
           bingAIClient = new SydneyAIClient({
             userToken: bingToken, // "_U" cookie from bing.com
             cookie,
-            debug: Config.debug
+            debug: Config.debug,
+            cache: cacheOptions,
+            user: e.sender.user_id
           })
-          // Sydney不实现上下文传递，自行处理
-          conversation.clientId = undefined
-          conversation.invocationId = undefined
-          conversation.conversationSignature = undefined
+          // Sydney不实现上下文传递，删除上下文索引
+          delete conversation.clientId
+          delete conversation.invocationId
+          delete conversation.conversationSignature
         } else {
           bingAIClient = new BingAIClient({
             userToken: bingToken, // "_U" cookie from bing.com
