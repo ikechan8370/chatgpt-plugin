@@ -3,6 +3,15 @@ import { Config } from '../utils/config.js'
 import HttpsProxyAgent from 'https-proxy-agent'
 import _ from 'lodash'
 import fetch from 'node-fetch'
+let proxy
+if (Config.proxy) {
+  try {
+    proxy = (await import('https-proxy-agent')).default
+  } catch (e) {
+    console.warn('未安装https-proxy-agent，请在插件目录下执行pnpm add https-proxy-agent')
+  }
+}
+
 export class OfficialChatGPTClient {
   constructor (opts = {}) {
     const {
@@ -13,6 +22,20 @@ export class OfficialChatGPTClient {
     this._accessToken = accessToken
     this._apiReverseUrl = apiReverseUrl
     this._timeoutMs = timeoutMs
+    this._fetch = (url, options = {}) => {
+      const defaultOptions = Config.proxy
+        ? {
+            agent: proxy(Config.proxy)
+          }
+        : {}
+
+      const mergedOptions = {
+        ...defaultOptions,
+        ...options
+      }
+
+      return fetch(url, mergedOptions)
+    }
   }
 
   async sendMessage (prompt, opts = {}) {
@@ -59,10 +82,7 @@ export class OfficialChatGPTClient {
       },
       referrer: 'https://chat.openai.com/chat'
     }
-    if (Config.proxy) {
-      option.agent = new HttpsProxyAgent(Config.proxy)
-    }
-    const res = await fetch(url, option)
+    const res = await this._fetch(url, option)
     const decoder = new TextDecoder('utf-8')
     const bodyBytes = await res.arrayBuffer()
     const bodyText = decoder.decode(bodyBytes)

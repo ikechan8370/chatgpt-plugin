@@ -1,12 +1,12 @@
 import fetch from 'node-fetch'
 import { Config } from '../utils/config.js'
 
-export async function getConversations (qq = '') {
+export async function getConversations (qq = '', fetchFn = fetch) {
   let accessToken = await redis.get('CHATGPT:TOKEN')
   if (!accessToken) {
     throw new Error('未绑定ChatGPT AccessToken，请使用#chatgpt设置token命令绑定token')
   }
-  let response = await fetch(`${Config.apiBaseUrl}/conversations?offset=0&limit=20`, {
+  let response = await fetchFn(`${Config.apiBaseUrl}/conversations?offset=0&limit=20`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -33,7 +33,7 @@ export async function getConversations (qq = '') {
       map[item.id] = cachedConversationLastMessage
     } else {
       // 缓存中没有，就去查官方api
-      let conversationDetailResponse = await fetch(`${Config.apiBaseUrl}/api/conversation/${item.id}`, {
+      let conversationDetailResponse = await fetchFn(`${Config.apiBaseUrl}/api/conversation/${item.id}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -96,12 +96,12 @@ export async function getConversations (qq = '') {
   return res
 }
 
-export async function getLatestMessageIdByConversationId (conversationId) {
+export async function getLatestMessageIdByConversationId (conversationId, fetchFn = fetch) {
   let accessToken = await redis.get('CHATGPT:TOKEN')
   if (!accessToken) {
     throw new Error('未绑定ChatGPT AccessToken，请使用#chatgpt设置token命令绑定token')
   }
-  let conversationDetailResponse = await fetch(`${Config.apiBaseUrl}/api/conversation/${conversationId}`, {
+  let conversationDetailResponse = await fetchFn(`${Config.apiBaseUrl}/api/conversation/${conversationId}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -124,12 +124,12 @@ export async function getLatestMessageIdByConversationId (conversationId) {
 }
 
 // 调用chat.open.com删除某一个对话。该操作不可逆。
-export async function deleteConversation (conversationId) {
+export async function deleteConversation (conversationId, fetchFn = fetch) {
   let accessToken = await redis.get('CHATGPT:TOKEN')
   if (!accessToken) {
     throw new Error('未绑定ChatGPT AccessToken，请使用#chatgpt设置token命令绑定token')
   }
-  let response = await fetch(`${Config.apiBaseUrl}/api/conversation/${conversationId}`, {
+  let response = await fetchFn(`${Config.apiBaseUrl}/api/conversation/${conversationId}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
