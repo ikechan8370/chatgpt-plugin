@@ -605,18 +605,23 @@ export class chatgpt extends plugin {
           cookie = bingToken
         }
         let bingAIClient
-        if (Config.bingStyle === 'Sydney')
+        if (Config.bingStyle === 'Sydney') {
           bingAIClient = new SydneyAIClient({
             userToken: bingToken, // "_U" cookie from bing.com
             cookie,
             debug: Config.debug
           })
-        else
+          // Sydney不实现上下文传递，自行处理
+          conversation.clientId = undefined
+          conversation.invocationId = undefined
+          conversation.conversationSignature = undefined
+        } else {
           bingAIClient = new BingAIClient({
             userToken: bingToken, // "_U" cookie from bing.com
             cookie,
             debug: Config.debug
           })
+        }
         let response
         let reply = ''
         try {
@@ -650,7 +655,8 @@ export class chatgpt extends plugin {
           conversationId: response.conversationId,
           clientId: response.clientId,
           invocationId: response.invocationId,
-          conversationSignature: response.conversationSignature
+          conversationSignature: response.conversationSignature,
+          parentMessageId: response.messageId
         }
       }
       case 'api3': {

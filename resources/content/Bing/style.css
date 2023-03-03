@@ -3545,4 +3545,19 @@ input.form-control-sm {
   color: #17a2b8;
 }
 
+.body-Sydney {
+  background: #c5afed29;
+}
+.section-heading-Sydney h2::after {
+  background: #caa5e96a;
+}
+.hero-content-Sydney h4::after {
+  background: #ad6bff;
+}
+.site-footer-Sydney {
+  border-top: 1px solid #6f42c1;
+}
+.copyright-text-Sydney p {
+  color: #9c17b8;
+}
 /*# sourceMappingURL=style.css.map */
