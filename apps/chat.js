@@ -66,7 +66,7 @@ export class chatgpt extends plugin {
           fnc: 'chatgpt'
         },
         {
-          reg: '#chatgpt对话列表',
+          reg: '^#chatgpt对话列表$',
           fnc: 'getAllConversations',
           permission: 'master'
         },
@@ -83,20 +83,20 @@ export class chatgpt extends plugin {
         //   fnc: 'help'
         // },
         {
-          reg: '#chatgpt图片模式',
+          reg: '^#chatgpt图片模式$',
           fnc: 'switch2Picture'
         },
         {
-          reg: '#chatgpt文本模式',
+          reg: '^#chatgpt文本模式$',
           fnc: 'switch2Text'
         },
         {
-          reg: '#清空(chat)?队列',
+          reg: '^#(chatgpt)清空(chat)?队列$',
           fnc: 'emptyQueue',
           permission: 'master'
         },
         {
-          reg: '#移出(chat)?队列首位',
+          reg: '^#(chatgpt)移出(chat)?队列首位$',
           fnc: 'removeQueueFirst',
           permission: 'master'
         },
