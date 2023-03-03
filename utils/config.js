@@ -36,7 +36,7 @@ const defaultConfig = {
   debug: true,
   defaultTimeoutMs: 120000,
   chromeTimeoutMS: 120000,
-  // version: 'v2.0.11',
+  version: 'v2.0.12',
   toneStyle: 'balanced' // or creative, precise
 }
 const _path = process.cwd()
@@ -82,8 +82,8 @@ if (fs.existsSync(`${_path}/plugins/chatgpt-plugin/config/config.json`)) {
   }
 }
 config = Object.assign({}, defaultConfig, config)
-const latestTag = execSync(`cd ${_path}/plugins/chatgpt-plugin && git describe --tags --abbrev=0`).toString().trim()
-config.version = latestTag
+// const latestTag = execSync(`cd ${_path}/plugins/chatgpt-plugin && git describe --tags --abbrev=0`).toString().trim()
+// config.version = latestTag
 
 export const Config = new Proxy(config, {
   set (target, property, value) {
