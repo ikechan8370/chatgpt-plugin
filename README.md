@@ -23,7 +23,7 @@ Node.js >= 18 / Node.js >= 14(with node-fetch)
 
 > #### API模式和浏览器模式如何选择？
 >
-> * API模式会调用OpenAI官方提供的GPT-3 LLM API，只需要提供API Key。一般情况下，该种方式响应速度更快，可配置项多，且不会像chatGPT官网一样总出现不可用的现象，但其聊天效果明显较官网差。但注意GPT-3的API调用是收费的，新用户有18美元试用金可用于支付，价格为`$0.0200/ 1K tokens`。（问题和回答**加起来**算token）
+> * API模式会调用OpenAI官方提供的gpt-3.5-turbo API，ChatGPT官网同款模型，只需要提供API Key。一般情况下，该种方式响应速度更快，可配置项多，且不会像chatGPT官网一样总出现不可用的现象，但注意API调用是收费的，新用户有18美元试用金可用于支付，价格为`$0.0020/ 1K tokens`。（问题和回答**加起来**算token）
 > * API3模式会调用第三方提供的官网反代API，他会帮你绕过CF防护，需要提供ChatGPT的Token。效果与官网和浏览器一致，但稳定性不一定。设置token和API2方法一样。
 > * 浏览器模式通过在本地启动Chrome等浏览器模拟用户访问ChatGPT网站，使得获得和官方以及API2模式一模一样的回复质量，同时保证安全性。缺点是本方法对环境要求较高，需要提供桌面环境和一个可用的代理（能够访问ChatGPT的IP地址），且响应速度不如API，而且高峰期容易无法使用。一般作为API3的下位替代。
 > * 必应（Bing）将调用微软新必应接口进行对话。需要在必应网页能够正常使用新必应且设置有效的Bing登录Cookie方可使用。
@@ -71,11 +71,11 @@ pnpm i
 > 3. 使用vnc客户端连接至云桌面
 >
 >    右键Applications > Shells > Bash打开终端，然后进入Yunzai目录下运行node app即可。
-> 
+>
 > 4. 执行pnpm i时，sharp安装失败
 >
 >     sharp不影响chatgpt聊天，仅影响Dalle2绘图功能。ubuntu可以执行`apt install libvips-dev`之后再`pnpm i`
-> 
+>
 > 实测该方案资源占用低，运行稳定，基本1核2G的轻量云服务器就足够了。
 
 ---
@@ -142,7 +142,7 @@ pnpm i
 >
 > 登录www.bing.com，刷新一下网页，按F12或直接打开开发者模式，点击Application/存储，点击左侧Storage下的Cookies，展开找到[https://www.bing.com](https://www.bing.com/) 项，在右侧列表Name项下找到"\_U"，_U的value即为必应Token
 >
-> 
+>
 >
 > 其他问题可以参考使用的api库 https://github.com/transitive-bullshit/chatgpt-api 以及 https://github.com/waylaidwanderer/node-chatgpt-api
 
@@ -251,7 +251,7 @@ git stash pop
 
    > 一般情况下请按照 [安装](#安装) 小节的内容重新安装依赖即可
    >
-   >  
+   >
    >
    > 最多的问题：载入插件错误：chat
    >
@@ -260,8 +260,8 @@ git stash pop
    > 原因：没装依赖
    >
    > 解决方式：请参考文档在本插件目录下用`pnmp install`安装依赖，安装完就不报错了
-   
-   
+
+
 
 ## 感谢
 

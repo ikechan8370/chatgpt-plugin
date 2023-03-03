@@ -12,6 +12,15 @@ import { OfficialChatGPTClient } from '../utils/message.js'
 import fetch from 'node-fetch'
 import { deleteConversation, getConversations, getLatestMessageIdByConversationId } from '../utils/conversation.js'
 let version = Config.version
+let proxy
+if (Config.proxy) {
+  try {
+    proxy = (await import('https-proxy-agent')).default
+  } catch (e) {
+    console.warn('未安装https-proxy-agent，请在插件目录下执行pnpm add https-proxy-agent')
+  }
+}
+
 /**
  * 每个对话保留的时长。单个对话内ai是保留上下文的。超时后销毁对话，再次对话创建新的对话。
  * 单位：秒
@@ -21,7 +30,20 @@ let version = Config.version
  */
 // const CONVERSATION_PRESERVE_TIME = Config.conversationPreserveTime
 const defaultPropmtPrefix = 'You answer as concisely as possible for each response (e.g. don’t be verbose). It is very important that you answer as concisely as possible, so please remember this. If you are generating a list, do not have too many items. Keep the number of items short.'
+const newFetch = (url, options = {}) => {
+  const defaultOptions = Config.proxy
+    ? {
+        agent: proxy(Config.proxy)
+      }
+    : {}
 
+  const mergedOptions = {
+    ...defaultOptions,
+    ...options
+  }
+
+  return fetch(url, mergedOptions)
+}
 export class chatgpt extends plugin {
   constructor () {
     let toggleMode = Config.toggleMode
@@ -170,7 +192,7 @@ export class chatgpt extends plugin {
         await this.reply('指令格式错误，请同时加上对话id或@某人以删除他当前进行的对话', true)
         return false
       } else {
-        let deleteResponse = await deleteConversation(conversationId)
+        let deleteResponse = await deleteConversation(conversationId, newFetch)
         console.log(deleteResponse)
         let deleted = 0
         let qcs = await redis.keys('CHATGPT:QQ_CONVERSATION:*')
@@ -370,7 +392,7 @@ export class chatgpt extends plugin {
       if (conversationId) {
         let lastMessageId = await redis.get(`CHATGPT:CONVERSATION_LAST_MESSAGE_ID:${conversationId}`)
         if (!lastMessageId) {
-          lastMessageId = await getLatestMessageIdByConversationId(conversationId)
+          lastMessageId = await getLatestMessageIdByConversationId(conversationId, newFetch)
         }
         //        let lastMessagePrompt = await redis.get(`CHATGPT:CONVERSATION_LAST_MESSAGE_PROMPT:${conversationId}`)
         //        let conversationCreateTime = await redis.get(`CHATGPT:CONVERSATION_CREATE_TIME:${conversationId}`)
@@ -535,7 +557,7 @@ export class chatgpt extends plugin {
       quotes: quote,
       cache: cacheData,
       version
-    },{retType: Config.quoteReply ? 'base64' : ''}), e.isGroup && Config.quoteReply)
+    }, { retType: Config.quoteReply ? 'base64' : '' }), e.isGroup && Config.quoteReply)
   }
 
   async sendMessage (prompt, conversation = {}, use, e) {
@@ -683,7 +705,7 @@ export class chatgpt extends plugin {
           systemMessage: promptPrefix,
           completionParams,
           assistantLabel: Config.assistantLabel,
-          fetch
+          fetch: newFetch
         })
         let option = {
           timeoutMs: 120000,
@@ -714,7 +736,7 @@ export class chatgpt extends plugin {
   async getAllConversations (e) {
     const use = await redis.get('CHATGPT:USE')
     if (use === 'api3') {
-      let conversations = await getConversations(e.sender.user_id)
+      let conversations = await getConversations(e.sender.user_id, newFetch)
       if (Config.debug) {
         logger.mark('all conversations: ', conversations)
       }
@@ -779,7 +801,7 @@ export class chatgpt extends plugin {
       return false
     }
     // 查询OpenAI API剩余试用额度
-    fetch(`${Config.openAiBaseUrl}/dashboard/billing/credit_grants`, {
+    newFetch(`${Config.openAiBaseUrl}/dashboard/billing/credit_grants`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
