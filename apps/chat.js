@@ -4,15 +4,19 @@ import { Config } from '../utils/config.js'
 import { v4 as uuid } from 'uuid'
 import delay from 'delay'
 import { ChatGPTAPI } from 'chatgpt'
-import { ChatGPTClient, BingAIClient } from '@waylaidwanderer/chatgpt-api'
+import { BingAIClient } from '@waylaidwanderer/chatgpt-api'
 import SydneyAIClient from '../utils/SydneyAIClient.js'
 import { render, getMessageById, makeForwardMsg, tryTimes, upsertMessage, randomString } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
-import Keyv from 'keyv'
 import { OfficialChatGPTClient } from '../utils/message.js'
 import fetch from 'node-fetch'
 import { deleteConversation, getConversations, getLatestMessageIdByConversationId } from '../utils/conversation.js'
+try {
+  await import('keyv')
+} catch (err) {
+  logger.warn('【ChatGPT-Plugin】依赖keyv未安装，可能影响Sydney模式下Bing对话，建议执行pnpm install keyv安装')
+}
 let version = Config.version
 let proxy
 if (Config.proxy) {
@@ -160,10 +164,16 @@ export class chatgpt extends plugin {
       } else if (use === 'bing' && Config.toneStyle === 'Sydney') {
         const conversation = {
           store: new KeyvFile({ filename: 'cache.json' }),
-          namespace: 'Sydney',
+          namespace: 'Sydney'
+        }
+        let Keyv
+        try {
+          Keyv = await import('keyv').default
+        } catch (err) {
+          await this.reply('依赖keyv未安装，请执行pnpm install keyv', true)
         }
         const conversationsCache = new Keyv(conversation)
-        console.log(`SydneyUser_${e.sender.user_id}`,await conversationsCache.get(`SydneyUser_${e.sender.user_id}`))
+        console.log(`SydneyUser_${e.sender.user_id}`, await conversationsCache.get(`SydneyUser_${e.sender.user_id}`))
         await conversationsCache.delete(`SydneyUser_${e.sender.user_id}`)
         await this.reply('已退出当前对话，该对话仍然保留。请@我进行聊天以开启新的对话', true)
       } else {
@@ -185,7 +195,13 @@ export class chatgpt extends plugin {
       } else if (use === 'bing' && Config.toneStyle === 'Sydney') {
         const conversation = {
           store: new KeyvFile({ filename: 'cache.json' }),
-          namespace: 'Sydney',
+          namespace: 'Sydney'
+        }
+        let Keyv
+        try {
+          Keyv = await import('keyv').default
+        } catch (err) {
+          await this.reply('依赖keyv未安装，请执行pnpm install keyv', true)
         }
         const conversationsCache = new Keyv(conversation)
         await conversationsCache.delete(`SydneyUser_${qq}`)
@@ -627,7 +643,7 @@ export class chatgpt extends plugin {
         if (Config.bingStyle === 'Sydney') {
           const cacheOptions = {
             namespace: 'Sydney',
-            store: new KeyvFile({ filename: 'cache.json' }),
+            store: new KeyvFile({ filename: 'cache.json' })
           }
           bingAIClient = new SydneyAIClient({
             userToken: bingToken, // "_U" cookie from bing.com
