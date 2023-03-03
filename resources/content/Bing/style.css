@@ -3545,6 +3545,47 @@ input.form-control-sm {
   color: #17a2b8;
 }
 
+/* Sydney */
+.body-Sydney {
+  background: #b4afed29;
+}
+.section-heading-Sydney h2 {
+  color: rgba(26, 0, 170, 0.25);
+}
+.section-heading-Sydney h2::after {
+  background: #a5aae96a;
+}
+.hero-content-Sydney h4::after {
+  background: #6e6bff;
+}
+.site-footer-Sydney {
+  border-top: 1px solid #4842c1;
+}
+.copyright-text-Sydney p {
+  color: #6217b8;
+}
+
+/* precise */
+.body-precise {
+  background: #20c9970f;
+}
+.section-heading-precise h2 {
+  color: rgba(0, 167, 170, 0.25);
+}
+.section-heading-precise h2::after {
+  background: #a5e9ca6a;
+}
+.hero-content-precise h4::after {
+  background: #33ccb0;
+}
+.site-footer-precise {
+  border-top: 1px solid #42c19d;
+}
+.copyright-text-precise p {
+  color: #17b8a0;
+}
+
+/* creative */
 .body-Sydney {
   background: #c5afed29;
 }
