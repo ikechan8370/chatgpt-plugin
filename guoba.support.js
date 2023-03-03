@@ -221,7 +221,7 @@ export function supportGuoba () {
               { label: '平衡', value: 'balanced' },
               { label: '富有创意', value: 'creative' },
               { label: '精确', value: 'precise' },
-              { label: 'Sydney', value: 'Sydney' }
+              { label: 'Sydney(可能存在风险，不建议使用)', value: 'Sydney' }
             ]
           }
         },

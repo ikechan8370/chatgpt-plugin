@@ -3586,22 +3586,22 @@ input.form-control-sm {
 }
 
 /* creative */
-.body-Sydney {
+.body-creative {
   background: #c5afed29;
 }
-.section-heading-Sydney h2 {
+.section-heading-creative h2 {
   color: rgb(97 0 170 / 25%);
 }
-.section-heading-Sydney h2::after {
+.section-heading-creative h2::after {
   background: #caa5e96a;
 }
-.hero-content-Sydney h4::after {
+.hero-content-creative h4::after {
   background: #ad6bff;
 }
-.site-footer-Sydney {
+.site-footer-creative {
   border-top: 1px solid #6f42c1;
 }
-.copyright-text-Sydney p {
+.copyright-text-creative p {
   color: #9c17b8;
 }
 
