@@ -262,6 +262,19 @@ export function supportGuoba () {
           label: '验证码平台Token',
           bottomHelpMessage: '可注册2captcha实现跳过验证码，收费服务但很便宜。否则可能会遇到验证码而卡住。',
           component: 'InputPassword'
+        },
+        {
+          field: 'toneStyle',
+          label: 'Bing模式',
+          bottomHelpMessage: '微软必应官方的三种应答风格。默认为均衡',
+          component: 'Select',
+          componentProps: {
+            options: [
+              { label: '均衡', value: 'balanced' },
+              { label: '创意', value: 'creative' },
+              { label: '精确', value: 'precise' }
+            ]
+          }
         }
       ],
       // 获取配置数据方法（用于前端填充显示数据）

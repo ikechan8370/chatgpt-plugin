@@ -5,6 +5,7 @@
 * 支持单人连续对话Conversation，群聊中支持加入其他人的对话
 * API模式下，使用 gpt-3.5-turbo API，ChatGPT官网同款模型，仅需OpenAI Api Key，开箱即用。**注意收费**
 * 支持问答图片截图
+* 支持AI性格调教
 * API3模式下，绕过Cloudflare防护直接访问ChatGPT的SSE API，与官方体验一致，且保留对话记录，在官网可查。免费。
 * 提供基于浏览器的解决方案作为备选，API3不可用的情况下或担心账户安全的用户可以选择使用浏览器模式。
 * 支持新[必应](https://www.bing.com/new)（Beta）
@@ -24,7 +25,7 @@ Node.js >= 18 / Node.js >= 14(with node-fetch)
 > #### API模式和浏览器模式如何选择？
 >
 > * API模式会调用OpenAI官方提供的gpt-3.5-turbo API，ChatGPT官网同款模型，只需要提供API Key。一般情况下，该种方式响应速度更快，可配置项多，且不会像chatGPT官网一样总出现不可用的现象，但注意API调用是收费的，新用户有18美元试用金可用于支付，价格为`$0.0020/ 1K tokens`。（问题和回答**加起来**算token）
-> * API3模式会调用第三方提供的官网反代API，他会帮你绕过CF防护，需要提供ChatGPT的Token。效果与官网和浏览器一致，但稳定性不一定。设置token和API2方法一样。
+> * API3模式会调用第三方提供的官网反代API，他会帮你绕过CF防护，需要提供ChatGPT的Token。效果与官网和浏览器一致，但稳定性不一定。发送#chatgpt设置token来设置token。
 > * 浏览器模式通过在本地启动Chrome等浏览器模拟用户访问ChatGPT网站，使得获得和官方以及API2模式一模一样的回复质量，同时保证安全性。缺点是本方法对环境要求较高，需要提供桌面环境和一个可用的代理（能够访问ChatGPT的IP地址），且响应速度不如API，而且高峰期容易无法使用。一般作为API3的下位替代。
 > * 必应（Bing）将调用微软新必应接口进行对话。需要在必应网页能够正常使用新必应且设置有效的Bing登录Cookie方可使用。
 1. 进入 Yunzai根目录
@@ -45,9 +46,10 @@ pnpm i
 > 2.20更新：必应被大削，变得蠢了，建议还是API/API3优先
 
 3. 修改配置
+**本插件配置项比较多，建议使用[锅巴面板](https://github.com/guoba-yunzai/Guoba-Plugin)修改**
 
-复制`plugins/chatgpt-plugin/config/config.example.js`并将其改名为`config.js`
-编辑`plugins/chatgpt-plugin/config/config.js`文件，根据其中的注释修改必要配置项
+   复制`plugins/chatgpt-plugin/config/config.example.json`并将其改名为`config.json`\
+   编辑`plugins/chatgpt-plugin/config/config.json`文件，修改必要配置项
 
 4. 重启Yunzai-Bot
 
