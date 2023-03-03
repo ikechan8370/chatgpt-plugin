@@ -5,9 +5,11 @@ import { v4 as uuid } from 'uuid'
 import delay from 'delay'
 import { ChatGPTAPI } from 'chatgpt'
 import { ChatGPTClient, BingAIClient } from '@waylaidwanderer/chatgpt-api'
+import SydneyAIClient from '../utils/SydneyAIClient.js'
 import { render, getMessageById, makeForwardMsg, tryTimes, upsertMessage, randomString } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
+import Keyv from 'keyv'
 import { OfficialChatGPTClient } from '../utils/message.js'
 import fetch from 'node-fetch'
 import { deleteConversation, getConversations, getLatestMessageIdByConversationId } from '../utils/conversation.js'
@@ -155,6 +157,15 @@ export class chatgpt extends plugin {
       if (use === 'api3') {
         await redis.del(`CHATGPT:QQ_CONVERSATION:${e.sender.user_id}`)
         await this.reply('已退出当前对话，该对话仍然保留。请@我进行聊天以开启新的对话', true)
+      } else if (use === 'bing' && Config.toneStyle === 'Sydney') {
+        const conversation = {
+          store: new KeyvFile({ filename: 'cache.json' }),
+          namespace: 'Sydney',
+        }
+        const conversationsCache = new Keyv(conversation)
+        console.log(`SydneyUser_${e.sender.user_id}`,await conversationsCache.get(`SydneyUser_${e.sender.user_id}`))
+        await conversationsCache.delete(`SydneyUser_${e.sender.user_id}`)
+        await this.reply('已退出当前对话，该对话仍然保留。请@我进行聊天以开启新的对话', true)
       } else {
         let c = await redis.get(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
         if (!c) {
@@ -171,6 +182,14 @@ export class chatgpt extends plugin {
       if (use === 'api3') {
         await redis.del(`CHATGPT:QQ_CONVERSATION:${qq}`)
         await this.reply(`${atUser}已退出TA当前的对话，TA仍可以@我进行聊天以开启新的对话`, true)
+      } else if (use === 'bing' && Config.toneStyle === 'Sydney') {
+        const conversation = {
+          store: new KeyvFile({ filename: 'cache.json' }),
+          namespace: 'Sydney',
+        }
+        const conversationsCache = new Keyv(conversation)
+        await conversationsCache.delete(`SydneyUser_${qq}`)
+        await this.reply('已退出当前对话，该对话仍然保留。请@我进行聊天以开启新的对话', true)
       } else {
         let c = await redis.get(`CHATGPT:CONVERSATIONS:${qq}`)
         if (!c) {
@@ -448,7 +467,7 @@ export class chatgpt extends plugin {
         previousConversation = JSON.parse(previousConversation)
         conversation = {
           conversationId: previousConversation.conversation.conversationId,
-          parentMessageId: previousConversation.conversation.parentMessageId,
+          parentMessageId: previousConversation.parentMessageId,
           clientId: previousConversation.clientId,
           invocationId: previousConversation.invocationId,
           conversationSignature: previousConversation.conversationSignature
@@ -468,6 +487,7 @@ export class chatgpt extends plugin {
         if (use === 'bing') {
           previousConversation.clientId = chatMessage.clientId
           previousConversation.invocationId = chatMessage.invocationId
+          previousConversation.parentMessageId = chatMessage.parentMessageId
           previousConversation.conversationSignature = chatMessage.conversationSignature
         } else {
           // 或许这样切换回来不会404？
@@ -576,6 +596,7 @@ export class chatgpt extends plugin {
       quote: quote.length > 0,
       quotes: quote,
       cache: cacheData,
+      style: Config.toneStyle,
       version
     }, { retType: Config.quoteReply ? 'base64' : '' }), e.isGroup && Config.quoteReply)
   }
@@ -602,12 +623,30 @@ export class chatgpt extends plugin {
         if (bingToken?.indexOf('=') > -1) {
           cookie = bingToken
         }
-        const bingAIClient = new BingAIClient({
-          userToken: bingToken, // "_U" cookie from bing.com
-          cookie,
-          debug: Config.debug,
-          proxy: Config.proxy
-        })
+        let bingAIClient
+        if (Config.bingStyle === 'Sydney') {
+          const cacheOptions = {
+            namespace: 'Sydney',
+            store: new KeyvFile({ filename: 'cache.json' }),
+          }
+          bingAIClient = new SydneyAIClient({
+            userToken: bingToken, // "_U" cookie from bing.com
+            cookie,
+            debug: Config.debug,
+            cache: cacheOptions,
+            user: e.sender.user_id
+          })
+          // Sydney不实现上下文传递，删除上下文索引
+          delete conversation.clientId
+          delete conversation.invocationId
+          delete conversation.conversationSignature
+        } else {
+          bingAIClient = new BingAIClient({
+            userToken: bingToken, // "_U" cookie from bing.com
+            cookie,
+            debug: Config.debug
+          })
+        }
         let response
         let reply = ''
         try {
@@ -642,7 +681,8 @@ export class chatgpt extends plugin {
           conversationId: response.conversationId,
           clientId: response.clientId,
           invocationId: response.invocationId,
-          conversationSignature: response.conversationSignature
+          conversationSignature: response.conversationSignature,
+          parentMessageId: response.messageId
         }
       }
       case 'api3': {

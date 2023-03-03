@@ -200,12 +200,36 @@ export function supportGuoba () {
         {
           field: 'temperature',
           label: 'temperature',
-          bottomHelpMessage: 'temperature。',
+          bottomHelpMessage: '用于控制回复内容的多样性，数值越大回复越加随机、多元化，数值越小回复越加保守。',
           component: 'InputNumber',
           componentProps: {
             min: 0,
             max: 2
           }
+        },
+        {
+          label: '以下为必应方式的配置。',
+          component: 'Divider'
+        },
+        {
+          field: 'toneStyle',
+          label: 'Bing模式',
+          bottomHelpMessage: '微软必应官方的三种应答风格。默认为均衡，Sydney为实验风格，独立与三种风格之外。',
+          component: 'Select',
+          componentProps: {
+            options: [
+              { label: '均衡', value: 'balanced' },
+              { label: '创意', value: 'creative' },
+              { label: '精确', value: 'precise' },
+              { label: 'Sydney(可能存在风险)', value: 'Sydney' }
+            ]
+          }
+        },
+        {
+          field: 'sydney',
+          label: 'Sydney的设定',
+          bottomHelpMessage: '你可以自己改写Sydney的设定，让Sydney变成你希望的样子，不过请注意，Sydney仍然是Sydney。',
+          component: 'InputTextArea'
         },
         {
           label: '以下为API3方式的配置。',
@@ -262,19 +286,6 @@ export function supportGuoba () {
           label: '验证码平台Token',
           bottomHelpMessage: '可注册2captcha实现跳过验证码，收费服务但很便宜。否则可能会遇到验证码而卡住。',
           component: 'InputPassword'
-        },
-        {
-          field: 'toneStyle',
-          label: 'Bing模式',
-          bottomHelpMessage: '微软必应官方的三种应答风格。默认为均衡',
-          component: 'Select',
-          componentProps: {
-            options: [
-              { label: '均衡', value: 'balanced' },
-              { label: '创意', value: 'creative' },
-              { label: '精确', value: 'precise' }
-            ]
-          }
         }
       ],
       // 获取配置数据方法（用于前端填充显示数据）
