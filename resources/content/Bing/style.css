@@ -3548,6 +3548,9 @@ input.form-control-sm {
 .body-Sydney {
   background: #c5afed29;
 }
+.section-heading-Sydney h2 {
+  color: rgb(97 0 170 / 25%);
+}
 .section-heading-Sydney h2::after {
   background: #caa5e96a;
 }
@@ -3560,4 +3563,5 @@ input.form-control-sm {
 .copyright-text-Sydney p {
   color: #9c17b8;
 }
+
 /*# sourceMappingURL=style.css.map */

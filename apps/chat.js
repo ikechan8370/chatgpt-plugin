@@ -427,6 +427,7 @@ export class chatgpt extends plugin {
         if (use === 'bing') {
           previousConversation.clientId = chatMessage.clientId
           previousConversation.invocationId = chatMessage.invocationId
+          previousConversation.parentMessageId = chatMessage.parentMessageId
           previousConversation.conversationSignature = chatMessage.conversationSignature
         } else {
           // 或许这样切换回来不会404？
