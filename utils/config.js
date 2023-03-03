@@ -34,7 +34,7 @@ const defaultConfig = {
   debug: true,
   defaultTimeoutMs: 120000,
   chromeTimeoutMS: 120000,
-  version: '2.0.9'
+  version: '2.0.10'
 }
 const _path = process.cwd()
 let config = {}
