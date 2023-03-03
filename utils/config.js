@@ -82,7 +82,7 @@ if (fs.existsSync(`${_path}/plugins/chatgpt-plugin/config/config.json`)) {
   }
 }
 config = Object.assign({}, defaultConfig, config)
-const latestTag = execSync('cd plugins/chatgpt-plugin && git describe --tags --abbrev=0').toString().trim()
+const latestTag = execSync(`cd ${_path}/plugins/chatgpt-plugin && git describe --tags --abbrev=0`).toString().trim()
 config.version = latestTag
 
 export const Config = new Proxy(config, {
