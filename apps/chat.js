@@ -74,6 +74,10 @@ export class chatgpt extends plugin {
           reg: '^#结束对话([sS]*)',
           fnc: 'destroyConversations'
         },
+        {
+          reg: '^#结束全部对话$',
+          fnc: 'endAllConversations'
+        },
         // {
         //   reg: '#chatgpt帮助',
         //   fnc: 'help'
@@ -153,7 +157,7 @@ export class chatgpt extends plugin {
       if (use === 'api3') {
         await redis.del(`CHATGPT:QQ_CONVERSATION:${e.sender.user_id}`)
         await this.reply('已退出当前对话，该对话仍然保留。请@我进行聊天以开启新的对话', true)
-      } else if (use === 'bing' && Config.bingStyle === 'Sydney') {
+      } else if (use === 'bing' && Config.toneStyle === 'Sydney') {
         const conversation = {
           store: new KeyvFile({ filename: 'cache.json' }),
           namespace: 'Sydney',
@@ -178,7 +182,7 @@ export class chatgpt extends plugin {
       if (use === 'api3') {
         await redis.del(`CHATGPT:QQ_CONVERSATION:${qq}`)
         await this.reply(`${atUser}已退出TA当前的对话，TA仍可以@我进行聊天以开启新的对话`, true)
-      } else if (use === 'bing' && Config.bingStyle === 'Sydney') {
+      } else if (use === 'bing' && Config.toneStyle === 'Sydney') {
         const conversation = {
           store: new KeyvFile({ filename: 'cache.json' }),
           namespace: 'Sydney',
@@ -198,9 +202,40 @@ export class chatgpt extends plugin {
     }
   }
 
+  async endAllConversations (e) {
+    let use = await redis.get('CHATGPT:USE') || 'api'
+    let deleted = 0
+    switch (use) {
+      case 'bing':
+      case 'api': {
+        let cs = await redis.keys('CHATGPT:CONVERSATIONS:*')
+        for (let i = 0; i < cs.length; i++) {
+          await redis.del(cs[i])
+          if (Config.debug) {
+            logger.info('delete conversation of qq: ' + cs[i])
+          }
+          deleted++
+        }
+        break
+      }
+      case 'api3': {
+        let qcs = await redis.keys('CHATGPT:CONVERSATIONS:*')
+        for (let i = 0; i < qcs.length; i++) {
+          await redis.del(qcs[i])
+          if (Config.debug) {
+            logger.info('delete conversation bind: ' + qcs[i])
+          }
+          deleted++
+        }
+        break
+      }
+    }
+    await this.reply(`结束了${deleted}个中用户的对话。`, true)
+  }
+
   async deleteConversation (e) {
     let ats = e.message.filter(m => m.type === 'at')
-    let use = await redis.get('CHATGPT:USE')
+    let use = await redis.get('CHATGPT:USE') || 'api'
     if (use !== 'api3') {
       await this.reply('本功能当前仅支持API3模式', true)
       return false
@@ -212,7 +247,7 @@ export class chatgpt extends plugin {
         return false
       } else {
         let deleteResponse = await deleteConversation(conversationId, newFetch)
-        console.log(deleteResponse)
+        logger.mark(deleteResponse)
         let deleted = 0
         let qcs = await redis.keys('CHATGPT:QQ_CONVERSATION:*')
         for (let i = 0; i < qcs.length; i++) {
@@ -234,7 +269,9 @@ export class chatgpt extends plugin {
         let conversationId = await redis.get('CHATGPT:QQ_CONVERSATION:' + qq)
         if (conversationId) {
           let deleteResponse = await deleteConversation(conversationId)
-          console.log(deleteResponse)
+          if (Config.debug) {
+            logger.mark(deleteResponse)
+          }
           let deleted = 0
           let qcs = await redis.keys('CHATGPT:QQ_CONVERSATION:*')
           for (let i = 0; i < qcs.length; i++) {
@@ -252,16 +289,6 @@ export class chatgpt extends plugin {
         }
       }
     }
-  }
-
-  async help (e) {
-    let response = 'chatgpt-plugin使用帮助文字版\n' +
-      '@我+聊天内容: 发起对话与AI进行聊天\n' +
-      '#chatgpt对话列表: 查看当前发起的对话\n' +
-      '#结束对话: 结束自己或@用户的对话\n' +
-      '#chatgpt帮助: 查看本帮助\n' +
-      '源代码：https://github.com/ikechan8370/chatgpt-plugin'
-    await this.reply(response)
   }
 
   async switch2Picture (e) {
@@ -350,15 +377,8 @@ export class chatgpt extends plugin {
       await this.reply('主人不让我回答你这种问题，真是抱歉了呢', true)
       return false
     }
-    //    if (prompt.indexOf('<script>') != -1)
-    //    {
-    //      await this.reply('坏人，我要报告给主人', e.isGroup)
-    //      Bot.pickUser(cfg.masterQQ[0]).sendMsg(`主人,我在${this.e.group_id ? '群' + this.e.group_id : '私聊' }被${e.sender.nickname}使用代码攻击了，请警惕`)
-    //      return false
-    //    }
-
-    const use = await redis.get('CHATGPT:USE')
-    if (use !== 'bing') {
+    const use = await redis.get('CHATGPT:USE') || 'api'
+    if (use === 'api3') {
       let randomId = uuid()
       // 队列队尾插入，开始排队
       await redis.rPush('CHATGPT:CHAT_QUEUE', [randomId])
@@ -371,11 +391,11 @@ export class chatgpt extends plugin {
           await this.reply('我正在思考如何回复你，请稍等', true, { recallMsg: 8 })
         }
       } else {
+        let length = await redis.lLen('CHATGPT:CHAT_QUEUE') - 1
         if (confirmOn) {
-          let length = await redis.lLen('CHATGPT:CHAT_QUEUE') - 1
           await this.reply(`我正在思考如何回复你，请稍等，当前队列前方还有${length}个问题`, true, { recallMsg: 8 })
-          logger.info(`chatgpt队列前方还有${length}个问题。管理员可通过#清空队列来强制清除所有等待的问题。`)
         }
+        logger.info(`chatgpt队列前方还有${length}个问题。管理员可通过#清空队列来强制清除所有等待的问题。`)
         // 开始排队
         while (true) {
           if (await redis.lIndex('CHATGPT:CHAT_QUEUE', 0) === randomId) {
@@ -576,7 +596,7 @@ export class chatgpt extends plugin {
       quote: quote.length > 0,
       quotes: quote,
       cache: cacheData,
-      style: Config.bingStyle,
+      style: Config.toneStyle,
       version
     }, { retType: Config.quoteReply ? 'base64' : '' }), e.isGroup && Config.quoteReply)
   }
@@ -593,48 +613,6 @@ export class chatgpt extends plugin {
     switch (use) {
       case 'browser': {
         return await this.chatgptBrowserBased(prompt, conversation)
-      }
-      case 'apiReverse': {
-        const currentDate = new Date().toISOString().split('T')[0]
-        let promptPrefix = `You are ${Config.assistantLabel}, a large language model trained by OpenAI. ${Config.promptPrefixOverride || defaultPropmtPrefix}
-        Current date: ${currentDate}`
-        const clientOptions = {
-          // (Optional) Support for a reverse proxy for the completions endpoint (private API server).
-          // Warning: This will expose your `openaiApiKey` to a third-party. Consider the risks before using this.
-          reverseProxyUrl: Config.reverseProxy || 'https://chatgpt.pawan.krd/api/completions',
-          // (Optional) Parameters as described in https://platform.openai.com/docs/api-reference/completions
-          modelOptions: {
-            // You can override the model name and any other parameters here.
-            model: Config.plus ? 'text-davinci-002-render-paid' : 'text-davinci-002-render'
-          },
-          // (Optional) Set custom instructions instead of "You are ChatGPT...".
-          promptPrefix,
-          // (Optional) Set a custom name for the user
-          // userLabel: 'User',
-          // (Optional) Set a custom name for ChatGPT
-          chatGptLabel: Config.assistantLabel,
-          // (Optional) Set to true to enable `console.debug()` logging
-          debug: Config.debug
-        }
-        const cacheOptions = {
-          // Options for the Keyv cache, see https://www.npmjs.com/package/keyv
-          // This is used for storing conversations, and supports additional drivers (conversations are stored in memory by default)
-          // For example, to use a JSON file (`npm i keyv-file`) as a database:
-          store: new KeyvFile({ filename: 'cache.json' })
-        }
-        let accessToken = await redis.get('CHATGPT:TOKEN')
-        if (!accessToken) {
-          throw new Error('未绑定ChatGPT AccessToken，请使用#chatgpt设置token命令绑定token')
-        }
-        // console.log(accessToken)
-        this.chatGPTApi = new ChatGPTClient(accessToken, clientOptions, cacheOptions)
-        let response = await tryTimes(async () => await this.chatGPTApi.sendMessage(prompt, conversation || {}), 1)
-        return {
-          text: response.response,
-          conversationId: response.conversationId,
-          id: response.messageId,
-          parentMessageId: conversation?.parentMessageId
-        }
       }
       case 'bing': {
         let bingToken = await redis.get('CHATGPT:BING_TOKEN')
@@ -672,8 +650,9 @@ export class chatgpt extends plugin {
         let response
         let reply = ''
         try {
-          conversation.toneStyle = Config.bingStyle
-          response = await bingAIClient.sendMessage(prompt, conversation || {}, (token) => {
+          let opt = _.cloneDeep(conversation) || {}
+          opt.toneStyle = Config.toneStyle
+          response = await bingAIClient.sendMessage(prompt, opt, (token) => {
             reply += token
           })
           if (response.details.adaptiveCards?.[0]?.body?.[0]?.text?.trim()) {
@@ -756,7 +735,7 @@ export class chatgpt extends plugin {
         if (conversation) {
           option = Object.assign(option, conversation)
         }
-        return await tryTimes(async () => await this.chatGPTApi.sendMessage(prompt, option), 5)
+        return await tryTimes(async () => await this.chatGPTApi.sendMessage(prompt, option), 1)
       }
     }
   }
@@ -798,15 +777,15 @@ export class chatgpt extends plugin {
 
   async joinConversation (e) {
     let ats = e.message.filter(m => m.type === 'at')
-    let use = await redis.get('CHATGPT:USE')
-    if (use !== 'api3') {
-      await this.reply('本功能当前仅支持API3模式', true)
-      return false
-    }
+    let use = await redis.get('CHATGPT:USE') || 'api'
+    // if (use !== 'api3') {
+    //   await this.reply('本功能当前仅支持API3模式', true)
+    //   return false
+    // }
     if (ats.length === 0) {
       await this.reply('指令错误，使用本指令时请同时@某人', true)
       return false
-    } else {
+    } else if (use === 'api3') {
       let at = ats[0]
       let qq = at.qq
       let atUser = _.trimStart(at.text, '@')
@@ -817,6 +796,13 @@ export class chatgpt extends plugin {
       }
       await redis.set(`CHATGPT:QQ_CONVERSATION:${e.sender.user_id}`, conversationId)
       await this.reply(`加入${atUser}的对话成功，当前对话id为` + conversationId)
+    } else {
+      let at = ats[0]
+      let qq = at.qq
+      let atUser = _.trimStart(at.text, '@')
+      let target = await redis.get('CHATGPT:CONVERSATIONS:' + qq)
+      await redis.set('CHATGPT:CONVERSATIONS:' + e.sender.user_id, target)
+      await this.reply(`加入${atUser}的对话成功`)
     }
   }
 

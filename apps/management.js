@@ -54,7 +54,7 @@ export class ChatgptManagement extends plugin {
         },
         {
           reg: '^#chatgpt切换(必应|Bing)$',
-          fnc: 'useReversedBingSolution',
+          fnc: 'useBingSolution',
           permission: 'master'
         },
         {
@@ -157,8 +157,9 @@ export class ChatgptManagement extends plugin {
   }
 
   async useReversedAPIBasedSolution (e) {
-    await redis.set('CHATGPT:USE', 'apiReverse')
-    await this.reply('【暂时不可用，请关注仓库更新和群公告】已切换到基于第三方Reversed CompletionAPI的解决方案，如果已经对话过建议执行`#结束对话`避免引起404错误')
+    await this.reply('API2已废弃，处于不可用状态，不会为你切换')
+    // await redis.set('CHATGPT:USE', 'apiReverse')
+    // await this.reply('【暂时不可用，请关注仓库更新和群公告】已切换到基于第三方Reversed CompletionAPI的解决方案，如果已经对话过建议执行`#结束对话`避免引起404错误')
   }
 
   async useReversedAPIBasedSolution2 (e) {
@@ -171,7 +172,7 @@ export class ChatgptManagement extends plugin {
     }
   }
 
-  async useReversedBingSolution (e) {
+  async useBingSolution (e) {
     let use = await redis.get('CHATGPT:USE')
     if (use !== 'bing') {
       await redis.set('CHATGPT:USE', 'bing')

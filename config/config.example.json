@@ -1,0 +1,21 @@
+{
+  "apiKey": "",
+  "proxy": "",
+  "openAiBaseUrl": "https://api.openai.com",
+  "api": "https://chatgpt.duti.tech/api/conversation",
+  "apiBaseUrl": "https://chatgpt.duti.tech/api",
+  "promptPrefixOverride": "Your answer shouldn't be too verbose. If you are generating a list, do not have too many items. Keep the number of items short. Prefer to answer in Chinese.",
+  "debug": false,
+  "blockWords": ["屏蔽词1", "屏蔽词b"],
+  "promptBlockWords": ["屏蔽词1", "屏蔽词b"],
+  "imgOcr": true,
+  "defaultUsePicture": false,
+  "autoUsePicture": true,
+  "autoUsePictureThreshold": 1200,
+  "toggleMode": "at",
+  "quoteReply": true,
+  "showQRCode": true,
+  "cacheUrl": "https://content.alcedogroup.com",
+  "cacheEntry": false,
+  "drawCD": 30
+}

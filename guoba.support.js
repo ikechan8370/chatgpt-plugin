@@ -212,16 +212,16 @@ export function supportGuoba () {
           component: 'Divider'
         },
         {
-          field: 'bingStyle',
-          label: '会话风格',
-          bottomHelpMessage: '必应的回复风格，除了Sydney外均遵从必应本来的设定。',
+          field: 'toneStyle',
+          label: 'Bing模式',
+          bottomHelpMessage: '微软必应官方的三种应答风格。默认为均衡，Sydney为实验风格，独立与三种风格之外。',
           component: 'Select',
           componentProps: {
             options: [
-              { label: '平衡', value: 'balanced' },
-              { label: '富有创意', value: 'creative' },
+              { label: '均衡', value: 'balanced' },
+              { label: '创意', value: 'creative' },
               { label: '精确', value: 'precise' },
-              { label: 'Sydney(可能存在风险，不建议使用)', value: 'Sydney' }
+              { label: 'Sydney(可能存在风险)', value: 'Sydney' }
             ]
           }
         },
