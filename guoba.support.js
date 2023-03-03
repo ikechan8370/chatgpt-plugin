@@ -200,12 +200,36 @@ export function supportGuoba () {
         {
           field: 'temperature',
           label: 'temperature',
-          bottomHelpMessage: 'temperature。',
+          bottomHelpMessage: '用于控制回复内容的多样性，数值越大回复越加随机、多元化，数值越小回复越加保守。',
           component: 'InputNumber',
           componentProps: {
             min: 0,
             max: 2
           }
+        },
+        {
+          label: '以下为必应方式的配置。',
+          component: 'Divider'
+        },
+        {
+          field: 'bingStyle',
+          label: '会话风格',
+          bottomHelpMessage: '必应的回复风格，除了Sydney外均遵从必应本来的设定。',
+          component: 'Select',
+          componentProps: {
+            options: [
+              { label: '平衡', value: 'balanced' },
+              { label: '富有创意', value: 'creative' },
+              { label: '精确', value: 'precise' },
+              { label: 'Sydney', value: 'Sydney' }
+            ]
+          }
+        },
+        {
+          field: 'sydney',
+          label: 'Sydney的设定',
+          bottomHelpMessage: '你可以自己改写Sydney的设定，让Sydney变成你希望的样子，不过请注意，Sydney仍然是Sydney。',
+          component: 'InputTextArea'
         },
         {
           label: '以下为API3方式的配置。',

@@ -5,6 +5,7 @@ import { v4 as uuid } from 'uuid'
 import delay from 'delay'
 import { ChatGPTAPI } from 'chatgpt'
 import { ChatGPTClient, BingAIClient } from '@waylaidwanderer/chatgpt-api'
+import SydneyAIClient from '../utils/SydneyAIClient.js'
 import { render, getMessageById, makeForwardMsg, tryTimes, upsertMessage, randomString } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
@@ -534,6 +535,7 @@ export class chatgpt extends plugin {
       quote: quote.length > 0,
       quotes: quote,
       cache: cacheData,
+      style: Config.bingStyle,
       version
     },{retType: Config.quoteReply ? 'base64' : ''}), e.isGroup && Config.quoteReply)
   }
@@ -602,14 +604,23 @@ export class chatgpt extends plugin {
         if (bingToken?.indexOf('=') > -1) {
           cookie = bingToken
         }
-        const bingAIClient = new BingAIClient({
-          userToken: bingToken, // "_U" cookie from bing.com
-          cookie,
-          debug: Config.debug
-        })
+        let bingAIClient
+        if (Config.bingStyle === 'Sydney')
+          bingAIClient = new SydneyAIClient({
+            userToken: bingToken, // "_U" cookie from bing.com
+            cookie,
+            debug: Config.debug
+          })
+        else
+          bingAIClient = new BingAIClient({
+            userToken: bingToken, // "_U" cookie from bing.com
+            cookie,
+            debug: Config.debug
+          })
         let response
         let reply = ''
         try {
+          conversation.toneStyle = Config.bingStyle
           response = await bingAIClient.sendMessage(prompt, conversation || {}, (token) => {
             reply += token
           })
