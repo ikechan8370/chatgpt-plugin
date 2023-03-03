@@ -1,3 +1,5 @@
 config/*
 !config/config.example.js
+!config/config.example.json
+!config/config.md
 node_modules/
