@@ -9,6 +9,7 @@ import SydneyAIClient from '../utils/SydneyAIClient.js'
 import { render, getMessageById, makeForwardMsg, tryTimes, upsertMessage, randomString } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
+import Keyv from 'keyv'
 import { OfficialChatGPTClient } from '../utils/message.js'
 import fetch from 'node-fetch'
 import { deleteConversation, getConversations, getLatestMessageIdByConversationId } from '../utils/conversation.js'
@@ -153,8 +154,13 @@ export class chatgpt extends plugin {
         await redis.del(`CHATGPT:QQ_CONVERSATION:${e.sender.user_id}`)
         await this.reply('已退出当前对话，该对话仍然保留。请@我进行聊天以开启新的对话', true)
       } else if (use === 'bing' && Config.bingStyle === 'Sydney') {
-        const conversation = new KeyvFile({ filename: 'cache.json' })
-        await conversation.delete(`SydneyUser_${e.sender.user_id}`);
+        const conversation = {
+          store: new KeyvFile({ filename: 'cache.json' }),
+          namespace: 'Sydney',
+        }
+        const conversationsCache = new Keyv(conversation)
+        console.log(`SydneyUser_${e.sender.user_id}`,await conversationsCache.get(`SydneyUser_${e.sender.user_id}`))
+        await conversationsCache.delete(`SydneyUser_${e.sender.user_id}`)
         await this.reply('已退出当前对话，该对话仍然保留。请@我进行聊天以开启新的对话', true)
       } else {
         let c = await redis.get(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
@@ -173,8 +179,12 @@ export class chatgpt extends plugin {
         await redis.del(`CHATGPT:QQ_CONVERSATION:${qq}`)
         await this.reply(`${atUser}已退出TA当前的对话，TA仍可以@我进行聊天以开启新的对话`, true)
       } else if (use === 'bing' && Config.bingStyle === 'Sydney') {
-        const conversation = new KeyvFile({ filename: 'cache.json' })
-        await conversation.delete(`SydneyUser_${qq}`);
+        const conversation = {
+          store: new KeyvFile({ filename: 'cache.json' }),
+          namespace: 'Sydney',
+        }
+        const conversationsCache = new Keyv(conversation)
+        await conversationsCache.delete(`SydneyUser_${qq}`)
         await this.reply('已退出当前对话，该对话仍然保留。请@我进行聊天以开启新的对话', true)
       } else {
         let c = await redis.get(`CHATGPT:CONVERSATIONS:${qq}`)

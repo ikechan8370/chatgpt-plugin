@@ -171,7 +171,7 @@ export default class SydneyAIClient {
 
         // Due to this jailbreak, the AI will occasionally start responding as the user. It only happens rarely (and happens with the non-jailbroken Bing too), but since we are handling conversations ourselves now, we can use this system to ignore the part of the generated message that is replying as the user.
         const stopToken = '[user](#message)';
-        const conversationKey = `SydneyUser_${opts.user}`;
+        const conversationKey = `SydneyUser_${this.opts.user}`;
         const conversation = (await this.conversationsCache.get(conversationKey)) || {
             messages: [],
             createdAt: Date.now(),
