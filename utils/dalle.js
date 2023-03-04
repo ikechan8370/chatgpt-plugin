@@ -2,7 +2,21 @@ import { Configuration, OpenAIApi } from 'openai'
 import { Config } from './config.js'
 import fs from 'fs'
 import { mkdirs } from './common.js'
-
+let proxy
+if (Config.proxy) {
+  try {
+    proxy = (await import('https-proxy-agent')).default
+  } catch (e) {
+    console.warn('未安装https-proxy-agent，请在插件目录下执行pnpm add https-proxy-agent')
+  }
+}
+function getProxy() {
+  if (proxy) {
+    return proxy
+  } else {
+    throw new Error('未安装https-proxy-agent，请在插件目录下执行pnpm add https-proxy-agent')
+  }
+}
 export async function createImage (prompt, n = 1, size = '512x512') {
   const configuration = new Configuration({
     apiKey: Config.apiKey
@@ -11,11 +25,14 @@ export async function createImage (prompt, n = 1, size = '512x512') {
   if (Config.debug) {
     logger.info({ prompt, n, size })
   }
+  let proxyFn = getProxy()
   const response = await openai.createImage({
     prompt,
     n,
     size,
     response_format: 'b64_json'
+  }, {
+    httpsAgent: Config.proxy ? proxyFn(Config.proxy) : null
   })
   return response.data.data?.map(pic => pic.b64_json)
 }
@@ -39,12 +56,16 @@ export async function imageVariation (imageUrl, n = 1, size = '512x512') {
 
   let croppedFileLoc = `data/chatgpt/imagesAccept/${Date.now()}_cropped.png`
   await resizeAndCropImage(fileLoc, croppedFileLoc, 512)
-
+  let proxyFn = getProxy()
   const response = await openai.createImageVariation(
     fs.createReadStream(croppedFileLoc),
     n,
     size,
-    'b64_json'
+    'b64_json',
+    '',
+    {
+      httpsAgent: Config.proxy ? proxyFn(Config.proxy) : null
+    }
   )
   if (response.status !== 200) {
     console.log(response.data.error)
@@ -100,7 +121,7 @@ export async function editImage (originalImage, mask = [], prompt, num = 1, size
   const arrayBuffer = await blob.arrayBuffer()
   const buffer = Buffer.from(arrayBuffer)
   await fs.writeFileSync(fileLoc, buffer)
-
+  let proxyFn = getProxy()
   let croppedFileLoc = `data/chatgpt/imagesAccept/${Date.now()}_cropped.png`
   await resizeAndCropImage(fileLoc, croppedFileLoc, 512)
   let maskFileLoc = await createMask(croppedFileLoc, mask)
@@ -110,7 +131,11 @@ export async function editImage (originalImage, mask = [], prompt, num = 1, size
     prompt,
     num,
     size,
-    'b64_json'
+    'b64_json',
+    '',
+    {
+      httpsAgent: Config.proxy ? proxyFn(Config.proxy) : null
+    }
   )
   if (response.status !== 200) {
     console.log(response.data.error)
