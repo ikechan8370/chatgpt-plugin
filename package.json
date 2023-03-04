@@ -14,10 +14,12 @@
     "puppeteer-extra-plugin-stealth": "^2.11.2",
     "random": "^4.1.0",
     "undici": "^5.20.0",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "ws": "^8.12.1"
   },
   "optionalDependencies": {
     "jimp": "^0.22.7",
-    "sharp": "^0.31.3"
+    "sharp": "^0.31.3",
+    "https-proxy-agent": "5.0.1"
   }
 }
