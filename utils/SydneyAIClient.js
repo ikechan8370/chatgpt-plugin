@@ -52,17 +52,20 @@ export default class SydneyAIClient {
       host: opts.host || 'https://www.bing.com'
     }
     this.debug = opts.debug
-    const cacheOptions = opts.cache || {}
-    cacheOptions.namespace = cacheOptions.namespace || 'bing'
-    let _this = this
-    getKeyv().then(Keyv => {
-      _this.conversationsCache = new Keyv(cacheOptions)
-    }).catch(err => {
-      logger.err(err)
-    })
+  }
+
+  async initCache () {
+    if (!this.conversationsCache) {
+      const cacheOptions = this.opts.cache || {}
+      cacheOptions.namespace = cacheOptions.namespace || 'bing'
+      let Keyv = await getKeyv()
+      this.conversationsCache = new Keyv(cacheOptions)
+    }
   }
 
   async createNewConversation () {
+    await this.initCache()
+    console.log(this.opts)
     const fetchOptions = {
       headers: {
         accept: 'application/json',
@@ -87,6 +90,7 @@ export default class SydneyAIClient {
         'Referrer-Policy': 'origin-when-cross-origin'
       }
     }
+    console.log(fetchOptions)
     if (this.opts.proxy) {
       fetchOptions.dispatcher = new ProxyAgent(this.opts.proxy)
     }
@@ -95,6 +99,7 @@ export default class SydneyAIClient {
   }
 
   async createWebSocketConnection () {
+    await this.initCache()
     let WebSocket = await getWebSocket()
     return new Promise((resolve) => {
       let agent
@@ -160,6 +165,7 @@ export default class SydneyAIClient {
     message,
     opts = {}
   ) {
+    await this.initCache()
     if (!this.conversationsCache) {
       throw new Error('no support conversationsCache')
     }

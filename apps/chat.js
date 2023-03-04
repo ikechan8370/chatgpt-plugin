@@ -638,9 +638,9 @@ export class chatgpt extends plugin {
         if (!bingToken) {
           throw new Error('未绑定Bing Cookie，请使用#chatgpt设置必应token命令绑定Bing Cookie')
         }
-        let cookie
+        let cookies
         if (bingToken?.indexOf('=') > -1) {
-          cookie = bingToken
+          cookies = bingToken
         }
         let bingAIClient
         if (Config.toneStyle === 'Sydney') {
@@ -650,10 +650,11 @@ export class chatgpt extends plugin {
           }
           bingAIClient = new SydneyAIClient({
             userToken: bingToken, // "_U" cookie from bing.com
-            cookie,
+            cookies,
             debug: Config.debug,
             cache: cacheOptions,
-            user: e.sender.user_id
+            user: e.sender.user_id,
+            proxy: Config.proxy
           })
           // Sydney不实现上下文传递，删除上下文索引
           delete conversation.clientId
@@ -662,8 +663,9 @@ export class chatgpt extends plugin {
         } else {
           bingAIClient = new BingAIClient({
             userToken: bingToken, // "_U" cookie from bing.com
-            cookie,
-            debug: Config.debug
+            cookies,
+            debug: Config.debug,
+            proxy: Config.proxy
           })
         }
         let response
