@@ -57,7 +57,7 @@ export default class SydneyAIClient {
   constructor (opts) {
     this.opts = {
       ...opts,
-      host: opts.host || 'https://www.bing.com'
+      host: opts.host || Config.sydneyReverseProxy || 'https://www.bing.com'
     }
     this.debug = opts.debug
   }

@@ -232,6 +232,12 @@ export function supportGuoba () {
           component: 'InputTextArea'
         },
         {
+          field: 'sydneyReverseProxy',
+          label: 'sydney反代',
+          bottomHelpMessage: '国内ip无法正常使用sydney，如果有bing.com的反代可以填在此处，或者使用proxy',
+          component: 'Input'
+        },
+        {
           label: '以下为API3方式的配置。',
           component: 'Divider'
         },
