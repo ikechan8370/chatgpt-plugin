@@ -5,7 +5,6 @@ import fetch, {
 } from 'node-fetch'
 import crypto from 'crypto'
 
-import { ProxyAgent } from 'undici'
 import HttpsProxyAgent from 'https-proxy-agent'
 import { Config } from './config.js'
 

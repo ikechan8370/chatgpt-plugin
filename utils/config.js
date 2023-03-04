@@ -1,14 +1,16 @@
 import fs from 'fs'
 import lodash from 'lodash'
-import { execSync } from 'child_process'
 
 const defaultConfig = {
   blockWords: ['屏蔽词1', '屏蔽词b'],
   promptBlockWords: ['屏蔽词1', '屏蔽词b'],
   imgOcr: true,
   defaultUsePicture: false,
+  defaultUseTTS: false,
+  defaultTTSRole: '纳西妲',
   autoUsePicture: true,
   autoUsePictureThreshold: 1200,
+  ttsAutoFallbackThreshold: 99,
   conversationPreserveTime: 0,
   toggleMode: 'at',
   quoteReply: true,
@@ -43,7 +45,7 @@ const defaultConfig = {
   noiseScale: 0.6,
   noiseScaleW: 0.668,
   lengthScale: 1.2,
-  version: 'v2.0.17'
+  version: 'v2.0.18'
 }
 const _path = process.cwd()
 let config = {}

@@ -5,6 +5,7 @@ import lodash from 'lodash'
 import fs from 'node:fs'
 import path from 'node:path'
 import puppeteer from '../../../lib/puppeteer/puppeteer.js'
+import {Config} from "./config.js";
 // export function markdownToText (markdown) {
 //  return remark()
 //    .use(stripMarkdown)
@@ -286,4 +287,12 @@ export async function render (e, pluginKey, htmlPath, data = {}, renderCfg = {})
     ret = await e.reply(base64)
   }
   return renderCfg.retType === 'msgId' ? ret : true
+}
+
+export function getDefaultUserSetting () {
+  return {
+    usePicture: Config.defaultUsePicture,
+    useTTS: Config.defaultUseTTS,
+    ttsRole: Config.defaultTTSRole
+  }
 }

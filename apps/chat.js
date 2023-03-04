@@ -6,7 +6,15 @@ import delay from 'delay'
 import { ChatGPTAPI } from 'chatgpt'
 import { BingAIClient } from '@waylaidwanderer/chatgpt-api'
 import SydneyAIClient from '../utils/SydneyAIClient.js'
-import { render, getMessageById, makeForwardMsg, tryTimes, upsertMessage, randomString } from '../utils/common.js'
+import {
+    render,
+    getMessageById,
+    makeForwardMsg,
+    tryTimes,
+    upsertMessage,
+    randomString,
+    getDefaultUserSetting
+} from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
 import { OfficialChatGPTClient } from '../utils/message.js'
@@ -97,6 +105,14 @@ export class chatgpt extends plugin {
           fnc: 'switch2Text'
         },
         {
+          reg: '^#chatgpt语音模式$',
+          fnc: 'switch2Audio'
+        },
+        {
+          reg: '^#chatgpt设置语音角色',
+          fnc: 'setDefaultRole'
+        },
+        {
           reg: '^#(chatgpt)清空(chat)?队列$',
           fnc: 'emptyQueue',
           permission: 'master'
@@ -176,6 +192,10 @@ export class chatgpt extends plugin {
         } catch (err) {
           await this.reply('依赖keyv未安装，请执行pnpm install keyv', true)
         }
+        const conversationsCache = new Keyv(conversation)
+        logger.info(`SydneyUser_${e.sender.user_id}`, await conversationsCache.get(`SydneyUser_${e.sender.user_id}`))
+        await conversationsCache.delete(`SydneyUser_${e.sender.user_id}`)
+        await this.reply('已退出当前对话，该对话仍然保留。请@我进行聊天以开启新的对话', true)
       } else {
         let c = await redis.get(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
         if (!c) {
@@ -310,11 +330,12 @@ export class chatgpt extends plugin {
   async switch2Picture (e) {
     let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
     if (!userSetting) {
-      userSetting = { usePicture: true }
+      userSetting = getDefaultUserSetting()
     } else {
       userSetting = JSON.parse(userSetting)
     }
     userSetting.usePicture = true
+    userSetting.useTTS = false
     await redis.set(`CHATGPT:USER:${e.sender.user_id}`, JSON.stringify(userSetting))
     await this.reply('ChatGPT回复已转换为图片模式')
   }
@@ -322,13 +343,47 @@ export class chatgpt extends plugin {
   async switch2Text (e) {
     let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
     if (!userSetting) {
-      userSetting = { usePicture: false }
+      userSetting = getDefaultUserSetting()
     } else {
       userSetting = JSON.parse(userSetting)
     }
     userSetting.usePicture = false
+    userSetting.useTTS = false
     await redis.set(`CHATGPT:USER:${e.sender.user_id}`, JSON.stringify(userSetting))
     await this.reply('ChatGPT回复已转换为文字模式')
+  }
+
+  async switch2Audio (e) {
+    if (!Config.ttsSpace) {
+      await this.reply('您没有配置VITS API，请前往锅巴面板进行配置')
+      return
+    }
+    let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
+    if (!userSetting) {
+      userSetting = getDefaultUserSetting()
+    } else {
+      userSetting = JSON.parse(userSetting)
+    }
+    userSetting.useTTS = true
+    await redis.set(`CHATGPT:USER:${e.sender.user_id}`, JSON.stringify(userSetting))
+    await this.reply('ChatGPT回复已转换为语音模式')
+  }
+
+  async setDefaultRole (e) {
+    if (!Config.ttsSpace) {
+      await this.reply('您没有配置VITS API，请前往锅巴面板进行配置')
+      return
+    }
+    let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
+    if (!userSetting) {
+      userSetting = getDefaultUserSetting()
+    } else {
+      userSetting = JSON.parse(userSetting)
+    }
+    let speaker = _.trimStart(e.msg, '#chatgpt设置语音角色') || '随机'
+    userSetting.ttsRole = convertSpeaker(speaker)
+    await redis.set(`CHATGPT:USER:${e.sender.user_id}`, JSON.stringify(userSetting))
+    await this.reply(`您的默认语音角色已被设置为”${userSetting.ttsRole}“`)
   }
 
   /**
@@ -351,8 +406,18 @@ export class chatgpt extends plugin {
         return false
       }
     }
-    let useTTS = false
-    let speaker = ''
+    let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
+    if (userSetting) {
+      userSetting = JSON.parse(userSetting)
+      if (Object.keys(userSetting).indexOf('useTTS') < 0) {
+        userSetting.useTTS = Config.defaultUseTTS
+      }
+    } else {
+      userSetting = getDefaultUserSetting()
+    }
+    let useTTS = !!userSetting.useTTS
+    let speaker = convertSpeaker(userSetting.ttsRole || Config.defaultTTSRole)
+    // 每个回答可以指定
     let trySplit = prompt.split('回答：')
     if (trySplit.length > 1 && speakers.indexOf(convertSpeaker(trySplit[0])) > -1) {
       useTTS = true
@@ -442,11 +507,6 @@ export class chatgpt extends plugin {
       }
     }
     logger.info(`chatgpt prompt: ${prompt}`)
-    // try {
-    //   await this.chatGPTApi.init()
-    // } catch (e) {
-    //   await this.reply('chatgpt初始化出错：' + e.msg, true)
-    // }
     let previousConversation
     let conversation = {}
     if (use === 'api3') {
@@ -534,14 +594,7 @@ export class chatgpt extends plugin {
         await this.reply('返回内容存在敏感词，我不想回答你', true)
         return false
       }
-      let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
-      if (userSetting) {
-        userSetting = JSON.parse(userSetting)
-      } else {
-        userSetting = {
-          usePicture: Config.defaultUsePicture
-        }
-      }
+
       let quotemessage = []
       if (chatMessage?.quote) {
         chatMessage.quote.forEach(function (item, index) {
@@ -551,7 +604,7 @@ export class chatgpt extends plugin {
         })
       }
       if (useTTS) {
-        if (Config.ttsSpace && response.length <= 99) {
+        if (Config.ttsSpace && response.length <= 299) {
           let wav = await generateAudio(response, speaker, '中文')
           e.reply(segment.record(wav))
         } else {
@@ -883,7 +936,6 @@ export class chatgpt extends plugin {
       .then(response => response.json())
       .then(data => {
         if (data.error) {
-          // console.log(data.error)
           this.reply('获取失败：' + data.error.code)
           return false
         } else {
