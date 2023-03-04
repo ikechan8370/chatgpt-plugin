@@ -57,7 +57,7 @@ export default class SydneyAIClient {
   constructor (opts) {
     this.opts = {
       ...opts,
-      host: opts.host || 'https://www.bing.com'
+      host: opts.host || Config.sydneyReverseProxy || 'https://www.bing.com'
     }
     this.debug = opts.debug
   }
@@ -73,7 +73,6 @@ export default class SydneyAIClient {
 
   async createNewConversation () {
     await this.initCache()
-    console.log(this.opts)
     const fetchOptions = {
       headers: {
         accept: 'application/json',
@@ -98,7 +97,6 @@ export default class SydneyAIClient {
         'Referrer-Policy': 'origin-when-cross-origin'
       }
     }
-    console.log(fetchOptions)
     if (this.opts.proxy) {
       fetchOptions.agent = proxy(Config.proxy)
     }

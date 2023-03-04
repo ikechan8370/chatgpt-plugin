@@ -232,9 +232,10 @@ export class chatgpt extends plugin {
         break
       }
       case 'api3': {
-        let qcs = await redis.keys('CHATGPT:CONVERSATIONS:*')
+        let qcs = await redis.keys('CHATGPT:QQ_CONVERSATION:*')
         for (let i = 0; i < qcs.length; i++) {
           await redis.del(qcs[i])
+          // todo clean last message id
           if (Config.debug) {
             logger.info('delete conversation bind: ' + qcs[i])
           }
