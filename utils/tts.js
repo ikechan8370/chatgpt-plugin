@@ -61,6 +61,7 @@ export async function generateAudio (text, speaker = '随机', language = '中�
   }
   if (response.status > 299) {
     logger.info(json)
+    throw new Error(JSON.stringify(json))
   }
   let [message, audioInfo, take] = json?.data
   logger.info(message, take)

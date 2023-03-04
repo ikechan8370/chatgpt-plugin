@@ -381,8 +381,12 @@ export class chatgpt extends plugin {
     }
     let speaker = _.trimStart(e.msg, '#chatgpt设置语音角色') || '随机'
     userSetting.ttsRole = convertSpeaker(speaker)
-    await redis.set(`CHATGPT:USER:${e.sender.user_id}`, JSON.stringify(userSetting))
-    await this.reply(`您的默认语音角色已被设置为”${userSetting.ttsRole}“`)
+    if (speakers.indexOf(userSetting.ttsRole) >= 0) {
+      await redis.set(`CHATGPT:USER:${e.sender.user_id}`, JSON.stringify(userSetting))
+      await this.reply(`您的默认语音角色已被设置为”${userSetting.ttsRole}“`)
+    } else {
+      await this.reply(`”抱歉，${userSetting.ttsRole}“我还不认识呢`)
+    }
   }
 
   /**
