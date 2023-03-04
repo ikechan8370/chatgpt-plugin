@@ -1,5 +1,6 @@
 import { Config } from './config.js'
 import fetch from 'node-fetch'
+import random from 'random'
 let proxy
 if (Config.proxy) {
   try {
@@ -24,7 +25,22 @@ const newFetch = (url, options = {}) => {
   return fetch(url, mergedOptions)
 }
 const space = Config.ttsSpace
-export async function generateAudio (text, speaker = '琪亚娜', language = '中文', noiseScale = Config.noiseScale, noiseScaleW = Config.noiseScaleW, lengthScale = Config.lengthScale) {
+
+function randomNum (minNum, maxNum) {
+  switch (arguments.length) {
+    case 1:
+      return parseInt(Math.random() * minNum + 1, 10)
+    case 2:
+      return parseInt(Math.random() * (maxNum - minNum + 1) + minNum, 10)
+    default:
+      return 0
+  }
+}
+export async function generateAudio (text, speaker = '随机', language = '中文', noiseScale = Config.noiseScale, noiseScaleW = Config.noiseScaleW, lengthScale = Config.lengthScale) {
+  if (!speaker || speaker === '随机') {
+    logger.info('随机角色！这次哪个角色这么幸运会被选到呢……')
+    speaker = speakers[randomNum(0, speakers.length)]
+  }
   logger.info(`正在使用${speaker}，基于文本：'${text}'生成语音`)
   let body = {
     data: [
@@ -41,6 +57,9 @@ export async function generateAudio (text, speaker = '琪亚娜', language = '�
   })
   let json = await response.json()
   if (Config.debug) {
+    logger.info(json)
+  }
+  if (response.status > 299) {
     logger.info(json)
   }
   let [message, audioInfo, take] = json?.data

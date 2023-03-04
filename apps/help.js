@@ -28,6 +28,16 @@ let helpData = [
       },
       {
         icon: 'text',
+        title: '#chatgpt语音模式',
+        desc: '机器人以语音形式回答'
+      },
+      {
+        icon: 'text',
+        title: '#chatgpt设置语音角色',
+        desc: '设置语音模式下回复的角色音色'
+      },
+      {
+        icon: 'text',
         title: '#chatgpt画图+prompt(/张数/图片大小)',
         desc: '调用OpenAI Dalle API进行绘图，需要有API key并消耗余额。图片大小只能是256x256/512x512/1024x1024中的一个.默认为1张、512x512'
       },

@@ -46,8 +46,20 @@ export function supportGuoba () {
         {
           field: 'defaultUsePicture',
           label: '全局图片模式',
-          bottomHelpMessage: '全局默认以图片形式回复，并自动发出Continue命令补全回答。长回复可能会有bug。',
+          bottomHelpMessage: '全局默认以图片形式回复。',
           component: 'Switch'
+        },
+        {
+          field: 'defaultUseTTS',
+          label: '全局语音模式',
+          bottomHelpMessage: '全局默认以语音形式回复，使用默认角色音色。',
+          component: 'Switch'
+        },
+        {
+          field: 'defaultTTSRole',
+          label: '语音模式默认橘色',
+          bottomHelpMessage: '语音模式下，未指定角色时使用的角色。若为空，将使用随机角色回复。',
+          component: 'Input'
         },
         {
           field: 'autoUsePicture',
