@@ -20,6 +20,7 @@
   "optionalDependencies": {
     "jimp": "^0.22.7",
     "sharp": "^0.31.3",
-    "https-proxy-agent": "5.0.1"
+    "https-proxy-agent": "5.0.1",
+    "keyv": "^4.5.2"
   }
 }
