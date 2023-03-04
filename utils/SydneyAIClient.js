@@ -20,6 +20,14 @@ try {
 } catch (error) {
   logger.warn('【ChatGPT-Plugin】依赖ws未安装，可能影响Sydney模式下Bing对话，建议使用pnpm install ws安装')
 }
+let proxy
+if (Config.proxy) {
+  try {
+    proxy = (await import('https-proxy-agent')).default
+  } catch (e) {
+    console.warn('未安装https-proxy-agent，请在插件目录下执行pnpm add https-proxy-agent')
+  }
+}
 async function getWebSocket () {
   let WebSocket
   try {
@@ -92,7 +100,7 @@ export default class SydneyAIClient {
     }
     console.log(fetchOptions)
     if (this.opts.proxy) {
-      fetchOptions.dispatcher = new ProxyAgent(this.opts.proxy)
+      fetchOptions.agent = proxy(Config.proxy)
     }
     const response = await fetch(`${this.opts.host}/turing/conversation/create`, fetchOptions)
     return response.json()
@@ -178,7 +186,6 @@ export default class SydneyAIClient {
       onProgress,
       abortController = new AbortController()
     } = opts
-
     if (typeof onProgress !== 'function') {
       onProgress = () => {}
     }
