@@ -10,7 +10,7 @@ if (Config.proxy) {
     console.warn('未安装https-proxy-agent，请在插件目录下执行pnpm add https-proxy-agent')
   }
 }
-function getProxy() {
+function getProxy () {
   if (proxy) {
     return proxy
   } else {
