@@ -298,6 +298,36 @@ export function supportGuoba () {
           label: '语音转换API地址',
           bottomHelpMessage: '前往duplicate空间https://huggingface.co/spaces/ikechan8370/vits-uma-genshin-honkai后查看api地址',
           component: 'Input'
+        },
+        {
+          field: 'noiseScale',
+          label: 'noiseScale',
+          bottomHelpMessage: '控制情感变化程度',
+          component: 'InputNumber',
+          componentProps: {
+            min: 0,
+            max: 1
+          }
+        },
+        {
+          field: 'noiseScaleW',
+          label: 'noiseScaleW',
+          bottomHelpMessage: '控制音素发音长度',
+          component: 'InputNumber',
+          componentProps: {
+            min: 0,
+            max: 1
+          }
+        },
+        {
+          field: 'lengthScale',
+          label: 'lengthScale',
+          bottomHelpMessage: '控制整体语速',
+          component: 'InputNumber',
+          componentProps: {
+            min: 0,
+            max: 2
+          }
         }
       ],
       // 获取配置数据方法（用于前端填充显示数据）
