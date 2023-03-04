@@ -12,6 +12,8 @@ import { KeyvFile } from 'keyv-file'
 import { OfficialChatGPTClient } from '../utils/message.js'
 import fetch from 'node-fetch'
 import { deleteConversation, getConversations, getLatestMessageIdByConversationId } from '../utils/conversation.js'
+import {convertSpeaker, generateAudio, speakers} from '../utils/tts.js'
+import { segment } from 'oicq'
 try {
   await import('keyv')
 } catch (err) {
@@ -349,6 +351,14 @@ export class chatgpt extends plugin {
         return false
       }
     }
+    let useTTS = false
+    let speaker = ''
+    let trySplit = prompt.split('回答：')
+    if (trySplit.length > 1 && speakers.indexOf(convertSpeaker(trySplit[0])) > -1) {
+      useTTS = true
+      speaker = convertSpeaker(trySplit[0])
+      prompt = trySplit[1]
+    }
     if (Config.imgOcr) {
       // 取消息中的图片、at的头像、回复的图片，放入e.img
       if (e.at && !e.source) {
@@ -540,7 +550,18 @@ export class chatgpt extends plugin {
           }
         })
       }
-      if (userSetting.usePicture || (Config.autoUsePicture && response.length > Config.autoUsePictureThreshold)) {
+      if (useTTS) {
+        if (Config.ttsSpace && response.length <= 99) {
+          let wav = await generateAudio(response, speaker, '中文')
+          e.reply(segment.record(wav))
+        } else {
+          await this.reply('你没有配置转语音API或者文字太长了哦，我用文本回复你吧', e.isGroup)
+          await this.reply(`${response}`, e.isGroup)
+          if (quotemessage.length > 0) {
+            this.reply(await makeForwardMsg(this.e, quotemessage))
+          }
+        }
+      } else if (userSetting.usePicture || (Config.autoUsePicture && response.length > Config.autoUsePictureThreshold)) {
         // todo use next api of chatgpt to complete incomplete respoonse
         try {
           await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', response, prompt, quotemessage, Config.showQRCode)
