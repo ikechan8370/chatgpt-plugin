@@ -57,9 +57,20 @@ export function supportGuoba () {
         },
         {
           field: 'defaultTTSRole',
-          label: '语音模式默认橘色',
+          label: '语音模式默认角色',
           bottomHelpMessage: '语音模式下，未指定角色时使用的角色。若为空，将使用随机角色回复。',
           component: 'Input'
+        },
+        {
+          field: 'ttsAutoFallbackThreshold',
+          label: '语音转文字阈值',
+          helpMessage: '语音模式下，字数超过这个阈值就降级为文字',
+          bottomHelpMessage: '语音转为文字的阈值。',
+          component: 'InputNumber',
+          componentProps: {
+            min: 0,
+            max: 299
+          }
         },
         {
           field: 'autoUsePicture',

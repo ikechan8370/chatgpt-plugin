@@ -10,6 +10,7 @@ const defaultConfig = {
   defaultTTSRole: '纳西妲',
   autoUsePicture: true,
   autoUsePictureThreshold: 1200,
+  ttsAutoFallbackThreshold: 99,
   conversationPreserveTime: 0,
   toggleMode: 'at',
   quoteReply: true,
