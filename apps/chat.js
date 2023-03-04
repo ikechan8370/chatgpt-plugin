@@ -554,7 +554,7 @@ export class chatgpt extends plugin {
         })
       }
       if (useTTS) {
-        if (Config.ttsSpace) {
+        if (Config.ttsSpace && response.length <= 99) {
           let wav = await generateAudio(response, speaker, '中文')
           e.reply(segment.record(wav))
         } else {
