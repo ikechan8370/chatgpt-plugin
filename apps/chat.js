@@ -168,7 +168,7 @@ export class chatgpt extends plugin {
         }
         let Keyv
         try {
-          Keyv = await import('keyv').default
+          Keyv = await import('keyv').Keyv
         } catch (err) {
           await this.reply('依赖keyv未安装，请执行pnpm install keyv', true)
         }
@@ -481,6 +481,10 @@ export class chatgpt extends plugin {
         // await redis.set(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`, JSON.stringify(previousConversation), { EX: CONVERSATION_PRESERVE_TIME })
       } else {
         previousConversation = JSON.parse(previousConversation)
+        if (Config.debug) {
+          logger.info({ previousConversation })
+        }
+
         conversation = {
           conversationId: previousConversation.conversation.conversationId,
           parentMessageId: previousConversation.parentMessageId,
@@ -493,7 +497,7 @@ export class chatgpt extends plugin {
 
     try {
       if (Config.debug) {
-        logger.mark(conversation)
+        logger.mark({ conversation })
       }
       let chatMessage = await this.sendMessage(prompt, conversation, use, e)
       if (use !== 'api3') {
@@ -507,9 +511,11 @@ export class chatgpt extends plugin {
           previousConversation.conversationSignature = chatMessage.conversationSignature
         } else {
           // 或许这样切换回来不会404？
-          previousConversation.conversation.parentMessageId = chatMessage.id
+          previousConversation.parentMessageId = chatMessage.id
         }
-        console.log(chatMessage)
+        if (Config.debug) {
+          logger.info(chatMessage)
+        }
         previousConversation.num = previousConversation.num + 1
         await redis.set(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`, JSON.stringify(previousConversation), Config.conversationPreserveTime > 0 ? { EX: Config.conversationPreserveTime } : {})
       }
