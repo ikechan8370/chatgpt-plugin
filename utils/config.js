@@ -40,6 +40,9 @@ const defaultConfig = {
   defaultTimeoutMs: 120000,
   chromeTimeoutMS: 120000,
   ttsSpace: '',
+  noiseScale: 0.6,
+  noiseScaleW: 0.668,
+  lengthScale: 1.2,
   version: 'v2.0.17'
 }
 const _path = process.cwd()

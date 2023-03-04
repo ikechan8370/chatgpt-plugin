@@ -24,7 +24,7 @@ const newFetch = (url, options = {}) => {
   return fetch(url, mergedOptions)
 }
 const space = Config.ttsSpace
-export async function generateAudio (text, speaker = '琪亚娜', language = '中文', noiseScale = 0.6, noiseScaleW = 0.668, lengthScale = 1.2) {
+export async function generateAudio (text, speaker = '琪亚娜', language = '中文', noiseScale = Config.noiseScale, noiseScaleW = Config.noiseScaleW, lengthScale = Config.lengthScale) {
   logger.info(`正在使用${speaker}，基于文本：'${text}'生成语音`)
   let body = {
     data: [
