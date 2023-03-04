@@ -40,7 +40,7 @@ const defaultConfig = {
   defaultTimeoutMs: 120000,
   chromeTimeoutMS: 120000,
   ttsSpace: '',
-  version: 'v2.0.16'
+  version: 'v2.0.17'
 }
 const _path = process.cwd()
 let config = {}
