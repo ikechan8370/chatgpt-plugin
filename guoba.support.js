@@ -292,6 +292,12 @@ export function supportGuoba () {
           label: '验证码平台Token',
           bottomHelpMessage: '可注册2captcha实现跳过验证码，收费服务但很便宜。否则可能会遇到验证码而卡住。',
           component: 'InputPassword'
+        },
+        {
+          field: 'ttsSpace',
+          label: '语音转换API地址',
+          bottomHelpMessage: '前往duplicate空间https://huggingface.co/spaces/ikechan8370/vits-uma-genshin-honkai后查看api地址',
+          component: 'Input'
         }
       ],
       // 获取配置数据方法（用于前端填充显示数据）

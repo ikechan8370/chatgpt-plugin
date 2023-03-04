@@ -39,6 +39,7 @@ const defaultConfig = {
   debug: true,
   defaultTimeoutMs: 120000,
   chromeTimeoutMS: 120000,
+  ttsSpace: '',
   version: 'v2.0.16'
 }
 const _path = process.cwd()
