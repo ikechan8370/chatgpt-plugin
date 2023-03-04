@@ -615,6 +615,7 @@ export class chatgpt extends plugin {
             content: new Buffer.from(content).toString('base64'),
             prompt: new Buffer.from(prompt).toString('base64'),
             senderName: e.sender.nickname,
+            style: Config.toneStyle,
             quote
           },
           bing: use === 'bing',
