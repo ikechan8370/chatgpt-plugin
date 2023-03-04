@@ -168,7 +168,7 @@ export class chatgpt extends plugin {
         }
         let Keyv
         try {
-          Keyv = await import('keyv').Keyv
+          Keyv = (await import('keyv')).default
         } catch (err) {
           await this.reply('依赖keyv未安装，请执行pnpm install keyv', true)
         }
@@ -199,7 +199,7 @@ export class chatgpt extends plugin {
         }
         let Keyv
         try {
-          Keyv = await import('keyv').default
+          Keyv = (await import('keyv')).default
         } catch (err) {
           await this.reply('依赖keyv未安装，请执行pnpm install keyv', true)
         }

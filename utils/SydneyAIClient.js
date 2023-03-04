@@ -23,7 +23,7 @@ try {
 async function getWebSocket () {
   let WebSocket
   try {
-    WebSocket = await import('ws').default
+    WebSocket = (await import('ws')).default
   } catch (error) {
     throw new Error('ws依赖未安装，请使用pnpm install ws安装')
   }
@@ -32,7 +32,7 @@ async function getWebSocket () {
 async function getKeyv () {
   let Keyv
   try {
-    Keyv = await import('keyv').default
+    Keyv = (await import('keyv')).default
   } catch (error) {
     throw new Error('ws依赖未安装，请使用pnpm install keyv安装')
   }
