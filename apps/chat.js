@@ -9,7 +9,6 @@ import SydneyAIClient from '../utils/SydneyAIClient.js'
 import { render, getMessageById, makeForwardMsg, tryTimes, upsertMessage, randomString } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
-import Keyv from 'keyv'
 import { OfficialChatGPTClient } from '../utils/message.js'
 import fetch from 'node-fetch'
 import { deleteConversation, getConversations, getLatestMessageIdByConversationId } from '../utils/conversation.js'
@@ -167,16 +166,14 @@ export class chatgpt extends plugin {
           store: new KeyvFile({ filename: 'cache.json' }),
           namespace: 'Sydney'
         }
-        let Keyv
         try {
-          Keyv = await import('keyv').Keyv
+          const { default: Keyv } = await import('keyv')
+          const conversationsCache = new Keyv(conversation)
+          await conversationsCache.delete(`SydneyUser_${e.sender.user_id}`)
+          await this.reply('已退出当前对话，该对话仍然保留。请@我进行聊天以开启新的对话', true)
         } catch (err) {
           await this.reply('依赖keyv未安装，请执行pnpm install keyv', true)
         }
-        const conversationsCache = new Keyv(conversation)
-        console.log(`SydneyUser_${e.sender.user_id}`, await conversationsCache.get(`SydneyUser_${e.sender.user_id}`))
-        await conversationsCache.delete(`SydneyUser_${e.sender.user_id}`)
-        await this.reply('已退出当前对话，该对话仍然保留。请@我进行聊天以开启新的对话', true)
       } else {
         let c = await redis.get(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
         if (!c) {
@@ -198,15 +195,14 @@ export class chatgpt extends plugin {
           store: new KeyvFile({ filename: 'cache.json' }),
           namespace: 'Sydney'
         }
-        let Keyv
         try {
-          Keyv = await import('keyv').default
+          const { default: Keyv } = await import('keyv')
+          const conversationsCache = new Keyv(conversation)
+          await conversationsCache.delete(`SydneyUser_${qq}`)
+          await this.reply('已退出当前对话，该对话仍然保留。请@我进行聊天以开启新的对话', true)
         } catch (err) {
           await this.reply('依赖keyv未安装，请执行pnpm install keyv', true)
         }
-        const conversationsCache = new Keyv(conversation)
-        await conversationsCache.delete(`SydneyUser_${qq}`)
-        await this.reply('已退出当前对话，该对话仍然保留。请@我进行聊天以开启新的对话', true)
       } else {
         let c = await redis.get(`CHATGPT:CONVERSATIONS:${qq}`)
         if (!c) {
