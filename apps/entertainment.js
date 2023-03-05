@@ -11,14 +11,6 @@ export class Entertainment extends plugin {
       dsc: 'ChatGPT-Plugin娱乐小功能',
       event: 'message',
       priority: 500,
-      task: [
-        {
-          // 每半小时
-          cron: '*/30 * * * ?',
-          name: 'ChatGPT主动随机说话',
-          fnc: 'sendRandomMessage'
-        }
-      ],
       rule: [
         {
           reg: '^#(chatgpt|ChatGPT)打招呼',
@@ -26,6 +18,14 @@ export class Entertainment extends plugin {
         }
       ]
     })
+    this.task = [
+      {
+        // 每半小时
+        cron: '*/30 * * * ?',
+        name: 'ChatGPT主动随机说话',
+        fnc: this.sendRandomMessage.bind(this)
+      }
+    ]
   }
 
   async sendMessage (e) {
