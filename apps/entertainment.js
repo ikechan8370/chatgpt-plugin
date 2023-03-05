@@ -14,7 +14,8 @@ export class Entertainment extends plugin {
       rule: [
         {
           reg: '^#(chatgpt|ChatGPT)打招呼',
-          fnc: 'sendMessage'
+          fnc: 'sendMessage',
+          permission: 'master'
         }
       ]
     })
