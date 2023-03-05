@@ -80,7 +80,7 @@ export class chatgpt extends plugin {
           fnc: 'chatgpt'
         },
         {
-          reg: '^#chatgpt对话列表$',
+          reg: '^#(chatgpt)?对话列表$',
           fnc: 'getAllConversations',
           permission: 'master'
         },
@@ -90,7 +90,8 @@ export class chatgpt extends plugin {
         },
         {
           reg: '^#结束全部对话$',
-          fnc: 'endAllConversations'
+          fnc: 'endAllConversations',
+          permission: 'master'
         },
         // {
         //   reg: '#chatgpt帮助',
@@ -109,7 +110,7 @@ export class chatgpt extends plugin {
           fnc: 'switch2Audio'
         },
         {
-          reg: '^#chatgpt设置语音角色',
+          reg: '^#chatgpt设置(语音角色|角色语音|角色)',
           fnc: 'setDefaultRole'
         },
         {
@@ -132,7 +133,7 @@ export class chatgpt extends plugin {
           fnc: 'attachConversation'
         },
         {
-          reg: '^#chatgpt加入对话',
+          reg: '^#(chatgpt)?加入对话',
           fnc: 'joinConversation'
         },
         {
@@ -380,10 +381,16 @@ export class chatgpt extends plugin {
     } else {
       userSetting = JSON.parse(userSetting)
     }
-    let speaker = _.trimStart(e.msg, '#chatgpt设置语音角色') || '随机'
+    const regex = /^#chatgpt设置(语音角色|角色语音|角色)/
+    // let speaker = _.trimStart(e.msg, regex) || '随机'
+    let speaker = e.msg.replace(regex, '').trim() || '随机'
     userSetting.ttsRole = convertSpeaker(speaker)
-    await redis.set(`CHATGPT:USER:${e.sender.user_id}`, JSON.stringify(userSetting))
-    await this.reply(`您的默认语音角色已被设置为”${userSetting.ttsRole}“`)
+    if (speakers.indexOf(userSetting.ttsRole) >= 0) {
+      await redis.set(`CHATGPT:USER:${e.sender.user_id}`, JSON.stringify(userSetting))
+      await this.reply(`您的默认语音角色已被设置为”${userSetting.ttsRole}“`)
+    } else {
+      await this.reply(`”抱歉，${userSetting.ttsRole}“我还不认识呢`)
+    }
   }
 
   /**
@@ -826,8 +833,8 @@ export class chatgpt extends plugin {
           fetch: newFetch
         })
         let option = {
-          timeoutMs: 120000,
-          systemMessage: promptPrefix
+          timeoutMs: 120000
+          // systemMessage: promptPrefix
         }
         if (conversation) {
           option = Object.assign(option, conversation)

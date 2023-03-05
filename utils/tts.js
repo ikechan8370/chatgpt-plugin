@@ -1,6 +1,6 @@
 import { Config } from './config.js'
 import fetch from 'node-fetch'
-import random from 'random'
+import _ from 'lodash'
 let proxy
 if (Config.proxy) {
   try {
@@ -24,7 +24,6 @@ const newFetch = (url, options = {}) => {
 
   return fetch(url, mergedOptions)
 }
-const space = Config.ttsSpace
 
 function randomNum (minNum, maxNum) {
   switch (arguments.length) {
@@ -48,6 +47,13 @@ export async function generateAudio (text, speaker = '随机', language = '中�
       noiseScale, noiseScaleW, lengthScale
     ]
   }
+  let space = Config.ttsSpace
+  if (space.endsWith('api/generate')) {
+    let trimmedSpace = _.trimEnd(space, '/api/generate')
+    logger.warn(`vits api 当前为${space}，已校正为${trimmedSpace}`)
+    space = trimmedSpace
+  }
+  logger.info(`正在使用接口${space}/api/generate`)
   let response = await newFetch(`${space}/api/generate`, {
     method: 'POST',
     body: JSON.stringify(body),
@@ -55,17 +61,24 @@ export async function generateAudio (text, speaker = '随机', language = '中�
       'content-type': 'application/json'
     }
   })
-  let json = await response.json()
-  if (Config.debug) {
-    logger.info(json)
+  let responseBody = await response.text()
+  try {
+    let json = JSON.parse(responseBody)
+    if (Config.debug) {
+      logger.info(json)
+    }
+    if (response.status > 299) {
+      logger.info(json)
+      throw new Error(JSON.stringify(json))
+    }
+    let [message, audioInfo, take] = json?.data
+    logger.info(message, take)
+    let audioLink = `${space}/file=${audioInfo.name}`
+    return audioLink
+  } catch (err) {
+    logger.error('生成语音api发生错误，请检查是否配置了正确的api，且仓库是否开放为public', response.status)
+    throw new Error(responseBody)
   }
-  if (response.status > 299) {
-    logger.info(json)
-  }
-  let [message, audioInfo, take] = json?.data
-  logger.info(message, take)
-  let audioLink = `${space}/file=${audioInfo.name}`
-  return audioLink
 }
 export function convertSpeaker (speaker) {
   switch (speaker) {
