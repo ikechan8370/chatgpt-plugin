@@ -48,6 +48,7 @@ export async function generateAudio (text, speaker = '随机', language = '中�
       noiseScale, noiseScaleW, lengthScale
     ]
   }
+  logger.info(`正在使用接口${space}/api/generate`)
   let response = await newFetch(`${space}/api/generate`, {
     method: 'POST',
     body: JSON.stringify(body),
@@ -55,18 +56,23 @@ export async function generateAudio (text, speaker = '随机', language = '中�
       'content-type': 'application/json'
     }
   })
-  let json = await response.json()
-  if (Config.debug) {
-    logger.info(json)
+  try {
+    let json = await response.json()
+    if (Config.debug) {
+      logger.info(json)
+    }
+    if (response.status > 299) {
+      logger.info(json)
+      throw new Error(JSON.stringify(json))
+    }
+    let [message, audioInfo, take] = json?.data
+    logger.info(message, take)
+    let audioLink = `${space}/file=${audioInfo.name}`
+    return audioLink
+  } catch (err) {
+    logger.error('生成语音api发生错误，请检查是否配置了正确的api，且仓库是否开放为public', response.status)
+    throw new Error(await response.text())
   }
-  if (response.status > 299) {
-    logger.info(json)
-    throw new Error(JSON.stringify(json))
-  }
-  let [message, audioInfo, take] = json?.data
-  logger.info(message, take)
-  let audioLink = `${space}/file=${audioInfo.name}`
-  return audioLink
 }
 export function convertSpeaker (speaker) {
   switch (speaker) {
