@@ -31,7 +31,7 @@ export class Entertainment extends plugin {
   async sendMessage (e) {
     let groupId = e.msg.replace(/^#(chatgpt|ChatGPT)打招呼/, '')
     groupId = parseInt(groupId)
-    if (!Bot.getGroupList().get(groupId)) {
+    if (groupId && !Bot.getGroupList().get(groupId)) {
       await e.reply('机器人不在这个群里！')
       return
     }
