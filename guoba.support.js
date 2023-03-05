@@ -351,6 +351,12 @@ export function supportGuoba () {
             min: 0,
             max: 2
           }
+        },
+        {
+          field: 'initiativeChatGroups',
+          label: '主动发起聊天群聊',
+          bottomHelpMessage: '在这些群聊里会不定时主动说一些随机的打招呼的话，用英文逗号隔开',
+          component: 'Input'
         }
       ],
       // 获取配置数据方法（用于前端填充显示数据）
@@ -361,7 +367,7 @@ export function supportGuoba () {
       setConfigData (data, { Result }) {
         for (let [keyPath, value] of Object.entries(data)) {
           // 处理黑名单
-          if (keyPath === 'blockWords' || keyPath === 'promptBlockWords') { value = value.toString().split(/[,，;；\|]/) }
+          if (keyPath === 'blockWords' || keyPath === 'promptBlockWords' || keyPath === 'initiativeChatGroups') { value = value.toString().split(/[,，;；\|]/) }
           if (Config[keyPath] != value) { Config[keyPath] = value }
         }
         return Result.ok({}, '保存成功~')
