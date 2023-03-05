@@ -1,6 +1,6 @@
 import { Config } from './config.js'
 import fetch from 'node-fetch'
-import random from 'random'
+import _ from 'lodash'
 let proxy
 if (Config.proxy) {
   try {
@@ -24,7 +24,6 @@ const newFetch = (url, options = {}) => {
 
   return fetch(url, mergedOptions)
 }
-const space = Config.ttsSpace
 
 function randomNum (minNum, maxNum) {
   switch (arguments.length) {
@@ -47,6 +46,12 @@ export async function generateAudio (text, speaker = '随机', language = '中�
       text, language, speaker,
       noiseScale, noiseScaleW, lengthScale
     ]
+  }
+  let space = Config.ttsSpace
+  if (space.endsWith('api/generate')) {
+    let trimmedSpace = _.trimEnd(space, '/api/generate')
+    logger.warn(`vits api 当前为${space}，已校正为${trimmedSpace}`)
+    space = trimmedSpace
   }
   logger.info(`正在使用接口${space}/api/generate`)
   let response = await newFetch(`${space}/api/generate`, {
