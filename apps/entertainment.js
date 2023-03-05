@@ -14,7 +14,7 @@ export class Entertainment extends plugin {
       task: [
         {
           // 每半小时
-          cron: '*/30 * * * *',
+          cron: '*/30 * * * ?',
           name: 'ChatGPT主动随机说话',
           fnc: 'sendRandomMessage'
         }
