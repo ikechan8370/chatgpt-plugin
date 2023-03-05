@@ -56,8 +56,9 @@ export async function generateAudio (text, speaker = '随机', language = '中�
       'content-type': 'application/json'
     }
   })
+  let responseBody = await response.text()
   try {
-    let json = await response.json()
+    let json = JSON.parse(responseBody)
     if (Config.debug) {
       logger.info(json)
     }
@@ -71,7 +72,7 @@ export async function generateAudio (text, speaker = '随机', language = '中�
     return audioLink
   } catch (err) {
     logger.error('生成语音api发生错误，请检查是否配置了正确的api，且仓库是否开放为public', response.status)
-    throw new Error(await response.text())
+    throw new Error(responseBody)
   }
 }
 export function convertSpeaker (speaker) {
