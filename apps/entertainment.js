@@ -53,6 +53,7 @@ export class Entertainment extends plugin {
       if (Bot.gl[groupId]) {
         if (Math.floor(Math.random() * 100) < 10) {
           let message = await generateHello()
+          logger.info(`打招呼给群聊${groupId}：` + message)
           if (Config.defaultUseTTS) {
             let audio = await generateAudio(message, '随机')
             await Bot.sendGroupMsg(groupId, segment.record(audio))
