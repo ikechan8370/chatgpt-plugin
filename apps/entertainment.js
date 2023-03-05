@@ -31,18 +31,22 @@ export class Entertainment extends plugin {
   async sendMessage (e) {
     let groupId = e.msg.replace(/^#(chatgpt|ChatGPT)打招呼/, '')
     groupId = parseInt(groupId)
+    if (!Bot.getGroupList().get(groupId)) {
+      await e.reply('机器人不在这个群里！')
+      return
+    }
     let message = await generateHello()
     let sendable = message
     logger.info(`打招呼给群聊${groupId}：` + message)
     if (Config.defaultUseTTS) {
       let audio = await generateAudio(message, Config.defaultTTSRole)
-      console.log(audio)
       sendable = segment.record(audio)
     }
     if (!groupId) {
       await e.reply(sendable)
     } else {
       await Bot.sendGroupMsg(groupId, sendable)
+      await e.reply('发送成功！')
     }
   }
 
@@ -51,7 +55,7 @@ export class Entertainment extends plugin {
     let toSend = Config.initiativeChatGroups || []
     for (let i = 0; i < toSend.length; i++) {
       let groupId = parseInt(toSend[i])
-      if (Bot.gl[groupId]) {
+      if (Bot.getGroupList().get(groupId)) {
         if (Math.floor(Math.random() * 100) < 10) {
           let message = await generateHello()
           logger.info(`打招呼给群聊${groupId}：` + message)
