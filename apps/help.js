@@ -45,6 +45,11 @@ let helpData = [
         icon: 'text',
         title: '#chatgpt改图',
         desc: '调用OpenAI Dalle API进行改图，需要有API key并消耗余额。可同时发送图片或回复图片'
+      },
+      {
+        icon: 'text',
+        title: '#chatgpt打招呼(群号)',
+        desc: '让AI随机到某个群去打招呼'
       }
     ]
   },
