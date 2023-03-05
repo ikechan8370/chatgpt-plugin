@@ -90,7 +90,8 @@ export class chatgpt extends plugin {
         },
         {
           reg: '^#结束全部对话$',
-          fnc: 'endAllConversations'
+          fnc: 'endAllConversations',
+          permission: 'master'
         },
         // {
         //   reg: '#chatgpt帮助',
