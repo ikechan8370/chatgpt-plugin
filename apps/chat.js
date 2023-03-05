@@ -7,20 +7,20 @@ import { ChatGPTAPI } from 'chatgpt'
 import { BingAIClient } from '@waylaidwanderer/chatgpt-api'
 import SydneyAIClient from '../utils/SydneyAIClient.js'
 import {
-    render,
-    getMessageById,
-    makeForwardMsg,
-    tryTimes,
-    upsertMessage,
-    randomString,
-    getDefaultUserSetting
+  render,
+  getMessageById,
+  makeForwardMsg,
+  tryTimes,
+  upsertMessage,
+  randomString,
+  getDefaultUserSetting
 } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
 import { OfficialChatGPTClient } from '../utils/message.js'
 import fetch from 'node-fetch'
 import { deleteConversation, getConversations, getLatestMessageIdByConversationId } from '../utils/conversation.js'
-import {convertSpeaker, generateAudio, speakers} from '../utils/tts.js'
+import { convertSpeaker, generateAudio, speakers } from '../utils/tts.js'
 import { segment } from 'oicq'
 try {
   await import('keyv')
@@ -456,11 +456,11 @@ export class chatgpt extends plugin {
           let imgOcrText = ''
           for (let i in e.img) {
             const imgorc = await Bot.imageOcr(e.img[i])
-            if (imgorc.language === 'zh' || imgorc.language === 'en') {
-              for (let text of imgorc.wordslist) {
-                imgOcrText += `${text.words}  \n`
-              }
+            // if (imgorc.language === 'zh' || imgorc.language === 'en') {
+            for (let text of imgorc.wordslist) {
+              imgOcrText += `${text.words}  \n`
             }
+            // }
           }
           prompt = imgOcrText + prompt
         } catch (err) {}
