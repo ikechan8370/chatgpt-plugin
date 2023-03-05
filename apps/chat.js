@@ -80,7 +80,7 @@ export class chatgpt extends plugin {
           fnc: 'chatgpt'
         },
         {
-          reg: '^#chatgpt对话列表$',
+          reg: '^#(chatgpt)?对话列表$',
           fnc: 'getAllConversations',
           permission: 'master'
         },
@@ -110,7 +110,7 @@ export class chatgpt extends plugin {
           fnc: 'switch2Audio'
         },
         {
-          reg: '^#chatgpt设置语音角色',
+          reg: '^#chatgpt设置(语音角色|角色语音|角色)',
           fnc: 'setDefaultRole'
         },
         {
@@ -133,7 +133,7 @@ export class chatgpt extends plugin {
           fnc: 'attachConversation'
         },
         {
-          reg: '^#chatgpt加入对话',
+          reg: '^#(chatgpt)?加入对话',
           fnc: 'joinConversation'
         },
         {
@@ -380,7 +380,9 @@ export class chatgpt extends plugin {
     } else {
       userSetting = JSON.parse(userSetting)
     }
-    let speaker = _.trimStart(e.msg, '#chatgpt设置语音角色') || '随机'
+    const regex = /^#chatgpt设置(语音角色|角色语音|角色)/
+    // let speaker = _.trimStart(e.msg, regex) || '随机'
+    let speaker = e.msg.replace(regex, '').trim() || '随机'
     userSetting.ttsRole = convertSpeaker(speaker)
     if (speakers.indexOf(userSetting.ttsRole) >= 0) {
       await redis.set(`CHATGPT:USER:${e.sender.user_id}`, JSON.stringify(userSetting))

@@ -23,12 +23,12 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
-          reg: '#chatgpt设置token',
+          reg: '#chatgpt(设置|绑定)(token|Token)',
           fnc: 'setAccessToken',
           permission: 'master'
         },
         {
-          reg: '#chatgpt设置必应token',
+          reg: '#chatgpt(设置|绑定)(必应|Bing |bing )(token|Token)',
           fnc: 'setBingAccessToken',
           permission: 'master'
         },
@@ -58,11 +58,7 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
-          reg: '^#chatgpt模式帮助$',
-          fnc: 'modeHelp'
-        },
-        {
-          reg: '^#chatgpt模式$',
+          reg: '^#chatgpt模式(帮助)?$',
           fnc: 'modeHelp'
         },
         {
