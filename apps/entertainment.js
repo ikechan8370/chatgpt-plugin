@@ -35,7 +35,7 @@ export class Entertainment extends plugin {
     let sendable = message
     logger.info(`打招呼给群聊${groupId}：` + message)
     if (Config.defaultUseTTS) {
-      let audio = await generateAudio(message, '随机')
+      let audio = await generateAudio(message, Config.defaultTTSRole)
       console.log(audio)
       sendable = segment.record(audio)
     }
@@ -56,7 +56,7 @@ export class Entertainment extends plugin {
           let message = await generateHello()
           logger.info(`打招呼给群聊${groupId}：` + message)
           if (Config.defaultUseTTS) {
-            let audio = await generateAudio(message, '随机')
+            let audio = await generateAudio(message, Config.defaultTTSRole)
             await Bot.sendGroupMsg(groupId, segment.record(audio))
           } else {
             await Bot.sendGroupMsg(groupId, message)
