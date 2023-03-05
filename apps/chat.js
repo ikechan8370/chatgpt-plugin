@@ -574,6 +574,10 @@ export class chatgpt extends plugin {
         logger.mark({ conversation })
       }
       let chatMessage = await this.sendMessage(prompt, conversation, use, e)
+      if (use === 'api' && !chatMessage) {
+        // 字数超限直接返回
+        return false
+      }
       if (use !== 'api3') {
         previousConversation.conversation = {
           conversationId: chatMessage.conversationId
@@ -837,7 +841,19 @@ export class chatgpt extends plugin {
         if (conversation) {
           option = Object.assign(option, conversation)
         }
-        return await tryTimes(async () => await this.chatGPTApi.sendMessage(prompt, option), 1)
+        let msg
+        try {
+          msg = await this.chatGPTApi.sendMessage(prompt, option)
+        } catch (err) {
+          if (err.message?.indexOf('context_length_exceeded')) {
+            await redis.del(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
+            await e.reply('字数超限啦，将为您自动结束本次对话。')
+            return null
+          } else {
+            throw new Error(err)
+          }
+        }
+        return msg
       }
     }
   }
