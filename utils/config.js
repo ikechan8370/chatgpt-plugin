@@ -45,7 +45,8 @@ const defaultConfig = {
   noiseScale: 0.6,
   noiseScaleW: 0.668,
   lengthScale: 1.2,
-  version: 'v2.0.18'
+  initiativeChatGroups: [],
+  version: 'v2.0.19'
 }
 const _path = process.cwd()
 let config = {}
