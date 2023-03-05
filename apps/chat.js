@@ -828,8 +828,8 @@ export class chatgpt extends plugin {
           fetch: newFetch
         })
         let option = {
-          timeoutMs: 120000,
-          systemMessage: promptPrefix
+          timeoutMs: 120000
+          // systemMessage: promptPrefix
         }
         if (conversation) {
           option = Object.assign(option, conversation)
