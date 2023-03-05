@@ -47,6 +47,7 @@ export class Entertainment extends plugin {
   }
 
   async sendRandomMessage () {
+    logger.info('开始处理：ChatGPT随机打招呼。')
     let toSend = Config.initiativeChatGroups || []
     for (let i = 0; i < toSend.length; i++) {
       let groupId = parseInt(toSend[i])
@@ -60,6 +61,8 @@ export class Entertainment extends plugin {
           } else {
             await Bot.sendGroupMsg(groupId, message)
           }
+        } else {
+          logger.info(`这次就不打招呼给群聊${groupId}了`)
         }
       } else {
         logger.warn('机器人不在要发送的群组里，忽略群' + groupId)
