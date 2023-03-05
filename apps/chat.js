@@ -845,7 +845,7 @@ export class chatgpt extends plugin {
         try {
           msg = await this.chatGPTApi.sendMessage(prompt, option)
         } catch (err) {
-          if (err.message?.indexOf('context_length_exceeded')) {
+          if (err.message?.indexOf('context_length_exceeded') > 0) {
             logger.warn(err)
             await redis.del(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
             await e.reply('字数超限啦，将为您自动结束本次对话。')
