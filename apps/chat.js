@@ -412,6 +412,11 @@ export class chatgpt extends plugin {
         return false
       }
     }
+    let groupId = e.isGroup ? e.group.group_id : ''
+    if (await redis.get('CHATGPT:SHUT_UP:ALL') || await redis.get(`CHATGPT:SHUT_UP:${groupId}`)) {
+      logger.info('chatgpt闭嘴中，不予理会')
+      return false
+    }
     let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
     if (userSetting) {
       userSetting = JSON.parse(userSetting)

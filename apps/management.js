@@ -2,7 +2,7 @@ import plugin from '../../../lib/plugins/plugin.js'
 import { Config } from '../utils/config.js'
 import { BingAIClient } from '@waylaidwanderer/chatgpt-api'
 import { exec } from 'child_process'
-import { checkPnpm } from '../utils/common.js'
+import { checkPnpm, formatDuration, parseDuration } from '../utils/common.js'
 
 export class ChatgptManagement extends plugin {
   constructor (e) {
@@ -64,6 +64,21 @@ export class ChatgptManagement extends plugin {
         {
           reg: '^#chatgpt(强制)?更新$',
           fnc: 'updateChatGPTPlugin'
+        },
+        {
+          reg: '^#chatgpt(本群)?(群\\d+)?闭嘴',
+          fnc: 'shutUp',
+          permission: 'master'
+        },
+        {
+          reg: '^#chatgpt(本群)?(群\\d+)?(张嘴|开口|说话|上班)',
+          fnc: 'openMouth',
+          permission: 'master'
+        },
+        {
+          reg: '^#chatgpt查看闭嘴',
+          fnc: 'listShutUp',
+          permission: 'master'
         }
       ]
     })
@@ -279,5 +294,120 @@ export class ChatgptManagement extends plugin {
     当前为${modeText}模式。
 `
     await this.reply(message)
+  }
+
+  async shutUp (e) {
+    let duration = e.msg.replace(/^#chatgpt(本群)?(群\d+)?闭嘴/, '')
+    let scope
+    let time = 3600000
+    if (duration === '永久') {
+      time = 0
+    } else if (duration) {
+      time = parseDuration(duration)
+    }
+    const match = e.msg.match(/#chatgpt群(\d+)闭嘴(.*)/)
+    if (e.msg.indexOf('本群') > -1) {
+      if (e.isGroup) {
+        scope = e.group.group_id
+        if (await redis.get(`CHATGPT:SHUT_UP:${scope}`)) {
+          await redis.del(`CHATGPT:SHUT_UP:${scope}`)
+          await redis.set(`CHATGPT:SHUT_UP:${scope}`, '1', { EX: time })
+          await e.reply(`好的，从现在开始我会在当前群聊闭嘴${formatDuration(time)}`)
+        } else {
+          await redis.set(`CHATGPT:SHUT_UP:${scope}`, '1', { EX: time })
+          await e.reply(`好的，从现在开始我会在当前群聊闭嘴${formatDuration(time)}`)
+        }
+      } else {
+        await e.reply('本群是指？你也没在群聊里让我闭嘴啊？')
+        return false
+      }
+    } else if (match) {
+      const groupId = parseInt(match[1], 10)
+      if (Bot.getGroupList().get(groupId)) {
+        if (await redis.get(`CHATGPT:SHUT_UP:${groupId}`)) {
+          await redis.del(`CHATGPT:SHUT_UP:${groupId}`)
+          await redis.set(`CHATGPT:SHUT_UP:${groupId}`, '1', { EX: time })
+          await e.reply(`好的，从现在开始我会在群聊${groupId}闭嘴${formatDuration(time)}`)
+        } else {
+          await redis.set(`CHATGPT:SHUT_UP:${groupId}`, '1', { EX: time })
+          await e.reply(`好的，从现在开始我会在群聊${groupId}闭嘴${formatDuration(time)}`)
+        }
+      } else {
+        await e.reply('这是什么群？')
+        return false
+      }
+    } else {
+      if (await redis.get('CHATGPT:SHUT_UP:ALL')) {
+        await redis.del('CHATGPT:SHUT_UP:ALL')
+        await redis.set('CHATGPT:SHUT_UP:ALL', '1', { EX: time })
+        await e.reply(`好的，我会再闭嘴${formatDuration(time)}`)
+      } else {
+        await redis.set('CHATGPT:SHUT_UP:ALL', '1', { EX: time })
+        await e.reply(`好的，我会闭嘴${formatDuration(time)}`)
+      }
+    }
+  }
+
+  async openMouth (e) {
+    const match = e.msg.match(/^#chatgpt群(\d+)/)
+    if (e.msg.indexOf('本群') > -1) {
+      if (await redis.get('CHATGPT:SHUT_UP:ALL')) {
+        await e.reply('主人，我现在全局闭嘴呢，你让我在这个群张嘴咱也不敢张啊')
+        return false
+      }
+      if (e.isGroup) {
+        let scope = e.group.group_id
+        if (await redis.get(`CHATGPT:SHUT_UP:${scope}`)) {
+          await redis.del(`CHATGPT:SHUT_UP:${scope}`)
+          await e.reply('好的主人，我终于又可以在本群说话了')
+        } else {
+          await e.reply('啊？我也没闭嘴啊？')
+        }
+      } else {
+        await e.reply('本群是指？你也没在群聊里让我张嘴啊？')
+        return false
+      }
+    } else if (match) {
+      if (await redis.get('CHATGPT:SHUT_UP:ALL')) {
+        await e.reply('主人，我现在全局闭嘴呢，你让我在那个群张嘴咱也不敢张啊')
+        return false
+      }
+      const groupId = parseInt(match[1], 10)
+      if (Bot.getGroupList().get(groupId)) {
+        if (await redis.get(`CHATGPT:SHUT_UP:${groupId}`)) {
+          await redis.del(`CHATGPT:SHUT_UP:${groupId}`)
+          await e.reply(`好的主人，我终于又可以在群${groupId}说话了`)
+        } else {
+          await e.reply(`啊？我也没在群${groupId}闭嘴啊？`)
+        }
+      } else {
+        await e.reply('这是什么群？')
+        return false
+      }
+    } else {
+      if (await redis.get('CHATGPT:SHUT_UP:ALL')) {
+        await redis.del('CHATGPT:SHUT_UP:ALL')
+        await e.reply('好的，我会结束全局闭嘴')
+      } else {
+        await e.reply('啊？我也没全局闭嘴啊？')
+      }
+    }
+  }
+
+  async listShutUp () {
+    let keys = await redis.keys('CHATGPT:SHUT_UP:*')
+    if (!keys || keys.length === 0) {
+      await this.reply('我没有在任何群闭嘴', true)
+    } else {
+      let list = []
+      for (let i = 0; i < keys.length; i++) {
+        let key = keys[i]
+        let groupId = key.replace('CHATGPT:SHUT_UP:', '')
+        let ttl = await redis.ttl(key)
+        let ttlFormat = formatDuration(ttl)
+        list.push({ groupId, ttlFormat })
+      }
+      await this.reply(list.map(item => item.groupId !== 'ALL' ? `群聊${item.groupId}: ${item.ttlFormat}` : `全局: ${item.ttlFormat}`).join('\n'))
+    }
   }
 }

@@ -62,6 +62,21 @@ let helpData = [
         desc: '查询当前哪些人正在与机器人聊天.目前API3模式下支持切换对话'
       },
       {
+        icon: 'destroy',
+        title: '#chatgpt(本群)?(群xxx)?闭嘴(x秒/分钟/小时)',
+        desc: '让机器人在本群/某群闭嘴。不指定群时认为全局闭嘴。'
+      },
+      {
+        icon: 'chat',
+        title: '#chatgpt(本群)?(群xxx)?(张嘴|开口|说话|上班)',
+        desc: '让机器人在本群/某群重新可以说话。不指定群时认为全局开口。'
+      },
+      {
+        icon: 'chat',
+        title: '#chatgpt查看闭嘴',
+        desc: '查看当前闭嘴情况。'
+      },
+      {
         icon: 'switch',
         title: '#chatgpt切换对话+对话id',
         desc: '目前仅API3模式下可用，切换到指定的对话中'

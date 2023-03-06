@@ -5,7 +5,7 @@ import lodash from 'lodash'
 import fs from 'node:fs'
 import path from 'node:path'
 import puppeteer from '../../../lib/puppeteer/puppeteer.js'
-import {Config} from "./config.js";
+import { Config } from './config.js'
 // export function markdownToText (markdown) {
 //  return remark()
 //    .use(stripMarkdown)
@@ -295,4 +295,59 @@ export function getDefaultUserSetting () {
     useTTS: Config.defaultUseTTS,
     ttsRole: Config.defaultTTSRole
   }
+}
+
+export function parseDuration (duration) {
+  const timeMap = {
+    秒: 1000,
+    分: 60 * 1000,
+    小时: 60 * 60 * 1000
+  }
+
+  // 去掉多余的空格并将单位转化为小写字母
+  duration = duration.trim().toLowerCase()
+
+  // 去掉末尾的 "钟" 字符
+  if (duration.endsWith('钟')) {
+    duration = duration.slice(0, -1)
+  }
+
+  // 提取数字和单位
+  const match = duration.match(/^(\d+)\s*([\u4e00-\u9fa5]+)$/)
+
+  if (!match) {
+    throw new Error('Invalid duration string: ' + duration)
+  }
+
+  const num = parseInt(match[1], 10)
+  const unit = match[2]
+
+  if (!(unit in timeMap)) {
+    throw new Error('Unknown time unit: ' + unit)
+  }
+
+  return num * timeMap[unit]
+}
+
+export function formatDuration (duration) {
+  const timeMap = {
+    小时: 60 * 60 * 1000,
+    分钟: 60 * 1000,
+    秒钟: 1000
+  }
+
+  const units = Object.keys(timeMap)
+  let result = ''
+
+  for (let i = 0; i < units.length; i++) {
+    const unit = units[i]
+    const value = Math.floor(duration / timeMap[unit])
+
+    if (value > 0) {
+      result += value + unit
+      duration -= value * timeMap[unit]
+    }
+  }
+
+  return result || '0秒钟'
 }
