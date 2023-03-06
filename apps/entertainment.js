@@ -52,12 +52,16 @@ export class Entertainment extends plugin {
   }
 
   async sendRandomMessage () {
-    logger.info('开始处理：ChatGPT随机打招呼。')
+    if (Config.debug) {
+      logger.info('开始处理：ChatGPT随机打招呼。')
+    }
     let toSend = Config.initiativeChatGroups || []
     for (let i = 0; i < toSend.length; i++) {
       let groupId = parseInt(toSend[i])
       if (Bot.getGroupList().get(groupId)) {
-        if (Math.floor(Math.random() * 100) < 10) {
+        // 5%的概率打招呼
+        if (Math.floor(Math.random() * 100) < 5 && !(await redis.get(`CHATGPT:HELLO_GROUP:${groupId}`))) {
+          await redis.set(`CHATGPT:HELLO_GROUP:${groupId}`, '1', { EX: 3600 * 6 })
           let message = await generateHello()
           logger.info(`打招呼给群聊${groupId}：` + message)
           if (Config.defaultUseTTS) {
@@ -67,10 +71,10 @@ export class Entertainment extends plugin {
             await Bot.sendGroupMsg(groupId, message)
           }
         } else {
-          logger.info(`这次就不打招呼给群聊${groupId}了`)
+          logger.info(`时机未到，这次就不打招呼给群聊${groupId}了`)
         }
       } else {
-        logger.warn('机器人不在要发送的群组里，忽略群' + groupId)
+        logger.warn('机器人不在要发送的群组里，忽略群。同时建议检查配置文件修改要打招呼的群号。' + groupId)
       }
     }
   }
