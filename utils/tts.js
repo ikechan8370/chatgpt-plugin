@@ -53,6 +53,11 @@ export async function generateAudio (text, speaker = '随机', language = '中�
     logger.warn(`vits api 当前为${space}，已校正为${trimmedSpace}`)
     space = trimmedSpace
   }
+  if (space.endsWith('/')) {
+    let trimmedSpace = _.trimEnd(space, '/')
+    logger.warn(`vits api 当前为${space}，已校正为${trimmedSpace}`)
+    space = trimmedSpace
+  }
   logger.info(`正在使用接口${space}/api/generate`)
   let response = await newFetch(`${space}/api/generate`, {
     method: 'POST',

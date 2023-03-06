@@ -3,8 +3,8 @@
   "type": "module",
   "author": "ikechan8370",
   "dependencies": {
-    "@waylaidwanderer/chatgpt-api": "^1.24.0",
-    "chatgpt": "^5.0.5",
+    "@waylaidwanderer/chatgpt-api": "^1.26.1",
+    "chatgpt": "^5.0.7",
     "delay": "^5.0.0",
     "keyv-file": "^0.2.0",
     "node-fetch": "^3.3.0",
@@ -18,9 +18,9 @@
     "ws": "^8.12.1"
   },
   "optionalDependencies": {
-    "jimp": "^0.22.7",
-    "sharp": "^0.31.3",
     "https-proxy-agent": "5.0.1",
-    "keyv": "^4.5.2"
+    "jimp": "^0.22.7",
+    "keyv": "^4.5.2",
+    "sharp": "^0.31.3"
   }
 }
