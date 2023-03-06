@@ -299,9 +299,9 @@ export function getDefaultUserSetting () {
 
 export function parseDuration (duration) {
   const timeMap = {
-    秒: 1000,
-    分: 60 * 1000,
-    小时: 60 * 60 * 1000
+    秒: 1,
+    分: 60,
+    小时: 60 * 60
   }
 
   // 去掉多余的空格并将单位转化为小写字母
@@ -331,9 +331,9 @@ export function parseDuration (duration) {
 
 export function formatDuration (duration) {
   const timeMap = {
-    小时: 60 * 60 * 1000,
-    分钟: 60 * 1000,
-    秒钟: 1000
+    小时: 60 * 60,
+    分钟: 60,
+    秒钟: 1
   }
 
   const units = Object.keys(timeMap)
