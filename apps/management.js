@@ -385,11 +385,20 @@ export class ChatgptManagement extends plugin {
         return false
       }
     } else {
+      let keys = await redis.keys('CHATGPT:SHUT_UP:*')
       if (await redis.get('CHATGPT:SHUT_UP:ALL')) {
         await redis.del('CHATGPT:SHUT_UP:ALL')
-        await e.reply('好的，我会结束全局闭嘴')
+        for (let i = 0; i < keys.length; i++) {
+          await redis.del(keys[i])
+        }
+        await e.reply('好的，我会结束所有闭嘴')
+      } else if (keys || keys.length > 0) {
+        for (let i = 0; i < keys.length; i++) {
+          await redis.del(keys[i])
+        }
+        await e.reply('好的，我会结束所有闭嘴？')
       } else {
-        await e.reply('啊？我也没全局闭嘴啊？')
+        await e.reply('我没有在任何地方闭嘴啊？')
       }
     }
   }
