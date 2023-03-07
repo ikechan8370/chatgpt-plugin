@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid'
-import { Config } from '../utils/config.js'
+import {Config, defaultChatGPTAPI} from '../utils/config.js'
 import _ from 'lodash'
 import fetch from 'node-fetch'
 let proxy
@@ -48,10 +48,10 @@ export class OfficialChatGPTClient {
     if (timeoutMs) {
       abortController = new AbortController()
     }
-    let url = this._apiReverseUrl || 'https://apps.openai.com/api/conversation'
+    let url = this._apiReverseUrl || defaultChatGPTAPI
     if (this._apiReverseUrl && Config.proxy && !Config.apiForceUseReverse) {
       // 如果配了proxy，而且有反代，但是没开启强制反代
-      url = 'https://apps.openai.com/api/conversation'
+      url = defaultChatGPTAPI
     }
     const body = {
       action,
