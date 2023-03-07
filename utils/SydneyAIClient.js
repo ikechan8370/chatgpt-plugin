@@ -320,7 +320,7 @@ export default class SydneyAIClient {
         this.cleanupWebSocketConnection(ws)
         if (replySoFar) {
           resolve({
-            message
+            message: replySoFar
           })
         } else {
           reject(new Error('Timed out waiting for response. Try enabling debug mode to see more information.'))
@@ -333,7 +333,7 @@ export default class SydneyAIClient {
         this.cleanupWebSocketConnection(ws)
         if (replySoFar) {
           resolve({
-            message
+            message: replySoFar
           })
         } else {
           reject('Request aborted')
