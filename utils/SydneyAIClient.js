@@ -120,8 +120,17 @@ export default class SydneyAIClient {
       if (this.opts.proxy) {
         agent = new HttpsProxyAgent(this.opts.proxy)
       }
-      const ws = new WebSocket('wss://sydney.bing.com/sydney/ChatHub', { agent })
-
+      let retryTimes = 3
+      let ws
+      do {
+        try {
+          ws = new WebSocket('wss://sydney.bing.com/sydney/ChatHub', { agent })
+          break
+        } catch (err) {
+          logger.warn(err)
+          retryTimes--
+        }
+      } while (retryTimes > 0)
       ws.on('error', console.error)
 
       ws.on('open', () => {
