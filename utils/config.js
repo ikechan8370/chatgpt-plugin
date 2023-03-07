@@ -1,6 +1,6 @@
 import fs from 'fs'
 import lodash from 'lodash'
-export const defaultChatGPTAPI = 'https://apps.openai.com/api/conversation'
+export const defaultChatGPTAPI = 'https://pimon.d201.cn/backend-api/conversation'
 const defaultConfig = {
   blockWords: ['屏蔽词1', '屏蔽词b'],
   promptBlockWords: ['屏蔽词1', '屏蔽词b'],
@@ -29,7 +29,7 @@ const defaultConfig = {
   sydneyReverseProxy: 'https://666102.201666.xyz',
   sydneyForceUseReverse: false,
   api: defaultChatGPTAPI,
-  apiBaseUrl: 'https://apps.openai.com/api',
+  apiBaseUrl: 'https://pimon.d201.cn/backend-api',
   apiForceUseReverse: false,
   plus: false,
   promptPrefixOverride: 'Your answer shouldn\'t be too verbose. Prefer to answer in Chinese.',

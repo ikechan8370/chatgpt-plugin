@@ -80,7 +80,8 @@ export class OfficialChatGPTClient {
         'x-openai-assistant-app-id': '',
         authorization: `Bearer ${this._accessToken}`,
         'content-type': 'application/json',
-        referer: 'https://chat.openai.com/chat'
+        referer: 'https://chat.openai.com/chat',
+        library: 'chatgpt-plugin'
       },
       referrer: 'https://chat.openai.com/chat'
     }
