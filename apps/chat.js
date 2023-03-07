@@ -791,7 +791,7 @@ export class chatgpt extends plugin {
             logger.error(error)
           }
           console.error(error)
-          const message = error?.message || error?.data?.message || '与Bing通信时出错.'
+          const message = error?.message || error?.data?.message || `与Bing通信时出错: ${JSON.parse(error)}`
           return {
             text: message === 'Timed out waiting for response. Try enabling debug mode to see more information.' ? (reply != '' ? `${reply}\n不行了，我的大脑过载了，处理不过来了!` : '必应的小脑瓜不好使了，不知道怎么回答！') : message
           }
