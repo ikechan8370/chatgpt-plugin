@@ -770,40 +770,47 @@ export class chatgpt extends plugin {
         }
         let response
         let reply = ''
-        try {
-          let opt = _.cloneDeep(conversation) || {}
-          opt.toneStyle = Config.toneStyle
-          response = await bingAIClient.sendMessage(prompt, opt, (token) => {
-            reply += token
-          })
-          if (response.details.adaptiveCards?.[0]?.body?.[0]?.text?.trim()) {
-            if (response.response === undefined) {
-              response.response = response.details.adaptiveCards?.[0]?.body?.[0]?.text?.trim()
-            }
-            response.response = response.response.replace(/\[\^[0-9]+\^\]/g, (str) => {
-              return str.replace(/[/^]/g, '')
+        let retry = 3
+        let errorMessage = ''
+        do {
+          try {
+            let opt = _.cloneDeep(conversation) || {}
+            opt.toneStyle = Config.toneStyle
+            response = await bingAIClient.sendMessage(prompt, opt, (token) => {
+              reply += token
             })
-            response.quote = response.details.adaptiveCards?.[0]?.body?.[0]?.text?.replace(/\[\^[0-9]+\^\]/g, '').replace(response.response, '').split('\n')
+            if (response.details.adaptiveCards?.[0]?.body?.[0]?.text?.trim()) {
+              if (response.response === undefined) {
+                response.response = response.details.adaptiveCards?.[0]?.body?.[0]?.text?.trim()
+              }
+              response.response = response.response.replace(/\[\^[0-9]+\^\]/g, (str) => {
+                return str.replace(/[/^]/g, '')
+              })
+              response.quote = response.details.adaptiveCards?.[0]?.body?.[0]?.text?.replace(/\[\^[0-9]+\^\]/g, '').replace(response.response, '').split('\n')
+            }
+            errorMessage = ''
+            break
+          } catch (error) {
+            const message = error?.message || error?.data?.message || `与Bing通信时出错: ${JSON.parse(error)}`
+            if (message !== 'Timed out waiting for first message.') {
+              logger.error(error)
+            }
+            retry--
+            errorMessage = message === 'Timed out waiting for response. Try enabling debug mode to see more information.' ? (reply ? `${reply}\n不行了，我的大脑过载了，处理不过来了!` : '必应的小脑瓜不好使了，不知道怎么回答！') : message
           }
-        } catch (error) {
-          const code = error?.data?.code || 503
-          if (code === 503) {
-            logger.error(error)
-          }
-          console.error(error)
-          const message = error?.message || error?.data?.message || `与Bing通信时出错: ${JSON.parse(error)}`
+        } while (retry > 0)
+        if (errorMessage) {
+          return { text: errorMessage }
+        } else {
           return {
-            text: message === 'Timed out waiting for response. Try enabling debug mode to see more information.' ? (reply != '' ? `${reply}\n不行了，我的大脑过载了，处理不过来了!` : '必应的小脑瓜不好使了，不知道怎么回答！') : message
+            text: response.response,
+            quote: response.quote,
+            conversationId: response.conversationId,
+            clientId: response.clientId,
+            invocationId: response.invocationId,
+            conversationSignature: response.conversationSignature,
+            parentMessageId: response.messageId
           }
-        }
-        return {
-          text: response.response,
-          quote: response.quote,
-          conversationId: response.conversationId,
-          clientId: response.clientId,
-          invocationId: response.invocationId,
-          conversationSignature: response.conversationSignature,
-          parentMessageId: response.messageId
         }
       }
       case 'api3': {
