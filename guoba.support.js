@@ -352,8 +352,8 @@ export function supportGuoba () {
         },
         {
           field: 'initiativeChatGroups',
-          label: '主动发起聊天群聊',
-          bottomHelpMessage: '在这些群聊里会不定时主动说一些随机的打招呼的话，用英文逗号隔开',
+          label: '主动发起聊天群聊的群号',
+          bottomHelpMessage: '在这些群聊里会不定时主动说一些随机的打招呼的话，用英文逗号隔开。',
           component: 'Input'
         }
       ],
