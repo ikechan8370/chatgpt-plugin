@@ -107,7 +107,8 @@ export default class SydneyAIClient {
     try {
       return JSON.parse(text)
     } catch (err) {
-      logger.error('创建sydney对话失败', text)
+      logger.error('创建sydney对话失败')
+      console.error(text)
       throw new Error(text)
     }
   }
