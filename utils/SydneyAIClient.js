@@ -41,7 +41,7 @@ async function getKeyv () {
   try {
     Keyv = (await import('keyv')).default
   } catch (error) {
-    throw new Error('ws依赖未安装，请使用pnpm install keyv安装')
+    throw new Error('keyv依赖未安装，请使用pnpm install keyv安装')
   }
   return Keyv
 }

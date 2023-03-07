@@ -756,12 +756,17 @@ export class chatgpt extends plugin {
           delete conversation.invocationId
           delete conversation.conversationSignature
         } else {
-          bingAIClient = new BingAIClient({
+          let bingOption = {
             userToken: bingToken, // "_U" cookie from bing.com
             cookies,
             debug: Config.debug,
-            proxy: Config.proxy
-          })
+            proxy: Config.proxy,
+            host: Config.sydneyReverseProxy
+          }
+          if (Config.proxy && Config.sydneyReverseProxy && !Config.sydneyForceUseReverse) {
+            delete bingOption.host
+          }
+          bingAIClient = new BingAIClient(bingOption)
         }
         let response
         let reply = ''
