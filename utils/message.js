@@ -48,10 +48,10 @@ export class OfficialChatGPTClient {
     if (timeoutMs) {
       abortController = new AbortController()
     }
-    let url = this._apiReverseUrl || 'https://chat.openai.com/backend-api/conversation'
+    let url = this._apiReverseUrl || 'https://apps.openai.com/api/conversation'
     if (this._apiReverseUrl && Config.proxy && !Config.apiForceUseReverse) {
       // 如果配了proxy，而且有反代，但是没开启强制反代
-      url = 'https://chat.openai.com/backend-api/conversation'
+      url = 'https://apps.openai.com/api/conversation'
     }
     const body = {
       action,
