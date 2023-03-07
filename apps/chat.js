@@ -621,7 +621,7 @@ export class chatgpt extends plugin {
       if (useTTS) {
         if (Config.ttsSpace && response.length <= 299) {
           let wav = await generateAudio(response, speaker, '中文')
-          e.reply(segment.record(wav))
+          await e.reply(segment.record(wav))
           if (Config.alsoSendText) {
             await this.reply(`${response}`, e.isGroup)
             if (quotemessage.length > 0) {
