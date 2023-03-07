@@ -103,7 +103,13 @@ export default class SydneyAIClient {
       fetchOptions.agent = proxy(Config.proxy)
     }
     const response = await fetch(`${this.opts.host}/turing/conversation/create`, fetchOptions)
-    return response.json()
+    let text = await response.text()
+    try {
+      return JSON.parse(text)
+    } catch (err) {
+      logger.error('创建sydney对话失败', text)
+      throw new Error(text)
+    }
   }
 
   async createWebSocketConnection () {
