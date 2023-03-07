@@ -1,4 +1,5 @@
 import { Config } from './utils/config.js'
+import { speakers } from './utils/tts.js'
 
 // 支持锅巴
 export function supportGuoba () {
@@ -59,7 +60,10 @@ export function supportGuoba () {
           field: 'defaultTTSRole',
           label: '语音模式默认角色',
           bottomHelpMessage: '语音模式下，未指定角色时使用的角色。若为空，将使用随机角色回复。',
-          component: 'Input'
+          component: 'Select',
+          componentProps: {
+            options: speakers.concat('随机').map(s => { return { label: s, value: s } })
+          }
         },
         {
           field: 'ttsAutoFallbackThreshold',
@@ -71,6 +75,12 @@ export function supportGuoba () {
             min: 0,
             max: 299
           }
+        },
+        {
+          field: 'alsoSendText',
+          label: '语音同时发送文字',
+          bottomHelpMessage: '语音模式下，同时发送文字版，避免音质较低听不懂',
+          component: 'Switch'
         },
         {
           field: 'autoUsePicture',
@@ -197,12 +207,6 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
-          field: 'model',
-          label: '模型',
-          bottomHelpMessage: '模型名称，如无特殊需求保持默认即可，会使用chatgpt-api库提供的当前可用的最适合的默认值。保底可用的是 text-davinci-003。当发现新的可用的chatGPT模型会更新这里的值。',
-          component: 'Input'
-        },
-        {
           field: 'thinkingTips',
           label: '思考提示',
           bottomHelpMessage: '是否开启AI正在思考中的提示信息。',
@@ -213,12 +217,6 @@ export function supportGuoba () {
           label: 'AI风格',
           bottomHelpMessage: '你可以在这里写入你希望AI回答的风格，比如希望优先回答中文，回答长一点等。',
           component: 'InputTextArea'
-        },
-        {
-          field: 'assistantLabel',
-          label: 'AI名字',
-          bottomHelpMessage: 'AI认为的自己的名字，当你问他你是谁是他会回答这里的名字。',
-          component: 'Input'
         },
         {
           field: 'temperature',
@@ -277,7 +275,7 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
-          label: '以下为浏览器方式的配置',
+          label: '以下为浏览器方式的配置.(Deprecated)',
           component: 'Divider'
         },
         {
