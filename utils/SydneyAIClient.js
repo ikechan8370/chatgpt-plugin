@@ -181,7 +181,8 @@ export default class SydneyAIClient {
       invocationId = 0,
       parentMessageId = invocationId || crypto.randomUUID(),
       onProgress,
-      abortController = new AbortController()
+      abortController = new AbortController(),
+      timeout = Config.defaultTimeoutMs
     } = opts
     if (typeof onProgress !== 'function') {
       onProgress = () => {}
@@ -314,14 +315,26 @@ export default class SydneyAIClient {
 
       const messageTimeout = setTimeout(() => {
         this.cleanupWebSocketConnection(ws)
-        reject(new Error('Timed out waiting for response. Try enabling debug mode to see more information.'))
-      }, 120 * 1000)
+        if (replySoFar) {
+          resolve({
+            message
+          })
+        } else {
+          reject(new Error('Timed out waiting for response. Try enabling debug mode to see more information.'))
+        }
+      }, timeout)
 
       // abort the request if the abort controller is aborted
       abortController.signal.addEventListener('abort', () => {
         clearTimeout(messageTimeout)
         this.cleanupWebSocketConnection(ws)
-        reject('Request aborted')
+        if (replySoFar) {
+          resolve({
+            message
+          })
+        } else {
+          reject('Request aborted')
+        }
       })
 
       ws.on('message', (data) => {
