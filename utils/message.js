@@ -1,6 +1,5 @@
 import { v4 as uuidv4 } from 'uuid'
 import { Config } from '../utils/config.js'
-import HttpsProxyAgent from 'https-proxy-agent'
 import _ from 'lodash'
 import fetch from 'node-fetch'
 let proxy
@@ -11,7 +10,7 @@ if (Config.proxy) {
     console.warn('未安装https-proxy-agent，请在插件目录下执行pnpm add https-proxy-agent')
   }
 }
-
+// API3
 export class OfficialChatGPTClient {
   constructor (opts = {}) {
     const {
@@ -28,7 +27,6 @@ export class OfficialChatGPTClient {
             agent: proxy(Config.proxy)
           }
         : {}
-
       const mergedOptions = {
         ...defaultOptions,
         ...options
@@ -50,7 +48,11 @@ export class OfficialChatGPTClient {
     if (timeoutMs) {
       abortController = new AbortController()
     }
-    const url = this._apiReverseUrl || 'https://chat.openai.com/backend-api/conversation'
+    let url = this._apiReverseUrl || 'https://chat.openai.com/backend-api/conversation'
+    if (this._apiReverseUrl && Config.proxy && !Config.apiForceUseReverse) {
+      // 如果配了proxy，而且有反代，但是没开启强制反代
+      url = 'https://chat.openai.com/backend-api/conversation'
+    }
     const body = {
       action,
       messages: [

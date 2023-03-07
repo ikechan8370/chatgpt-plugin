@@ -207,6 +207,12 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
+          field: 'openAiForceUseReverse',
+          label: '强制使用OpenAI反代',
+          bottomHelpMessage: '即使配置了proxy，依然使用OpenAI反代',
+          component: 'Switch'
+        },
+        {
           field: 'thinkingTips',
           label: '思考提示',
           bottomHelpMessage: '是否开启AI正在思考中的提示信息。',
@@ -217,6 +223,12 @@ export function supportGuoba () {
           label: 'AI风格',
           bottomHelpMessage: '你可以在这里写入你希望AI回答的风格，比如希望优先回答中文，回答长一点等。',
           component: 'InputTextArea'
+        },
+        {
+          field: 'assistantLabel',
+          label: 'AI名字',
+          bottomHelpMessage: 'AI认为的自己的名字，当你问他你是谁是他会回答这里的名字。',
+          component: 'Input'
         },
         {
           field: 'temperature',
@@ -259,6 +271,12 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
+          field: 'sydneyForceUseReverse',
+          label: '强制使用sydney反代',
+          bottomHelpMessage: '即使配置了proxy，依然使用sydney反代',
+          component: 'Switch'
+        },
+        {
           label: '以下为API3方式的配置。',
           component: 'Divider'
         },
@@ -273,6 +291,12 @@ export function supportGuoba () {
           label: 'apiBaseUrl地址',
           bottomHelpMessage: 'apiBaseUrl地址',
           component: 'Input'
+        },
+        {
+          field: 'apiForceUseReverse',
+          label: '强制使用ChatGPT反代',
+          bottomHelpMessage: '即使配置了proxy，依然使用ChatGPT反代',
+          component: 'Switch'
         },
         {
           label: '以下为浏览器方式的配置.(Deprecated)',

@@ -45,14 +45,13 @@ if (Config.proxy) {
  * 这里使用动态数据获取，以便于锅巴动态更新数据
  */
 // const CONVERSATION_PRESERVE_TIME = Config.conversationPreserveTime
-const defaultPropmtPrefix = 'You answer as concisely as possible for each response (e.g. don’t be verbose). It is very important that you answer as concisely as possible, so please remember this. If you are generating a list, do not have too many items. Keep the number of items short.'
+const defaultPropmtPrefix = ', a large language model trained by OpenAI. You answer as concisely as possible for each response (e.g. don’t be verbose). It is very important that you answer as concisely as possible, so please remember this. If you are generating a list, do not have too many items. Keep the number of items short.'
 const newFetch = (url, options = {}) => {
   const defaultOptions = Config.proxy
     ? {
         agent: proxy(Config.proxy)
       }
     : {}
-
   const mergedOptions = {
     ...defaultOptions,
     ...options
@@ -832,9 +831,9 @@ export class chatgpt extends plugin {
           completionParams.model = Config.model
         }
         const currentDate = new Date().toISOString().split('T')[0]
-        let promptPrefix = `You are ${Config.assistantLabel}, a large language model trained by OpenAI. ${Config.promptPrefixOverride || defaultPropmtPrefix}
-        Current date: ${currentDate}`
-        this.chatGPTApi = new ChatGPTAPI({
+        let promptPrefix = `You are ${Config.assistantLabel} ${Config.promptPrefixOverride || defaultPropmtPrefix}
+        Knowledge cutoff: 2021-09. Current date: ${currentDate}`
+        let opts = {
           apiBaseUrl: Config.openAiBaseUrl,
           apiKey: Config.apiKey,
           debug: false,
@@ -844,10 +843,19 @@ export class chatgpt extends plugin {
           completionParams,
           assistantLabel: Config.assistantLabel,
           fetch: newFetch
-        })
+        }
+        if (opts.apiBaseUrl !== 'https://api.openai.com' && Config.proxy && !Config.openAiForceUseReverse) {
+          // 如果配了proxy，而且有反代，但是没开启强制反代,将baseurl删掉
+          delete opts.apiBaseUrl
+        }
+        this.chatGPTApi = new ChatGPTAPI(opts)
         let option = {
           timeoutMs: 120000
           // systemMessage: promptPrefix
+        }
+        if (Math.floor(Math.random() * 100) < 5) {
+          // 小概率再次发送系统消息
+          option.systemMessage = promptPrefix
         }
         if (conversation) {
           option = Object.assign(option, conversation)
