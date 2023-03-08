@@ -7,6 +7,7 @@ import crypto from 'crypto'
 
 import HttpsProxyAgent from 'https-proxy-agent'
 import { Config } from './config.js'
+import {isCN} from "./common.js";
 
 if (!globalThis.fetch) {
   globalThis.fetch = fetch
@@ -58,9 +59,9 @@ export default class SydneyAIClient {
       ...opts,
       host: opts.host || Config.sydneyReverseProxy || 'https://www.bing.com'
     }
-    if (opts.proxy && !Config.sydneyForceUseReverse) {
-      this.opts.host = 'https://www.bing.com'
-    }
+    // if (opts.proxy && !Config.sydneyForceUseReverse) {
+    //   this.opts.host = 'https://www.bing.com'
+    // }
     this.debug = opts.debug
   }
 
@@ -101,6 +102,11 @@ export default class SydneyAIClient {
     }
     if (this.opts.proxy) {
       fetchOptions.agent = proxy(Config.proxy)
+    }
+    let accessible = !(await isCN()) || this.opts.proxy
+    if (accessible && !Config.sydneyForceUseReverse) {
+      // 本身能访问bing.com，那就不用反代啦，重置host
+      this.opts.host = 'https://www.bing.com'
     }
     const response = await fetch(`${this.opts.host}/turing/conversation/create`, fetchOptions)
     let text = await response.text()

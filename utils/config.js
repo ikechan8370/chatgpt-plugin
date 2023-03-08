@@ -2,6 +2,10 @@ import fs from 'fs'
 import lodash from 'lodash'
 export const defaultChatGPTAPI = 'https://pimon.d201.cn/backend-api/conversation'
 export const officialChatGPTAPI = 'https://apps.openai.com/api/conversation'
+// Reverse proxy of https://api.openai.com
+export const defaultOpenAIReverseProxy = 'https://mondstadt.d201.eu.org'
+// blocked in China Mainland
+export const defaultOpenAIAPI = 'https://api.openai.com'
 const defaultConfig = {
   blockWords: ['屏蔽词1', '屏蔽词b'],
   promptBlockWords: ['屏蔽词1', '屏蔽词b'],
@@ -20,7 +24,7 @@ const defaultConfig = {
   cacheUrl: 'https://content.alcedogroup.com',
   cacheEntry: false,
   apiKey: '',
-  openAiBaseUrl: 'https://api.openai.com',
+  openAiBaseUrl: defaultOpenAIReverseProxy,
   openAiForceUseReverse: false,
   drawCD: 30,
   model: '',
@@ -51,7 +55,7 @@ const defaultConfig = {
   noiseScaleW: 0.668,
   lengthScale: 1.2,
   initiativeChatGroups: [],
-  version: 'v2.1.0'
+  version: 'v2.1.1'
 }
 const _path = process.cwd()
 let config = {}

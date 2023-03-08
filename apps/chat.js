@@ -1,6 +1,6 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import _ from 'lodash'
-import { Config } from '../utils/config.js'
+import {Config, defaultOpenAIAPI, defaultOpenAIReverseProxy} from '../utils/config.js'
 import { v4 as uuid } from 'uuid'
 import delay from 'delay'
 import { ChatGPTAPI } from 'chatgpt'
@@ -13,7 +13,7 @@ import {
   tryTimes,
   upsertMessage,
   randomString,
-  getDefaultUserSetting
+  getDefaultUserSetting, isCN
 } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
@@ -856,8 +856,9 @@ export class chatgpt extends plugin {
           assistantLabel: Config.assistantLabel,
           fetch: newFetch
         }
-        if (opts.apiBaseUrl !== 'https://api.openai.com' && Config.proxy && !Config.openAiForceUseReverse) {
-          // 如果配了proxy，而且有反代，但是没开启强制反代,将baseurl删掉
+        let openAIAccessible = (Config.proxy || !(await isCN())) // 配了代理或者服务器在国外，默认认为不需要反代
+        if (opts.apiBaseUrl !== defaultOpenAIAPI && openAIAccessible && !Config.openAiForceUseReverse) {
+          // 如果配了proxy(或者不在国内)，而且有反代，但是没开启强制反代,将baseurl删掉
           delete opts.apiBaseUrl
         }
         this.chatGPTApi = new ChatGPTAPI(opts)

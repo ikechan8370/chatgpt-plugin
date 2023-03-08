@@ -79,6 +79,21 @@ export class ChatgptManagement extends plugin {
           reg: '^#chatgpt查看闭嘴',
           fnc: 'listShutUp',
           permission: 'master'
+        },
+        {
+          reg: '^#chatgpt设置(API|key)(Key|key)',
+          fnc: 'setAPIKey',
+          permission: 'master'
+        },
+        {
+          reg: '^#chatgpt设置(API|api)设定',
+          fnc: 'setAPIPromptPrefix',
+          permission: 'master'
+        },
+        {
+          reg: '^#chatgpt设置(Bing|必应|Sydney|悉尼|sydney|bing)设定',
+          fnc: 'setBingPromptPrefix',
+          permission: 'master'
         }
       ]
     })
@@ -418,5 +433,62 @@ export class ChatgptManagement extends plugin {
       }
       await this.reply(list.map(item => item.groupId !== 'ALL' ? `群聊${item.groupId}: ${item.ttlFormat}` : `全局: ${item.ttlFormat}`).join('\n'))
     }
+  }
+
+  async setAPIKey (e) {
+    this.setContext('saveAPIKey')
+    await this.reply('请发送OpenAI API Key.', true)
+    return false
+  }
+
+  async saveAPIKey () {
+    if (!this.e.msg) return
+    let token = this.e.msg
+    if (!token.startsWith('sk-')) {
+      await this.reply('OpenAI API Key格式错误', true)
+      this.finish('saveAPIKey')
+      return
+    }
+    // todo
+    Config.apiKey = token
+    await this.reply('OpenAI API Key设置成功', true)
+    this.finish('saveAPIKey')
+  }
+
+  async setAPIPromptPrefix (e) {
+    this.setContext('saveAPIPromptPrefix')
+    await this.reply('请发送用于API模式的设定', true)
+    return false
+  }
+
+  async saveAPIPromptPrefix (e) {
+    if (!this.e.msg) return
+    if (this.e.msg === '取消') {
+      await this.reply('已取消设置API设定', true)
+      this.finish('saveAPIPromptPrefix')
+      return
+    }
+    // todo
+    Config.promptPrefixOverride = this.e.msg
+    await this.reply('API模式的设定设置成功', true)
+    this.finish('saveAPIPromptPrefix')
+  }
+
+  async setBingPromptPrefix (e) {
+    this.setContext('saveBingPromptPrefix')
+    await this.reply('请发送用于Bing Sydney模式的设定', true)
+    return false
+  }
+
+  async saveBingPromptPrefix (e) {
+    if (!this.e.msg) return
+    if (this.e.msg === '取消') {
+      await this.reply('已取消设置Sydney设定', true)
+      this.finish('saveBingPromptPrefix')
+      return
+    }
+    Config.sydney = this.e.msg
+    await this.reply('Bing Sydney模式的设定设置成功', true)
+    this.finish('saveBingPromptPrefix')
   }
 }

@@ -351,3 +351,20 @@ export function formatDuration (duration) {
 
   return result || '0秒钟'
 }
+
+/**
+ * 判断服务器所在地是否为中国
+ * @returns {Promise<boolean>}
+ */
+export async function isCN () {
+  if (await redis.get('CHATGPT:COUNTRY_CODE')) {
+    return await redis.get('CHATGPT:COUNTRY_CODE') === 'CN'
+  } else {
+    let response = await fetch('https://ipinfo.io/country')
+    let countryCode = await response.text()
+    await redis.set('CHATGPT:COUNTRY_CODE', countryCode, { EX: 3600 * 24 * 7 })
+    if (countryCode !== 'CN') {
+      return false
+    }
+  }
+}
