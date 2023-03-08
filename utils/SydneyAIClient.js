@@ -429,9 +429,6 @@ export default class SydneyAIClient {
                   ],
                   text: replySoFar
                 }
-            resolve({
-              message
-            })
             if (messages[0].contentOrigin === 'Apology') {
               console.log('Apology found')
               stopTokenFound = true
