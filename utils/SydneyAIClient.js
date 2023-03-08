@@ -7,7 +7,7 @@ import crypto from 'crypto'
 
 import HttpsProxyAgent from 'https-proxy-agent'
 import { Config } from './config.js'
-import {isCN} from "./common.js";
+import { isCN } from './common.js'
 
 if (!globalThis.fetch) {
   globalThis.fetch = fetch
@@ -347,9 +347,16 @@ export default class SydneyAIClient {
       const messageTimeout = setTimeout(() => {
         this.cleanupWebSocketConnection(ws)
         if (replySoFar) {
-          let message = {}
-          message.adaptiveCards[0].body[0].text = replySoFar
-          message.text = replySoFar
+          let message = {
+            adaptiveCards: [
+              {
+                body: [
+                  { text: replySoFar }
+                ]
+              }
+            ],
+            text: replySoFar
+          }
           resolve({
             message
           })
@@ -370,8 +377,18 @@ export default class SydneyAIClient {
         clearTimeout(firstTimeout)
         this.cleanupWebSocketConnection(ws)
         if (replySoFar) {
+          let message = {
+            adaptiveCards: [
+              {
+                body: [
+                  { text: replySoFar }
+                ]
+              }
+            ],
+            text: replySoFar
+          }
           resolve({
-            message: replySoFar
+            message
           })
         } else {
           reject('Request aborted')
@@ -400,7 +417,21 @@ export default class SydneyAIClient {
             if (!messages?.length || messages[0].author !== 'bot') {
               return
             }
-            const message = messages.length ? messages[messages.length - 1] : null
+            const message = messages.length
+              ? messages[messages.length - 1]
+              : {
+                  adaptiveCards: [
+                    {
+                      body: [
+                        { text: replySoFar }
+                      ]
+                    }
+                  ],
+                  text: replySoFar
+                }
+            resolve({
+              message
+            })
             if (messages[0].contentOrigin === 'Apology') {
               console.log('Apology found')
               stopTokenFound = true
@@ -443,7 +474,18 @@ export default class SydneyAIClient {
               return
             }
             const messages = event.item?.messages || []
-            const message = messages.length ? messages[messages.length - 1] : null
+            const message = messages.length
+                ? messages[messages.length - 1]
+                : {
+                  adaptiveCards: [
+                    {
+                      body: [
+                        { text: replySoFar }
+                      ]
+                    }
+                  ],
+                  text: replySoFar
+                }
             if (!message) {
               reject('No message was generated.')
               return
