@@ -69,8 +69,8 @@ export class dalle extends plugin {
         this.reply(images[0], true)
       }
     } catch (err) {
-      logger.error(err)
-      this.reply(`绘图失败: ${err}`, true)
+      logger.error(err.response?.data?.error?.message)
+      this.reply(`绘图失败: ${err.response?.data?.error?.message}`, true)
       await redis.del(`CHATGPT:DRAW:${e.sender.user_id}`)
     }
   }
@@ -116,8 +116,8 @@ export class dalle extends plugin {
         this.reply(images[0], true)
       }
     } catch (err) {
-      console.log(err)
-      this.reply(`绘图失败: ${err}`, true)
+      console.log(err.response?.data?.error?.message)
+      this.reply(`绘图失败: ${err.response?.data?.error?.message}`, true)
       await redis.del(`CHATGPT:VARIATION:${e.sender.user_id}`)
     }
   }
@@ -136,8 +136,8 @@ export class dalle extends plugin {
             this.reply(images[0], true)
           }
         } catch (err) {
-          console.log(err)
-          this.reply(`搞失败了: ${err}`, true)
+          console.log(err.response?.data?.error?.message)
+          this.reply(`搞失败了: ${err.response?.data?.error?.message}`, true)
           await redis.del(`CHATGPT:VARIATION:${e.sender.user_id}`)
         }
       }
@@ -201,8 +201,8 @@ export class dalle extends plugin {
         this.reply(images[0], true)
       }
     } catch (err) {
-      logger.error(err)
-      this.reply(`图片编辑失败: ${err}`, true)
+      logger.error(err.response?.data?.error?.message)
+      this.reply(`图片编辑失败: ${err.response?.data?.error?.message}`, true)
       await redis.del(`CHATGPT:EDIT:${e.sender.user_id}`)
     }
   }
