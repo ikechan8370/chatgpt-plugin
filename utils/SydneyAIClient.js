@@ -7,6 +7,7 @@ import crypto from 'crypto'
 
 import HttpsProxyAgent from 'https-proxy-agent'
 import { Config } from './config.js'
+import {isCN} from "./common.js";
 
 if (!globalThis.fetch) {
   globalThis.fetch = fetch
@@ -41,7 +42,7 @@ async function getKeyv () {
   try {
     Keyv = (await import('keyv')).default
   } catch (error) {
-    throw new Error('ws依赖未安装，请使用pnpm install keyv安装')
+    throw new Error('keyv依赖未安装，请使用pnpm install keyv安装')
   }
   return Keyv
 }
@@ -58,6 +59,9 @@ export default class SydneyAIClient {
       ...opts,
       host: opts.host || Config.sydneyReverseProxy || 'https://www.bing.com'
     }
+    // if (opts.proxy && !Config.sydneyForceUseReverse) {
+    //   this.opts.host = 'https://www.bing.com'
+    // }
     this.debug = opts.debug
   }
 
@@ -99,8 +103,20 @@ export default class SydneyAIClient {
     if (this.opts.proxy) {
       fetchOptions.agent = proxy(Config.proxy)
     }
+    let accessible = !(await isCN()) || this.opts.proxy
+    if (accessible && !Config.sydneyForceUseReverse) {
+      // 本身能访问bing.com，那就不用反代啦，重置host
+      this.opts.host = 'https://www.bing.com'
+    }
     const response = await fetch(`${this.opts.host}/turing/conversation/create`, fetchOptions)
-    return response.json()
+    let text = await response.text()
+    try {
+      return JSON.parse(text)
+    } catch (err) {
+      logger.error('创建sydney对话失败: status code: ' + response.status + response.statusText)
+      console.error(text)
+      throw new Error(text)
+    }
   }
 
   async createWebSocketConnection () {
@@ -111,8 +127,17 @@ export default class SydneyAIClient {
       if (this.opts.proxy) {
         agent = new HttpsProxyAgent(this.opts.proxy)
       }
-      const ws = new WebSocket('wss://sydney.bing.com/sydney/ChatHub', { agent })
-
+      let retryTimes = 3
+      let ws
+      do {
+        try {
+          ws = new WebSocket('wss://sydney.bing.com/sydney/ChatHub', { agent })
+          break
+        } catch (err) {
+          logger.warn(err)
+          retryTimes--
+        }
+      } while (retryTimes > 0)
       ws.on('error', console.error)
 
       ws.on('open', () => {
@@ -181,7 +206,9 @@ export default class SydneyAIClient {
       invocationId = 0,
       parentMessageId = invocationId || crypto.randomUUID(),
       onProgress,
-      abortController = new AbortController()
+      abortController = new AbortController(),
+      timeout = Config.defaultTimeoutMs,
+      firstMessageTimeout = 15000
     } = opts
     if (typeof onProgress !== 'function') {
       onProgress = () => {}
@@ -233,7 +260,7 @@ export default class SydneyAIClient {
             author: 'system'
           },
           {
-            text: "Oh my gosh, I'm so glad you're here!",
+            text: 'Sure, I will act as your instruction!',
             author: 'bot'
           },
           ...previousCachedMessages
@@ -314,14 +341,33 @@ export default class SydneyAIClient {
 
       const messageTimeout = setTimeout(() => {
         this.cleanupWebSocketConnection(ws)
-        reject(new Error('Timed out waiting for response. Try enabling debug mode to see more information.'))
-      }, 120 * 1000)
+        if (replySoFar) {
+          resolve({
+            message: replySoFar
+          })
+        } else {
+          reject(new Error('Timed out waiting for response. Try enabling debug mode to see more information.'))
+        }
+      }, timeout)
+      const firstTimeout = setTimeout(() => {
+        if (!replySoFar) {
+          this.cleanupWebSocketConnection(ws)
+          reject(new Error('Timed out waiting for first message.'))
+        }
+      }, firstMessageTimeout)
 
       // abort the request if the abort controller is aborted
       abortController.signal.addEventListener('abort', () => {
         clearTimeout(messageTimeout)
+        clearTimeout(firstTimeout)
         this.cleanupWebSocketConnection(ws)
-        reject('Request aborted')
+        if (replySoFar) {
+          resolve({
+            message: replySoFar
+          })
+        } else {
+          reject('Request aborted')
+        }
       })
 
       ws.on('message', (data) => {

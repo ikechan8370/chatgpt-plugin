@@ -1,4 +1,5 @@
 import { Config } from './utils/config.js'
+import { speakers } from './utils/tts.js'
 
 // 支持锅巴
 export function supportGuoba () {
@@ -59,7 +60,10 @@ export function supportGuoba () {
           field: 'defaultTTSRole',
           label: '语音模式默认角色',
           bottomHelpMessage: '语音模式下，未指定角色时使用的角色。若为空，将使用随机角色回复。',
-          component: 'Input'
+          component: 'Select',
+          componentProps: {
+            options: speakers.concat('随机').map(s => { return { label: s, value: s } })
+          }
         },
         {
           field: 'ttsAutoFallbackThreshold',
@@ -71,6 +75,12 @@ export function supportGuoba () {
             min: 0,
             max: 299
           }
+        },
+        {
+          field: 'alsoSendText',
+          label: '语音同时发送文字',
+          bottomHelpMessage: '语音模式下，同时发送文字版，避免音质较低听不懂',
+          component: 'Switch'
         },
         {
           field: 'autoUsePicture',
@@ -197,10 +207,10 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
-          field: 'model',
-          label: '模型',
-          bottomHelpMessage: '模型名称，如无特殊需求保持默认即可，会使用chatgpt-api库提供的当前可用的最适合的默认值。保底可用的是 text-davinci-003。当发现新的可用的chatGPT模型会更新这里的值。',
-          component: 'Input'
+          field: 'openAiForceUseReverse',
+          label: '强制使用OpenAI反代',
+          bottomHelpMessage: '即使配置了proxy，依然使用OpenAI反代',
+          component: 'Switch'
         },
         {
           field: 'thinkingTips',
@@ -261,6 +271,12 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
+          field: 'sydneyForceUseReverse',
+          label: '强制使用sydney反代',
+          bottomHelpMessage: '即使配置了proxy，依然使用sydney反代',
+          component: 'Switch'
+        },
+        {
           label: '以下为API3方式的配置。',
           component: 'Divider'
         },
@@ -277,7 +293,13 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
-          label: '以下为浏览器方式的配置',
+          field: 'apiForceUseReverse',
+          label: '强制使用ChatGPT反代',
+          bottomHelpMessage: '即使配置了proxy，依然使用ChatGPT反代',
+          component: 'Switch'
+        },
+        {
+          label: '以下为浏览器方式的配置.(Deprecated)',
           component: 'Divider'
         },
         {
@@ -354,8 +376,8 @@ export function supportGuoba () {
         },
         {
           field: 'initiativeChatGroups',
-          label: '主动发起聊天群聊',
-          bottomHelpMessage: '在这些群聊里会不定时主动说一些随机的打招呼的话，用英文逗号隔开',
+          label: '主动发起聊天群聊的群号',
+          bottomHelpMessage: '在这些群聊里会不定时主动说一些随机的打招呼的话，用英文逗号隔开。',
           component: 'Input'
         }
       ],

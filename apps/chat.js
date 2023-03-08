@@ -1,6 +1,6 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import _ from 'lodash'
-import { Config } from '../utils/config.js'
+import {Config, defaultOpenAIAPI, defaultOpenAIReverseProxy} from '../utils/config.js'
 import { v4 as uuid } from 'uuid'
 import delay from 'delay'
 import { ChatGPTAPI } from 'chatgpt'
@@ -13,7 +13,7 @@ import {
   tryTimes,
   upsertMessage,
   randomString,
-  getDefaultUserSetting
+  getDefaultUserSetting, isCN
 } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
@@ -45,14 +45,13 @@ if (Config.proxy) {
  * 这里使用动态数据获取，以便于锅巴动态更新数据
  */
 // const CONVERSATION_PRESERVE_TIME = Config.conversationPreserveTime
-const defaultPropmtPrefix = 'You answer as concisely as possible for each response (e.g. don’t be verbose). It is very important that you answer as concisely as possible, so please remember this. If you are generating a list, do not have too many items. Keep the number of items short.'
+const defaultPropmtPrefix = ', a large language model trained by OpenAI. You answer as concisely as possible for each response (e.g. don’t be verbose). It is very important that you answer as concisely as possible, so please remember this. If you are generating a list, do not have too many items. Keep the number of items short.'
 const newFetch = (url, options = {}) => {
   const defaultOptions = Config.proxy
     ? {
         agent: proxy(Config.proxy)
       }
     : {}
-
   const mergedOptions = {
     ...defaultOptions,
     ...options
@@ -71,7 +70,7 @@ export class chatgpt extends plugin {
       /** https://oicqjs.github.io/oicq/#events */
       event: 'message',
       /** 优先级，数字越小等级越高 */
-      priority: 15000,
+      priority: 1144,
       rule: [
         {
           /** 命令正则匹配 */
@@ -413,6 +412,11 @@ export class chatgpt extends plugin {
         return false
       }
     }
+    let groupId = e.isGroup ? e.group.group_id : ''
+    if (await redis.get('CHATGPT:SHUT_UP:ALL') || await redis.get(`CHATGPT:SHUT_UP:${groupId}`)) {
+      logger.info('chatgpt闭嘴中，不予理会')
+      return false
+    }
     let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
     if (userSetting) {
       userSetting = JSON.parse(userSetting)
@@ -617,7 +621,13 @@ export class chatgpt extends plugin {
       if (useTTS) {
         if (Config.ttsSpace && response.length <= 299) {
           let wav = await generateAudio(response, speaker, '中文')
-          e.reply(segment.record(wav))
+          await e.reply(segment.record(wav))
+          if (Config.alsoSendText) {
+            await this.reply(`${response}`, e.isGroup)
+            if (quotemessage.length > 0) {
+              this.reply(await makeForwardMsg(this.e, quotemessage))
+            }
+          }
         } else {
           await this.reply('你没有配置转语音API或者文字太长了哦，我用文本回复你吧', e.isGroup)
           await this.reply(`${response}`, e.isGroup)
@@ -748,49 +758,61 @@ export class chatgpt extends plugin {
           delete conversation.invocationId
           delete conversation.conversationSignature
         } else {
-          bingAIClient = new BingAIClient({
+          let bingOption = {
             userToken: bingToken, // "_U" cookie from bing.com
             cookies,
             debug: Config.debug,
-            proxy: Config.proxy
-          })
+            proxy: Config.proxy,
+            host: Config.sydneyReverseProxy
+          }
+          if (Config.proxy && Config.sydneyReverseProxy && !Config.sydneyForceUseReverse) {
+            delete bingOption.host
+          }
+          bingAIClient = new BingAIClient(bingOption)
         }
         let response
         let reply = ''
-        try {
-          let opt = _.cloneDeep(conversation) || {}
-          opt.toneStyle = Config.toneStyle
-          response = await bingAIClient.sendMessage(prompt, opt, (token) => {
-            reply += token
-          })
-          if (response.details.adaptiveCards?.[0]?.body?.[0]?.text?.trim()) {
-            if (response.response === undefined) {
-              response.response = response.details.adaptiveCards?.[0]?.body?.[0]?.text?.trim()
-            }
-            response.response = response.response.replace(/\[\^[0-9]+\^\]/g, (str) => {
-              return str.replace(/[/^]/g, '')
+        let retry = 3
+        let errorMessage = ''
+        do {
+          try {
+            let opt = _.cloneDeep(conversation) || {}
+            opt.toneStyle = Config.toneStyle
+            response = await bingAIClient.sendMessage(prompt, opt, (token) => {
+              reply += token
             })
-            response.quote = response.details.adaptiveCards?.[0]?.body?.[0]?.text?.replace(/\[\^[0-9]+\^\]/g, '').replace(response.response, '').split('\n')
+            if (response.details.adaptiveCards?.[0]?.body?.[0]?.text?.trim()) {
+              if (response.response === undefined) {
+                response.response = response.details.adaptiveCards?.[0]?.body?.[0]?.text?.trim()
+              }
+              response.response = response.response.replace(/\[\^[0-9]+\^\]/g, (str) => {
+                return str.replace(/[/^]/g, '')
+              })
+              response.quote = response.details.adaptiveCards?.[0]?.body?.[0]?.text?.replace(/\[\^[0-9]+\^\]/g, '').replace(response.response, '').split('\n')
+            }
+            errorMessage = ''
+            break
+          } catch (error) {
+            const message = error?.message || error?.data?.message || '与Bing通信时出错.'
+            if (message !== 'Timed out waiting for first message.') {
+              logger.error(error)
+            }
+            retry--
+            errorMessage = message === 'Timed out waiting for response. Try enabling debug mode to see more information.' ? (reply ? `${reply}\n不行了，我的大脑过载了，处理不过来了!` : '必应的小脑瓜不好使了，不知道怎么回答！') : message
           }
-        } catch (error) {
-          const code = error?.data?.code || 503
-          if (code === 503) {
-            logger.error(error)
-          }
-          console.error(error)
-          const message = error?.message || error?.data?.message || '与Bing通信时出错.'
+        } while (retry > 0)
+        if (errorMessage) {
+          return { text: errorMessage }
+        } else {
           return {
-            text: message === 'Timed out waiting for response. Try enabling debug mode to see more information.' ? (reply != '' ? `${reply}\n不行了，我的大脑过载了，处理不过来了!` : '必应的小脑瓜不好使了，不知道怎么回答！') : message
+            text: response.response,
+            quote: response.quote,
+            conversationId: response.conversationId,
+            clientId: response.clientId,
+            invocationId: response.invocationId,
+            conversationSignature: response.conversationSignature,
+            parentMessageId: response.messageId
           }
-        }
-        return {
-          text: response.response,
-          quote: response.quote,
-          conversationId: response.conversationId,
-          clientId: response.clientId,
-          invocationId: response.invocationId,
-          conversationSignature: response.conversationSignature,
-          parentMessageId: response.messageId
         }
       }
       case 'api3': {
@@ -823,9 +845,9 @@ export class chatgpt extends plugin {
           completionParams.model = Config.model
         }
         const currentDate = new Date().toISOString().split('T')[0]
-        let promptPrefix = `You are ${Config.assistantLabel}, a large language model trained by OpenAI. ${Config.promptPrefixOverride || defaultPropmtPrefix}
-        Current date: ${currentDate}`
-        this.chatGPTApi = new ChatGPTAPI({
+        let promptPrefix = `You are ${Config.assistantLabel} ${Config.promptPrefixOverride || defaultPropmtPrefix}
+        Knowledge cutoff: 2021-09. Current date: ${currentDate}`
+        let opts = {
           apiBaseUrl: Config.openAiBaseUrl,
           apiKey: Config.apiKey,
           debug: false,
@@ -835,10 +857,20 @@ export class chatgpt extends plugin {
           completionParams,
           assistantLabel: Config.assistantLabel,
           fetch: newFetch
-        })
+        }
+        let openAIAccessible = (Config.proxy || !(await isCN())) // 配了代理或者服务器在国外，默认认为不需要反代
+        if (opts.apiBaseUrl !== defaultOpenAIAPI && openAIAccessible && !Config.openAiForceUseReverse) {
+          // 如果配了proxy(或者不在国内)，而且有反代，但是没开启强制反代,将baseurl删掉
+          delete opts.apiBaseUrl
+        }
+        this.chatGPTApi = new ChatGPTAPI(opts)
         let option = {
           timeoutMs: 120000
           // systemMessage: promptPrefix
+        }
+        if (Math.floor(Math.random() * 100) < 5) {
+          // 小概率再次发送系统消息
+          option.systemMessage = promptPrefix
         }
         if (conversation) {
           option = Object.assign(option, conversation)

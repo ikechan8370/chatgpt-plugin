@@ -17,51 +17,6 @@ let helpData = [
         desc: '与机器人聊天'
       },
       {
-        icon: 'picture',
-        title: '#chatgpt图片模式',
-        desc: '机器人以图片形式回答'
-      },
-      {
-        icon: 'text',
-        title: '#chatgpt文本模式',
-        desc: '机器人以文本形式回答，默认选项'
-      },
-      {
-        icon: 'text',
-        title: '#chatgpt语音模式',
-        desc: '机器人以语音形式回答'
-      },
-      {
-        icon: 'text',
-        title: '#chatgpt设置语音角色',
-        desc: '设置语音模式下回复的角色音色'
-      },
-      {
-        icon: 'text',
-        title: '#chatgpt画图+prompt(/张数/图片大小)',
-        desc: '调用OpenAI Dalle API进行绘图，需要有API key并消耗余额。图片大小只能是256x256/512x512/1024x1024中的一个.默认为1张、512x512'
-      },
-      {
-        icon: 'text',
-        title: '#chatgpt改图',
-        desc: '调用OpenAI Dalle API进行改图，需要有API key并消耗余额。可同时发送图片或回复图片'
-      },
-      {
-        icon: 'text',
-        title: '#chatgpt打招呼(群号)',
-        desc: '让AI随机到某个群去打招呼'
-      }
-    ]
-  },
-  {
-    group: '管理',
-    list: [
-      {
-        icon: 'list',
-        title: '#chatgpt对话列表',
-        desc: '查询当前哪些人正在与机器人聊天.目前API3模式下支持切换对话'
-      },
-      {
         icon: 'switch',
         title: '#chatgpt切换对话+对话id',
         desc: '目前仅API3模式下可用，切换到指定的对话中'
@@ -90,16 +45,76 @@ let helpData = [
         icon: 'destroy-other',
         title: '#结束对话 @某人',
         desc: '结束该用户当前对话，下次开启对话机器人将遗忘掉本次对话内容。'
+      }
+    ]
+  },
+  {
+    group: '画图',
+    list: [
+      {
+        icon: 'draw',
+        title: '#chatgpt画图+prompt(/张数/图片大小)',
+        desc: '调用OpenAI Dalle API进行绘图，需要有API key并消耗余额。图片大小只能是256x256/512x512/1024x1024中的一个.默认为1张、512x512'
+      },
+      {
+        icon: 'draw',
+        title: '#chatgpt改图',
+        desc: '调用OpenAI Dalle API进行改图，需要有API key并消耗余额。可同时发送图片或回复图片'
+      },
+    ]
+  },
+  {
+    group: '管理',
+    list: [
+      {
+        icon: 'picture',
+        title: '#chatgpt图片模式',
+        desc: '机器人以图片形式回答'
+      },
+      {
+        icon: 'text',
+        title: '#chatgpt文本模式',
+        desc: '机器人以文本形式回答，默认选项'
+      },
+      {
+        icon: 'sound',
+        title: '#chatgpt语音模式',
+        desc: '机器人以语音形式回答'
+      },
+      {
+        icon: 'game',
+        title: '#chatgpt设置语音角色',
+        desc: '设置语音模式下回复的角色音色'
+      },
+      {
+        icon: 'list',
+        title: '#chatgpt对话列表',
+        desc: '查询当前哪些人正在与机器人聊天.目前API3模式下支持切换对话'
+      },
+      {
+        icon: 'blue',
+        title: '#chatgpt(本群)?(群xxx)?闭嘴(x秒/分钟/小时)',
+        desc: '让机器人在本群/某群闭嘴。不指定群时认为全局闭嘴。'
+      },
+      {
+        icon: 'eye',
+        title: '#chatgpt(本群)?(群xxx)?(张嘴|开口|说话|上班)',
+        desc: '让机器人在本群/某群重新可以说话。不指定群时认为全局开口。'
+      },
+      {
+        icon: 'list',
+        title: '#chatgpt查看闭嘴',
+        desc: '查看当前闭嘴情况。'
       },
       {
         icon: 'queue',
         title: '#清空chat队列',
-        desc: '清空当前对话等待队列。仅建议前方卡死时使用。'
+        desc: '清空当前对话等待队列。仅建议前方卡死时使用。仅API3模式下可用'
       },
       {
         icon: 'queue',
         title: '#移出chat队列首位',
-        desc: '移出当前对话等待队列中的首位。若前方对话卡死可使用本命令。'
+        desc: '移出当前对话等待队列中的首位。若前方对话卡死可使用本命令。仅API3模式下可用'
       },
       {
         icon: 'confirm',
@@ -110,16 +125,41 @@ let helpData = [
         icon: 'switch',
         title: '#chatgpt切换浏览器/API/API2/API3/Bing',
         desc: '切换使用的后端为浏览器或OpenAI API/第三方API/反代官网API/Bing'
-      },
+      }
+    ]
+  },
+  {
+    group: '设置',
+    list: [
       {
-        icon: 'help',
+        icon: 'token',
         title: '#chatgpt设置（必应）token',
         desc: '设置ChatGPT或bing的Token'
       },
       {
-        icon: 'help',
+        icon: 'coin',
         title: '#OpenAI剩余额度',
         desc: '查询OpenAI API剩余试用额度'
+      },
+      {
+        icon: 'key',
+        title: '#chatgpt设置APIKey',
+        desc: '设置APIKey'
+      },
+      {
+        icon: 'eat',
+        title: '#chatgpt设置(API|Sydney)设定',
+        desc: '设置AI的风格设定'
+      }
+    ]
+  },
+  {
+    group: '其他',
+    list: [
+      {
+        icon: 'smiley-wink',
+        title: '#chatgpt打招呼(群号)',
+        desc: '让AI随机到某个群去打招呼'
       },
       {
         icon: 'help',

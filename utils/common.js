@@ -5,7 +5,7 @@ import lodash from 'lodash'
 import fs from 'node:fs'
 import path from 'node:path'
 import puppeteer from '../../../lib/puppeteer/puppeteer.js'
-import {Config} from "./config.js";
+import { Config } from './config.js'
 // export function markdownToText (markdown) {
 //  return remark()
 //    .use(stripMarkdown)
@@ -294,5 +294,83 @@ export function getDefaultUserSetting () {
     usePicture: Config.defaultUsePicture,
     useTTS: Config.defaultUseTTS,
     ttsRole: Config.defaultTTSRole
+  }
+}
+
+export function parseDuration (duration) {
+  const timeMap = {
+    秒: 1,
+    分: 60,
+    小时: 60 * 60
+  }
+
+  // 去掉多余的空格并将单位转化为小写字母
+  duration = duration.trim().toLowerCase()
+
+  // 去掉末尾的 "钟" 字符
+  if (duration.endsWith('钟')) {
+    duration = duration.slice(0, -1)
+  }
+
+  // 提取数字和单位
+  const match = duration.match(/^(\d+)\s*([\u4e00-\u9fa5]+)$/)
+
+  if (!match) {
+    throw new Error('Invalid duration string: ' + duration)
+  }
+
+  const num = parseInt(match[1], 10)
+  const unit = match[2]
+
+  if (!(unit in timeMap)) {
+    throw new Error('Unknown time unit: ' + unit)
+  }
+
+  return num * timeMap[unit]
+}
+
+export function formatDuration (duration) {
+  const timeMap = {
+    小时: 60 * 60,
+    分钟: 60,
+    秒钟: 1
+  }
+
+  const units = Object.keys(timeMap)
+  let result = ''
+
+  for (let i = 0; i < units.length; i++) {
+    const unit = units[i]
+    const value = Math.floor(duration / timeMap[unit])
+
+    if (value > 0) {
+      result += value + unit
+      duration -= value * timeMap[unit]
+    }
+  }
+
+  return result || '0秒钟'
+}
+
+/**
+ * 判断服务器所在地是否为中国
+ * @returns {Promise<boolean>}
+ */
+export async function isCN () {
+  if (await redis.get('CHATGPT:COUNTRY_CODE')) {
+    return await redis.get('CHATGPT:COUNTRY_CODE') === 'CN'
+  } else {
+    try {
+      let response = await fetch('https://ipinfo.io/country')
+      let countryCode = (await response.text()).trim()
+      await redis.set('CHATGPT:COUNTRY_CODE', countryCode, { EX: 3600 * 24 * 7 })
+      if (countryCode !== 'CN') {
+        return false
+      }
+    } catch (err) {
+      console.warn(err)
+      // 没拿到归属地默认CN
+      return true
+    }
   }
 }

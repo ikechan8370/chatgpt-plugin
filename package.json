@@ -9,18 +9,18 @@
     "keyv-file": "^0.2.0",
     "node-fetch": "^3.3.0",
     "openai": "^3.2.1",
-    "puppeteer-extra": "^3.3.6",
-    "puppeteer-extra-plugin-recaptcha": "^3.6.8",
-    "puppeteer-extra-plugin-stealth": "^2.11.2",
     "random": "^4.1.0",
     "undici": "^5.20.0",
     "uuid": "^9.0.0",
-    "ws": "^8.12.1"
+    "ws": "^8.12.1",
+    "https-proxy-agent": "5.0.1",
+    "keyv": "^4.5.2"
   },
   "optionalDependencies": {
-    "https-proxy-agent": "5.0.1",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-recaptcha": "^3.6.8",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
     "jimp": "^0.22.7",
-    "keyv": "^4.5.2",
     "sharp": "^0.31.3"
   }
 }
