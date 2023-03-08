@@ -449,6 +449,20 @@ export default class SydneyAIClient {
               reject('Unexpected message author.')
               return
             }
+            if (messages[0].contentOrigin === 'Apology') {
+              console.log('Apology found')
+              stopTokenFound = true
+              clearTimeout(messageTimeout)
+              clearTimeout(firstTimeout)
+              this.cleanupWebSocketConnection(ws)
+              message.adaptiveCards[0].body[0].text = replySoFar
+              message.text = replySoFar
+              resolve({
+                message,
+                conversationExpiryTime: event?.item?.conversationExpiryTime
+              })
+              return
+            }
             if (event.item?.result?.error) {
               if (this.debug) {
                 console.debug(event.item.result.value, event.item.result.message)
