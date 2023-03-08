@@ -360,11 +360,17 @@ export async function isCN () {
   if (await redis.get('CHATGPT:COUNTRY_CODE')) {
     return await redis.get('CHATGPT:COUNTRY_CODE') === 'CN'
   } else {
-    let response = await fetch('https://ipinfo.io/country')
-    let countryCode = await response.text()
-    await redis.set('CHATGPT:COUNTRY_CODE', countryCode, { EX: 3600 * 24 * 7 })
-    if (countryCode !== 'CN') {
-      return false
+    try {
+      let response = await fetch('https://ipinfo.io/country')
+      let countryCode = (await response.text()).trim()
+      await redis.set('CHATGPT:COUNTRY_CODE', countryCode, { EX: 3600 * 24 * 7 })
+      if (countryCode !== 'CN') {
+        return false
+      }
+    } catch (err) {
+      console.warn(err)
+      // 没拿到归属地默认CN
+      return true
     }
   }
 }
