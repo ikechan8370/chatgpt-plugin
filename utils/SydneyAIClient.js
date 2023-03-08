@@ -452,7 +452,7 @@ export default class SydneyAIClient {
               reject('Unexpected message author.')
               return
             }
-            if (messages[0].contentOrigin === 'Apology') {
+            if (message.contentOrigin === 'Apology') {
               console.log('Apology found')
               stopTokenFound = true
               clearTimeout(messageTimeout)
