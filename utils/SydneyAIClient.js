@@ -347,8 +347,11 @@ export default class SydneyAIClient {
       const messageTimeout = setTimeout(() => {
         this.cleanupWebSocketConnection(ws)
         if (replySoFar) {
+          let message = {}
+          message.adaptiveCards[0].body[0].text = replySoFar
+          message.text = replySoFar
           resolve({
-            message: replySoFar
+            message
           })
         } else {
           reject(new Error('Timed out waiting for response. Try enabling debug mode to see more information.'))
