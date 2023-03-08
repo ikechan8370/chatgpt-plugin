@@ -127,8 +127,7 @@ export async function editImage (originalImage, mask = [], prompt, num = 1, size
   let maskFileLoc = await createMask(croppedFileLoc, mask)
   let response = await openai.createImageEdit(
     fs.createReadStream(croppedFileLoc),
-    fs.createReadStream(maskFileLoc),
-    prompt,
+    prompt, fs.createReadStream(maskFileLoc),
     num,
     size,
     'b64_json',
