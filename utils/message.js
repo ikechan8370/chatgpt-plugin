@@ -90,15 +90,18 @@ export class OfficialChatGPTClient {
     const bodyBytes = await res.arrayBuffer()
     const bodyText = decoder.decode(bodyBytes)
     const events = bodyText.split('\n\n').filter(item => !_.isEmpty(item))
-    let fullResponse = events[events.length - 2]
-    fullResponse = _.trimStart(fullResponse, 'data: ')
+    let fullResponse
+    for (let i = 0; i < events.length; i++) {
+      let event = events[i]
+      event = _.trimStart(event, 'data: ')
+      try {
+        fullResponse = JSON.parse(event)
+      } catch (err) {
+        console.log(event)
+      }
+    }
     if (Config.debug) {
       logger.mark(fullResponse)
-    }
-    try {
-      fullResponse = JSON.parse(fullResponse)
-    } catch (e) {
-      throw new Error(bodyText || 'unkown error, please check log')
     }
     if (!fullResponse?.message) {
       throw new Error(bodyText || 'unkown error, please check log')
