@@ -7,7 +7,7 @@ import crypto from 'crypto'
 
 import HttpsProxyAgent from 'https-proxy-agent'
 import { Config } from './config.js'
-import {isCN} from "./common.js";
+import { isCN } from './common.js'
 
 if (!globalThis.fetch) {
   globalThis.fetch = fetch
@@ -136,6 +136,9 @@ export default class SydneyAIClient {
         } catch (err) {
           logger.warn(err)
           retryTimes--
+          if (retryTimes === 0) {
+            throw new Error(err)
+          }
         }
       } while (retryTimes > 0)
       ws.on('error', console.error)
@@ -288,7 +291,9 @@ export default class SydneyAIClient {
     conversation.messages.push(userMessage)
 
     const ws = await this.createWebSocketConnection()
-
+    if (Config.debug) {
+      logger.mark('sydney websocket constructed successful')
+    }
     const obj = {
       arguments: [
         {
@@ -342,8 +347,18 @@ export default class SydneyAIClient {
       const messageTimeout = setTimeout(() => {
         this.cleanupWebSocketConnection(ws)
         if (replySoFar) {
+          let message = {
+            adaptiveCards: [
+              {
+                body: [
+                  { text: replySoFar }
+                ]
+              }
+            ],
+            text: replySoFar
+          }
           resolve({
-            message: replySoFar
+            message
           })
         } else {
           reject(new Error('Timed out waiting for response. Try enabling debug mode to see more information.'))
@@ -362,14 +377,24 @@ export default class SydneyAIClient {
         clearTimeout(firstTimeout)
         this.cleanupWebSocketConnection(ws)
         if (replySoFar) {
+          let message = {
+            adaptiveCards: [
+              {
+                body: [
+                  { text: replySoFar }
+                ]
+              }
+            ],
+            text: replySoFar
+          }
           resolve({
-            message: replySoFar
+            message
           })
         } else {
           reject('Request aborted')
         }
       })
-
+      let apology = false
       ws.on('message', (data) => {
         const objects = data.toString().split('')
         const events = objects.map((object) => {
@@ -385,11 +410,37 @@ export default class SydneyAIClient {
         const event = events[0]
         switch (event.type) {
           case 1: {
-            if (stopTokenFound) {
+            if (stopTokenFound || apology) {
               return
             }
             const messages = event?.arguments?.[0]?.messages
             if (!messages?.length || messages[0].author !== 'bot') {
+              return
+            }
+            const message = messages.length
+              ? messages[messages.length - 1]
+              : {
+                  adaptiveCards: [
+                    {
+                      body: [
+                        { text: replySoFar }
+                      ]
+                    }
+                  ],
+                  text: replySoFar
+                }
+            if (messages[0].contentOrigin === 'Apology') {
+              console.log('Apology found')
+              stopTokenFound = true
+              clearTimeout(messageTimeout)
+              clearTimeout(firstTimeout)
+              this.cleanupWebSocketConnection(ws)
+              message.adaptiveCards[0].body[0].text = replySoFar
+              message.text = replySoFar
+              resolve({
+                message,
+                conversationExpiryTime: event?.item?.conversationExpiryTime
+              })
               return
             }
             const updatedText = messages[0].text
@@ -400,7 +451,7 @@ export default class SydneyAIClient {
             const difference = updatedText.substring(replySoFar.length)
             onProgress(difference)
             if (updatedText.trim().endsWith(stopToken)) {
-              stopTokenFound = true
+              apology = true
               // remove stop token from updated text
               replySoFar = updatedText.replace(stopToken, '').trim()
               return
@@ -409,20 +460,49 @@ export default class SydneyAIClient {
             return
           }
           case 2: {
+            if (apology) {
+              return
+            }
             clearTimeout(messageTimeout)
+            clearTimeout(firstTimeout)
             this.cleanupWebSocketConnection(ws)
             if (event.item?.result?.value === 'InvalidSession') {
               reject(`${event.item.result.value}: ${event.item.result.message}`)
               return
             }
             const messages = event.item?.messages || []
-            const message = messages.length ? messages[messages.length - 1] : null
+            const message = messages.length
+                ? messages[messages.length - 1]
+                : {
+                  adaptiveCards: [
+                    {
+                      body: [
+                        { text: replySoFar }
+                      ]
+                    }
+                  ],
+                  text: replySoFar
+                }
             if (!message) {
               reject('No message was generated.')
               return
             }
             if (message?.author !== 'bot') {
               reject('Unexpected message author.')
+              return
+            }
+            if (message.contentOrigin === 'Apology') {
+              console.log('Apology found')
+              stopTokenFound = true
+              clearTimeout(messageTimeout)
+              clearTimeout(firstTimeout)
+              this.cleanupWebSocketConnection(ws)
+              message.adaptiveCards[0].body[0].text = replySoFar
+              message.text = replySoFar
+              resolve({
+                message,
+                conversationExpiryTime: event?.item?.conversationExpiryTime
+              })
               return
             }
             if (event.item?.result?.error) {
