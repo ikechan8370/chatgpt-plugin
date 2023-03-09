@@ -215,8 +215,7 @@ pnpm i
 
 ## TODO
 
-* API2/3模式下自动获取/刷新Token
-* API2/3模式下多token管理和切换
+* prompt预设与共享
 
 ## 其他
 
@@ -257,8 +256,12 @@ pnpm i
 图片以及Bing模式支持 @HalcyonAlcedo
 * https://github.com/HalcyonAlcedo/ChatGPT-Plugin-PageCache
 
-以及ChatGPT
+语音vits模型来自于
+* https://huggingface.co/spaces/sayashi/vits-uma-genshin-honkai
+
+以及ChatGPT及OpenAI
 * https://chat.openai.com/
+* https://platform.openai.com/
 
 ## 贡献者
 
