@@ -122,26 +122,16 @@ export default class SydneyAIClient {
   async createWebSocketConnection () {
     await this.initCache()
     let WebSocket = await getWebSocket()
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       let agent
       if (this.opts.proxy) {
         agent = new HttpsProxyAgent(this.opts.proxy)
       }
-      let retryTimes = 3
-      let ws
-      do {
-        try {
-          ws = new WebSocket('wss://sydney.bing.com/sydney/ChatHub', { agent })
-          break
-        } catch (err) {
-          logger.warn(err)
-          retryTimes--
-          if (retryTimes === 0) {
-            throw new Error(err)
-          }
-        }
-      } while (retryTimes > 0)
-      ws.on('error', console.error)
+      let ws = new WebSocket('wss://sydney.bing.com/sydney/ChatHub', { agent })
+
+      ws.on('error', (err) => {
+        reject(err)
+      })
 
       ws.on('open', () => {
         if (this.debug) {
@@ -410,6 +400,7 @@ export default class SydneyAIClient {
         const event = events[0]
         switch (event.type) {
           case 1: {
+            // reject(new Error('test'))
             if (stopTokenFound || apology) {
               return
             }
@@ -472,8 +463,8 @@ export default class SydneyAIClient {
             }
             const messages = event.item?.messages || []
             const message = messages.length
-                ? messages[messages.length - 1]
-                : {
+              ? messages[messages.length - 1]
+              : {
                   adaptiveCards: [
                     {
                       body: [
