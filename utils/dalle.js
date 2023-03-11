@@ -1,7 +1,7 @@
 import { Configuration, OpenAIApi } from 'openai'
-import {Config, defaultOpenAIReverseProxy, officialChatGPTAPI} from './config.js'
+import {Config, defaultOpenAIAPI, defaultOpenAIReverseProxy, officialChatGPTAPI} from './config.js'
 import fs from 'fs'
-import { mkdirs } from './common.js'
+import {isCN, mkdirs} from './common.js'
 let proxy
 if (Config.proxy) {
   try {
@@ -24,7 +24,7 @@ export async function createImage (prompt, n = 1, size = '512x512') {
     basePath = defaultOpenAIReverseProxy
   }
   if (!Config.openAiBaseUrl) {
-    basePath = defaultOpenAIReverseProxy
+    basePath = await isCN() ? defaultOpenAIReverseProxy : defaultOpenAIAPI
   }
   const configuration = new Configuration({
     apiKey: Config.apiKey,
@@ -54,7 +54,7 @@ export async function imageVariation (imageUrl, n = 1, size = '512x512') {
     basePath = defaultOpenAIReverseProxy
   }
   if (!Config.openAiBaseUrl) {
-    basePath = defaultOpenAIReverseProxy
+    basePath = await isCN() ? defaultOpenAIReverseProxy : defaultOpenAIAPI
   }
   const configuration = new Configuration({
     apiKey: Config.apiKey,
@@ -131,7 +131,7 @@ export async function editImage (originalImage, mask = [], prompt, num = 1, size
     basePath = defaultOpenAIReverseProxy
   }
   if (!Config.openAiBaseUrl) {
-    basePath = defaultOpenAIReverseProxy
+    basePath = await isCN() ? defaultOpenAIReverseProxy : defaultOpenAIAPI
   }
   const configuration = new Configuration({
     apiKey: Config.apiKey,
