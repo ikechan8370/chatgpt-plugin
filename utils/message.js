@@ -86,6 +86,10 @@ export class OfficialChatGPTClient {
       referrer: 'https://chat.openai.com/chat'
     }
     const res = await this._fetch(url, option)
+    if (res.status !== 200) {
+      let body = await res.json()
+      throw new Error(JSON.stringify(body, null, 2))
+    }
     const decoder = new TextDecoder('utf-8')
     const bodyBytes = await res.arrayBuffer()
     const bodyText = decoder.decode(bodyBytes)
