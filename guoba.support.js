@@ -366,6 +366,12 @@ export function supportGuoba () {
           ]
         },
         {
+          field: 'huggingFaceReverseProxy',
+          label: '语音转换huggingface反代',
+          bottomHelpMessage: '没有就空着',
+          component: 'Input'
+        },
+        {
           field: 'noiseScale',
           label: 'noiseScale',
           bottomHelpMessage: '控制情感变化程度',

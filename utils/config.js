@@ -1,7 +1,7 @@
 import fs from 'fs'
 import lodash from 'lodash'
 export const defaultChatGPTAPI = 'https://pimon.d201.cn/backend-api/conversation'
-export const officialChatGPTAPI = 'https://apps.openai.com/api/conversation'
+export const officialChatGPTAPI = 'https://pimon.d201.cn/backend-api/conversation'
 // Reverse proxy of https://api.openai.com
 export const defaultOpenAIReverseProxy = 'https://mondstadt.d201.eu.org'
 // blocked in China Mainland
@@ -51,11 +51,13 @@ const defaultConfig = {
   defaultTimeoutMs: 120000,
   chromeTimeoutMS: 120000,
   ttsSpace: '',
+  // https://114514.201666.xyz
+  huggingFaceReverseProxy: '',
   noiseScale: 0.6,
   noiseScaleW: 0.668,
   lengthScale: 1.2,
   initiativeChatGroups: [],
-  version: 'v2.1.3'
+  version: 'v2.1.5'
 }
 const _path = process.cwd()
 let config = {}

@@ -1,5 +1,5 @@
 import { Configuration, OpenAIApi } from 'openai'
-import { Config } from './config.js'
+import {Config, defaultOpenAIReverseProxy, officialChatGPTAPI} from './config.js'
 import fs from 'fs'
 import { mkdirs } from './common.js'
 let proxy
@@ -11,15 +11,21 @@ if (Config.proxy) {
   }
 }
 function getProxy () {
-  if (proxy) {
+  if (!Config.proxy || proxy) {
     return proxy
   } else {
     throw new Error('未安装https-proxy-agent，请在插件目录下执行pnpm add https-proxy-agent')
   }
 }
 export async function createImage (prompt, n = 1, size = '512x512') {
+  let basePath = Config.openAiBaseUrl
+  if (Config.openAiBaseUrl && Config.proxy && !Config.openAiForceUseReverse) {
+    // 如果配了proxy，而且有反代，但是没开启强制反代
+    basePath = defaultOpenAIReverseProxy
+  }
   const configuration = new Configuration({
-    apiKey: Config.apiKey
+    apiKey: Config.apiKey,
+    basePath: basePath + '/v1'
   })
   const openai = new OpenAIApi(configuration)
   if (Config.debug) {
@@ -38,8 +44,15 @@ export async function createImage (prompt, n = 1, size = '512x512') {
 }
 
 export async function imageVariation (imageUrl, n = 1, size = '512x512') {
+
+  let basePath = Config.openAiBaseUrl
+  if (Config.openAiBaseUrl && Config.proxy && !Config.openAiForceUseReverse) {
+    // 如果配了proxy，而且有反代，但是没开启强制反代
+    basePath = defaultOpenAIReverseProxy
+  }
   const configuration = new Configuration({
-    apiKey: Config.apiKey
+    apiKey: Config.apiKey,
+    basePath: basePath + '/v1'
   })
   const openai = new OpenAIApi(configuration)
   if (Config.debug) {
@@ -106,8 +119,14 @@ async function resizeAndCropImage (inputFilePath, outputFilePath, size = 512) {
 }
 
 export async function editImage (originalImage, mask = [], prompt, num = 1, size = '512x512') {
+  let basePath = Config.openAiBaseUrl
+  if (Config.openAiBaseUrl && Config.proxy && !Config.openAiForceUseReverse) {
+    // 如果配了proxy，而且有反代，但是没开启强制反代
+    basePath = defaultOpenAIReverseProxy
+  }
   const configuration = new Configuration({
-    apiKey: Config.apiKey
+    apiKey: Config.apiKey,
+    basePath: basePath + '/v1'
   })
   const openai = new OpenAIApi(configuration)
   if (Config.debug) {

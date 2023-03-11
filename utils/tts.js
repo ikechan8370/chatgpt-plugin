@@ -58,8 +58,12 @@ export async function generateAudio (text, speaker = '随机', language = '中�
     logger.warn(`vits api 当前为${space}，已校正为${trimmedSpace}`)
     space = trimmedSpace
   }
-  logger.info(`正在使用接口${space}/api/generate`)
-  let response = await newFetch(`${space}/api/generate`, {
+  let url = `${space}/api/generate`
+  if (Config.huggingFaceReverseProxy) {
+    url = `${Config.huggingFaceReverseProxy}/api/generate?space=${_.trimStart(space, 'https://')}`
+  }
+  logger.info(`正在使用接口${url}`)
+  let response = await newFetch(url, {
     method: 'POST',
     body: JSON.stringify(body),
     headers: {
@@ -79,6 +83,13 @@ export async function generateAudio (text, speaker = '随机', language = '中�
     let [message, audioInfo, take] = json?.data
     logger.info(message, take)
     let audioLink = `${space}/file=${audioInfo.name}`
+    if (Config.huggingFaceReverseProxy) {
+      if (Config.debug) {
+        logger.info('使用huggingface加速反代下载生成音频' + Config.huggingFaceReverseProxy)
+      }
+      let spaceHost = _.trimStart(space, 'https://')
+      audioLink = `${Config.huggingFaceReverseProxy}/file=${audioInfo.name}?space=${spaceHost}`
+    }
     return audioLink
   } catch (err) {
     logger.error('生成语音api发生错误，请检查是否配置了正确的api，且仓库是否开放为public', response.status)

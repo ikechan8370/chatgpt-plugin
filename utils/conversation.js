@@ -19,7 +19,7 @@ export async function getConversations (qq = '', fetchFn = fetch) {
   }
   let conversations
   try {
-    conversations = JSON.parse(json)
+    conversations = JSON.parse(json).body
   } catch (e) {
     throw new Error(json)
   }
@@ -33,7 +33,7 @@ export async function getConversations (qq = '', fetchFn = fetch) {
       map[item.id] = cachedConversationLastMessage
     } else {
       // 缓存中没有，就去查官方api
-      let conversationDetailResponse = await fetchFn(`${Config.apiBaseUrl}/api/conversation/${item.id}`, {
+      let conversationDetailResponse = await fetchFn(`${Config.apiBaseUrl}/conversation/${item.id}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -44,16 +44,21 @@ export async function getConversations (qq = '', fetchFn = fetch) {
       if (Config.debug) {
         logger.mark('conversation detail for conversation ' + item.id, conversationDetail)
       }
-      conversationDetail = JSON.parse(conversationDetail)
+      try {
+        conversationDetail = JSON.parse(conversationDetail).body
+      } catch (err) {
+        logger.warn('跳过')
+        continue
+      }
       let messages = Object.values(conversationDetail.mapping || {})
 
       messages = messages
         .filter(message => message.message)
         .map(messages => messages.message)
 
-      let messagesAssistant = messages.filter(messages => messages.role === 'assistant')
+      let messagesAssistant = messages.filter(messages => messages.author.role === 'assistant')
         .sort((a, b) => b.create_time - a.create_time)
-      let messagesUser = messages.filter(messages => messages.role === 'user')
+      let messagesUser = messages.filter(messages => messages.author.role === 'user')
         .sort((a, b) => b.create_time - a.create_time)
       await redis.set(`CHATGPT:CONVERSATION_LENGTH:${item.id}`, messagesUser?.length || 0)
       let lastMessage = null
@@ -101,7 +106,7 @@ export async function getLatestMessageIdByConversationId (conversationId, fetchF
   if (!accessToken) {
     throw new Error('未绑定ChatGPT AccessToken，请使用#chatgpt设置token命令绑定token')
   }
-  let conversationDetailResponse = await fetchFn(`${Config.apiBaseUrl}/api/conversation/${conversationId}`, {
+  let conversationDetailResponse = await fetchFn(`${Config.apiBaseUrl}/conversation/${conversationId}`, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
@@ -112,12 +117,12 @@ export async function getLatestMessageIdByConversationId (conversationId, fetchF
   if (Config.debug) {
     logger.mark('conversation detail for conversation ' + conversationId, conversationDetail)
   }
-  conversationDetail = JSON.parse(conversationDetail)
+  conversationDetail = JSON.parse(conversationDetail).body
   let messages = Object.values(conversationDetail.mapping)
   messages = messages
     .filter(message => message.message)
     .map(messages => messages.message)
-    .filter(messages => messages.role === 'assistant')
+    .filter(messages => messages.author.role === 'assistant')
     .sort((a, b) => b.create_time - a.create_time)
   await redis.set(`CHATGPT:CONVERSATION_LAST_MESSAGE_ID:${conversationId}`, messages[0].id)
   return messages[0].id
@@ -129,7 +134,7 @@ export async function deleteConversation (conversationId, fetchFn = fetch) {
   if (!accessToken) {
     throw new Error('未绑定ChatGPT AccessToken，请使用#chatgpt设置token命令绑定token')
   }
-  let response = await fetchFn(`${Config.apiBaseUrl}/api/conversation/${conversationId}`, {
+  let response = await fetchFn(`${Config.apiBaseUrl}/conversation/${conversationId}`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
