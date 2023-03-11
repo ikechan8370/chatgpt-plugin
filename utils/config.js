@@ -1,7 +1,7 @@
 import fs from 'fs'
 import lodash from 'lodash'
 export const defaultChatGPTAPI = 'https://pimon.d201.cn/backend-api/conversation'
-export const officialChatGPTAPI = 'https://apps.openai.com/api/conversation'
+export const officialChatGPTAPI = 'https://pimon.d201.cn/backend-api/conversation'
 // Reverse proxy of https://api.openai.com
 export const defaultOpenAIReverseProxy = 'https://mondstadt.d201.eu.org'
 // blocked in China Mainland
