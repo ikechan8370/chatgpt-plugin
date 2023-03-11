@@ -23,6 +23,9 @@ export async function createImage (prompt, n = 1, size = '512x512') {
     // 如果配了proxy，而且有反代，但是没开启强制反代
     basePath = defaultOpenAIReverseProxy
   }
+  if (!Config.openAiBaseUrl) {
+    basePath = defaultOpenAIReverseProxy
+  }
   const configuration = new Configuration({
     apiKey: Config.apiKey,
     basePath: basePath + '/v1'
@@ -48,6 +51,9 @@ export async function imageVariation (imageUrl, n = 1, size = '512x512') {
   let basePath = Config.openAiBaseUrl
   if (Config.openAiBaseUrl && Config.proxy && !Config.openAiForceUseReverse) {
     // 如果配了proxy，而且有反代，但是没开启强制反代
+    basePath = defaultOpenAIReverseProxy
+  }
+  if (!Config.openAiBaseUrl) {
     basePath = defaultOpenAIReverseProxy
   }
   const configuration = new Configuration({
@@ -122,6 +128,9 @@ export async function editImage (originalImage, mask = [], prompt, num = 1, size
   let basePath = Config.openAiBaseUrl
   if (Config.openAiBaseUrl && Config.proxy && !Config.openAiForceUseReverse) {
     // 如果配了proxy，而且有反代，但是没开启强制反代
+    basePath = defaultOpenAIReverseProxy
+  }
+  if (!Config.openAiBaseUrl) {
     basePath = defaultOpenAIReverseProxy
   }
   const configuration = new Configuration({
