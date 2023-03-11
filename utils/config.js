@@ -51,11 +51,13 @@ const defaultConfig = {
   defaultTimeoutMs: 120000,
   chromeTimeoutMS: 120000,
   ttsSpace: '',
+  // https://114514.201666.xyz
+  huggingFaceReverseProxy: '',
   noiseScale: 0.6,
   noiseScaleW: 0.668,
   lengthScale: 1.2,
   initiativeChatGroups: [],
-  version: 'v2.1.3'
+  version: 'v2.1.4'
 }
 const _path = process.cwd()
 let config = {}
