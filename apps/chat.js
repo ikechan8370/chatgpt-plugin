@@ -84,11 +84,11 @@ export class chatgpt extends plugin {
           permission: 'master'
         },
         {
-          reg: '^#结束对话([sS]*)',
+          reg: '^#(chatgpt)?结束对话([sS]*)',
           fnc: 'destroyConversations'
         },
         {
-          reg: '^#结束全部对话$',
+          reg: '^#(chatgpt)?结束全部对话$',
           fnc: 'endAllConversations',
           permission: 'master'
         },
@@ -113,12 +113,12 @@ export class chatgpt extends plugin {
           fnc: 'setDefaultRole'
         },
         {
-          reg: '^#(chatgpt)清空(chat)?队列$',
+          reg: '^#(chatgpt)?清空(chat)?队列$',
           fnc: 'emptyQueue',
           permission: 'master'
         },
         {
-          reg: '^#(chatgpt)移出(chat)?队列首位$',
+          reg: '^#(chatgpt)?移出(chat)?队列首位$',
           fnc: 'removeQueueFirst',
           permission: 'master'
         },
