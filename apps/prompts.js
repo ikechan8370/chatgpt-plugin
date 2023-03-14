@@ -86,7 +86,7 @@ export class help extends plugin {
         return
       }
     }
-    await e.reply(`《${prompt.name}》\n${limitString(p.content, 500)}`, true)
+    await e.reply(`《${prompt.name}》\n${limitString(prompt.content, 500)}`, true)
   }
 
   async usePrompt (e) {
