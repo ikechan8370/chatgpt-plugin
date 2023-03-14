@@ -241,12 +241,15 @@ pnpm i
    >
    > 原因：没装依赖
    >
-   > 解决方式：请参考文档在本插件目录下用`pnmp install`安装依赖，安装完就不报错了
+   > 解决方式：请参考文档在本插件目录下用`pnpm install`安装依赖，安装完就不报错了
    
 4. 反代能自己搭吗？
    
    能。参考[这里](https://ikechan8370.com/archives/da-jian-chatgpt-guan-fang-fan-xiang-dai-li)
 
+5. vit API能本地搭建吗？
+
+   能。克隆下来安装依赖直接运行即可。
 
 ## 感谢
 
