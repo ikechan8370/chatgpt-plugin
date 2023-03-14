@@ -201,7 +201,7 @@ export default class SydneyAIClient {
       onProgress,
       abortController = new AbortController(),
       timeout = Config.defaultTimeoutMs,
-      firstMessageTimeout = 15000
+      firstMessageTimeout = Config.sydneyFirstMessageTimeout
     } = opts
     if (typeof onProgress !== 'function') {
       onProgress = () => {}

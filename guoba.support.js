@@ -155,6 +155,11 @@ export function supportGuoba () {
           }
         },
         {
+          field: 'enableDraw',
+          label: '绘图功能开关',
+          component: 'Switch'
+        },
+        {
           field: 'proxy',
           label: '代理服务器地址',
           bottomHelpMessage: '数据通过代理服务器发送，http或socks5代理。',
@@ -188,6 +193,16 @@ export function supportGuoba () {
           component: 'InputNumber',
           componentProps: {
             min: 0
+          }
+        },
+        {
+          field: 'sydneyFirstMessageTimeout',
+          label: 'Sydney模式接受首条信息超时时间',
+          helpMessage: '单位：毫秒',
+          bottomHelpMessage: '超过该时间阈值未收到Bing的任何消息，则断开本次连接并重试（最多重试3次，失败后返回timeout waiting for first message）。',
+          component: 'InputNumber',
+          componentProps: {
+            min: 15000
           }
         },
         {
@@ -383,7 +398,13 @@ export function supportGuoba () {
         {
           field: 'initiativeChatGroups',
           label: '主动发起聊天群聊的群号',
-          bottomHelpMessage: '在这些群聊里会不定时主动说一些随机的打招呼的话，用英文逗号隔开。',
+          bottomHelpMessage: '在这些群聊里会不定时主动说一些随机的打招呼的话，用英文逗号隔开。必须配置了OpenAI Key',
+          component: 'Input'
+        },
+        {
+          field: 'helloPrompt',
+          label: '打招呼所说文字的引导文字',
+          bottomHelpMessage: '将会用这段文字询问ChatGPT，由ChatGPT给出随机的打招呼文字。',
           component: 'Input'
         }
       ],

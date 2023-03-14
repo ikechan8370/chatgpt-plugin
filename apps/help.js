@@ -61,6 +61,11 @@ let helpData = [
         title: '#chatgpt改图',
         desc: '调用OpenAI Dalle API进行改图，需要有API key并消耗余额。可同时发送图片或回复图片'
       },
+      {
+        icon: 'switch',
+        title: '#chatgpt开启/关闭画图',
+        desc: '开启或关闭画图功能'
+      }
     ]
   },
   {
@@ -150,6 +155,11 @@ let helpData = [
         icon: 'eat',
         title: '#chatgpt设置(API|Sydney)设定',
         desc: '设置AI的风格设定'
+      },
+      {
+        icon: 'eat',
+        title: '#chatgpt查看(API|Sydney)设定',
+        desc: '查看AI的风格设定，文本形式返回，设定太长可能发不出来'
       }
     ]
   },

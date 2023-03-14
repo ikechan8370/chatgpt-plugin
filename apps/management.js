@@ -94,6 +94,21 @@ export class ChatgptManagement extends plugin {
           reg: '^#chatgpt设置(Bing|必应|Sydney|悉尼|sydney|bing)设定',
           fnc: 'setBingPromptPrefix',
           permission: 'master'
+        },
+        {
+          reg: '^#chatgpt(开启|关闭)画图$',
+          fnc: 'switchDraw',
+          permission: 'master'
+        },
+        {
+          reg: '^#chatgpt查看(API|api)设定$',
+          fnc: 'queryAPIPromptPrefix',
+          permission: 'master'
+        },
+        {
+          reg: '^#chatgpt查看(Bing|必应|Sydney|悉尼|sydney|bing)设定$',
+          fnc: 'queryBingPromptPrefix',
+          permission: 'master'
         }
       ]
     })
@@ -298,7 +313,7 @@ export class ChatgptManagement extends plugin {
     // eslint-disable-next-line no-irregular-whitespace
     API模式会调用OpenAI官方提供的gpt-3.5-turbo API，只需要提供API Key。一般情况下，该种方式响应速度更快，不会像chatGPT官网一样总出现不可用的现象，但注意gpt-3.5-turbo的API调用是收费的，新用户有18美元试用金可用于支付，价格为$0.0020/ 1K tokens.(问题和回答加起来算token)
    
-    API3模式会调用第三方提供的官网反代API，他会帮你绕过CF防护，需要提供ChatGPT的Token。效果与官网和浏览器一致，但稳定性不一定。设置token和API2方法一样。#chatgpt设置token
+    API3模式会调用官网反代API，他会帮你绕过CF防护，需要提供ChatGPT的Token。效果与官网和浏览器一致。设置token指令：#chatgpt设置token。
 
     浏览器模式通过在本地启动Chrome等浏览器模拟用户访问ChatGPT网站，使得获得和官方以及API2模式一模一样的回复质量，同时保证安全性。缺点是本方法对环境要求较高，需要提供桌面环境和一个可用的代理（能够访问ChatGPT的IP地址），且响应速度不如API，而且高峰期容易无法使用。
 
@@ -490,5 +505,31 @@ export class ChatgptManagement extends plugin {
     Config.sydney = this.e.msg
     await this.reply('Bing Sydney模式的设定设置成功', true)
     this.finish('saveBingPromptPrefix')
+  }
+
+  async switchDraw (e) {
+    if (e.msg.indexOf('开启') > -1) {
+      if (Config.enableDraw) {
+        await this.reply('当前已经开启chatgpt画图功能', true)
+      } else {
+        Config.enableDraw = true
+        await this.reply('chatgpt画图功能开启成功', true)
+      }
+    } else {
+      if (!Config.enableDraw) {
+        await this.reply('当前未开启chatgpt画图功能', true)
+      } else {
+        Config.enableDraw = false
+        await this.reply('chatgpt画图功能关闭成功', true)
+      }
+    }
+  }
+
+  async queryAPIPromptPrefix (e) {
+    await this.reply(Config.promptPrefixOverride, true)
+  }
+
+  async queryBingPromptPrefix (e) {
+    await this.reply(Config.sydney, true)
   }
 }
