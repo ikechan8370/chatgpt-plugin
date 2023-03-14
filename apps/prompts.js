@@ -110,15 +110,19 @@ export class help extends plugin {
       }
     }
     let use = await redis.get('CHATGPT:USE') || 'api'
+    if (use.toLowerCase() === 'bing') {
+      if (Config.toneStyle === 'Sydney') {
+        use = 'sydney'
+      }
+    }
     const keyMap = {
       api: 'promptPrefixOverride',
       sydney: 'sydney'
     }
 
-    await redis.set(`CHATGPT:PROMPT_USE_${use}`, promptName)
-
     if (keyMap[use]) {
       Config[keyMap[use]] = prompt.content
+      await redis.set(`CHATGPT:PROMPT_USE_${use}`, promptName)
       await e.reply(`你当前正在使用${use}模式，已将该模式设定应用为"${promptName}。更该设定后建议结束对话以使设定更好生效"`, true)
     } else {
       await e.reply(`你当前正在使用${use}模式，改模式不支持设定`, true)
