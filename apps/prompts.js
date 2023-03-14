@@ -2,7 +2,7 @@ import plugin from '../../../lib/plugins/plugin.js'
 import fs from 'fs'
 import _ from 'lodash'
 import { Config } from '../utils/config.js'
-import { makeForwardMsg } from '../utils/common.js'
+import {limitString, makeForwardMsg} from '../utils/common.js'
 import { getPromptByName, readPrompts, saveOnePrompt } from '../utils/prompts.js'
 export class help extends plugin {
   constructor (e) {
@@ -63,7 +63,8 @@ export class help extends plugin {
     }
     prompts.push(...[defaultPrompt, defaultSydneyPrompt])
     prompts.push(...readPrompts())
-    e.reply(await makeForwardMsg(e, prompts.map(p => `《${p.name}》\n${p.content}`), '设定列表'))
+    console.log(prompts)
+    e.reply(await makeForwardMsg(e, prompts.map(p => `《${p.name}》\n${limitString(p.content, 500)}`), '设定列表'))
   }
 
   async detailPrompt (e) {
@@ -85,7 +86,7 @@ export class help extends plugin {
         return
       }
     }
-    await e.reply(`《${prompt.name}》\n${prompt.content}`, true)
+    await e.reply(`《${prompt.name}》\n${limitString(p.content, 500)}`, true)
   }
 
   async usePrompt (e) {

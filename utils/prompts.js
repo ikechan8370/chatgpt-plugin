@@ -1,6 +1,6 @@
 import _ from 'lodash'
 import fs from 'fs'
-import {mkdirs} from "./common.js";
+import { mkdirs } from './common.js'
 export function readPrompts () {
   const _path = process.cwd()
   let prompts = []
