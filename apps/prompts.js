@@ -14,31 +14,38 @@ export class help extends plugin {
       rule: [
         {
           reg: '^#(chatgpt|ChatGPT)设定列表$',
-          fnc: 'listPrompts'
+          fnc: 'listPrompts',
+          permission: 'master'
         },
         {
           reg: '^#(chatgpt|ChatGPT)查看设定',
-          fnc: 'detailPrompt'
+          fnc: 'detailPrompt',
+          permission: 'master'
         },
         {
           reg: '^#(chatgpt|ChatGPT)使用设定',
-          fnc: 'usePrompt'
+          fnc: 'usePrompt',
+          permission: 'master'
         },
         {
           reg: '^#(chatgpt|ChatGPT)添加设定',
-          fnc: 'addPrompt'
+          fnc: 'addPrompt',
+          permission: 'master'
         },
         {
           reg: '^#(chatgpt|ChatGPT)(上传|分享|共享)设定',
-          fnc: 'uploadPrompt'
+          fnc: 'uploadPrompt',
+          permission: 'master'
         },
         {
           reg: '^#(chatgpt|ChatGPT)导入设定',
-          fnc: 'importPrompt'
+          fnc: 'importPrompt',
+          permission: 'master'
         },
         {
           reg: '^#(chatgpt|ChatGPT)设定帮助$',
-          fnc: 'helpPrompt'
+          fnc: 'helpPrompt',
+          permission: 'master'
         }
       ]
     })
