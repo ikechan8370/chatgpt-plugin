@@ -37,6 +37,7 @@ const defaultConfig = {
   apiBaseUrl: 'https://pimon.d201.cn/backend-api',
   apiForceUseReverse: false,
   plus: false,
+  useGPT4: false,
   promptPrefixOverride: 'Your answer shouldn\'t be too verbose. Prefer to answer in Chinese.',
   assistantLabel: 'ChatGPT',
   thinkingTips: true,
