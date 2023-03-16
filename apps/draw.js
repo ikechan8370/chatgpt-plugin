@@ -3,6 +3,7 @@ import { segment } from 'oicq'
 import { createImage, editImage, imageVariation } from '../utils/dalle.js'
 import { makeForwardMsg } from '../utils/common.js'
 import _ from 'lodash'
+import { Config } from '../utils/config.js'
 
 export class dalle extends plugin {
   constructor (e) {
@@ -33,6 +34,10 @@ export class dalle extends plugin {
   }
 
   async draw (e) {
+    if (!Config.enableDraw) {
+      this.reply('画图功能未开启')
+      return false
+    }
     let ttl = await redis.ttl(`CHATGPT:DRAW:${e.sender.user_id}`)
     if (ttl > 0 && !e.isMaster) {
       this.reply(`冷却中，请${ttl}秒后再试`)
@@ -76,6 +81,10 @@ export class dalle extends plugin {
   }
 
   async variation (e) {
+    if (!Config.enableDraw) {
+      this.reply('画图功能未开启')
+      return false
+    }
     let ttl = await redis.ttl(`CHATGPT:VARIATION:${e.sender.user_id}`)
     if (ttl > 0 && !e.isMaster) {
       this.reply(`冷却中，请${ttl}秒后再试`)
@@ -123,6 +132,10 @@ export class dalle extends plugin {
   }
 
   async avatarVariation (e) {
+    if (!Config.enableDraw) {
+      this.reply('画图功能未开启')
+      return false
+    }
     let ats = e.message.filter(m => m.type === 'at').filter(at => at.qq !== e.self_id)
     if (ats.length > 0) {
       for (let i = 0; i < ats.length; i++) {
@@ -145,6 +158,10 @@ export class dalle extends plugin {
   }
 
   async edit (e) {
+    if (!Config.enableDraw) {
+      this.reply('画图功能未开启')
+      return false
+    }
     let ttl = await redis.ttl(`CHATGPT:EDIT:${e.sender.user_id}`)
     if (ttl > 0 && !e.isMaster) {
       this.reply(`冷却中，请${ttl}秒后再试`)

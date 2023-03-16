@@ -1,6 +1,7 @@
 import { Config } from './config.js'
 import fetch from 'node-fetch'
 import _ from 'lodash'
+import {wrapTextByLanguage} from "./common.js";
 let proxy
 if (Config.proxy) {
   try {
@@ -35,11 +36,12 @@ function randomNum (minNum, maxNum) {
       return 0
   }
 }
-export async function generateAudio (text, speaker = '随机', language = '中文', noiseScale = Config.noiseScale, noiseScaleW = Config.noiseScaleW, lengthScale = Config.lengthScale) {
+export async function generateAudio (text, speaker = '随机', language = '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）', noiseScale = Config.noiseScale, noiseScaleW = Config.noiseScaleW, lengthScale = Config.lengthScale) {
   if (!speaker || speaker === '随机') {
     logger.info('随机角色！这次哪个角色这么幸运会被选到呢……')
     speaker = speakers[randomNum(0, speakers.length)]
   }
+  text = wrapTextByLanguage(text)
   logger.info(`正在使用${speaker}，基于文本：'${text}'生成语音`)
   let body = {
     data: [

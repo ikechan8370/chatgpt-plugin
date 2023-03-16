@@ -620,7 +620,7 @@ export class chatgpt extends plugin {
       }
       if (useTTS) {
         if (Config.ttsSpace && response.length <= 299) {
-          let wav = await generateAudio(response, speaker, '中文')
+          let wav = await generateAudio(response, speaker, '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）')
           await e.reply(segment.record(wav))
           if (Config.alsoSendText) {
             await this.reply(`${response}`, e.isGroup)

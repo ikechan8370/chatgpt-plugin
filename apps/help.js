@@ -61,6 +61,11 @@ let helpData = [
         title: '#chatgpt改图',
         desc: '调用OpenAI Dalle API进行改图，需要有API key并消耗余额。可同时发送图片或回复图片'
       },
+      {
+        icon: 'switch',
+        title: '#chatgpt开启/关闭画图',
+        desc: '开启或关闭画图功能'
+      }
     ]
   },
   {
@@ -149,8 +154,53 @@ let helpData = [
       {
         icon: 'eat',
         title: '#chatgpt设置(API|Sydney)设定',
-        desc: '设置AI的风格设定'
+        desc: '设置AI的默认风格设定'
+      },
+      {
+        icon: 'eat',
+        title: '#chatgpt查看(API|Sydney)设定',
+        desc: '查看AI当前的风格设定，文本形式返回，设定太长可能发不出来'
       }
+    ]
+  },
+  {
+    group: '设定',
+    list: [
+      {
+        icon: 'smiley-wink',
+        title: '#chatgpt设定列表',
+        desc: '查看所有设定列表，以转发消息形式'
+      },
+      {
+        icon: 'eat',
+        title: '#chatgpt查看设定【设定名】',
+        desc: '查看指定名字的设定内容。其中API默认和Sydney默认为锅巴面板配置的设定'
+      },
+      {
+        icon: 'coin',
+        title: '#chatgpt添加设定',
+        desc: '添加一个设定，分此输入设定名称和设定内容'
+      },
+      {
+        icon: 'switch',
+        title: '#chatgpt使用设定【设定名】',
+        desc: '使用某个设定'
+      },
+      {
+        icon: 'confirm',
+        title: '#chatgpt(上传|分享|共享)设定',
+        desc: '敬请期待'
+      },
+      {
+        icon: 'confirm',
+        title: '#chatgpt导入设定',
+        desc: '敬请期待'
+      },
+      {
+        icon: 'help',
+        title: '#chatgpt设定帮助',
+        desc: '设定帮助'
+      },
     ]
   },
   {

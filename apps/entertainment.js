@@ -57,6 +57,9 @@ export class Entertainment extends plugin {
     }
     let toSend = Config.initiativeChatGroups || []
     for (let i = 0; i < toSend.length; i++) {
+      if (!toSend[i]) {
+        continue
+      }
       let groupId = parseInt(toSend[i])
       if (Bot.getGroupList().get(groupId)) {
         // 5%的概率打招呼

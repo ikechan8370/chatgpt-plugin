@@ -2,4 +2,6 @@ config/*
 !config/config.example.js
 !config/config.example.json
 !config/config.md
+prompts/*
+!prompts/.gitkeep
 node_modules/

@@ -10,6 +10,9 @@
 * API3模式下，绕过Cloudflare防护直接访问ChatGPT的SSE API，与官方体验一致，且保留对话记录，在官网可查。免费。
 * (Deprecated)提供基于浏览器的解决方案作为备选，API3不可用的情况下或担心账户安全的用户可以选择使用浏览器模式。
 * 支持新[必应](https://www.bing.com/new)（Beta）
+* 2023-03-15 API3支持GPT-4尝鲜，需要Plus用户
+
+### 如果觉得这个插件有趣或者对你有帮助，请点一个star吧！
 
 ## 版本要求
 Node.js >= 18 / Node.js >= 14(with node-fetch)
@@ -241,12 +244,18 @@ pnpm i
    >
    > 原因：没装依赖
    >
-   > 解决方式：请参考文档在本插件目录下用`pnmp install`安装依赖，安装完就不报错了
+   > 解决方式：请参考文档在本插件目录下用`pnpm install`安装依赖，安装完就不报错了
    
 4. 反代能自己搭吗？
    
    能。参考[这里](https://ikechan8370.com/archives/da-jian-chatgpt-guan-fang-fan-xiang-dai-li)
 
+5. vit API能本地搭建吗？
+
+   能。克隆下来安装依赖直接运行即可。
+## 交流群
+
+* QQ 559567232
 
 ## 感谢
 

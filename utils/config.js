@@ -37,6 +37,7 @@ const defaultConfig = {
   apiBaseUrl: 'https://pimon.d201.cn/backend-api',
   apiForceUseReverse: false,
   plus: false,
+  useGPT4: false,
   promptPrefixOverride: 'Your answer shouldn\'t be too verbose. Prefer to answer in Chinese.',
   assistantLabel: 'ChatGPT',
   thinkingTips: true,
@@ -50,6 +51,7 @@ const defaultConfig = {
   debug: true,
   defaultTimeoutMs: 120000,
   chromeTimeoutMS: 120000,
+  sydneyFirstMessageTimeout: 15000,
   ttsSpace: '',
   // https://114514.201666.xyz
   huggingFaceReverseProxy: '',
@@ -57,7 +59,9 @@ const defaultConfig = {
   noiseScaleW: 0.668,
   lengthScale: 1.2,
   initiativeChatGroups: [],
-  version: 'v2.1.5'
+  enableDraw: true,
+  helloPrompt: '写一段话让大家来找我聊天。类似于“有人找我聊天吗？"这种风格，轻松随意一点控制在20个字以内',
+  version: 'v2.1.8'
 }
 const _path = process.cwd()
 let config = {}
