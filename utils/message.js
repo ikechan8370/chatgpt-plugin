@@ -65,7 +65,7 @@ export class OfficialChatGPTClient {
           }
         }
       ],
-      model: Config.plus ? 'text-davinci-002-render-sha' : 'text-davinci-002-render-sha',
+      model: Config.useGPT4 ? 'gpt-4' : 'text-davinci-002-render-sha',
       parent_message_id: parentMessageId
     }
     if (conversationId) {

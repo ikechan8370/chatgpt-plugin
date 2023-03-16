@@ -314,6 +314,12 @@ export function supportGuoba () {
           component: 'Switch'
         },
         {
+          field: 'useGPT4',
+          label: '使用GPT-4',
+          bottomHelpMessage: '使用GPT-4，注意试用配额较低，如果用不了就关掉',
+          component: 'Switch'
+        },
+        {
           label: '以下为浏览器方式的配置.(Deprecated)',
           component: 'Divider'
         },
