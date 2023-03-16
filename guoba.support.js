@@ -218,7 +218,7 @@ export function supportGuoba () {
         {
           field: 'openAiBaseUrl',
           label: 'OpenAI API服务器地址',
-          bottomHelpMessage: 'OpenAI的API服务器地址。默认为https://api.openai.com',
+          bottomHelpMessage: 'OpenAI的API服务器地址。注意要带上/v1。默认为https://api.openai.com/v1',
           component: 'Input'
         },
         {

@@ -28,7 +28,7 @@ export async function createImage (prompt, n = 1, size = '512x512') {
   }
   const configuration = new Configuration({
     apiKey: Config.apiKey,
-    basePath: basePath + '/v1'
+    basePath
   })
   const openai = new OpenAIApi(configuration)
   if (Config.debug) {
@@ -58,7 +58,7 @@ export async function imageVariation (imageUrl, n = 1, size = '512x512') {
   }
   const configuration = new Configuration({
     apiKey: Config.apiKey,
-    basePath: basePath + '/v1'
+    basePath
   })
   const openai = new OpenAIApi(configuration)
   if (Config.debug) {
@@ -135,7 +135,7 @@ export async function editImage (originalImage, mask = [], prompt, num = 1, size
   }
   const configuration = new Configuration({
     apiKey: Config.apiKey,
-    basePath: basePath + '/v1'
+    basePath
   })
   const openai = new OpenAIApi(configuration)
   if (Config.debug) {
