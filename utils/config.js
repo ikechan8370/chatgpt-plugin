@@ -3,9 +3,9 @@ import lodash from 'lodash'
 export const defaultChatGPTAPI = 'https://pimon.d201.cn/backend-api/conversation'
 export const officialChatGPTAPI = 'https://pimon.d201.cn/backend-api/conversation'
 // Reverse proxy of https://api.openai.com
-export const defaultOpenAIReverseProxy = 'https://mondstadt.d201.eu.org'
+export const defaultOpenAIReverseProxy = 'https://mondstadt.d201.eu.org/v1'
 // blocked in China Mainland
-export const defaultOpenAIAPI = 'https://api.openai.com'
+export const defaultOpenAIAPI = 'https://api.openai.com/v1'
 const defaultConfig = {
   blockWords: ['屏蔽词1', '屏蔽词b'],
   promptBlockWords: ['屏蔽词1', '屏蔽词b'],
