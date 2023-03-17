@@ -583,7 +583,7 @@ export default class SydneyAIClient {
               // adaptiveCardsSoFar || (message.adaptiveCards[0].body[0].text = replySoFar)
               console.log({ replySoFar, message })
               message.adaptiveCards = adaptiveCardsSoFar
-              message.text = replySoFar
+              message.text = replySoFar || message.spokenText
               resolve({
                 message,
                 conversationExpiryTime: event?.item?.conversationExpiryTime
