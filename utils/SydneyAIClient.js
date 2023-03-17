@@ -633,9 +633,7 @@ export default class SydneyAIClient {
               return
             }
             const messages = event.item?.messages || []
-            replySoFar = replySoFar || messages.length
-              ? messages[messages.length - 1].spokenText
-              : ''
+
             const message = messages.length
               ? messages[messages.length - 1]
               : {
@@ -662,7 +660,7 @@ export default class SydneyAIClient {
               clearTimeout(messageTimeout)
               clearTimeout(firstTimeout)
               this.cleanupWebSocketConnection(ws)
-              message.adaptiveCards[0].body[0].text = replySoFar
+              message.adaptiveCards[0].body[0].text = replySoFar || message.spokenText
               message.text = replySoFar
               resolve({
                 message,
