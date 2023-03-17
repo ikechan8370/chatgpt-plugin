@@ -643,7 +643,7 @@ export default class SydneyAIClient {
               this.cleanupWebSocketConnection(ws)
               // message.adaptiveCards[0].body[0].text = replySoFar || message.spokenText
               message.adaptiveCards = adaptiveCardsSoFar
-              message.response = replySoFar
+              message.response = replySoFar || message.spokenText
               resolve({
                 message,
                 conversationExpiryTime: event?.item?.conversationExpiryTime
