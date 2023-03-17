@@ -602,14 +602,17 @@ export class chatgpt extends plugin {
         await redis.set(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`, JSON.stringify(previousConversation), Config.conversationPreserveTime > 0 ? { EX: Config.conversationPreserveTime } : {})
       }
       let response = chatMessage?.text
-      // 检索是否有屏蔽词
-      if (response) {
-        const blockWord = Config.blockWords.find(word => response.toLowerCase().includes(word.toLowerCase()))
-        if (blockWord) {
-          await this.reply('返回内容存在敏感词，我不想回答你', true)
-          return false
-        }
+      if (!response) {
+        await e.reply('没有任何回复', true)
+        return
       }
+      // 检索是否有屏蔽词
+      const blockWord = Config.blockWords.find(word => response.toLowerCase().includes(word.toLowerCase()))
+      if (blockWord) {
+        await this.reply('返回内容存在敏感词，我不想回答你', true)
+        return false
+      }
+
 
       let quotemessage = []
       if (chatMessage?.quote) {
