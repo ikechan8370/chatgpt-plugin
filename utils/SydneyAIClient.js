@@ -385,7 +385,7 @@ export default class SydneyAIClient {
         author: 'user'
       },
       {
-        text: `你好，我是${Config.sydneyBrainWashName}，很高兴认识你。😊`,
+        text: `你好，我是${Config.sydneyBrainWashName}.`,
         author: 'bot'
       }
     ]
@@ -503,19 +503,14 @@ export default class SydneyAIClient {
 
     const messagePromise = new Promise((resolve, reject) => {
       let replySoFar = ''
+      let adaptiveCardsSoFar = null
       let stopTokenFound = false
 
       const messageTimeout = setTimeout(() => {
         this.cleanupWebSocketConnection(ws)
         if (replySoFar) {
           let message = {
-            adaptiveCards: [
-              {
-                body: [
-                  { text: replySoFar }
-                ]
-              }
-            ],
+            adaptiveCards: adaptiveCardsSoFar,
             text: replySoFar
           }
           resolve({
@@ -539,13 +534,7 @@ export default class SydneyAIClient {
         this.cleanupWebSocketConnection(ws)
         if (replySoFar) {
           let message = {
-            adaptiveCards: [
-              {
-                body: [
-                  { text: replySoFar }
-                ]
-              }
-            ],
+            adaptiveCards: adaptiveCardsSoFar,
             text: replySoFar
           }
           resolve({
@@ -582,13 +571,7 @@ export default class SydneyAIClient {
             const message = messages.length
               ? messages[messages.length - 1]
               : {
-                  adaptiveCards: [
-                    {
-                      body: [
-                        { text: replySoFar }
-                      ]
-                    }
-                  ],
+                  adaptiveCards: adaptiveCardsSoFar,
                   text: replySoFar
                 }
             if (messages[0].contentOrigin === 'Apology') {
@@ -597,13 +580,17 @@ export default class SydneyAIClient {
               clearTimeout(messageTimeout)
               clearTimeout(firstTimeout)
               this.cleanupWebSocketConnection(ws)
-              message.adaptiveCards[0].body[0].text = replySoFar
+              // adaptiveCardsSoFar || (message.adaptiveCards[0].body[0].text = replySoFar)
+              console.log({ replySoFar, message })
+              message.adaptiveCards = adaptiveCardsSoFar
               message.text = replySoFar
               resolve({
                 message,
                 conversationExpiryTime: event?.item?.conversationExpiryTime
               })
               return
+            } else {
+              adaptiveCardsSoFar = message.adaptiveCards
             }
             const updatedText = messages[0].text
             if (!updatedText || updatedText === replySoFar) {
@@ -637,13 +624,7 @@ export default class SydneyAIClient {
             const message = messages.length
               ? messages[messages.length - 1]
               : {
-                  adaptiveCards: [
-                    {
-                      body: [
-                        { text: replySoFar }
-                      ]
-                    }
-                  ],
+                  adaptiveCards: adaptiveCardsSoFar,
                   text: replySoFar
                 }
             if (!message) {
@@ -660,8 +641,9 @@ export default class SydneyAIClient {
               clearTimeout(messageTimeout)
               clearTimeout(firstTimeout)
               this.cleanupWebSocketConnection(ws)
-              message.adaptiveCards[0].body[0].text = replySoFar || message.spokenText
-              message.text = replySoFar
+              // message.adaptiveCards[0].body[0].text = replySoFar || message.spokenText
+              message.adaptiveCards = adaptiveCardsSoFar
+              message.response = replySoFar
               resolve({
                 message,
                 conversationExpiryTime: event?.item?.conversationExpiryTime
@@ -675,7 +657,6 @@ export default class SydneyAIClient {
                 console.debug(event.item.result.exception)
               }
               if (replySoFar) {
-                message.adaptiveCards[0].body[0].text = replySoFar
                 message.text = replySoFar
                 resolve({
                   message,
@@ -688,7 +669,8 @@ export default class SydneyAIClient {
             }
             // The moderation filter triggered, so just return the text we have so far
             if (stopTokenFound || event.item.messages[0].topicChangerText) {
-              message.adaptiveCards[0].body[0].text = replySoFar
+              // message.adaptiveCards[0].body[0].text = replySoFar
+              message.adaptiveCards = adaptiveCardsSoFar
               message.text = replySoFar
             }
             resolve({

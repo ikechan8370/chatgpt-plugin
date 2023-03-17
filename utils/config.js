@@ -54,7 +54,7 @@ const defaultConfig = {
   debug: true,
   defaultTimeoutMs: 120000,
   chromeTimeoutMS: 120000,
-  sydneyFirstMessageTimeout: 15000,
+  sydneyFirstMessageTimeout: 20000,
   ttsSpace: '',
   // https://114514.201666.xyz
   huggingFaceReverseProxy: '',
