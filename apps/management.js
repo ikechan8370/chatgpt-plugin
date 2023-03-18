@@ -58,6 +58,16 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
+          reg: '^#chatgpt(必应|Bing)切换',
+          fnc: 'changeBingTone',
+          permission: 'master'
+        },
+        {
+          reg: '^#chatgpt(必应|Bing)(开启|关闭)建议(回复)?',
+          fnc: 'bingOpenSuggestedResponses',
+          permission: 'master'
+        },
+        {
           reg: '^#chatgpt模式(帮助)?$',
           fnc: 'modeHelp'
         },
@@ -231,6 +241,34 @@ export class ChatgptManagement extends plugin {
     } else {
       await this.reply('当前已经是必应Bing模式了')
     }
+  }
+
+  async changeBingTone (e) {
+    let tongStyle = e.msg.replace(/^#chatgpt(必应|Bing)切换/, '')
+    if (!tongStyle) {
+      return
+    }
+    let map = {
+      精准: 'precise',
+      创意: 'creative',
+      均衡: 'balanced',
+      Sydney: 'Sydney',
+      sydney: 'Sydney',
+      悉尼: 'Sydney',
+      自设定: 'Custom',
+      自定义: 'Custom'
+    }
+    if (map[tongStyle]) {
+      Config.toneStyle = map[tongStyle]
+      await e.reply('切换成功')
+    } else {
+      await e.reply('没有这种风格。支持的风格：精准、创意、均衡、悉尼、自设定')
+    }
+  }
+
+  async bingOpenSuggestedResponses (e) {
+    Config.enableSuggestedResponses = e.msg.indexOf('开启') > -1
+    await e.reply('操作成功')
   }
 
   async checkAuth (e) {

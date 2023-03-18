@@ -754,9 +754,9 @@ export class chatgpt extends plugin {
           cookies = bingToken
         }
         let bingAIClient
-        if (Config.toneStyle === 'Sydney') {
+        if (Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom' ) {
           const cacheOptions = {
-            namespace: 'Sydney',
+            namespace: Config.toneStyle,
             store: new KeyvFile({ filename: 'cache.json' })
           }
           bingAIClient = new SydneyAIClient({
