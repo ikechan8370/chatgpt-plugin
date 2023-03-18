@@ -133,7 +133,7 @@ let helpData = [
       },
       {
         icon: 'confirm',
-        title: '#chatgp(必应切换(精准|均衡|创意|悉尼|自设定)',
+        title: '#chatgpt必应切换(精准|均衡|创意|悉尼|自设定)',
         desc: '切换Bing风格。'
       },
       {
