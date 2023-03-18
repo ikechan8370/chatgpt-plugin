@@ -130,6 +130,16 @@ let helpData = [
         icon: 'switch',
         title: '#chatgpt切换浏览器/API/API2/API3/Bing',
         desc: '切换使用的后端为浏览器或OpenAI API/第三方API/反代官网API/Bing'
+      },
+      {
+        icon: 'confirm',
+        title: '#chatgp(必应切换(精准|均衡|创意|悉尼|自设定)',
+        desc: '切换Bing风格。'
+      },
+      {
+        icon: 'confirm',
+        title: '#chatgpt必应(开启|关闭)建议回复',
+        desc: '开关Bing模式下的建议回复。'
       }
     ]
   },
