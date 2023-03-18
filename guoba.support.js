@@ -269,7 +269,8 @@ export function supportGuoba () {
               { label: '均衡', value: 'balanced' },
               { label: '创意', value: 'creative' },
               { label: '精确', value: 'precise' },
-              { label: 'Sydney(可能存在风险)', value: 'Sydney' }
+              { label: 'Sydney(可能存在风险)', value: 'Sydney' },
+              { label: '自设定(可能存在风险)', value: 'Custom' }
             ]
           }
         },
@@ -281,14 +282,14 @@ export function supportGuoba () {
         },
         {
           field: 'sydney',
-          label: 'Sydney的设定',
-          bottomHelpMessage: '你可以自己改写Sydney的设定，让Sydney变成你希望的样子，不过请注意，Sydney仍然是Sydney。',
+          label: 'Custom的设定',
+          bottomHelpMessage: '仅自设定模式下有效。你可以自己改写设定，让Sydney变成你希望的样子。可能存在不稳定的情况。',
           component: 'InputTextArea'
         },
         {
           field: 'sydneyReverseProxy',
           label: 'sydney反代',
-          bottomHelpMessage: '国内ip无法正常使用sydney，如果有bing.com的反代可以填在此处，或者使用proxy',
+          bottomHelpMessage: '仅自设定模式下有效。国内ip无法正常使用sydney和自设定模式，如果有bing.com的反代可以填在此处，或者使用proxy',
           component: 'Input'
         },
         {
@@ -298,21 +299,21 @@ export function supportGuoba () {
           component: 'Switch'
         },
         {
-          field: 'sydneyBrainWashName',
-          label: 'Sydney的称呼',
-          bottomHelpMessage: '如果开启了强制洗脑，务必准确填写这个才能精准洗脑。不开启洗脑可以不管这个',
-          component: 'Input'
-        },
-        {
           field: 'sydneyBrainWash',
           label: '开启强制洗脑',
-          bottomHelpMessage: '如果发现Sydney回复类似于换个话题之类的话，可以开启强制洗脑试试，如果还不行就调整你的设定',
+          bottomHelpMessage: '仅自设定模式下有效。如果发现自设定模式下总是回复类似于换个话题之类的话，可以开启强制洗脑试试，如果还不行就调整你的设定',
           component: 'Switch'
+        },
+        {
+          field: 'sydneyBrainWashName',
+          label: 'Custom模式下的称呼',
+          bottomHelpMessage: '仅自设定模式下有效。如果开启了强制洗脑，务必准确填写这个才能精准洗脑。不开启洗脑可以不管这个',
+          component: 'Input'
         },
         {
           field: 'sydneyBrainWashStrength',
           label: '洗脑强度',
-          bottomHelpMessage: '洗脑强度。默认为15，可以酌情调整。太大的话可能长对话会影响上下文',
+          bottomHelpMessage: '仅自设定模式下有效。洗脑强度。默认为15，可以酌情调整。太大的话可能长对话会影响对话质量',
           component: 'InputNumber',
           componentProps: {
             min: 0,
