@@ -434,9 +434,9 @@ export default class SydneyAIClient {
         {
           source: 'cib',
           optionsSets: [
-            'nlu_direct_response_filter',
+            // 'nlu_direct_response_filter',
             'deepleo',
-            'disable_emoji_spoken_text',
+            // 'disable_emoji_spoken_text',
             'responsible_ai_policy_235',
             'enablemm',
             toneOption,
@@ -504,6 +504,7 @@ export default class SydneyAIClient {
     const messagePromise = new Promise((resolve, reject) => {
       let replySoFar = ''
       let adaptiveCardsSoFar = null
+      let suggestedResponsesSoFar = null
       let stopTokenFound = false
 
       const messageTimeout = setTimeout(() => {
@@ -584,6 +585,7 @@ export default class SydneyAIClient {
               console.log({ replySoFar, message })
               message.adaptiveCards = adaptiveCardsSoFar
               message.text = replySoFar || message.spokenText
+              message.suggestedResponses = suggestedResponsesSoFar || message.suggestedResponses
               resolve({
                 message,
                 conversationExpiryTime: event?.item?.conversationExpiryTime
@@ -591,6 +593,7 @@ export default class SydneyAIClient {
               return
             } else {
               adaptiveCardsSoFar = message.adaptiveCards
+              suggestedResponsesSoFar = message.suggestedResponses
             }
             const updatedText = messages[0].text
             if (!updatedText || updatedText === replySoFar) {
@@ -643,7 +646,8 @@ export default class SydneyAIClient {
               this.cleanupWebSocketConnection(ws)
               // message.adaptiveCards[0].body[0].text = replySoFar || message.spokenText
               message.adaptiveCards = adaptiveCardsSoFar
-              message.response = replySoFar || message.spokenText
+              message.text = replySoFar || message.spokenText
+              message.suggestedResponses = suggestedResponsesSoFar || message.suggestedResponses
               resolve({
                 message,
                 conversationExpiryTime: event?.item?.conversationExpiryTime

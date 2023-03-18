@@ -36,6 +36,7 @@ const defaultConfig = {
   sydneyBrainWash: true,
   sydneyBrainWashStrength: 15,
   sydneyBrainWashName: 'Sydney',
+  enableSuggestedResponses: true,
   api: defaultChatGPTAPI,
   apiBaseUrl: 'https://pimon.d201.cn/backend-api',
   apiForceUseReverse: false,
@@ -64,7 +65,7 @@ const defaultConfig = {
   initiativeChatGroups: [],
   enableDraw: true,
   helloPrompt: '写一段话让大家来找我聊天。类似于“有人找我聊天吗？"这种风格，轻松随意一点控制在20个字以内',
-  version: 'v2.2.0'
+  version: 'v2.2.1'
 }
 const _path = process.cwd()
 let config = {}

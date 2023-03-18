@@ -1,6 +1,6 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import _ from 'lodash'
-import {Config, defaultOpenAIAPI, defaultOpenAIReverseProxy} from '../utils/config.js'
+import { Config, defaultOpenAIAPI, defaultOpenAIReverseProxy } from '../utils/config.js'
 import { v4 as uuid } from 'uuid'
 import delay from 'delay'
 import { ChatGPTAPI } from 'chatgpt'
@@ -613,7 +613,6 @@ export class chatgpt extends plugin {
         return false
       }
 
-
       let quotemessage = []
       if (chatMessage?.quote) {
         chatMessage.quote.forEach(function (item, index) {
@@ -631,12 +630,18 @@ export class chatgpt extends plugin {
             if (quotemessage.length > 0) {
               this.reply(await makeForwardMsg(this.e, quotemessage))
             }
+            if (Config.enableSuggestedResponses && chatMessage.suggestedResponses) {
+              this.reply(`建议的回复：\n${chatMessage.suggestedResponses}`)
+            }
           }
         } else {
           await this.reply('你没有配置转语音API或者文字太长了哦，我用文本回复你吧', e.isGroup)
           await this.reply(`${response}`, e.isGroup)
           if (quotemessage.length > 0) {
             this.reply(await makeForwardMsg(this.e, quotemessage))
+          }
+          if (Config.enableSuggestedResponses && chatMessage.suggestedResponses) {
+            this.reply(`建议的回复：\n${chatMessage.suggestedResponses}`)
           }
         }
       } else if (userSetting.usePicture || (Config.autoUsePicture && response.length > Config.autoUsePictureThreshold)) {
@@ -648,10 +653,16 @@ export class chatgpt extends plugin {
           logger.error(err)
           await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', response, prompt)
         }
+        if (Config.enableSuggestedResponses && chatMessage.suggestedResponses) {
+          this.reply(`建议的回复：\n${chatMessage.suggestedResponses}`)
+        }
       } else {
         await this.reply(`${response}`, e.isGroup)
         if (quotemessage.length > 0) {
           this.reply(await makeForwardMsg(this.e, quotemessage))
+        }
+        if (Config.enableSuggestedResponses && chatMessage.suggestedResponses) {
+          this.reply(`建议的回复：\n${chatMessage.suggestedResponses}`)
         }
       }
       if (use !== 'bing') {
@@ -793,6 +804,7 @@ export class chatgpt extends plugin {
               })
               response.quote = response.details.adaptiveCards?.[0]?.body?.[0]?.text?.replace(/\[\^[0-9]+\^\]/g, '').replace(response.response, '').split('\n')
             }
+            response.suggestedResponses = response.details.suggestedResponses?.map(s => s.text).join('\n')
             errorMessage = ''
             break
           } catch (error) {
@@ -810,6 +822,7 @@ export class chatgpt extends plugin {
           return {
             text: response.response,
             quote: response.quote,
+            suggestedResponses: response.suggestedResponses,
             conversationId: response.conversationId,
             clientId: response.clientId,
             invocationId: response.invocationId,

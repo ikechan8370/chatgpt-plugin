@@ -274,6 +274,12 @@ export function supportGuoba () {
           }
         },
         {
+          field: 'enableSuggestedResponses',
+          label: '是否开启建议回复',
+          bottomHelpMessage: '开启了会像官网上一样，每个问题给出建议的用户问题',
+          component: 'Switch'
+        },
+        {
           field: 'sydney',
           label: 'Sydney的设定',
           bottomHelpMessage: '你可以自己改写Sydney的设定，让Sydney变成你希望的样子，不过请注意，Sydney仍然是Sydney。',
