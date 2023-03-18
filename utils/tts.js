@@ -50,8 +50,8 @@ export async function generateAudio (text, speaker = '随机', language = '中�
     ]
   }
   let space = Config.ttsSpace
-  if (space.endsWith('api/generate')) {
-    let trimmedSpace = _.trimEnd(space, '/api/generate')
+  if (space.endsWith('/api/generate')) {
+    let trimmedSpace = space.substring(0, space.length - 13)
     logger.warn(`vits api 当前为${space}，已校正为${trimmedSpace}`)
     space = trimmedSpace
   }

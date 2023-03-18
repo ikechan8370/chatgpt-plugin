@@ -102,7 +102,10 @@ export class OfficialChatGPTClient {
       let event = events[i]
       event = _.trimStart(event, 'data: ')
       try {
-        fullResponse = JSON.parse(event)
+        let tmp = JSON.parse(event)
+        if (tmp.message) {
+          fullResponse = tmp
+        }
       } catch (err) {
         console.log(event)
       }

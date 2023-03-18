@@ -1,9 +1,9 @@
 {
   "apiKey": "",
   "proxy": "",
-  "openAiBaseUrl": "https://api.openai.com",
-  "api": "https://chatgpt.duti.tech/api/conversation",
-  "apiBaseUrl": "https://chatgpt.duti.tech/api",
+  "openAiBaseUrl": "https://mondstadt.d201.eu.org/v1",
+  "api": "https://pimon.d201.cn/backend-api/conversation",
+  "apiBaseUrl": "https://pimon.d201.cn/backend-api",
   "promptPrefixOverride": "Your answer shouldn't be too verbose. If you are generating a list, do not have too many items. Keep the number of items short. Prefer to answer in Chinese.",
   "debug": false,
   "blockWords": ["屏蔽词1", "屏蔽词b"],
