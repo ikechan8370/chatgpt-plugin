@@ -111,13 +111,13 @@ export class help extends plugin {
     }
     let use = await redis.get('CHATGPT:USE') || 'api'
     if (use.toLowerCase() === 'bing') {
-      if (Config.toneStyle === 'Sydney') {
-        use = 'sydney'
+      if (Config.toneStyle === 'Custom') {
+        use = 'Custom'
       }
     }
     const keyMap = {
       api: 'promptPrefixOverride',
-      sydney: 'sydney'
+      Custom: 'sydney'
     }
 
     if (keyMap[use]) {
