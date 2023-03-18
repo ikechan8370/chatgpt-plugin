@@ -399,7 +399,7 @@ export default class SydneyAIClient {
             text: '好的，我将为您服务',
             author: 'bot'
           },
-          ...(Config.sydneyBrainWash ? Array.from({ length: 15 }, () => [...hello]).flat() : []),
+          ...(Config.sydneyBrainWash ? Array.from({ length: Math.max(1, Config.sydneyBrainWashStrength - Math.floor(previousCachedMessages.length / 2)) }, () => [...hello]).flat() : []),
           ...previousCachedMessages
         ]
       : undefined
@@ -585,7 +585,9 @@ export default class SydneyAIClient {
               console.log({ replySoFar, message })
               message.adaptiveCards = adaptiveCardsSoFar
               message.text = replySoFar || message.spokenText
-              message.suggestedResponses = suggestedResponsesSoFar || message.suggestedResponses
+              message.suggestedResponses = suggestedResponsesSoFar
+              // 遇到Apology不发送默认建议回复
+              // message.suggestedResponses = suggestedResponsesSoFar || message.suggestedResponses
               resolve({
                 message,
                 conversationExpiryTime: event?.item?.conversationExpiryTime
@@ -647,7 +649,9 @@ export default class SydneyAIClient {
               // message.adaptiveCards[0].body[0].text = replySoFar || message.spokenText
               message.adaptiveCards = adaptiveCardsSoFar
               message.text = replySoFar || message.spokenText
-              message.suggestedResponses = suggestedResponsesSoFar || message.suggestedResponses
+              message.suggestedResponses = suggestedResponsesSoFar
+              // 遇到Apology不发送默认建议回复
+              // message.suggestedResponses = suggestedResponsesSoFar || message.suggestedResponses
               resolve({
                 message,
                 conversationExpiryTime: event?.item?.conversationExpiryTime
