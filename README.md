@@ -272,6 +272,10 @@ pnpm i
 * https://github.com/acheong08/ChatGPT
 * https://github.com/PawanOsman
 
+本插件的辅助项目
+* https://github.com/ikechan8370/node-chatgpt-proxy
+* https://github.com/ikechan8370/SimpleChatGLM6BAPI
+
 图片以及Bing模式支持 @HalcyonAlcedo
 * https://github.com/HalcyonAlcedo/ChatGPT-Plugin-PageCache
 
