@@ -198,7 +198,7 @@ export class chatgpt extends plugin {
       } else if (use === 'chatglm') {
         const conversation = {
           store: new KeyvFile({ filename: 'cache.json' }),
-          namespace: 'chatglm'
+          namespace: 'chatglm_6b'
         }
         let Keyv
         try {
@@ -243,7 +243,7 @@ export class chatgpt extends plugin {
       } else if (use === 'chatglm') {
         const conversation = {
           store: new KeyvFile({ filename: 'cache.json' }),
-          namespace: 'chatglm'
+          namespace: 'chatglm_6b'
         }
         let Keyv
         try {
