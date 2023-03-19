@@ -22,6 +22,7 @@ import fetch from 'node-fetch'
 import { deleteConversation, getConversations, getLatestMessageIdByConversationId } from '../utils/conversation.js'
 import { convertSpeaker, generateAudio, speakers } from '../utils/tts.js'
 import { segment } from 'oicq'
+import ChatGLMClient from "../utils/chatglm.js";
 try {
   await import('keyv')
 } catch (err) {
@@ -194,6 +195,21 @@ export class chatgpt extends plugin {
         logger.info(`SydneyUser_${e.sender.user_id}`, await conversationsCache.get(`SydneyUser_${e.sender.user_id}`))
         await conversationsCache.delete(`SydneyUser_${e.sender.user_id}`)
         await this.reply('已退出当前对话，该对话仍然保留。请@我进行聊天以开启新的对话', true)
+      } else if (use === 'chatglm') {
+        const conversation = {
+          store: new KeyvFile({ filename: 'cache.json' }),
+          namespace: 'chatglm'
+        }
+        let Keyv
+        try {
+          Keyv = (await import('keyv')).default
+        } catch (err) {
+          await this.reply('依赖keyv未安装，请执行pnpm install keyv', true)
+        }
+        const conversationsCache = new Keyv(conversation)
+        logger.info(`ChatGLMUser_${e.sender.user_id}`, await conversationsCache.get(`SydneyUser_${e.sender.user_id}`))
+        await conversationsCache.delete(`SydneyUser_${e.sender.user_id}`)
+        await this.reply('已退出当前对话，该对话仍然保留。请@我进行聊天以开启新的对话', true)
       } else {
         let c = await redis.get(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
         if (!c) {
@@ -223,6 +239,21 @@ export class chatgpt extends plugin {
         }
         const conversationsCache = new Keyv(conversation)
         await conversationsCache.delete(`SydneyUser_${qq}`)
+        await this.reply('已退出当前对话，该对话仍然保留。请@我进行聊天以开启新的对话', true)
+      } else if (use === 'chatglm') {
+        const conversation = {
+          store: new KeyvFile({ filename: 'cache.json' }),
+          namespace: 'chatglm'
+        }
+        let Keyv
+        try {
+          Keyv = (await import('keyv')).default
+        } catch (err) {
+          await this.reply('依赖keyv未安装，请执行pnpm install keyv', true)
+        }
+        const conversationsCache = new Keyv(conversation)
+        logger.info(`SydneyUser_${e.sender.user_id}`, await conversationsCache.get(`SydneyUser_${e.sender.user_id}`))
+        await conversationsCache.delete(`ChatGLMUser_${qq}`)
         await this.reply('已退出当前对话，该对话仍然保留。请@我进行聊天以开启新的对话', true)
       } else {
         let c = await redis.get(`CHATGPT:CONVERSATIONS:${qq}`)
@@ -527,9 +558,6 @@ export class chatgpt extends plugin {
         if (!lastMessageId) {
           lastMessageId = await getLatestMessageIdByConversationId(conversationId, newFetch)
         }
-        //        let lastMessagePrompt = await redis.get(`CHATGPT:CONVERSATION_LAST_MESSAGE_PROMPT:${conversationId}`)
-        //        let conversationCreateTime = await redis.get(`CHATGPT:CONVERSATION_CREATE_TIME:${conversationId}`)
-        //        let conversationLength = await redis.get(`CHATGPT:CONVERSATION_LENGTH:${conversationId}`)
         conversation = {
           conversationId,
           parentMessageId: lastMessageId
@@ -853,6 +881,18 @@ export class chatgpt extends plugin {
           await redis.set(`CHATGPT:CONVERSATION_CREATER_ID:${sendMessageResult.conversationId}`, e.sender.user_id)
           await redis.set(`CHATGPT:CONVERSATION_CREATER_NICK_NAME:${sendMessageResult.conversationId}`, e.sender.card)
         }
+        return sendMessageResult
+      }
+      case 'chatglm': {
+        const cacheOptions = {
+          namespace: 'chatglm_6b',
+          store: new KeyvFile({ filename: 'cache.json' })
+        }
+        this.chatGPTApi = new ChatGLMClient({
+          user: e.sender.user_id,
+          cache: cacheOptions
+        })
+        let sendMessageResult = await this.chatGPTApi.sendMessage(prompt, conversation)
         return sendMessageResult
       }
       default: {

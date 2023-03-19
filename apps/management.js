@@ -43,8 +43,8 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
-          reg: '^#chatgpt切换API2$',
-          fnc: 'useReversedAPIBasedSolution',
+          reg: '^#chatgpt切换(ChatGLM|chatglm)$',
+          fnc: 'useChatGLMSolution',
           permission: 'master'
         },
         {
@@ -207,10 +207,9 @@ export class ChatgptManagement extends plugin {
     }
   }
 
-  async useReversedAPIBasedSolution (e) {
-    await this.reply('API2已废弃，处于不可用状态，不会为你切换')
-    // await redis.set('CHATGPT:USE', 'apiReverse')
-    // await this.reply('【暂时不可用，请关注仓库更新和群公告】已切换到基于第三方Reversed CompletionAPI的解决方案，如果已经对话过建议执行`#结束对话`避免引起404错误')
+  async useChatGLMSolution (e) {
+    await redis.set('CHATGPT:USE', 'chatglm')
+    await this.reply('已切换到ChatGLM-6B解决方案，如果已经对话过建议执行`#结束对话`避免引起404错误')
   }
 
   async useReversedAPIBasedSolution2 (e) {
@@ -340,10 +339,11 @@ export class ChatgptManagement extends plugin {
     let mode = await redis.get('CHATGPT:USE')
     const modeMap = {
       browser: '浏览器',
-      apiReverse: 'API2',
+      // apiReverse: 'API2',
       api: 'API',
       bing: '必应',
-      api3: 'API3'
+      api3: 'API3',
+      chatglm: 'ChatGLM-6B'
     }
     let modeText = modeMap[mode || 'api']
     let message = `    API模式和浏览器模式如何选择？
@@ -356,8 +356,10 @@ export class ChatgptManagement extends plugin {
     浏览器模式通过在本地启动Chrome等浏览器模拟用户访问ChatGPT网站，使得获得和官方以及API2模式一模一样的回复质量，同时保证安全性。缺点是本方法对环境要求较高，需要提供桌面环境和一个可用的代理（能够访问ChatGPT的IP地址），且响应速度不如API，而且高峰期容易无法使用。
 
     必应（Bing）将调用微软新必应接口进行对话。需要在必应网页能够正常使用新必应且设置有效的Bing 登录Cookie方可使用。#chatgpt设置必应token
+    
+    自建ChatGLM模式会调用自建的ChatGLM-6B服务器API进行对话，需要自建。参考https://github.com/ikechan8370/SimpleChatGLM6BAPI
 
-    您可以使用‘#chatgpt切换浏览器/API/API2/API3/Bing’来切换到指定模式。
+    您可以使用‘#chatgpt切换浏览器/API/API3/Bing/ChatGLM’来切换到指定模式。
 
     当前为${modeText}模式。
 `
