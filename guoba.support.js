@@ -383,6 +383,20 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
+          label: '以下为ChatGLM方式的配置',
+          component: 'Divider'
+        },
+        {
+          field: 'chatglmBaseUrl',
+          label: 'ChatGLM API地址',
+          bottomHelpMessage: '如 http://localhost:8080',
+          component: 'Input'
+        },
+        {
+          label: '以下为杂七杂八的配置',
+          component: 'Divider'
+        },
+        {
           field: '2captchaToken',
           label: '验证码平台Token',
           bottomHelpMessage: '可注册2captcha实现跳过验证码，收费服务但很便宜。否则可能会遇到验证码而卡住。',
