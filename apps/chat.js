@@ -207,8 +207,8 @@ export class chatgpt extends plugin {
           await this.reply('依赖keyv未安装，请执行pnpm install keyv', true)
         }
         const conversationsCache = new Keyv(conversation)
-        logger.info(`ChatGLMUser_${e.sender.user_id}`, await conversationsCache.get(`SydneyUser_${e.sender.user_id}`))
-        await conversationsCache.delete(`SydneyUser_${e.sender.user_id}`)
+        logger.info(`ChatGLMUser_${e.sender.user_id}`, await conversationsCache.get(`ChatGLMUser_${e.sender.user_id}`))
+        await conversationsCache.delete(`ChatGLMUser_${e.sender.user_id}`)
         await this.reply('已退出当前对话，该对话仍然保留。请@我进行聊天以开启新的对话', true)
       } else {
         let c = await redis.get(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
@@ -252,7 +252,7 @@ export class chatgpt extends plugin {
           await this.reply('依赖keyv未安装，请执行pnpm install keyv', true)
         }
         const conversationsCache = new Keyv(conversation)
-        logger.info(`SydneyUser_${e.sender.user_id}`, await conversationsCache.get(`SydneyUser_${e.sender.user_id}`))
+        logger.info(`ChatGLMUser_${e.sender.user_id}`, await conversationsCache.get(`ChatGLMUser_${e.sender.user_id}`))
         await conversationsCache.delete(`ChatGLMUser_${qq}`)
         await this.reply('已退出当前对话，该对话仍然保留。请@我进行聊天以开启新的对话', true)
       } else {
