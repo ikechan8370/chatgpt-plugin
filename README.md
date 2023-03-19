@@ -16,7 +16,7 @@
 * (Deprecated)提供基于浏览器的解决方案作为备选，API3不可用的情况下或担心账户安全的用户可以选择使用浏览器模式。
 * 支持新[必应](https://www.bing.com/new)（Beta）
 * 2023-03-15 API3支持GPT-4尝鲜，需要Plus用户
-* 支持ChatGLM模型。基于[自建API](https://github.com/ikechan8370/SimpleChatGLM6BAPI)
+* 支持[ChatGLM](https://github.com/THUDM/ChatGLM-6B)模型。基于[自建API](https://github.com/ikechan8370/SimpleChatGLM6BAPI)
 
 ### 如果觉得这个插件有趣或者对你有帮助，请点一个star吧！
 
@@ -259,6 +259,7 @@ pnpm i
 5. vit API能本地搭建吗？
 
    能。克隆下来安装依赖直接运行即可。
+   
 ## 交流群
 
 * QQ 559567232
@@ -280,6 +281,10 @@ pnpm i
 以及ChatGPT及OpenAI
 * https://chat.openai.com/
 * https://platform.openai.com/
+
+ChatGLM
+* https://huggingface.co/THUDM/chatglm-6b
+* https://github.com/THUDM/ChatGLM-6B
 
 ## 贡献者
 
