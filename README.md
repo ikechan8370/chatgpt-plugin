@@ -1,5 +1,10 @@
 # 云崽qq机器人的chatgpt插件
 
+![GitHub issues](https://img.shields.io/github/issues/ikechan8370/chatgpt-plugin?logo=github)
+![GitHub](https://img.shields.io/github/license/ikechan8370/chatgpt-plugin)
+![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/ikechan8370/chatgpt-plugin?label=latest%20version&logo=github)
+![GitHub top language](https://img.shields.io/github/languages/top/ikechan8370/chatgpt-plugin?logo=github)
+
 ## 特点
 
 * 支持单人连续对话Conversation，群聊中支持加入其他人的对话
