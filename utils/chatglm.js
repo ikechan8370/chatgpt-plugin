@@ -31,7 +31,7 @@ export default class ChatGLMClient {
       conversationId = uuidv4(),
       messageId = uuidv4(),
       parentMessageId,
-      temperature = Config.temperature
+      temperature = Math.max(Config.temperature, 1)
     } = opts
     await this.initCache()
     let url = Config.chatglmBaseUrl + '/api/chat'
