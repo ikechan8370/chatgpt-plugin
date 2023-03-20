@@ -799,6 +799,9 @@ export class chatgpt extends plugin {
   }
 
   async chatgpt1 (e) {
+    if (!Config.allowOtherMode) {
+      return false
+    }
     let ats = e.message.filter(m => m.type === 'at')
     if (!e.atme && ats.length > 0) {
       if (Config.debug) {
@@ -815,6 +818,9 @@ export class chatgpt extends plugin {
   }
 
   async chatgpt3 (e) {
+    if (!Config.allowOtherMode) {
+      return false
+    }
     let ats = e.message.filter(m => m.type === 'at')
     if (!e.atme && ats.length > 0) {
       if (Config.debug) {
@@ -831,6 +837,9 @@ export class chatgpt extends plugin {
   }
 
   async chatglm (e) {
+    if (!Config.allowOtherMode) {
+      return false
+    }
     let ats = e.message.filter(m => m.type === 'at')
     if (!e.atme && ats.length > 0) {
       if (Config.debug) {
@@ -847,6 +856,9 @@ export class chatgpt extends plugin {
   }
 
   async bing (e) {
+    if (!Config.allowOtherMode) {
+      return false
+    }
     let ats = e.message.filter(m => m.type === 'at')
     if (!e.atme && ats.length > 0) {
       if (Config.debug) {
