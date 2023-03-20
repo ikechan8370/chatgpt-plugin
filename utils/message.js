@@ -93,6 +93,7 @@ export class OfficialChatGPTClient {
       let body = await res.json()
       throw new Error(JSON.stringify(body, null, 2))
     }
+    // todo accept as stream
     const decoder = new TextDecoder('utf-8')
     const bodyBytes = await res.arrayBuffer()
     const bodyText = decoder.decode(bodyBytes)
