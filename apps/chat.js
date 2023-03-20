@@ -744,7 +744,7 @@ export class chatgpt extends plugin {
             }
           }
         } else {
-          await this.reply('你没有配置转语音API或者文字太长了哦，我用文本回复你吧', e.isGroup)
+          await this.reply('你没有配置转语音API或者文字太长了哦，我用文本回复你吧')
           await this.reply(`${response}`, e.isGroup)
           if (quotemessage.length > 0) {
             this.reply(await makeForwardMsg(this.e, quotemessage))
