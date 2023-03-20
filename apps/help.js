@@ -12,6 +12,11 @@ let helpData = [
         desc: '与机器人聊天'
       },
       {
+        icon: 'chat',
+        title: '#chat1/#chat3/#chatglm/#bing',
+        desc: '分别使用API/API3/ChatGLM/Bing模式与机器人聊天，无论主人设定了何种全局模式'
+      },
+      {
         icon: 'chat-private',
         title: '私聊与我对话',
         desc: '与机器人聊天'

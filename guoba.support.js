@@ -59,7 +59,7 @@ export function supportGuoba () {
         {
           field: 'defaultTTSRole',
           label: '语音模式默认角色',
-          bottomHelpMessage: '语音模式下，未指定角色时使用的角色。若为空，将使用随机角色回复。',
+          bottomHelpMessage: '语音模式下，未指定角色时使用的角色。若留空，将使用随机角色回复。若用户通过指令指定了角色，将忽略本设定',
           component: 'Select',
           componentProps: {
             options: speakers.concat('随机').map(s => { return { label: s, value: s } })
@@ -119,6 +119,12 @@ export function supportGuoba () {
               { label: '#chat', value: 'prefix' }
             ]
           }
+        },
+        {
+          field: 'allowOtherMode',
+          label: '允许其他模式',
+          bottomHelpMessage: '开启后，则允许用户使用#chat1/#chat3/#chatglm/#bing等命令无视全局模式进行聊天',
+          component: 'Switch'
         },
         {
           field: 'quoteReply',
@@ -225,12 +231,6 @@ export function supportGuoba () {
           field: 'openAiForceUseReverse',
           label: '强制使用OpenAI反代',
           bottomHelpMessage: '即使配置了proxy，依然使用OpenAI反代',
-          component: 'Switch'
-        },
-        {
-          field: 'thinkingTips',
-          label: '思考提示',
-          bottomHelpMessage: '是否开启AI正在思考中的提示信息。',
           component: 'Switch'
         },
         {

@@ -22,7 +22,7 @@ import fetch from 'node-fetch'
 import { deleteConversation, getConversations, getLatestMessageIdByConversationId } from '../utils/conversation.js'
 import { convertSpeaker, generateAudio, speakers } from '../utils/tts.js'
 import { segment } from 'oicq'
-import ChatGLMClient from "../utils/chatglm.js";
+import ChatGLMClient from '../utils/chatglm.js'
 try {
   await import('keyv')
 } catch (err) {
@@ -75,7 +75,31 @@ export class chatgpt extends plugin {
       rule: [
         {
           /** 命令正则匹配 */
-          reg: toggleMode === 'at' ? '^[^#][sS]*' : '#chat[^gpt][sS]*',
+          reg: '^#chat3[sS]*',
+          /** 执行方法 */
+          fnc: 'chatgpt3'
+        },
+        {
+          /** 命令正则匹配 */
+          reg: '^#chat1[sS]*',
+          /** 执行方法 */
+          fnc: 'chatgpt1'
+        },
+        {
+          /** 命令正则匹配 */
+          reg: '^#chatglm[sS]*',
+          /** 执行方法 */
+          fnc: 'chatglm'
+        },
+        {
+          /** 命令正则匹配 */
+          reg: '^#bing[sS]*',
+          /** 执行方法 */
+          fnc: 'bing'
+        },
+        {
+          /** 命令正则匹配 */
+          reg: toggleMode === 'at' ? '^[^#][sS]*' : '^#chat[^gpt][sS]*',
           /** 执行方法 */
           fnc: 'chatgpt'
         },
@@ -152,6 +176,7 @@ export class chatgpt extends plugin {
    * @returns {Promise<void>}
    */
   async getConversations (e) {
+    // todo 根据use返回不同的对话列表
     let keys = await redis.keys('CHATGPT:CONVERSATIONS:*')
     if (!keys || keys.length === 0) {
       await this.reply('当前没有人正在与机器人对话', true)
@@ -210,8 +235,16 @@ export class chatgpt extends plugin {
         logger.info(`ChatGLMUser_${e.sender.user_id}`, await conversationsCache.get(`ChatGLMUser_${e.sender.user_id}`))
         await conversationsCache.delete(`ChatGLMUser_${e.sender.user_id}`)
         await this.reply('已退出当前对话，该对话仍然保留。请@我进行聊天以开启新的对话', true)
-      } else {
+      } else if (use === 'api') {
         let c = await redis.get(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
+        if (!c) {
+          await this.reply('当前没有开启对话', true)
+        } else {
+          await redis.del(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
+          await this.reply('已结束当前对话，请@我进行聊天以开启新的对话', true)
+        }
+      } else if (use === 'bing') {
+        let c = await redis.get(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
         if (!c) {
           await this.reply('当前没有开启对话', true)
         } else {
@@ -271,13 +304,23 @@ export class chatgpt extends plugin {
     let use = await redis.get('CHATGPT:USE') || 'api'
     let deleted = 0
     switch (use) {
-      case 'bing':
+      case 'bing': {
+        let cs = await redis.keys('CHATGPT:CONVERSATIONS_BING:*')
+        for (let i = 0; i < cs.length; i++) {
+          await redis.del(cs[i])
+          if (Config.debug) {
+            logger.info('delete bing conversation of qq: ' + cs[i])
+          }
+          deleted++
+        }
+        break
+      }
       case 'api': {
         let cs = await redis.keys('CHATGPT:CONVERSATIONS:*')
         for (let i = 0; i < cs.length; i++) {
           await redis.del(cs[i])
           if (Config.debug) {
-            logger.info('delete conversation of qq: ' + cs[i])
+            logger.info('delete api conversation of qq: ' + cs[i])
           }
           deleted++
         }
@@ -290,6 +333,18 @@ export class chatgpt extends plugin {
           // todo clean last message id
           if (Config.debug) {
             logger.info('delete conversation bind: ' + qcs[i])
+          }
+          deleted++
+        }
+        break
+      }
+      case 'chatglm': {
+        let qcs = await redis.keys('CHATGPT:CONVERSATIONS_CHATGLM:*')
+        for (let i = 0; i < qcs.length; i++) {
+          await redis.del(qcs[i])
+          // todo clean last message id
+          if (Config.debug) {
+            logger.info('delete chatglm conversation bind: ' + qcs[i])
           }
           deleted++
         }
@@ -437,6 +492,13 @@ export class chatgpt extends plugin {
       }
       prompt = e.msg.trim()
     } else {
+      let ats = e.message.filter(m => m.type === 'at')
+      if (!e.atme && ats.length > 0) {
+        if (Config.debug) {
+          logger.mark('艾特别人了，没艾特我，忽略#chat')
+        }
+        return false
+      }
       prompt = _.trimStart(e.msg.trimStart(), '#chat').trim()
       if (prompt.length === 0) {
         return false
@@ -447,6 +509,11 @@ export class chatgpt extends plugin {
       logger.info('chatgpt闭嘴中，不予理会')
       return false
     }
+    const use = await redis.get('CHATGPT_USE') || 'api'
+    await this.abstractChat(e, prompt, use)
+  }
+
+  async abstractChat (e, prompt, use) {
     let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
     if (userSetting) {
       userSetting = JSON.parse(userSetting)
@@ -507,13 +574,12 @@ export class chatgpt extends plugin {
       await this.reply('主人不让我回答你这种问题，真是抱歉了呢', true)
       return false
     }
-    const use = await redis.get('CHATGPT:USE') || 'api'
     if (use === 'api3') {
       let randomId = uuid()
       // 队列队尾插入，开始排队
       await redis.rPush('CHATGPT:CHAT_QUEUE', [randomId])
       let confirm = await redis.get('CHATGPT:CONFIRM')
-      let confirmOn = (!confirm || confirm === 'on') && Config.thinkingTips
+      let confirmOn = (!confirm || confirm === 'on') // confirm默认开启
       if (await redis.lIndex('CHATGPT:CHAT_QUEUE', 0) === randomId) {
         // 添加超时设置
         await redis.pSetEx('CHATGPT:CHAT_QUEUE_TIMEOUT', Config.defaultTimeoutMs, randomId)
@@ -546,10 +612,17 @@ export class chatgpt extends plugin {
           }
         }
       }
+    } else {
+      let confirm = await redis.get('CHATGPT:CONFIRM')
+      let confirmOn = (!confirm || confirm === 'on') // confirm默认开启
+      if (confirmOn) {
+        await this.reply('我正在思考如何回复你，请稍等', true, { recallMsg: 8 })
+      }
     }
     logger.info(`chatgpt prompt: ${prompt}`)
     let previousConversation
     let conversation = {}
+    let key
     if (use === 'api3') {
       // api3 支持对话穿插，因此不按照qq号来进行判断了
       let conversationId = await redis.get(`CHATGPT:QQ_CONVERSATION:${e.sender.user_id}`)
@@ -575,29 +648,38 @@ export class chatgpt extends plugin {
         }
       }
     } else {
-      previousConversation = await redis.get(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
-      if (!previousConversation) {
-        let ctime = new Date()
-        previousConversation = {
-          sender: e.sender,
-          ctime,
-          utime: ctime,
-          num: 0
+      switch (use) {
+        case 'api': {
+          key = `CHATGPT:CONVERSATIONS:${e.sender.user_id}`
+          break
         }
-        // await redis.set(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`, JSON.stringify(previousConversation), { EX: CONVERSATION_PRESERVE_TIME })
-      } else {
-        previousConversation = JSON.parse(previousConversation)
-        if (Config.debug) {
-          logger.info({ previousConversation })
+        case 'bing':{
+          key = `CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`
+          break
         }
-
-        conversation = {
-          conversationId: previousConversation.conversation.conversationId,
-          parentMessageId: previousConversation.parentMessageId,
-          clientId: previousConversation.clientId,
-          invocationId: previousConversation.invocationId,
-          conversationSignature: previousConversation.conversationSignature
+        case 'chatglm':{
+          key = `CHATGPT:CONVERSATIONS_CHATGLM:${e.sender.user_id}`
+          break
         }
+      }
+      let ctime = new Date()
+      previousConversation = await redis.get(key) || JSON.stringify({
+        sender: e.sender,
+        ctime,
+        utime: ctime,
+        num: 0,
+        conversation: {}
+      })
+      previousConversation = JSON.parse(previousConversation)
+      if (Config.debug) {
+        logger.info({ previousConversation })
+      }
+      conversation = {
+        conversationId: previousConversation.conversation?.conversationId,
+        parentMessageId: previousConversation.parentMessageId,
+        clientId: previousConversation.clientId,
+        invocationId: previousConversation.invocationId,
+        conversationSignature: previousConversation.conversationSignature
       }
     }
 
@@ -620,14 +702,13 @@ export class chatgpt extends plugin {
           previousConversation.parentMessageId = chatMessage.parentMessageId
           previousConversation.conversationSignature = chatMessage.conversationSignature
         } else {
-          // 或许这样切换回来不会404？
           previousConversation.parentMessageId = chatMessage.id
         }
         if (Config.debug) {
           logger.info(chatMessage)
         }
         previousConversation.num = previousConversation.num + 1
-        await redis.set(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`, JSON.stringify(previousConversation), Config.conversationPreserveTime > 0 ? { EX: Config.conversationPreserveTime } : {})
+        await redis.set(key, JSON.stringify(previousConversation), Config.conversationPreserveTime > 0 ? { EX: Config.conversationPreserveTime } : {})
       }
       let response = chatMessage?.text
       if (!response) {
@@ -693,7 +774,7 @@ export class chatgpt extends plugin {
           this.reply(`建议的回复：\n${chatMessage.suggestedResponses}`)
         }
       }
-      if (use !== 'bing') {
+      if (use === 'api3') {
         // 移除队列首位，释放锁
         await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
       }
@@ -708,13 +789,77 @@ export class chatgpt extends plugin {
         await this.reply('当前对话异常，已经清除，请重试', true, { recallMsg: e.isGroup ? 10 : 0 })
       } else {
         if (err.length < 200) {
-          await this.reply(`通信异常，请稍后重试：${err}`, true, { recallMsg: e.isGroup ? 10 : 0 })
+          await this.reply(`出现错误：${err}`, true, { recallMsg: e.isGroup ? 10 : 0 })
         } else {
           // 这里是否还需要上传到缓存服务器呐？多半是代理服务器的问题，本地也修不了，应该不用吧。
           await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', `通信异常,错误信息如下 ${err}`, prompt)
         }
       }
     }
+  }
+
+  async chatgpt1 (e) {
+    let ats = e.message.filter(m => m.type === 'at')
+    if (!e.atme && ats.length > 0) {
+      if (Config.debug) {
+        logger.mark('艾特别人了，没艾特我，忽略#chat1')
+      }
+      return false
+    }
+    let prompt = _.trimStart(e.msg.trimStart(), '#chat1').trim()
+    if (prompt.length === 0) {
+      return false
+    }
+    await this.abstractChat(e, prompt, 'api')
+    return true
+  }
+
+  async chatgpt3 (e) {
+    let ats = e.message.filter(m => m.type === 'at')
+    if (!e.atme && ats.length > 0) {
+      if (Config.debug) {
+        logger.mark('艾特别人了，没艾特我，忽略#chat3')
+      }
+      return false
+    }
+    let prompt = _.trimStart(e.msg.trimStart(), '#chat3').trim()
+    if (prompt.length === 0) {
+      return false
+    }
+    await this.abstractChat(e, prompt, 'api3')
+    return true
+  }
+
+  async chatglm (e) {
+    let ats = e.message.filter(m => m.type === 'at')
+    if (!e.atme && ats.length > 0) {
+      if (Config.debug) {
+        logger.mark('艾特别人了，没艾特我，忽略#chatglm')
+      }
+      return false
+    }
+    let prompt = _.trimStart(e.msg.trimStart(), '#chatglm').trim()
+    if (prompt.length === 0) {
+      return false
+    }
+    await this.abstractChat(e, prompt, 'chatglm')
+    return true
+  }
+
+  async bing (e) {
+    let ats = e.message.filter(m => m.type === 'at')
+    if (!e.atme && ats.length > 0) {
+      if (Config.debug) {
+        logger.mark('艾特别人了，没艾特我，忽略#bing')
+      }
+      return false
+    }
+    let prompt = _.trimStart(e.msg.trimStart(), '#bing').trim()
+    if (prompt.length === 0) {
+      return false
+    }
+    await this.abstractChat(e, prompt, 'bing')
+    return true
   }
 
   async renderImage (e, template, content, prompt, quote = [], cache = false) {
@@ -782,7 +927,7 @@ export class chatgpt extends plugin {
           cookies = bingToken
         }
         let bingAIClient
-        if (Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom' ) {
+        if (Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom') {
           const cacheOptions = {
             namespace: Config.toneStyle,
             store: new KeyvFile({ filename: 'cache.json' })
