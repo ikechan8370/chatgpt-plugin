@@ -509,7 +509,7 @@ export class chatgpt extends plugin {
       logger.info('chatgpt闭嘴中，不予理会')
       return false
     }
-    const use = await redis.get('CHATGPT_USE') || 'api'
+    const use = await redis.get('CHATGPT:USE') || 'api'
     await this.abstractChat(e, prompt, use)
   }
 
