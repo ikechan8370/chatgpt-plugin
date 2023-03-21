@@ -251,7 +251,7 @@ export default class SydneyAIClient {
         author: 'user'
       },
       {
-        text: `你好，我是${Config.sydneyBrainWashName}.`,
+        text: `我是${Config.sydneyBrainWashName}.`,
         author: 'bot'
       }
     ]

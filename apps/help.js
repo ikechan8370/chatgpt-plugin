@@ -12,6 +12,11 @@ let helpData = [
         desc: '与机器人聊天'
       },
       {
+        icon: 'chat',
+        title: '#chat1/#chat3/#chatglm/#bing',
+        desc: '分别使用API/API3/ChatGLM/Bing模式与机器人聊天，无论主人设定了何种全局模式'
+      },
+      {
         icon: 'chat-private',
         title: '私聊与我对话',
         desc: '与机器人聊天'
@@ -128,8 +133,8 @@ let helpData = [
       },
       {
         icon: 'switch',
-        title: '#chatgpt切换浏览器/API/API2/API3/Bing',
-        desc: '切换使用的后端为浏览器或OpenAI API/第三方API/反代官网API/Bing'
+        title: '#chatgpt切换浏览器/API/API3/Bing/ChatGLM',
+        desc: '切换使用的后端为浏览器或OpenAI API/反代官网API/Bing/自建ChatGLM'
       },
       {
         icon: 'confirm',

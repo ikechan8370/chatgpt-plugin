@@ -45,7 +45,7 @@ const defaultConfig = {
   useGPT4: false,
   promptPrefixOverride: 'Your answer shouldn\'t be too verbose. Prefer to answer in Chinese.',
   assistantLabel: 'ChatGPT',
-  thinkingTips: true,
+  // thinkingTips: true,
   username: '',
   password: '',
   UA: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
@@ -66,7 +66,9 @@ const defaultConfig = {
   initiativeChatGroups: [],
   enableDraw: true,
   helloPrompt: '写一段话让大家来找我聊天。类似于“有人找我聊天吗？"这种风格，轻松随意一点控制在20个字以内',
-  version: 'v2.2.3'
+  chatglmBaseUrl: 'http://localhost:8080',
+  allowOtherMode: true,
+  version: 'v2.3.0'
 }
 const _path = process.cwd()
 let config = {}
