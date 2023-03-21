@@ -6,7 +6,7 @@ import fetch, {
 import crypto from 'crypto'
 
 import HttpsProxyAgent from 'https-proxy-agent'
-import {Config, pureSydneyInstruction} from './config.js'
+import { Config, pureSydneyInstruction } from './config.js'
 import { isCN } from './common.js'
 
 if (!globalThis.fetch) {
@@ -322,7 +322,6 @@ export default class SydneyAIClient {
       role: 'User',
       message
     }
-    conversation.messages.push(userMessage)
 
     const ws = await this.createWebSocketConnection()
     if (Config.debug) {
@@ -400,7 +399,7 @@ export default class SydneyAIClient {
       target: 'chat',
       type: 4
     }
-
+    let apology = false
     const messagePromise = new Promise((resolve, reject) => {
       let replySoFar = ''
       let adaptiveCardsSoFar = null
@@ -445,7 +444,7 @@ export default class SydneyAIClient {
           reject('Request aborted')
         }
       })
-      let apology = false
+      // let apology = false
       ws.on('message', (data) => {
         const objects = data.toString().split('')
         const events = objects.map((object) => {
@@ -477,6 +476,9 @@ export default class SydneyAIClient {
                 }
             if (messages[0].contentOrigin === 'Apology') {
               console.log('Apology found')
+              if (!replySoFar) {
+                apology = true
+              }
               stopTokenFound = true
               clearTimeout(messageTimeout)
               clearTimeout(firstTimeout)
@@ -505,7 +507,7 @@ export default class SydneyAIClient {
             const difference = updatedText.substring(replySoFar.length)
             onProgress(difference)
             if (updatedText.trim().endsWith(stopToken)) {
-              apology = true
+              // apology = true
               // remove stop token from updated text
               replySoFar = updatedText.replace(stopToken, '').trim()
               return
@@ -541,6 +543,9 @@ export default class SydneyAIClient {
               return
             }
             if (message.contentOrigin === 'Apology') {
+              if (!replySoFar) {
+                apology = true
+              }
               console.log('Apology found')
               stopTokenFound = true
               clearTimeout(messageTimeout)
@@ -610,10 +615,11 @@ export default class SydneyAIClient {
       message: reply.text,
       details: reply
     }
-    conversation.messages.push(replyMessage)
-
+    if (!apology) {
+      conversation.messages.push(userMessage)
+      conversation.messages.push(replyMessage)
+    }
     await this.conversationsCache.set(conversationKey, conversation)
-
     return {
       conversationSignature,
       conversationId,
@@ -622,7 +628,8 @@ export default class SydneyAIClient {
       messageId: replyMessage.id,
       conversationExpiryTime,
       response: reply.text,
-      details: reply
+      details: reply,
+      apology
     }
   }
 
