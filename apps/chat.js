@@ -208,7 +208,7 @@ export class chatgpt extends plugin {
       } else if (use === 'bing' && (Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom')) {
         const conversation = {
           store: new KeyvFile({ filename: 'cache.json' }),
-          namespace: 'Sydney'
+          namespace: Config.toneStyle
         }
         let Keyv
         try {
@@ -262,7 +262,7 @@ export class chatgpt extends plugin {
       } else if (use === 'bing' && (Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom')) {
         const conversation = {
           store: new KeyvFile({ filename: 'cache.json' }),
-          namespace: 'Sydney'
+          namespace: Config.toneStyle
         }
         let Keyv
         try {
