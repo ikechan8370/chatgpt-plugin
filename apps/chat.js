@@ -205,7 +205,7 @@ export class chatgpt extends plugin {
       if (use === 'api3') {
         await redis.del(`CHATGPT:QQ_CONVERSATION:${e.sender.user_id}`)
         await this.reply('已退出当前对话，该对话仍然保留。请@我进行聊天以开启新的对话', true)
-      } else if (use === 'bing' && Config.toneStyle === 'Sydney') {
+      } else if (use === 'bing' && (Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom')) {
         const conversation = {
           store: new KeyvFile({ filename: 'cache.json' }),
           namespace: 'Sydney'
@@ -259,7 +259,7 @@ export class chatgpt extends plugin {
       if (use === 'api3') {
         await redis.del(`CHATGPT:QQ_CONVERSATION:${qq}`)
         await this.reply(`${atUser}已退出TA当前的对话，TA仍可以@我进行聊天以开启新的对话`, true)
-      } else if (use === 'bing' && Config.toneStyle === 'Sydney') {
+      } else if (use === 'bing' && (Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom')) {
         const conversation = {
           store: new KeyvFile({ filename: 'cache.json' }),
           namespace: 'Sydney'
