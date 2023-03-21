@@ -444,7 +444,7 @@ export default class SydneyAIClient {
           reject('Request aborted')
         }
       })
-      let apology = false
+      // let apology = false
       ws.on('message', (data) => {
         const objects = data.toString().split('')
         const events = objects.map((object) => {
@@ -507,7 +507,7 @@ export default class SydneyAIClient {
             const difference = updatedText.substring(replySoFar.length)
             onProgress(difference)
             if (updatedText.trim().endsWith(stopToken)) {
-              apology = true
+              // apology = true
               // remove stop token from updated text
               replySoFar = updatedText.replace(stopToken, '').trim()
               return
@@ -618,9 +618,8 @@ export default class SydneyAIClient {
     if (!apology) {
       conversation.messages.push(userMessage)
       conversation.messages.push(replyMessage)
-
-      await this.conversationsCache.set(conversationKey, conversation)
     }
+    await this.conversationsCache.set(conversationKey, conversation)
     return {
       conversationSignature,
       conversationId,
