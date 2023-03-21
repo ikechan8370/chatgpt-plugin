@@ -1017,7 +1017,7 @@ export class chatgpt extends plugin {
             clientId: response.clientId,
             invocationId: response.invocationId,
             conversationSignature: response.conversationSignature,
-            parentMessageId: response.messageId
+            parentMessageId: response.apology ? conversation.parentMessageId : response.messageId
           }
         }
       }
