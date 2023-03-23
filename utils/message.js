@@ -90,8 +90,8 @@ export class OfficialChatGPTClient {
       return await this.sendMessage(prompt, opts)
     }
     if (res.status !== 200) {
-      let body = await res.json()
-      throw new Error(JSON.stringify(body, null, 2))
+      let body = await res.text()
+      throw new Error(body)
     }
     // todo accept as stream
     const decoder = new TextDecoder('utf-8')
