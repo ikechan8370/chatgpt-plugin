@@ -248,7 +248,7 @@ export class chatgpt extends plugin {
         if (!c) {
           await this.reply('当前没有开启对话', true)
         } else {
-          await redis.del(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
+          await redis.del(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
           await this.reply('已结束当前对话，请@我进行聊天以开启新的对话', true)
         }
       }
@@ -288,12 +288,20 @@ export class chatgpt extends plugin {
         logger.info(`ChatGLMUser_${e.sender.user_id}`, await conversationsCache.get(`ChatGLMUser_${e.sender.user_id}`))
         await conversationsCache.delete(`ChatGLMUser_${qq}`)
         await this.reply('已退出当前对话，该对话仍然保留。请@我进行聊天以开启新的对话', true)
-      } else {
+      } else if (use === 'api') {
         let c = await redis.get(`CHATGPT:CONVERSATIONS:${qq}`)
         if (!c) {
           await this.reply(`当前${atUser}没有开启对话`, true)
         } else {
           await redis.del(`CHATGPT:CONVERSATIONS:${qq}`)
+          await this.reply(`已结束${atUser}的对话，TA仍可以@我进行聊天以开启新的对话`, true)
+        }
+      } else if (use === 'bing') {
+        let c = await redis.get(`CHATGPT:CONVERSATIONS_BING:${qq}`)
+        if (!c) {
+          await this.reply(`当前${atUser}没有开启对话`, true)
+        } else {
+          await redis.del(`CHATGPT:CONVERSATIONS_BING:${qq}`)
           await this.reply(`已结束${atUser}的对话，TA仍可以@我进行聊天以开启新的对话`, true)
         }
       }
