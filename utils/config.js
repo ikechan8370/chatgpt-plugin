@@ -69,7 +69,7 @@ const defaultConfig = {
   chatglmBaseUrl: 'http://localhost:8080',
   allowOtherMode: true,
   sydneyContext: '',
-  version: 'v2.3.2'
+  version: 'v2.3.3'
 }
 const _path = process.cwd()
 let config = {}
