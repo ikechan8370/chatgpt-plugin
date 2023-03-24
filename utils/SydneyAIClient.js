@@ -8,7 +8,7 @@ import crypto from 'crypto'
 import HttpsProxyAgent from 'https-proxy-agent'
 import { Config, pureSydneyInstruction } from './config.js'
 import { isCN } from './common.js'
-import delay from "delay";
+import delay from 'delay'
 
 if (!globalThis.fetch) {
   globalThis.fetch = fetch
@@ -113,9 +113,9 @@ export default class SydneyAIClient {
     logger.mark('使用host：' + this.opts.host)
     let response = await fetch(`${this.opts.host}/turing/conversation/create`, fetchOptions)
     let text = await response.text()
-    let retry = 6
+    let retry = 10
     while (retry >= 0 && response.status === 200 && !text) {
-      await delay(300)
+      await delay(500)
       response = await fetch(`${this.opts.host}/turing/conversation/create`, fetchOptions)
       text = await response.text()
       retry--
@@ -348,11 +348,20 @@ export default class SydneyAIClient {
             'disable_emoji_spoken_text',
             'responsible_ai_policy_235',
             'enablemm',
-            toneOption,
-            'dtappid',
-            'cricinfo',
-            'cricinfov2',
-            'dv3sugg'
+            // 'h3precise',
+            'clgalileo',
+            'dlcodex3k',
+            'dltokens18k',
+            'enablesd',
+            'bfprss',
+            'cachewriteext',
+            'deepleofreq',
+            'e2ecachewrite',
+            'saharafreq',
+            'wlthrottle',
+            'dl_edge_desc',
+            'dv3sugg',
+            toneOption
           ],
           sliceIds: [
             '222dtappid',
