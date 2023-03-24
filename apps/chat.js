@@ -720,7 +720,7 @@ export class chatgpt extends plugin {
       }
       let response = chatMessage?.text
       if (!response) {
-        await e.reply('没有任何回复', true)
+        await e.reply('没有任何回复，可能因微软风控导致。建议 #结束对话 或发送新内容重试', true)
         return
       }
       // 检索是否有屏蔽词
