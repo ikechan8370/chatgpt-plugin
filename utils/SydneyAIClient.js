@@ -106,15 +106,17 @@ export default class SydneyAIClient {
     let accessible = !(await isCN()) || this.opts.proxy
     if (accessible && !Config.sydneyForceUseReverse) {
       // 本身能访问bing.com，那就不用反代啦，重置host
+      logger.info('change hosts to https://www.bing.com')
       this.opts.host = 'https://www.bing.com'
     }
+    logger.mark('使用host：' + this.opts.host)
     const response = await fetch(`${this.opts.host}/turing/conversation/create`, fetchOptions)
     let text = await response.text()
     try {
       return JSON.parse(text)
     } catch (err) {
       logger.error('创建sydney对话失败: status code: ' + response.status + response.statusText)
-      console.error(text)
+      logger.error(text)
       throw new Error(text)
     }
   }

@@ -364,9 +364,7 @@ export async function isCN () {
       let response = await fetch('https://ipinfo.io/country')
       let countryCode = (await response.text()).trim()
       await redis.set('CHATGPT:COUNTRY_CODE', countryCode, { EX: 3600 })
-      if (countryCode !== 'CN') {
-        return false
-      }
+      return countryCode === 'CN'
     } catch (err) {
       console.warn(err)
       // 没拿到归属地默认CN
