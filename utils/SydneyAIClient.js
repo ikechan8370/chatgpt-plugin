@@ -8,6 +8,7 @@ import crypto from 'crypto'
 import HttpsProxyAgent from 'https-proxy-agent'
 import { Config, pureSydneyInstruction } from './config.js'
 import { isCN } from './common.js'
+import delay from "delay";
 
 if (!globalThis.fetch) {
   globalThis.fetch = fetch
@@ -110,8 +111,15 @@ export default class SydneyAIClient {
       this.opts.host = 'https://www.bing.com'
     }
     logger.mark('使用host：' + this.opts.host)
-    const response = await fetch(`${this.opts.host}/turing/conversation/create`, fetchOptions)
+    let response = await fetch(`${this.opts.host}/turing/conversation/create`, fetchOptions)
     let text = await response.text()
+    let retry = 6
+    while (retry >= 0 && response.status === 200 && !text) {
+      await delay(300)
+      response = await fetch(`${this.opts.host}/turing/conversation/create`, fetchOptions)
+      text = await response.text()
+      retry--
+    }
     try {
       return JSON.parse(text)
     } catch (err) {
