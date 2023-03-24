@@ -958,7 +958,7 @@ export class chatgpt extends plugin {
             debug: Config.debug,
             cache: cacheOptions,
             user: e.sender.user_id,
-            proxy: Config.proxy
+            proxy: Config.proxy,
           })
           // Sydney不实现上下文传递，删除上下文索引
           delete conversation.clientId
@@ -985,6 +985,7 @@ export class chatgpt extends plugin {
           try {
             let opt = _.cloneDeep(conversation) || {}
             opt.toneStyle = Config.toneStyle
+            opt.context = Config.sydneyContext
             response = await bingAIClient.sendMessage(prompt, opt, (token) => {
               reply += token
             })
