@@ -588,11 +588,11 @@ export default class SydneyAIClient {
               return
             }
             if (message?.author !== 'bot') {
-              if (message?.item?.result) {
-                if (message?.item?.result?.exception?.indexOf('maximum context length') > -1) {
+              if (event.item?.result) {
+                if (event.item?.result?.exception?.indexOf('maximum context length') > -1) {
                   reject('对话长度太长啦！超出8193token，请结束对话重新开始')
                 } else {
-                  reject(`${message?.item?.result.value}\n${message?.item?.result.error}\n${message?.item?.result.exception}`)
+                  reject(`${event.item?.result.value}\n${event.item?.result.error}\n${event.item?.result.exception}`)
                 }
               } else {
                 reject('Unexpected message author.')

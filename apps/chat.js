@@ -1002,7 +1002,7 @@ export class chatgpt extends plugin {
             errorMessage = ''
             break
           } catch (error) {
-            const message = error?.message || error?.data?.message || '与Bing通信时出错.'
+            const message = error?.message || error?.data?.message || error || '出错了'
             if (message !== 'Timed out waiting for first message.') {
               logger.error(error)
             }
