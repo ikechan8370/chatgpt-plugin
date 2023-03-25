@@ -1,4 +1,7 @@
 # 云崽qq机器人的chatgpt插件
+![26224FE397F1E74104C1C007C1A32DDE](https://user-images.githubusercontent.com/21212372/227718994-4d33da74-6886-41d5-afd0-73986b086df0.gif)
+
+
 
 ![GitHub issues](https://img.shields.io/github/issues/ikechan8370/chatgpt-plugin?logo=github)
 ![GitHub](https://img.shields.io/github/license/ikechan8370/chatgpt-plugin)

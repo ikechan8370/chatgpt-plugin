@@ -90,8 +90,12 @@ export class OfficialChatGPTClient {
       return await this.sendMessage(prompt, opts)
     }
     if (res.status !== 200) {
-      let body = await res.json()
-      throw new Error(JSON.stringify(body, null, 2))
+      let body = await res.text()
+      if (body.indexOf('Conversation not found') > -1) {
+        throw new Error('对话不存在，请使用指令”#结束对话“结束当前对话后重新开始对话。')
+      } else {
+        throw new Error(body)
+      }
     }
     // todo accept as stream
     const decoder = new TextDecoder('utf-8')

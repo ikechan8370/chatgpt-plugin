@@ -293,6 +293,12 @@ export function supportGuoba () {
           component: 'InputTextArea'
         },
         {
+          field: 'sydneyContext',
+          label: 'Bing的扩展资料',
+          bottomHelpMessage: 'AI将会从你提供的扩展资料中学习到一些知识，帮助它更好地回答你的问题。实际相当于使用edge侧边栏Bing时读取的你当前浏览网页的内容。如果太长可能容易到达GPT-4的8192token上限。',
+          component: 'InputTextArea'
+        },
+        {
           field: 'sydneyReverseProxy',
           label: 'sydney反代',
           bottomHelpMessage: '仅自设定模式下有效。国内ip无法正常使用sydney和自设定模式，如果有bing.com的反代可以填在此处，或者使用proxy',
@@ -323,7 +329,7 @@ export function supportGuoba () {
           component: 'InputNumber',
           componentProps: {
             min: 0,
-            max: 20
+            max: 100
           }
         },
         {
