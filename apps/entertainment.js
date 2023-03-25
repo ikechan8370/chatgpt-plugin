@@ -37,10 +37,13 @@ export class Entertainment extends plugin {
   }
 
   async combineEmoj (e) {
-    mkdirs('data/chatgpt/emoji')
-    logger.info('combine ' + e.msg)
     let left = e.msg.codePointAt(0).toString(16).toLowerCase()
     let right = e.msg.codePointAt(2).toString(16).toLowerCase()
+    if (left === right) {
+      return false
+    }
+    mkdirs('data/chatgpt/emoji')
+    logger.info('combine ' + e.msg)
     let resultFileLoc = `data/chatgpt/emoji/${left}_${right}.jpg`
     if (fs.existsSync(resultFileLoc)) {
       let image = segment.image(fs.createReadStream(resultFileLoc))
@@ -68,7 +71,7 @@ export class Entertainment extends plugin {
     }
     if (!url) {
       await e.reply('不支持合成', true)
-      return true
+      return false
     }
     let response = await fetch(url)
     const resultBlob = await response.blob()
