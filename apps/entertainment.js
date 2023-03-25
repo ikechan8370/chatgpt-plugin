@@ -37,14 +37,21 @@ export class Entertainment extends plugin {
   }
 
   async combineEmoj (e) {
-    console.log(e.msg)
-    logger.info('combine')
+    mkdirs('data/chatgpt/emoji')
+    logger.info('combine ' + e.msg)
+    let left = e.msg.codePointAt(0).toString(16).toLowerCase()
+    let right = e.msg.codePointAt(2).toString(16).toLowerCase()
+    let resultFileLoc = `data/chatgpt/emoji/${left}_${right}.jpg`
+    if (fs.existsSync(resultFileLoc)) {
+      let image = segment.image(fs.createReadStream(resultFileLoc))
+      image.asface = true
+      await e.reply(image, true)
+      return true
+    }
     const _path = process.cwd()
     const fullPath = fs.realpathSync(`${_path}/plugins/chatgpt-plugin/resources/emojiData.json`)
     const data = fs.readFileSync(fullPath)
     let emojDataJson = JSON.parse(data)
-    let left = e.msg.codePointAt(0).toString(16).toLowerCase()
-    let right = e.msg.codePointAt(2).toString(16).toLowerCase()
     logger.mark(`合成emoji：${left} ${right}`)
     let url
     if (emojDataJson[right]) {
@@ -64,13 +71,13 @@ export class Entertainment extends plugin {
       return true
     }
     let response = await fetch(url)
-    mkdirs('data/chatgpt/emoji')
-    let resultFileLoc = `data/chatgpt/emoji/${left}_${right}.jpg`
     const resultBlob = await response.blob()
     const resultArrayBuffer = await resultBlob.arrayBuffer()
     const resultBuffer = Buffer.from(resultArrayBuffer)
     await fs.writeFileSync(resultFileLoc, resultBuffer)
-    await e.reply(segment.image(fs.createReadStream(resultFileLoc)), true)
+    let image = segment.image(fs.createReadStream(resultFileLoc))
+    image.asface = true
+    await e.reply(image, true)
     return true
   }
 
