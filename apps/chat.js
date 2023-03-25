@@ -50,8 +50,8 @@ const defaultPropmtPrefix = ', a large language model trained by OpenAI. You ans
 const newFetch = (url, options = {}) => {
   const defaultOptions = Config.proxy
     ? {
-        agent: proxy(Config.proxy)
-      }
+      agent: proxy(Config.proxy)
+    }
     : {}
   const mergedOptions = {
     ...defaultOptions,
@@ -61,7 +61,7 @@ const newFetch = (url, options = {}) => {
   return fetch(url, mergedOptions)
 }
 export class chatgpt extends plugin {
-  constructor () {
+  constructor() {
     let toggleMode = Config.toggleMode
     super({
       /** 功能名称 */
@@ -175,7 +175,7 @@ export class chatgpt extends plugin {
    * @param e
    * @returns {Promise<void>}
    */
-  async getConversations (e) {
+  async getConversations(e) {
     // todo 根据use返回不同的对话列表
     let keys = await redis.keys('CHATGPT:CONVERSATIONS:*')
     if (!keys || keys.length === 0) {
@@ -198,7 +198,7 @@ export class chatgpt extends plugin {
    * @param e
    * @returns {Promise<void>}
    */
-  async destroyConversations (e) {
+  async destroyConversations(e) {
     let ats = e.message.filter(m => m.type === 'at')
     let use = await redis.get('CHATGPT:USE')
     if (ats.length === 0) {
@@ -308,7 +308,7 @@ export class chatgpt extends plugin {
     }
   }
 
-  async endAllConversations (e) {
+  async endAllConversations(e) {
     let use = await redis.get('CHATGPT:USE') || 'api'
     let deleted = 0
     switch (use) {
@@ -362,7 +362,7 @@ export class chatgpt extends plugin {
     await this.reply(`结束了${deleted}个用户的对话。`, true)
   }
 
-  async deleteConversation (e) {
+  async deleteConversation(e) {
     let ats = e.message.filter(m => m.type === 'at')
     let use = await redis.get('CHATGPT:USE') || 'api'
     if (use !== 'api3') {
@@ -420,7 +420,7 @@ export class chatgpt extends plugin {
     }
   }
 
-  async switch2Picture (e) {
+  async switch2Picture(e) {
     let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
     if (!userSetting) {
       userSetting = getDefaultUserSetting()
@@ -433,7 +433,7 @@ export class chatgpt extends plugin {
     await this.reply('ChatGPT回复已转换为图片模式')
   }
 
-  async switch2Text (e) {
+  async switch2Text(e) {
     let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
     if (!userSetting) {
       userSetting = getDefaultUserSetting()
@@ -446,7 +446,7 @@ export class chatgpt extends plugin {
     await this.reply('ChatGPT回复已转换为文字模式')
   }
 
-  async switch2Audio (e) {
+  async switch2Audio(e) {
     if (!Config.ttsSpace) {
       await this.reply('您没有配置VITS API，请前往锅巴面板进行配置')
       return
@@ -462,7 +462,7 @@ export class chatgpt extends plugin {
     await this.reply('ChatGPT回复已转换为语音模式')
   }
 
-  async setDefaultRole (e) {
+  async setDefaultRole(e) {
     if (!Config.ttsSpace) {
       await this.reply('您没有配置VITS API，请前往锅巴面板进行配置')
       return
@@ -489,7 +489,7 @@ export class chatgpt extends plugin {
    * #chatgpt
    * @param e oicq传递的事件参数e
    */
-  async chatgpt (e) {
+  async chatgpt(e) {
     let prompt
     if (this.toggleMode === 'at') {
       if (!e.msg || e.msg.startsWith('#')) {
@@ -498,6 +498,7 @@ export class chatgpt extends plugin {
       if (e.isGroup && !e.atme) {
         return false
       }
+      if (e.user_id == Bot.uin) return false
       prompt = e.msg.trim()
     } else {
       let ats = e.message.filter(m => m.type === 'at')
@@ -521,7 +522,7 @@ export class chatgpt extends plugin {
     await this.abstractChat(e, prompt, use)
   }
 
-  async abstractChat (e, prompt, use) {
+  async abstractChat(e, prompt, use) {
     let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
     if (userSetting) {
       userSetting = JSON.parse(userSetting)
@@ -573,7 +574,7 @@ export class chatgpt extends plugin {
             // }
           }
           prompt = imgOcrText + prompt
-        } catch (err) {}
+        } catch (err) { }
       }
     }
     // 检索是否有屏蔽词
@@ -661,11 +662,11 @@ export class chatgpt extends plugin {
           key = `CHATGPT:CONVERSATIONS:${e.sender.user_id}`
           break
         }
-        case 'bing':{
+        case 'bing': {
           key = `CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`
           break
         }
-        case 'chatglm':{
+        case 'chatglm': {
           key = `CHATGPT:CONVERSATIONS_CHATGLM:${e.sender.user_id}`
           break
         }
@@ -740,9 +741,15 @@ export class chatgpt extends plugin {
       }
       if (useTTS) {
         if (Config.ttsSpace && response.length <= Config.ttsAutoFallbackThreshold) {
-          let wav = await generateAudio(response, speaker, '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）')
-          await e.reply(segment.record(wav))
-          if (Config.alsoSendText) {
+          let audio_err = false
+          try {
+            let wav = await generateAudio(response, speaker, '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）')
+            await e.reply(segment.record(wav))
+          } catch (err) {
+            await this.reply('合成语音发生错误，我用文本回复你吧')
+            audio_err = true
+          }
+          if (Config.alsoSendText || audio_err) {
             await this.reply(`${response}`, e.isGroup)
             if (quotemessage.length > 0) {
               this.reply(await makeForwardMsg(this.e, quotemessage))
@@ -806,7 +813,7 @@ export class chatgpt extends plugin {
     }
   }
 
-  async chatgpt1 (e) {
+  async chatgpt1(e) {
     if (!Config.allowOtherMode) {
       return false
     }
@@ -825,7 +832,7 @@ export class chatgpt extends plugin {
     return true
   }
 
-  async chatgpt3 (e) {
+  async chatgpt3(e) {
     if (!Config.allowOtherMode) {
       return false
     }
@@ -844,7 +851,7 @@ export class chatgpt extends plugin {
     return true
   }
 
-  async chatglm (e) {
+  async chatglm(e) {
     if (!Config.allowOtherMode) {
       return false
     }
@@ -863,7 +870,7 @@ export class chatgpt extends plugin {
     return true
   }
 
-  async bing (e) {
+  async bing(e) {
     if (!Config.allowOtherMode) {
       return false
     }
@@ -882,7 +889,7 @@ export class chatgpt extends plugin {
     return true
   }
 
-  async renderImage (e, template, content, prompt, quote = [], cache = false) {
+  async renderImage(e, template, content, prompt, quote = [], cache = false) {
     let cacheData = { file: '', cacheUrl: Config.cacheUrl }
     if (cache) {
       if (Config.cacheEntry) cacheData.file = randomString()
@@ -924,7 +931,7 @@ export class chatgpt extends plugin {
     }, { retType: Config.quoteReply ? 'base64' : '' }), e.isGroup && Config.quoteReply)
   }
 
-  async sendMessage (prompt, conversation = {}, use, e) {
+  async sendMessage(prompt, conversation = {}, use, e) {
     if (!conversation) {
       conversation = {
         timeoutMs: Config.defaultTimeoutMs
@@ -1115,12 +1122,12 @@ export class chatgpt extends plugin {
     }
   }
 
-  async emptyQueue (e) {
+  async emptyQueue(e) {
     await redis.lTrim('CHATGPT:CHAT_QUEUE', 1, 0)
     await this.reply('已清空当前等待队列')
   }
 
-  async removeQueueFirst (e) {
+  async removeQueueFirst(e) {
     let uid = await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
     if (!uid) {
       await this.reply('当前等待队列为空')
@@ -1129,7 +1136,7 @@ export class chatgpt extends plugin {
     }
   }
 
-  async getAllConversations (e) {
+  async getAllConversations(e) {
     const use = await redis.get('CHATGPT:USE')
     if (use === 'api3') {
       let conversations = await getConversations(e.sender.user_id, newFetch)
@@ -1150,7 +1157,7 @@ export class chatgpt extends plugin {
     }
   }
 
-  async joinConversation (e) {
+  async joinConversation(e) {
     let ats = e.message.filter(m => m.type === 'at')
     let use = await redis.get('CHATGPT:USE') || 'api'
     // if (use !== 'api3') {
@@ -1181,7 +1188,7 @@ export class chatgpt extends plugin {
     }
   }
 
-  async attachConversation (e) {
+  async attachConversation(e) {
     const use = await redis.get('CHATGPT:USE')
     if (use !== 'api3') {
       await this.reply('该功能目前仅支持API3模式')
@@ -1198,7 +1205,7 @@ export class chatgpt extends plugin {
     }
   }
 
-  async totalAvailable (e) {
+  async totalAvailable(e) {
     if (!Config.apiKey) {
       this.reply('当前未配置OpenAI API key，请在锅巴面板或插件配置文件config/config.js中配置。若使用免费的API3则无需关心计费。')
       return false
@@ -1231,7 +1238,7 @@ export class chatgpt extends plugin {
    * @param prompt 问题
    * @param conversation 对话
    */
-  async chatgptBrowserBased (prompt, conversation) {
+  async chatgptBrowserBased(prompt, conversation) {
     let option = { markdown: true }
     if (Config['2captchaToken']) {
       option.captchaToken = Config['2captchaToken']
