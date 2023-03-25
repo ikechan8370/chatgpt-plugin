@@ -69,7 +69,8 @@ const defaultConfig = {
   chatglmBaseUrl: 'http://localhost:8080',
   allowOtherMode: true,
   sydneyContext: '',
-  version: 'v2.3.3'
+  emojiBaseURL: 'https://www.gstatic.com/android/keyboard/emojikitchen',
+  version: 'v2.3.4'
 }
 const _path = process.cwd()
 let config = {}
