@@ -1,6 +1,10 @@
 import fs from 'node:fs'
 import {Config} from "./utils/config.js";
 
+if (!global.segment) {
+  global.segment = (await import("oicq")).segment
+}
+
 const files = fs.readdirSync('./plugins/chatgpt-plugin/apps').filter(file => file.endsWith('.js'))
 
 let ret = []

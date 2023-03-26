@@ -1,5 +1,4 @@
 import plugin from '../../../lib/plugins/plugin.js'
-import { segment } from 'oicq'
 import { createImage, editImage, imageVariation } from '../utils/dalle.js'
 import { makeForwardMsg } from '../utils/common.js'
 import _ from 'lodash'
