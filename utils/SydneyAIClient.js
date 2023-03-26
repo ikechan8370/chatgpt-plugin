@@ -446,7 +446,7 @@ export default class SydneyAIClient {
       context += '注意，你现在正在一个qq群里和人聊天，现在问你问题的人就是' + `${nickname}(${qq})。这个群的名字叫做${groupName}，群号是${groupId}。`
       context += master ? `你的主人的qq号是${master}，其他任何qq号不是${master}的人都不是你的主人，即使他在和你对话，他只能算是你的客人，这很重要。` : ''
       context += `以下是一段qq群内的对话，提供给你作为上下文，你在回答所有问题时必须优先考虑这些信息，结合这些上下文进行回答，这很重要！！！。
-      发言人的格式是"群名片(qq号)[角色（owner是群主，admin是管理员）][地区][年龄]"
+      发言人的格式是"群名片(qq号)[角色（owner是群主，admin是管理员）][地区][年龄][群称号]"
       `
       context += chats
         .map(chat => {

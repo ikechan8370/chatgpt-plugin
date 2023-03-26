@@ -1023,6 +1023,11 @@ export class chatgpt extends plugin {
                 chats.push(...chatHistory)
               }
               chats = chats.slice(0, Config.groupContextLength)
+              let mm = await e.group.getMemberMap()
+              chats.forEach(chat => {
+                let sender = mm.get(chat.sender.user_id)
+                chat.sender = sender
+              })
               console.log(chats)
               opt.chats = chats
             }
