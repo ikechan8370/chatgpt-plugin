@@ -339,7 +339,13 @@ export class help extends plugin {
 
   async browsePrompt (e) {
     let search = e.msg.replace(/^#(chatgpt|ChatGPT)(在线)?(浏览|查找)设定/, '')
-    let response = await fetch('https://chatgpt.roki.best/prompt/list?search=' + search, {
+    let split = search.split('页码')
+    let page = 1
+    if (split.length > 1) {
+      search = split[0]
+      page = parseInt(split[1])
+    }
+    let response = await fetch('https://chatgpt.roki.best/prompt/list?search=' + search + `&page=${page - 1}`, {
       method: 'GET',
       headers: {
         'FROM-CHATGPT': 'ikechan8370'

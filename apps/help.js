@@ -208,8 +208,8 @@ let helpData = [
       },
       {
         icon: 'confirm',
-        title: '#chatgpt浏览设定+关键词',
-        desc: '搜索公开的设定'
+        title: '#chatgpt浏览设定(+关键词)(页码X)',
+        desc: '搜索公开的设定。默认返回前十条，使用页码X可以翻页，使用关键词可以检索。页码从1开始。'
       },
       {
         icon: 'confirm',
