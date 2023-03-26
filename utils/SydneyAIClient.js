@@ -313,7 +313,7 @@ export default class SydneyAIClient {
       previousMessages = invocationId === 0
         ? [
             {
-              text: Config.sydney,
+              text: Config.sydney + (groupId ? '你看看我们群里的聊天记录吧，回答问题的时候要参考我们的聊天记录。' : ''),
               author: 'system'
             },
             {
