@@ -256,6 +256,14 @@ export class chatgpt extends plugin {
           await redis.del(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
           await this.reply('已结束当前对话，请@我进行聊天以开启新的对话', true)
         }
+      } else if (use === 'browser') {
+        let c = await redis.get(`CHATGPT:CONVERSATIONS_BROWSER:${e.sender.user_id}`)
+        if (!c) {
+          await this.reply('当前没有开启对话', true)
+        } else {
+          await redis.del(`CHATGPT:CONVERSATIONS_BROWSER:${e.sender.user_id}`)
+          await this.reply('已结束当前对话，请@我进行聊天以开启新的对话', true)
+        }
       }
     } else {
       let at = ats[0]
@@ -307,6 +315,14 @@ export class chatgpt extends plugin {
           await this.reply(`当前${atUser}没有开启对话`, true)
         } else {
           await redis.del(`CHATGPT:CONVERSATIONS_BING:${qq}`)
+          await this.reply(`已结束${atUser}的对话，TA仍可以@我进行聊天以开启新的对话`, true)
+        }
+      } else if (use === 'browser') {
+        let c = await redis.get(`CHATGPT:CONVERSATIONS_BROWSER:${qq}`)
+        if (!c) {
+          await this.reply(`当前${atUser}没有开启对话`, true)
+        } else {
+          await redis.del(`CHATGPT:CONVERSATIONS_BROWSER:${qq}`)
           await this.reply(`已结束${atUser}的对话，TA仍可以@我进行聊天以开启新的对话`, true)
         }
       }
@@ -674,6 +690,10 @@ export class chatgpt extends plugin {
           key = `CHATGPT:CONVERSATIONS_CHATGLM:${e.sender.user_id}`
           break
         }
+        case 'browser': {
+          key = `CHATGPT:CONVERSATIONS_BROWSER:${e.sender.user_id}`
+          break
+        }
       }
       let ctime = new Date()
       previousConversation = await redis.get(key) || JSON.stringify({
@@ -745,15 +765,15 @@ export class chatgpt extends plugin {
       }
       if (useTTS) {
         if (Config.ttsSpace && response.length <= Config.ttsAutoFallbackThreshold) {
-          let audio_err = false
+          let audioErr = false
           try {
             let wav = await generateAudio(response, speaker, '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）')
             await e.reply(segment.record(wav))
           } catch (err) {
             await this.reply('合成语音发生错误，我用文本回复你吧')
-            audio_err = true
+            audioErr = true
           }
-          if (Config.alsoSendText || audio_err) {
+          if (Config.alsoSendText || audioErr) {
             await this.reply(`${response}`, e.isGroup)
             if (quotemessage.length > 0) {
               this.reply(await makeForwardMsg(this.e, quotemessage))
