@@ -1,7 +1,6 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import { Config } from '../utils/config.js'
 import { generateHello } from '../utils/randomMessage.js'
-import { segment } from 'oicq'
 import { generateAudio } from '../utils/tts.js'
 import fs from 'fs'
 import { googleRequestUrl } from '../utils/emoj/index.js'
