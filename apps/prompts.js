@@ -245,7 +245,7 @@ export class help extends plugin {
       currentUse,
       use
     }
-    await redis.set('CHATGPT:UPLOAD_PROMPT', JSON.stringify(extraData), 3600)
+    await redis.set('CHATGPT:UPLOAD_PROMPT', JSON.stringify(extraData), 300)
     this.setContext('uploadPromptConfirm')
   }
 
@@ -268,7 +268,7 @@ export class help extends plugin {
       this.finish('uploadPromptConfirm')
       return
     }
-    await redis.set('CHATGPT:UPLOAD_PROMPT', JSON.stringify(extraData), 600)
+    await redis.set('CHATGPT:UPLOAD_PROMPT', JSON.stringify(extraData), 300)
     await this.reply('请输入对该设定的描述或备注，便于其他人快速了解该设定', true)
     this.finish('uploadPromptConfirm')
     this.setContext('uploadPromptDescription')
@@ -285,7 +285,7 @@ export class help extends plugin {
     }
     let extraData = JSON.parse(await redis.get('CHATGPT:UPLOAD_PROMPT'))
     extraData.description = description
-    await redis.set('CHATGPT:UPLOAD_PROMPT', JSON.stringify(extraData), 3600)
+    await redis.set('CHATGPT:UPLOAD_PROMPT', JSON.stringify(extraData), 300)
     await this.reply('该设定是否是R18设定？请回复是或否', true)
     this.finish('uploadPromptDescription')
     this.setContext('uploadPromptR18')
