@@ -67,7 +67,7 @@ export class help extends plugin {
           permission: 'master'
         },
         {
-          reg: '^#(chatgpt|ChatGPT)设置洗脑名称',
+          reg: '^#(chatgpt|ChatGPT)(设置)?洗脑名称',
           fnc: 'setSydneyBrainWashName',
           permission: 'master'
         }
