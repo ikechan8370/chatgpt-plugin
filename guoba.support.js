@@ -29,13 +29,13 @@ export function supportGuoba () {
         {
           field: 'blockWords',
           label: '输出黑名单',
-          bottomHelpMessage: '检查输出结果中是否有违禁词，如果存在黑名单中的违禁词则不输出',
+          bottomHelpMessage: '检查输出结果中是否有违禁词，如果存在黑名单中的违禁词则不输出。英文逗号隔开',
           component: 'InputTextArea'
         },
         {
           field: 'promptBlockWords',
           label: '输入黑名单',
-          bottomHelpMessage: '检查输入结果中是否有违禁词，如果存在黑名单中的违禁词则不输出',
+          bottomHelpMessage: '检查输入结果中是否有违禁词，如果存在黑名单中的违禁词则不输出。英文逗号隔开',
           component: 'InputTextArea'
         },
         {
@@ -285,6 +285,18 @@ export function supportGuoba () {
           label: '是否开启建议回复',
           bottomHelpMessage: '开启了会像官网上一样，每个问题给出建议的用户问题',
           component: 'Switch'
+        },
+        {
+          field: 'enableGroupContext',
+          label: '是否允许机器人读取近期的群聊聊天记录',
+          bottomHelpMessage: '开启后机器人可以知道群名、最近发言等信息',
+          component: 'Switch'
+        },
+        {
+          field: 'groupContextLength',
+          label: '允许机器人读取近期的最多群聊聊天记录条数。',
+          bottomHelpMessage: '允许机器人读取近期的最多群聊聊天记录条数。太多可能会超。默认50',
+          component: 'InputNumber'
         },
         {
           field: 'sydney',

@@ -194,28 +194,48 @@ let helpData = [
       {
         icon: 'coin',
         title: '#chatgpt添加设定',
-        desc: '添加一个设定，分此输入设定名称和设定内容'
+        desc: '添加一个设定，分此输入设定名称和设定内容。如果名字已存在，则会覆盖（相当于修改）'
       },
       {
         icon: 'switch',
         title: '#chatgpt使用设定【设定名】',
-        desc: '使用某个设定'
+        desc: '使用某个设定。如果处于自设定模式，会自动修改洗脑名称。'
       },
       {
         icon: 'confirm',
         title: '#chatgpt(上传|分享|共享)设定',
-        desc: '敬请期待'
+        desc: '上传设定'
+      },
+      {
+        icon: 'confirm',
+        title: '#chatgpt浏览设定(+关键词)(页码X)',
+        desc: '搜索公开的设定。默认返回前十条，使用页码X可以翻页，使用关键词可以检索。页码从1开始。'
       },
       {
         icon: 'confirm',
         title: '#chatgpt导入设定',
-        desc: '敬请期待'
+        desc: '导入其他人分享的设定。注意：相同名字的设定，会覆盖本地已有的设定'
+      },
+      {
+        icon: 'confirm',
+        title: '#chatgpt开启/关闭洗脑',
+        desc: '开启或关闭洗脑'
+      },
+      {
+        icon: 'confirm',
+        title: '#chatgpt设置洗脑强度+【强度】',
+        desc: '设置洗脑强度'
+      },
+      {
+        icon: 'confirm',
+        title: '#chatgpt设置洗脑名称+【名称】',
+        desc: '设置洗脑名称'
       },
       {
         icon: 'help',
         title: '#chatgpt设定帮助',
         desc: '设定帮助'
-      },
+      }
     ]
   },
   {

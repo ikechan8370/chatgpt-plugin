@@ -40,3 +40,11 @@ export function saveOnePrompt (name, content) {
   let filePath = `${_path}/plugins/chatgpt-plugin/prompts/${name}.txt`
   fs.writeFileSync(filePath, content)
 }
+
+export function deleteOnePrompt (name) {
+  const _path = process.cwd()
+  mkdirs(`${_path}/plugins/chatgpt-plugin/prompts`)
+  let filePath = `${_path}/plugins/chatgpt-plugin/prompts/${name}.txt`
+  fs.unlinkSync(filePath)
+}
+

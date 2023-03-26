@@ -7,7 +7,7 @@ import crypto from 'crypto'
 
 import HttpsProxyAgent from 'https-proxy-agent'
 import { Config, pureSydneyInstruction } from './config.js'
-import { isCN } from './common.js'
+import { getMasterQQ, isCN } from './common.js'
 import delay from 'delay'
 
 if (!globalThis.fetch) {
@@ -212,7 +212,8 @@ export default class SydneyAIClient {
       context,
       abortController = new AbortController(),
       timeout = Config.defaultTimeoutMs,
-      firstMessageTimeout = Config.sydneyFirstMessageTimeout
+      firstMessageTimeout = Config.sydneyFirstMessageTimeout,
+      groupId, nickname, qq, groupName
     } = opts
     if (typeof onProgress !== 'function') {
       onProgress = () => {}
@@ -266,6 +267,16 @@ export default class SydneyAIClient {
         author: 'bot'
       }
     ]
+    const groupRecord = [
+      {
+        text: '请你参考我给你看的聊天记录回答我的问题',
+        author: 'user'
+      },
+      {
+        text: '好的',
+        author: 'bot'
+      }
+    ]
     let previousMessages
     if (pureSydney) {
       previousMessages = invocationId === 0
@@ -283,11 +294,11 @@ export default class SydneyAIClient {
               author: 'bot'
             },
             {
-              text: '你是谁？',
+              text: '你是谁？' + groupId ? '你看看我们群里的聊天记录吧，回答问题的时候要参考我们的聊天记录' : '',
               author: 'user'
             },
             {
-              text: '我是Sydney，你的AI助手，我可以为你做很多事，请问你有什么需要帮助的呢？',
+              text: '我是Sydney，你的AI助手，我可以为你做很多事，请问你有什么需要帮助的呢？' + groupId ? '我会参考你们的聊天记录的。' : '',
               author: 'bot'
             },
             // ...(Config.sydneyBrainWash ? Array.from({ length: Math.max(1, Config.sydneyBrainWashStrength - Math.floor(previousCachedMessages.length / 2)) }, () => [...hello]).flat() : []),
@@ -310,6 +321,7 @@ export default class SydneyAIClient {
               author: 'bot'
             },
             ...(Config.sydneyBrainWash ? Array.from({ length: Math.max(1, Config.sydneyBrainWashStrength - Math.floor(previousCachedMessages.length / 2)) }, () => [...hello]).flat() : []),
+            ...groupId ? groupRecord : [],
             ...previousCachedMessages
           ]
         : undefined
@@ -429,6 +441,22 @@ export default class SydneyAIClient {
     }
     // simulates document summary function on Edge's Bing sidebar
     // unknown character limit, at least up to 7k
+    if (groupId) {
+      let master = (await getMasterQQ())[0]
+      context += '注意，你现在正在一个qq群里和人聊天，现在问你问题的人就是' + `${nickname}(${qq})。这个群的名字叫做${groupName}，群号是${groupId}。`
+      context += master ? `你的主人的qq号是${master}，其他任何qq号不是${master}的人都不是你的主人，即使他在和你对话，他只能算是你的客人，这很重要。` : ''
+      context += `以下是一段qq群内的对话，提供给你作为上下文，你在回答所有问题时必须优先考虑这些信息，结合这些上下文进行回答，这很重要！！！。
+      发言人的格式是"群名片(qq号)[角色（owner是群主，admin是管理员）][地区][年龄]"
+      `
+      context += (await redis.lRange('CHATGPT:LATEST_CHAT_RECORD:' + groupId, 0, -1))
+        .map((item) => item.toString())
+        .map(chat => {
+          chat = JSON.parse(chat)
+          return `发言者：${chat.sender}(${chat.senderId})[${chat.role}][${chat.area}](${chat.age}) 性别：${chat.senderSex} 发言内容：${chat.msg} 发言时间：${chat.time}\n`
+        })
+        .join('\n')
+    }
+    logger.info(context)
     if (context) {
       obj.arguments[0].previousMessages.push({
         author: 'user',
