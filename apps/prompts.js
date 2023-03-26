@@ -377,7 +377,7 @@ export class help extends plugin {
       if (r.code === 200) {
         const { prompt, title } = r.data
         saveOnePrompt(title, prompt)
-        e.reply(`导入成功。您现在可以使用 #chatgpt使用设定${title} 来体验这个设定了。'`)
+        e.reply(`导入成功。您现在可以使用 #chatgpt使用设定${title} 来体验这个设定了。`)
       } else {
         await e.reply('导入失败：' + r.msg)
       }

@@ -70,7 +70,7 @@ const defaultConfig = {
   allowOtherMode: true,
   sydneyContext: '',
   emojiBaseURL: 'https://www.gstatic.com/android/keyboard/emojikitchen',
-  version: 'v2.3.4'
+  version: 'v2.4.0'
 }
 const _path = process.cwd()
 let config = {}
