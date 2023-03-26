@@ -13,7 +13,6 @@ import {
   upsertMessage,
   randomString,
   getDefaultUserSetting, isCN
-  , formatDate
 } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
@@ -71,12 +70,6 @@ export class chatgpt extends plugin {
       /** 优先级，数字越小等级越高 */
       priority: 1144,
       rule: [
-        {
-          /** 学习群友聊天 **/
-          reg: '^[^#][sS]*',
-          fnc: 'recordChat',
-          log: false
-        },
         {
           /** 命令正则匹配 */
           reg: '^#chat3[sS]*',
@@ -1285,32 +1278,5 @@ export class chatgpt extends plugin {
       sendMessageOption = Object.assign(sendMessageOption, conversation)
     }
     return await this.chatGPTApi.sendMessage(prompt, sendMessageOption)
-  }
-
-  async recordChat (e) {
-    // let gl = await this.e.group.getMemberMap()
-    if (!e.raw_message) {
-      if (e.img && e.img.length > 0) {
-        e.msg = '[图片]'
-      }
-    }
-    if (e.isGroup && e.raw_message) {
-      const chat = {
-        sender: e.sender.card,
-        senderId: e.sender.user_id,
-        senderSex: e.sender.sex,
-        msg: e.raw_message,
-        role: e.sender.role,
-        area: e.sender.area,
-        age: e.sender.age,
-        time: formatDate(new Date())
-      }
-      // console.log(chat)
-      await redis.rPush('CHATGPT:LATEST_CHAT_RECORD:' + e.group_id, JSON.stringify(chat))
-      if (await redis.lLen('CHATGPT:LATEST_CHAT_RECORD:' + e.group_id) > Config.groupContextLength) {
-        await redis.lPop('CHATGPT:LATEST_CHAT_RECORD:' + e.group_id)
-      }
-    }
-    return false
   }
 }
