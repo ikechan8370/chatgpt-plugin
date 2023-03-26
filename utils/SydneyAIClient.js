@@ -213,7 +213,7 @@ export default class SydneyAIClient {
       abortController = new AbortController(),
       timeout = Config.defaultTimeoutMs,
       firstMessageTimeout = Config.sydneyFirstMessageTimeout,
-      groupId, nickname, qq, groupName
+      groupId, nickname, qq, groupName, chats
     } = opts
     if (typeof onProgress !== 'function') {
       onProgress = () => {}
@@ -448,15 +448,16 @@ export default class SydneyAIClient {
       context += `以下是一段qq群内的对话，提供给你作为上下文，你在回答所有问题时必须优先考虑这些信息，结合这些上下文进行回答，这很重要！！！。
       发言人的格式是"群名片(qq号)[角色（owner是群主，admin是管理员）][地区][年龄]"
       `
-      context += (await redis.lRange('CHATGPT:LATEST_CHAT_RECORD:' + groupId, 0, -1))
-        .map((item) => item.toString())
+      context += chats
         .map(chat => {
-          chat = JSON.parse(chat)
-          return `发言者：${chat.sender} (${chat.senderId}) [${chat.role}] [${chat.area}] (${chat.age}) 性别：${chat.senderSex} 发言内容：${chat.msg} 发言时间：${chat.time}\n`
+          let sender = chat.sender
+          return `发言者：${sender.card} (${sender.user_id}) [${sender.role}] [${sender.area}] (${sender.age}) [${sender.title}] 性别：${sender.sex} 发言内容：${chat.raw_message} 发言时间：${formatDate(new Date(chat.time))}\n`
         })
         .join('\n')
     }
-    logger.info(context)
+    if (Config.debug) {
+      logger.info(context)
+    }
     if (context) {
       obj.arguments[0].previousMessages.push({
         author: 'user',
@@ -695,22 +696,6 @@ export default class SydneyAIClient {
     if (!apology) {
       conversation.messages.push(userMessage)
       conversation.messages.push(replyMessage)
-    }
-    if (groupId) {
-      const chat = {
-        sender: Config.sydneyBrainWashName || 'Sydney',
-        senderId: Bot.uin,
-        msg: reply.text,
-        role: 'robot',
-        area: 'Microsoft',
-        age: 1,
-        time: formatDate(new Date())
-      }
-      // console.log(chat)
-      await redis.rPush('CHATGPT:LATEST_CHAT_RECORD:' + groupId, JSON.stringify(chat))
-      if (await redis.lLen('CHATGPT:LATEST_CHAT_RECORD:' + groupId) > Config.groupContextLength) {
-        await redis.lPop('CHATGPT:LATEST_CHAT_RECORD:' + groupId)
-      }
     }
     await this.conversationsCache.set(conversationKey, conversation)
     return {

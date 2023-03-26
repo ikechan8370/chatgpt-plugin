@@ -1015,6 +1015,16 @@ export class chatgpt extends plugin {
               opt.qq = e.sender.user_id
               opt.nickname = e.sender.card
               opt.groupName = e.group.name
+              let latestChat = await e.group.getChatHistory(0, 1)
+              let seq = latestChat[0].seq
+              let chats = []
+              while (chats.length < Config.groupContextLength) {
+                let chatHistory = await e.group.getChatHistory(seq, 20)
+                chats.push(...chatHistory)
+              }
+              chats = chats.slice(0, Config.groupContextLength)
+              console.log(chats)
+              opt.chats = chats
             }
             response = await bingAIClient.sendMessage(prompt, opt, (token) => {
               reply += token
