@@ -356,7 +356,7 @@ export class help extends plugin {
       output += `                       当前为第${pageable.pageNumber + 1}页，共${totalElements}个设定`
       await this.reply(output)
     } else {
-      await this.reply('失败：' + await response.text())
+      await this.reply('查询失败：' + await response.text())
     }
   }
 
@@ -381,6 +381,8 @@ export class help extends plugin {
       } else {
         await e.reply('导入失败：' + r.msg)
       }
+    } else {
+      await this.reply('导入失败：' + await response.text())
     }
     // await this.reply('敬请期待', true)
   }
