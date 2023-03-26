@@ -1270,12 +1270,17 @@ export class chatgpt extends plugin {
 
   async recordChat (e) {
     // let gl = await this.e.group.getMemberMap()
-    if (e.isGroup && e.msg) {
+    if (!e.raw_message) {
+      if (e.img && e.img.length > 0) {
+        e.msg = '[图片]'
+      }
+    }
+    if (e.isGroup && e.raw_message) {
       const chat = {
         sender: e.sender.card,
         senderId: e.sender.user_id,
         senderSex: e.sender.sex,
-        msg: e.msg,
+        msg: e.raw_message,
         role: e.sender.role,
         area: e.sender.area,
         age: e.sender.age,

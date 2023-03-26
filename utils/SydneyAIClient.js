@@ -7,7 +7,7 @@ import crypto from 'crypto'
 
 import HttpsProxyAgent from 'https-proxy-agent'
 import { Config, pureSydneyInstruction } from './config.js'
-import { getMasterQQ, isCN } from './common.js'
+import {formatDate, getMasterQQ, isCN} from './common.js'
 import delay from 'delay'
 
 if (!globalThis.fetch) {
@@ -452,7 +452,7 @@ export default class SydneyAIClient {
         .map((item) => item.toString())
         .map(chat => {
           chat = JSON.parse(chat)
-          return `发言者：${chat.sender}(${chat.senderId})[${chat.role}][${chat.area}](${chat.age}) 性别：${chat.senderSex} 发言内容：${chat.msg} 发言时间：${chat.time}\n`
+          return `发言者：${chat.sender} (${chat.senderId}) [${chat.role}] [${chat.area}] (${chat.age}) 性别：${chat.senderSex} 发言内容：${chat.msg} 发言时间：${chat.time}\n`
         })
         .join('\n')
     }
@@ -695,6 +695,22 @@ export default class SydneyAIClient {
     if (!apology) {
       conversation.messages.push(userMessage)
       conversation.messages.push(replyMessage)
+    }
+    if (groupId) {
+      const chat = {
+        sender: Config.sydneyBrainWashName || 'Sydney',
+        senderId: Bot.uin,
+        msg: reply.text,
+        role: 'robot',
+        area: 'Microsoft',
+        age: 1,
+        time: formatDate(new Date())
+      }
+      // console.log(chat)
+      await redis.rPush('CHATGPT:LATEST_CHAT_RECORD:' + groupId, JSON.stringify(chat))
+      if (await redis.lLen('CHATGPT:LATEST_CHAT_RECORD:' + groupId) > Config.groupContextLength) {
+        await redis.lPop('CHATGPT:LATEST_CHAT_RECORD:' + groupId)
+      }
     }
     await this.conversationsCache.set(conversationKey, conversation)
     return {
