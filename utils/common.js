@@ -221,6 +221,16 @@ export function mkdirs (dirname) {
   }
 }
 
+export function formatDate (date) {
+  const year = date.getFullYear()
+  const month = date.getMonth() + 1 // Note that getMonth() returns a zero-based index
+  const day = date.getDate()
+  const hour = date.getHours()
+  const minute = date.getMinutes()
+
+  const formattedDate = `${year}年${month}月${day}日 ${hour}:${minute}`
+  return formattedDate
+}
 export async function getMasterQQ () {
   return (await import('../../../lib/config/config.js')).default.masterQQ
 }
