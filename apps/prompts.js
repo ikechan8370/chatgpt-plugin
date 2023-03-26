@@ -205,9 +205,9 @@ export class help extends plugin {
     let name = this.e.msg
     let prompt = getPromptByName(name)
     if (prompt) {
-      await this.e.reply('该设定已存在', true)
-      this.finish('addPromptName')
-      return
+      await this.e.reply('【警告】该设定已存在，新增的内容将会覆盖之前的设定', true)
+      // this.finish('addPromptName')
+      // return
     }
     await redis.set('CHATGPT:ADD_PROMPT_NAME', name)
     await this.reply('请输入设定内容', true)
