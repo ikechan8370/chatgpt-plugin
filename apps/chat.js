@@ -21,7 +21,6 @@ import { OfficialChatGPTClient } from '../utils/message.js'
 import fetch from 'node-fetch'
 import { deleteConversation, getConversations, getLatestMessageIdByConversationId } from '../utils/conversation.js'
 import { convertSpeaker, generateAudio, speakers } from '../utils/tts.js'
-import { segment } from 'oicq'
 import ChatGLMClient from '../utils/chatglm.js'
 try {
   await import('keyv')
@@ -68,7 +67,6 @@ export class chatgpt extends plugin {
       name: 'chatgpt',
       /** 功能描述 */
       dsc: 'chatgpt from openai',
-      /** https://oicqjs.github.io/oicq/#events */
       event: 'message',
       /** 优先级，数字越小等级越高 */
       priority: 1144,
@@ -76,7 +74,8 @@ export class chatgpt extends plugin {
         {
           /** 学习群友聊天 **/
           reg: '^[^#][sS]*',
-          fnc: 'recordChat'
+          fnc: 'recordChat',
+          log: false
         },
         {
           /** 命令正则匹配 */
@@ -106,7 +105,8 @@ export class chatgpt extends plugin {
           /** 命令正则匹配 */
           reg: toggleMode === 'at' ? '^[^#][sS]*' : '^#chat[^gpt][sS]*',
           /** 执行方法 */
-          fnc: 'chatgpt'
+          fnc: 'chatgpt',
+          log: false
         },
         {
           reg: '^#(chatgpt)?对话列表$',
@@ -492,7 +492,6 @@ export class chatgpt extends plugin {
 
   /**
    * #chatgpt
-   * @param e oicq传递的事件参数e
    */
   async chatgpt (e) {
     let prompt
