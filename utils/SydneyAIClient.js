@@ -451,7 +451,7 @@ export default class SydneyAIClient {
       context += chats
         .map(chat => {
           let sender = chat.sender
-          return `发言者：${sender.card} (${sender.user_id}) [${sender.role}] [${sender.area}] (${sender.age}) [${sender.title}] 性别：${sender.sex} 发言内容：${chat.raw_message} 发言时间：${formatDate(new Date(chat.time))}\n`
+          return `发言者：${sender.card} (${sender.user_id}) [${sender.role}] [${sender.area}] (${sender.age}) [${sender.title}] 性别：${sender.sex} 发言内容：${chat.raw_message} 发言时间：${formatDate(new Date(chat.time * 1000))}\n`
         })
         .join('\n')
     }
