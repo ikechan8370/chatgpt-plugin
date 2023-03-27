@@ -8,6 +8,8 @@
 ![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/ikechan8370/chatgpt-plugin?label=latest%20version&logo=github)
 ![GitHub top language](https://img.shields.io/github/languages/top/ikechan8370/chatgpt-plugin?logo=github)
 
+[文档（建设中）](https://chatgpt-docs.err0r.top/)
+
 ## 特点
 
 * 支持单人连续对话Conversation，群聊中支持加入其他人的对话
