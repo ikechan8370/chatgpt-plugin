@@ -2,7 +2,7 @@ import plugin from '../../../lib/plugins/plugin.js'
 import fs from 'fs'
 import _ from 'lodash'
 import { Config } from '../utils/config.js'
-import { getMasterQQ, limitString, makeForwardMsg } from '../utils/common.js'
+import {getMasterQQ, limitString, makeForwardMsg, maskQQ} from '../utils/common.js'
 import { deleteOnePrompt, getPromptByName, readPrompts, saveOnePrompt } from '../utils/prompts.js'
 export class help extends plugin {
   constructor (e) {
@@ -40,6 +40,11 @@ export class help extends plugin {
         {
           reg: '^#(chatgpt|ChatGPT)(上传|分享|共享)设定',
           fnc: 'uploadPrompt',
+          permission: 'master'
+        },
+        {
+          reg: '^#(chatgpt|ChatGPT)(删除|取消|撤销)共享设定',
+          fnc: 'removeSharePrompt',
           permission: 'master'
         },
         {
@@ -225,10 +230,32 @@ export class help extends plugin {
     this.finish('addPromptContext')
   }
 
+  async removeSharePrompt (e) {
+    let master = (await getMasterQQ())[0]
+    let name = e.msg.replace(/^#(chatgpt|ChatGPT)(删除|取消|撤销)共享设定/, '')
+    let response = await fetch(`https://chatgpt.roki.best/prompt?name=${name}&qq=${master}?`, {
+      method: 'DELETE',
+      headers: {
+        'FROM-CHATGPT': 'ikechan8370'
+      }
+    })
+    if (response.status === 200) {
+      let json = await response.json()
+      if (json.code === 200 && json.data) {
+        await e.reply('已从云端删除该设定')
+      } else {
+        await e.reply('操作失败：' + json.msg)
+      }
+    } else {
+      await e.reply('操作失败：' + await response.text())
+    }
+  }
+
   async uploadPrompt (e) {
     if (await redis.get('CHATGPT:UPLOAD_PROMPT')) {
-      await this.reply('本机器人存在其他人正在上传设定，请稍后')
-      return
+      await redis.del('CHATGPT:UPLOAD_PROMPT')
+      // await this.reply('本机器人存在其他人正在上传设定，请稍后')
+      // return
     }
     let use = await redis.get('CHATGPT:USE') || 'api'
     if (use.toLowerCase() === 'bing') {
@@ -240,7 +267,7 @@ export class help extends plugin {
     if (!currentUse) {
       currentUse = await redis.get(`CHATGPT:PROMPT_USE_${use}`)
     }
-    await this.reply(`即将上传设定${currentUse}，确定请回复确定，取消请回复取消，或者回复其他本地存在设定的名字`, true)
+    await this.reply(`即将向云端上传设定${currentUse}，确定请回复确定，取消请回复取消，或者回复其他本地存在设定的名字`, true)
     let extraData = {
       currentUse,
       use
@@ -268,7 +295,7 @@ export class help extends plugin {
       this.finish('uploadPromptConfirm')
       return
     }
-    await redis.set('CHATGPT:UPLOAD_PROMPT', JSON.stringify(extraData), 300)
+    // await redis.set('CHATGPT:UPLOAD_PROMPT', JSON.stringify(extraData), 300)
     await this.reply('请输入对该设定的描述或备注，便于其他人快速了解该设定', true)
     this.finish('uploadPromptConfirm')
     this.setContext('uploadPromptDescription')
@@ -278,7 +305,7 @@ export class help extends plugin {
     if (!this.e.msg) return
     let description = this.e.msg.trim()
     if (description === '取消') {
-      await redis.del('CHATGPT:UPLOAD_PROMPT')
+      // await redis.del('CHATGPT:UPLOAD_PROMPT')
       await this.reply('已取消上传', true)
       this.finish('uploadPromptDescription')
       return
@@ -356,7 +383,7 @@ export class help extends plugin {
       let output = '| 【设定名称】 |  上传者QQ  |  上传时间  ｜  是否R18  ｜  使用场景  ｜\n'
       output += '----------------------------------------------------------------------------------------\n'
       content.forEach(c => {
-        output += `|  【${c.title}】  |  ${c.qq}  | ${c.createTime} | ${c.r18} | ${c.use}｜\n`
+        output += `|  【${c.title}】  |  ${maskQQ(c.qq)}  | ${c.createTime} | ${c.r18} | ${c.use}｜\n`
       })
       output += '**************************************************************************\n'
       output += `                       当前为第${pageable.pageNumber + 1}页，共${totalElements}个设定`
