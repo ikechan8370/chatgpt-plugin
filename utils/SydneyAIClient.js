@@ -283,7 +283,7 @@ export default class SydneyAIClient {
         ? [
             {
               text: pureSydneyInstruction,
-              author: 'system'
+              author: 'bot'
             },
             // ...(Config.sydneyBrainWash ? Array.from({ length: Math.max(1, Config.sydneyBrainWashStrength - Math.floor(previousCachedMessages.length / 2)) }, () => [...hello]).flat() : []),
             ...previousCachedMessages,
