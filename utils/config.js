@@ -73,7 +73,8 @@ const defaultConfig = {
   enableGroupContext: false,
   groupContextLength: 50,
   enableRobotAt: true,
-  version: 'v2.4.6'
+  maxNumUserMessagesInConversation: 18,
+  version: 'v2.4.7'
 }
 const _path = process.cwd()
 let config = {}

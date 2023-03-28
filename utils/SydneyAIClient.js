@@ -257,6 +257,13 @@ export default class SydneyAIClient {
           author: message.role === 'User' ? 'user' : 'bot'
         }
       })
+    let pm = []
+    previousCachedMessages.reverse().forEach(m => {
+      if (pm.filter(m => m.author === 'user').length < Config.maxNumUserMessagesInConversation - 1) {
+        pm.push(m)
+      }
+    })
+    pm = pm.reverse()
     // const hello = [
     //   {
     //     text: '你好，你是谁？',
@@ -286,7 +293,7 @@ export default class SydneyAIClient {
               author: 'bot'
             },
             // ...(Config.sydneyBrainWash ? Array.from({ length: Math.max(1, Config.sydneyBrainWashStrength - Math.floor(previousCachedMessages.length / 2)) }, () => [...hello]).flat() : []),
-            ...previousCachedMessages,
+            ...pm,
             {
               text: message,
               author: 'user'
@@ -306,7 +313,7 @@ export default class SydneyAIClient {
             },
             // ...(Config.sydneyBrainWash ? Array.from({ length: Math.max(1, Config.sydneyBrainWashStrength - Math.floor(previousCachedMessages.length / 2)) }, () => [...hello]).flat() : []),
             // ...groupId ? groupRecord : [],
-            ...previousCachedMessages
+            ...pm
           ]
         : undefined
     }
@@ -511,6 +518,9 @@ export default class SydneyAIClient {
             }
             const messages = event?.arguments?.[0]?.messages
             if (!messages?.length || messages[0].author !== 'bot') {
+              if (event?.arguments?.[0]?.throttling?.maxNumUserMessagesInConversation) {
+                Config.maxNumUserMessagesInConversation = event?.arguments?.[0]?.throttling?.maxNumUserMessagesInConversation
+              }
               return
             }
             const message = messages.length
