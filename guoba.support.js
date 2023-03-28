@@ -481,7 +481,7 @@ export function supportGuoba () {
         },
         {
           field: 'emojiBaseURL',
-          abel: '合成emoji的API地址，默认谷歌厨房',
+          label: '合成emoji的API地址，默认谷歌厨房',
           component: 'Input'
         }
       ],
