@@ -1052,9 +1052,6 @@ export class chatgpt extends plugin {
             break
           } catch (error) {
             const message = error?.message || error?.data?.message || error || '出错了'
-            if (message !== 'Timed out waiting for first message.') {
-              logger.error(error)
-            }
             retry--
             errorMessage = message === 'Timed out waiting for response. Try enabling debug mode to see more information.' ? (reply ? `${reply}\n不行了，我的大脑过载了，处理不过来了!` : '必应的小脑瓜不好使了，不知道怎么回答！') : message
           }
