@@ -257,26 +257,26 @@ export default class SydneyAIClient {
           author: message.role === 'User' ? 'user' : 'bot'
         }
       })
-    const hello = [
-      {
-        text: '你好，你是谁？',
-        author: 'user'
-      },
-      {
-        text: `我是${Config.sydneyBrainWashName}.`,
-        author: 'bot'
-      }
-    ]
-    const groupRecord = [
-      {
-        text: '请你参考我给你看的聊天记录回答我的问题',
-        author: 'user'
-      },
-      {
-        text: '好的',
-        author: 'bot'
-      }
-    ]
+    // const hello = [
+    //   {
+    //     text: '你好，你是谁？',
+    //     author: 'user'
+    //   },
+    //   {
+    //     text: `我是${Config.sydneyBrainWashName}.`,
+    //     author: 'bot'
+    //   }
+    // ]
+    // const groupRecord = [
+    //   {
+    //     text: '请你参考我给你看的聊天记录回答我的问题',
+    //     author: 'user'
+    //   },
+    //   {
+    //     text: '好的',
+    //     author: 'bot'
+    //   }
+    // ]
     let previousMessages
     if (pureSydney) {
       previousMessages = invocationId === 0
@@ -305,7 +305,7 @@ export default class SydneyAIClient {
               author: 'bot'
             },
             // ...(Config.sydneyBrainWash ? Array.from({ length: Math.max(1, Config.sydneyBrainWashStrength - Math.floor(previousCachedMessages.length / 2)) }, () => [...hello]).flat() : []),
-            ...groupId ? groupRecord : [],
+            // ...groupId ? groupRecord : [],
             ...previousCachedMessages
           ]
         : undefined
@@ -389,7 +389,7 @@ export default class SydneyAIClient {
             ],
             author: 'user',
             inputMethod: 'Keyboard',
-            text: conversationId ? '\n\nAI:\n' : message,
+            text: message,
             messageType: 'SearchQuery'
           },
           conversationSignature,
@@ -442,7 +442,7 @@ export default class SydneyAIClient {
       })
     }
     if (obj.arguments[0].previousMessages.length === 0) {
-      delete obj.arguments[0].previousMessages;
+      delete obj.arguments[0].previousMessages
     }
     let apology = false
     const messagePromise = new Promise((resolve, reject) => {
