@@ -397,22 +397,22 @@ export default class SydneyAIClient {
             id: clientId
           },
           conversationId,
-          previousMessages: []
+          previousMessages: previousMessages
         }
       ],
       invocationId: invocationId.toString(),
       target: 'chat',
       type: 4
     }
-    if (previousMessagesFormatted) {
-      obj.arguments[0].previousMessages.push({
-        author: 'user',
-        description: previousMessagesFormatted,
-        contextType: 'WebPage',
-        messageType: 'Context',
-        messageId: 'discover-web--page-ping-mriduna-----'
-      });
-    }
+    // if (previousMessagesFormatted) {
+    //   obj.arguments[0].previousMessages.push({
+    //     author: 'user',
+    //     description: previousMessagesFormatted,
+    //     contextType: 'WebPage',
+    //     messageType: 'Context',
+    //     messageId: 'discover-web--page-ping-mriduna-----'
+    //   });
+    // }
     // simulates document summary function on Edge's Bing sidebar
     // unknown character limit, at least up to 7k
     if (groupId) {
