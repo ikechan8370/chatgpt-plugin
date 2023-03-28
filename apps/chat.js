@@ -747,6 +747,15 @@ export class chatgpt extends plugin {
         await this.reply('返回内容存在敏感词，我不想回答你', true)
         return false
       }
+      //处理中断的代码区域
+      const codeBlockCount = (response.match(/```/g) || []).length;
+      const shouldAddClosingBlock = codeBlockCount % 2 === 1 && !response.endsWith('```');
+      if (shouldAddClosingBlock) {
+        response += '\n```';
+      }
+      if (codeBlockCount && !shouldAddClosingBlock) {
+        response = response.replace(/```$/, '\n```');
+      }
 
       let quotemessage = []
       if (chatMessage?.quote) {
