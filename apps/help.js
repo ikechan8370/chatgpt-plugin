@@ -208,6 +208,11 @@ let helpData = [
       },
       {
         icon: 'confirm',
+        title: '#chatgpt(删除|取消|撤销)共享设定+设定名',
+        desc: '从远端删除，只能删除自己上传的设定，根据机器人主人qq号判断。'
+      },
+      {
+        icon: 'confirm',
         title: '#chatgpt浏览设定(+关键词)(页码X)',
         desc: '搜索公开的设定。默认返回前十条，使用页码X可以翻页，使用关键词可以检索。页码从1开始。'
       },

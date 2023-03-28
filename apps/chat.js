@@ -1021,25 +1021,29 @@ export class chatgpt extends plugin {
             opt.toneStyle = Config.toneStyle
             opt.context = Config.sydneyContext
             if (Config.enableGroupContext && e.isGroup) {
-              opt.groupId = e.group_id
-              opt.qq = e.sender.user_id
-              opt.nickname = e.sender.card
-              opt.groupName = e.group.name
-              let latestChat = await e.group.getChatHistory(0, 1)
-              let seq = latestChat[0].seq
-              let chats = []
-              while (chats.length < Config.groupContextLength) {
-                let chatHistory = await e.group.getChatHistory(seq, 20)
-                chats.push(...chatHistory)
+              try {
+                opt.groupId = e.group_id
+                opt.qq = e.sender.user_id
+                opt.nickname = e.sender.card
+                opt.groupName = e.group.name
+                let latestChat = await e.group.getChatHistory(0, 1)
+                let seq = latestChat[0].seq
+                let chats = []
+                while (chats.length < Config.groupContextLength) {
+                  let chatHistory = await e.group.getChatHistory(seq, 20)
+                  chats.push(...chatHistory)
+                }
+                chats = chats.slice(0, Config.groupContextLength)
+                let mm = await e.group.getMemberMap()
+                chats.forEach(chat => {
+                  let sender = mm.get(chat.sender.user_id)
+                  chat.sender = sender
+                })
+                // console.log(chats)
+                opt.chats = chats
+              } catch (err) {
+                logger.warn('获取群聊聊天记录失败，本次对话不携带聊天记录', err)
               }
-              chats = chats.slice(0, Config.groupContextLength)
-              let mm = await e.group.getMemberMap()
-              chats.forEach(chat => {
-                let sender = mm.get(chat.sender.user_id)
-                chat.sender = sender
-              })
-              console.log(chats)
-              opt.chats = chats
             }
             response = await bingAIClient.sendMessage(prompt, opt, (token) => {
               reply += token
@@ -1058,9 +1062,6 @@ export class chatgpt extends plugin {
             break
           } catch (error) {
             const message = error?.message || error?.data?.message || error || '出错了'
-            if (message !== 'Timed out waiting for first message.') {
-              logger.error(error)
-            }
             retry--
             errorMessage = message === 'Timed out waiting for response. Try enabling debug mode to see more information.' ? (reply ? `${reply}\n不行了，我的大脑过载了，处理不过来了!` : '必应的小脑瓜不好使了，不知道怎么回答！') : message
           }

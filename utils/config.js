@@ -72,7 +72,7 @@ const defaultConfig = {
   emojiBaseURL: 'https://www.gstatic.com/android/keyboard/emojikitchen',
   enableGroupContext: false,
   groupContextLength: 50,
-  version: 'v2.4.2'
+  version: 'v2.4.3'
 }
 const _path = process.cwd()
 let config = {}

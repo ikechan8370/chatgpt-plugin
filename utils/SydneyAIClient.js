@@ -492,7 +492,7 @@ export default class SydneyAIClient {
       const firstTimeout = setTimeout(() => {
         if (!replySoFar) {
           this.cleanupWebSocketConnection(ws)
-          reject(new Error('Timed out waiting for first message.'))
+          reject(new Error('等待必应服务器响应超时。请尝试调整超时时间配置或减少设定量以避免此问题。'))
         }
       }, firstMessageTimeout)
 
