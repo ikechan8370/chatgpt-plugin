@@ -293,6 +293,11 @@ export function supportGuoba () {
           component: 'InputNumber'
         },
         {
+          field: 'enableRobotAt',
+          label: '是否允许机器人真at。',
+          component: 'Switch'
+        },
+        {
           field: 'sydney',
           label: 'Custom的设定',
           bottomHelpMessage: '仅自设定模式下有效。你可以自己改写设定，让Sydney变成你希望的样子。可能存在不稳定的情况。',
@@ -472,6 +477,11 @@ export function supportGuoba () {
           field: 'helloPrompt',
           label: '打招呼所说文字的引导文字',
           bottomHelpMessage: '将会用这段文字询问ChatGPT，由ChatGPT给出随机的打招呼文字。',
+          component: 'Input'
+        },
+        {
+          field: 'emojiBaseURL',
+          abel: '合成emoji的API地址，默认谷歌厨房',
           component: 'Input'
         }
       ],
