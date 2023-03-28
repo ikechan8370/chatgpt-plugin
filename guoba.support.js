@@ -142,10 +142,7 @@ export function supportGuoba () {
           field: 'cacheUrl',
           label: '渲染服务器地址',
           bottomHelpMessage: '用于缓存图片模式会话内容并渲染的服务器地址。',
-          component: 'Input',
-          rules: [
-            {pattern: '^(?:(?:https?|ftp)://)?(?:www.)?([a-zA-Z0-9-]+)(?:.[a-zA-Z0-9-]+)+(?:/[^\s]*)?$', message: '非法的数据格式'},
-          ]
+          component: 'Input'
         },
         {
           field: 'cacheEntry',
@@ -172,10 +169,7 @@ export function supportGuoba () {
           field: 'proxy',
           label: '代理服务器地址',
           bottomHelpMessage: '数据通过代理服务器发送，http或socks5代理。',
-          component: 'Input',
-          rules: [
-            {pattern: '^(?:(?:https?|ftp)://)?(?:www.)?([a-zA-Z0-9-]+)(?:.[a-zA-Z0-9-]+)+(?:/[^\s]*)?$', message: '非法的数据格式'},
-          ]
+          component: 'Input'
         },
         {
           field: 'debug',
@@ -352,19 +346,13 @@ export function supportGuoba () {
           field: 'api',
           label: 'ChatGPT API反代服务器地址',
           bottomHelpMessage: 'ChatGPT的API反代服务器，用于绕过Cloudflare访问ChatGPT API',
-          component: 'Input',
-          rules: [
-            {pattern: '^(?:(?:https?|ftp)://)?(?:www.)?([a-zA-Z0-9-]+)(?:.[a-zA-Z0-9-]+)+(?:/[^\s]*)?$', message: '非法的数据格式'},
-          ]
+          component: 'Input'
         },
         {
           field: 'apiBaseUrl',
           label: 'apiBaseUrl地址',
           bottomHelpMessage: 'apiBaseUrl地址',
-          component: 'Input',
-          rules: [
-            {pattern: '^(?:(?:https?|ftp)://)?(?:www.)?([a-zA-Z0-9-]+)(?:.[a-zA-Z0-9-]+)+(?:/[^\s]*)?$', message: '非法的数据格式'},
-          ]
+          component: 'Input'
         },
         {
           field: 'apiForceUseReverse',
@@ -436,10 +424,7 @@ export function supportGuoba () {
           field: 'ttsSpace',
           label: '语音转换API地址',
           bottomHelpMessage: '前往duplicate空间https://huggingface.co/spaces/ikechan8370/vits-uma-genshin-honkai后查看api地址',
-          component: 'Input',
-          rules: [
-            {pattern: '^(?:(?:https?|ftp)://)?(?:www.)?([a-zA-Z0-9-]+)(?:.[a-zA-Z0-9-]+)+(?:/[^\s]*)?$', message: '非法的数据格式'},
-          ]
+          component: 'Input'
         },
         {
           field: 'huggingFaceReverseProxy',

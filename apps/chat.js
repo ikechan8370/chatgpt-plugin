@@ -208,11 +208,9 @@ export class chatgpt extends plugin {
           store: new KeyvFile({ filename: 'cache.json' }),
           namespace: Config.toneStyle
         }
+        let Keyv
         try {
-          const { default: Keyv } = await import('keyv')
-          const conversationsCache = new Keyv(conversation)
-          await conversationsCache.delete(`SydneyUser_${e.sender.user_id}`)
-          await this.reply('已退出当前对话，该对话仍然保留。请@我进行聊天以开启新的对话', true)
+          Keyv = (await import('keyv')).default
         } catch (err) {
           await this.reply('依赖keyv未安装，请执行pnpm install keyv', true)
         }
@@ -272,11 +270,9 @@ export class chatgpt extends plugin {
           store: new KeyvFile({ filename: 'cache.json' }),
           namespace: Config.toneStyle
         }
+        let Keyv
         try {
-          const { default: Keyv } = await import('keyv')
-          const conversationsCache = new Keyv(conversation)
-          await conversationsCache.delete(`SydneyUser_${qq}`)
-          await this.reply('已退出当前对话，该对话仍然保留。请@我进行聊天以开启新的对话', true)
+          Keyv = (await import('keyv')).default
         } catch (err) {
           await this.reply('依赖keyv未安装，请执行pnpm install keyv', true)
         }
