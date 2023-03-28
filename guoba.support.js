@@ -321,28 +321,28 @@ export function supportGuoba () {
           bottomHelpMessage: '即使配置了proxy，依然使用sydney反代',
           component: 'Switch'
         },
-        {
-          field: 'sydneyBrainWash',
-          label: '开启强制洗脑',
-          bottomHelpMessage: '仅自设定模式下有效。如果发现自设定模式下总是回复类似于换个话题之类的话，可以开启强制洗脑试试，如果还不行就调整你的设定',
-          component: 'Switch'
-        },
-        {
-          field: 'sydneyBrainWashName',
-          label: 'Custom模式下的称呼',
-          bottomHelpMessage: '仅自设定模式下有效。如果开启了强制洗脑，务必准确填写这个才能精准洗脑。不开启洗脑可以不管这个',
-          component: 'Input'
-        },
-        {
-          field: 'sydneyBrainWashStrength',
-          label: '洗脑强度',
-          bottomHelpMessage: '仅自设定模式下有效。洗脑强度。默认为15，可以酌情调整。太大的话可能长对话会影响对话质量',
-          component: 'InputNumber',
-          componentProps: {
-            min: 0,
-            max: 100
-          }
-        },
+        // {
+        //   field: 'sydneyBrainWash',
+        //   label: '开启强制洗脑',
+        //   bottomHelpMessage: '仅自设定模式下有效。如果发现自设定模式下总是回复类似于换个话题之类的话，可以开启强制洗脑试试，如果还不行就调整你的设定',
+        //   component: 'Switch'
+        // },
+        // {
+        //   field: 'sydneyBrainWashName',
+        //   label: 'Custom模式下的称呼',
+        //   bottomHelpMessage: '仅自设定模式下有效。如果开启了强制洗脑，务必准确填写这个才能精准洗脑。不开启洗脑可以不管这个',
+        //   component: 'Input'
+        // },
+        // {
+        //   field: 'sydneyBrainWashStrength',
+        //   label: '洗脑强度',
+        //   bottomHelpMessage: '仅自设定模式下有效。洗脑强度。默认为15，可以酌情调整。太大的话可能长对话会影响对话质量',
+        //   component: 'InputNumber',
+        //   componentProps: {
+        //     min: 0,
+        //     max: 100
+        //   }
+        // },
         {
           label: '以下为API3方式的配置。',
           component: 'Divider'

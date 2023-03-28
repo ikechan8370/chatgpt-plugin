@@ -73,7 +73,7 @@ const defaultConfig = {
   enableGroupContext: false,
   groupContextLength: 50,
   enableRobotAt: true,
-  version: 'v2.4.5'
+  version: 'v2.4.6'
 }
 const _path = process.cwd()
 let config = {}

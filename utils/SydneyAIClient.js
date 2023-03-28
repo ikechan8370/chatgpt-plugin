@@ -298,13 +298,13 @@ export default class SydneyAIClient {
         ? [
             {
               text: Config.sydney + ((Config.enableGroupContext && groupId) ? '你看看我们群里的聊天记录吧，回答问题的时候要参考我们的聊天记录。' : ''),
-              author: 'system'
-            },
-            {
-              text: `好的，我是${Config.sydneyBrainWashName}。`,
               author: 'bot'
             },
-            ...(Config.sydneyBrainWash ? Array.from({ length: Math.max(1, Config.sydneyBrainWashStrength - Math.floor(previousCachedMessages.length / 2)) }, () => [...hello]).flat() : []),
+            // {
+            //   text: `好的，我是${Config.sydneyBrainWashName}。`,
+            //   author: 'bot'
+            // },
+            // ...(Config.sydneyBrainWash ? Array.from({ length: Math.max(1, Config.sydneyBrainWashStrength - Math.floor(previousCachedMessages.length / 2)) }, () => [...hello]).flat() : []),
             ...groupId ? groupRecord : [],
             ...previousCachedMessages
           ]
