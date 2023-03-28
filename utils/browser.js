@@ -372,69 +372,6 @@ export class ChatGPTPuppeteer extends Puppeteer {
     }
   }
 
-  // async getLastMessage(): Promise<string | null> {
-  //   const messages = await this.getMessages()
-
-  //   if (messages) {
-  //     return messages[messages.length - 1]
-  //   } else {
-  //     return null
-  //   }
-  // }
-
-  // async getPrompts(): Promise<string[]> {
-  //   // Get all prompts
-  //   const messages = await this._page.$$(
-  //     '.text-base:has(.whitespace-pre-wrap):not(:has(button:nth-child(2))) .whitespace-pre-wrap'
-  //   )
-
-  //   // Prompts are always plaintext
-  //   return Promise.all(messages.map((a) => a.evaluate((el) => el.textContent)))
-  // }
-
-  // async getMessages(): Promise<string[]> {
-  //   // Get all complete messages
-  //   // (in-progress messages that are being streamed back don't contain action buttons)
-  //   const messages = await this._page.$$(
-  //     '.text-base:has(.whitespace-pre-wrap):has(button:nth-child(2)) .whitespace-pre-wrap'
-  //   )
-
-  //   if (this._markdown) {
-  //     const htmlMessages = await Promise.all(
-  //       messages.map((a) => a.evaluate((el) => el.innerHTML))
-  //     )
-
-  //     const markdownMessages = htmlMessages.map((messageHtml) => {
-  //       // parse markdown from message HTML
-  //       messageHtml = messageHtml
-  //         .replaceAll('Copy code</button>', '</button>')
-  //         .replace(/Copy code\s*<\/button>/gim, '</button>')
-
-  //       return html2md(messageHtml, {
-  //         ignoreTags: [
-  //           'button',
-  //           'svg',
-  //           'style',
-  //           'form',
-  //           'noscript',
-  //           'script',
-  //           'meta',
-  //           'head'
-  //         ],
-  //         skipTags: ['button', 'svg']
-  //       })
-  //     })
-
-  //     return markdownMessages
-  //   } else {
-  //     // plaintext
-  //     const plaintextMessages = await Promise.all(
-  //       messages.map((a) => a.evaluate((el) => el.textContent))
-  //     )
-  //     return plaintextMessages
-  //   }
-  // }
-
   async sendMessage (
     message,
     opts = {}
@@ -496,7 +433,7 @@ export class ChatGPTPuppeteer extends Puppeteer {
           }
         }
       ],
-      model: Config.plus ? 'text-davinci-002-render-sha' : 'text-davinci-002-render-sha',
+      model: Config.plus ? Config.useGPT4 ? 'gpt-4' : 'text-davinci-002-render-sha' : 'text-davinci-002-render-sha',
       parent_message_id: parentMessageId
     }
 

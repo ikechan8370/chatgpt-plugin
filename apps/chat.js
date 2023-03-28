@@ -13,7 +13,6 @@ import {
   upsertMessage,
   randomString,
   getDefaultUserSetting, isCN
-  , formatDate
 } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
@@ -71,12 +70,6 @@ export class chatgpt extends plugin {
       /** 优先级，数字越小等级越高 */
       priority: 1144,
       rule: [
-        {
-          /** 学习群友聊天 **/
-          reg: '^[^#][sS]*',
-          fnc: 'recordChat',
-          log: false
-        },
         {
           /** 命令正则匹配 */
           reg: '^#chat3[sS]*',
@@ -258,6 +251,14 @@ export class chatgpt extends plugin {
           await redis.del(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
           await this.reply('已结束当前对话，请@我进行聊天以开启新的对话', true)
         }
+      } else if (use === 'browser') {
+        let c = await redis.get(`CHATGPT:CONVERSATIONS_BROWSER:${e.sender.user_id}`)
+        if (!c) {
+          await this.reply('当前没有开启对话', true)
+        } else {
+          await redis.del(`CHATGPT:CONVERSATIONS_BROWSER:${e.sender.user_id}`)
+          await this.reply('已结束当前对话，请@我进行聊天以开启新的对话', true)
+        }
       }
     } else {
       let at = ats[0]
@@ -311,6 +312,14 @@ export class chatgpt extends plugin {
           await this.reply(`当前${atUser}没有开启对话`, true)
         } else {
           await redis.del(`CHATGPT:CONVERSATIONS_BING:${qq}`)
+          await this.reply(`已结束${atUser}的对话，TA仍可以@我进行聊天以开启新的对话`, true)
+        }
+      } else if (use === 'browser') {
+        let c = await redis.get(`CHATGPT:CONVERSATIONS_BROWSER:${qq}`)
+        if (!c) {
+          await this.reply(`当前${atUser}没有开启对话`, true)
+        } else {
+          await redis.del(`CHATGPT:CONVERSATIONS_BROWSER:${qq}`)
           await this.reply(`已结束${atUser}的对话，TA仍可以@我进行聊天以开启新的对话`, true)
         }
       }
@@ -678,6 +687,10 @@ export class chatgpt extends plugin {
           key = `CHATGPT:CONVERSATIONS_CHATGLM:${e.sender.user_id}`
           break
         }
+        case 'browser': {
+          key = `CHATGPT:CONVERSATIONS_BROWSER:${e.sender.user_id}`
+          break
+        }
       }
       let ctime = new Date()
       previousConversation = await redis.get(key) || JSON.stringify({
@@ -749,15 +762,15 @@ export class chatgpt extends plugin {
       }
       if (useTTS) {
         if (Config.ttsSpace && response.length <= Config.ttsAutoFallbackThreshold) {
-          let audio_err = false
+          let audioErr = false
           try {
             let wav = await generateAudio(response, speaker, '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）')
             await e.reply(segment.record(wav))
           } catch (err) {
             await this.reply('合成语音发生错误，我用文本回复你吧')
-            audio_err = true
+            audioErr = true
           }
-          if (Config.alsoSendText || audio_err) {
+          if (Config.alsoSendText || audioErr) {
             await this.reply(`${response}`, e.isGroup)
             if (quotemessage.length > 0) {
               this.reply(await makeForwardMsg(this.e, quotemessage))
@@ -1007,6 +1020,21 @@ export class chatgpt extends plugin {
               opt.qq = e.sender.user_id
               opt.nickname = e.sender.card
               opt.groupName = e.group.name
+              let latestChat = await e.group.getChatHistory(0, 1)
+              let seq = latestChat[0].seq
+              let chats = []
+              while (chats.length < Config.groupContextLength) {
+                let chatHistory = await e.group.getChatHistory(seq, 20)
+                chats.push(...chatHistory)
+              }
+              chats = chats.slice(0, Config.groupContextLength)
+              let mm = await e.group.getMemberMap()
+              chats.forEach(chat => {
+                let sender = mm.get(chat.sender.user_id)
+                chat.sender = sender
+              })
+              console.log(chats)
+              opt.chats = chats
             }
             response = await bingAIClient.sendMessage(prompt, opt, (token) => {
               reply += token
@@ -1270,27 +1298,5 @@ export class chatgpt extends plugin {
       sendMessageOption = Object.assign(sendMessageOption, conversation)
     }
     return await this.chatGPTApi.sendMessage(prompt, sendMessageOption)
-  }
-
-  async recordChat (e) {
-    // let gl = await this.e.group.getMemberMap()
-    if (e.isGroup && e.msg) {
-      const chat = {
-        sender: e.sender.card,
-        senderId: e.sender.user_id,
-        senderSex: e.sender.sex,
-        msg: e.msg,
-        role: e.sender.role,
-        area: e.sender.area,
-        age: e.sender.age,
-        time: formatDate(new Date())
-      }
-      // console.log(chat)
-      await redis.rPush('CHATGPT:LATEST_CHAT_RECORD:' + e.group_id, JSON.stringify(chat))
-      if (await redis.lLen('CHATGPT:LATEST_CHAT_RECORD:' + e.group_id) > Config.groupContextLength) {
-        await redis.lPop('CHATGPT:LATEST_CHAT_RECORD:' + e.group_id)
-      }
-    }
-    return false
   }
 }
