@@ -567,35 +567,41 @@ export function completeJSON(input) {
   // 如果字符串结束但格式仍未结束，则进行补全
   // 仍然在引号内
   if (inQuote) {
-      // 补全截断的引号
-      result += '"'
-      // json完整封口
-      if (countColon == 2) result += '}'
-      // 补全参数封口
-      else result += ': ""}'
+    // 补全截断的引号
+    result += '"'
+    // json完整封口
+    if (countColon == 2) result += '}'
+    // 补全参数封口
+    else {
+      // 如果key已经写完，补全value,否则直接封口
+      if (result.trim().slice(-6) === '"mood"')
+        result += ': ""}'
+      else
+        result += '}'
+    }
   }
   // 如果仍未封口，检查当前格式并封口
-  if (result.at(-1) != '}') {
-      // 如果参数仍未写完，抛弃后面的参数封口
-      if (result.trim().at(-1) === ",") {
-          result = result.replace(/,(?=[^,]*$)/, "") + '}'
-          return result
-      }
-      // 补全缺失的参数
-      if (result.trim().at(-1) === ":") result += '""'
-      // json完整封口
-      if (countColon == 2) {
-          result += '}'
-      }
-      // 补全参数封口
-      else {
-          // 如果key已经写完，补全value,否则直接封口
-          if (result.trim().slice(-6) === '"mood"')
-          result += ': ""}'
-          else
-          result += '}'
+  if (result.slice(-1) != '}') {
+    // 如果参数仍未写完，抛弃后面的参数封口
+    if (result.trim().slice(-1) === ",") {
+      result = result.replace(/,(?=[^,]*$)/, "") + '}'
+      return result
+    }
+    // 补全缺失的参数
+    if (result.trim().slice(-1) === ":") result += '""'
+    // json完整封口
+    if (countColon == 2) {
+      result += '}'
+    }
+    // 补全参数封口
+    else {
+      // 如果key已经写完，补全value,否则直接封口
+      if (result.trim().slice(-6) === '"mood"')
+        result += ': ""}'
+      else
+        result += '}'
 
-      }
+    }
   }
   // 返回结果
   return result
