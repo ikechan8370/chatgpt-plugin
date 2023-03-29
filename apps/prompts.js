@@ -411,7 +411,8 @@ export class help extends plugin {
         output += `|  【${c.title}】  |  ${maskQQ(c.qq)}  | ${c.createTime} | ${c.r18} | ${c.use}｜\n`
       })
       output += '**************************************************************************\n'
-      output += `                       当前为第${pageable.pageNumber + 1}页，共${totalElements}个设定`
+      output += `                       当前为第${pageable.pageNumber + 1}页，共${totalElements}个设定\n`
+      output += `                       您可以使用#chatgpt浏览设定页码${pageable.pageNumber + 2}跳转到第${pageable.pageNumber + 2}页\n`
       await this.reply(output)
     } else {
       await this.reply('查询失败：' + await response.text())
