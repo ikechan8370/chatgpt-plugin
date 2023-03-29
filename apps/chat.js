@@ -695,7 +695,7 @@ export class chatgpt extends plugin {
         }
       }
       let ctime = new Date()
-      previousConversation = await redis.get(key) || JSON.stringify({
+      previousConversation = (key ? await redis.get(key) : null) || JSON.stringify({
         sender: e.sender,
         ctime,
         utime: ctime,
