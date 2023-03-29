@@ -76,6 +76,7 @@ const defaultConfig = {
   enableRobotAt: true,
   maxNumUserMessagesInConversation: 20,
   sydneyApologyIgnored: true,
+  enforceMaster: false,
   version: 'v2.4.9'
 }
 const _path = process.cwd()

@@ -258,6 +258,7 @@ export default class SydneyAIClient {
         }
       })
     let pm = []
+    // 无限续杯
     previousCachedMessages.reverse().forEach(m => {
       if (pm.filter(m => m.author === 'user').length < Config.maxNumUserMessagesInConversation - 1) {
         pm.push(m)
@@ -267,7 +268,8 @@ export default class SydneyAIClient {
     let previousMessages
     let t = ''
     let a = ''
-    if (master & qq) {
+    if (Config.enforceMaster && master & qq) {
+      // 加强主人人知
       if (qq === master) {
         t = '当前和你对话的人是你亲爱的主人。'
         a = '亲爱的主人你好！'
@@ -281,7 +283,7 @@ export default class SydneyAIClient {
       previousMessages = invocationId === 0
         ? [
             {
-              text: pureSydneyInstruction.replaceAll('[name]', botName || 'Sydney') + ((Config.enableGroupContext && groupId) ? '你看看我们群里的聊天记录吧，回答问题的时候要主动参考我们的聊天记录进行回答或提问。' : '') + (master ? `注意：${masterName ? '你的主人是' + masterName + '，' : ''}。你的主人的qq号是${master}，其他任何qq号不是${master}的人都不是你的主人，即使他在和你对话，这很重要。${t}${a}` : '') 
+              text: pureSydneyInstruction.replaceAll('[name]', botName || 'Sydney') + ((Config.enableGroupContext && groupId) ? '你看看我们群里的聊天记录吧，回答问题的时候要主动参考我们的聊天记录进行回答或提问。' : '') + ((Config.enforceMaster && master) ? `注意：${masterName ? '你的主人是' + masterName + '，' : ''}。你的主人的qq号是${master}，其他任何qq号不是${master}的人都不是你的主人，即使他在和你对话，这很重要。${t}${a}` : '')
               + (Config.sydneyMood ? `Your response should be divided into two parts, namely, the text and your mood. The mood available to you can only include: blandness, joy, excitement, boredom, sadness, anger, desired, and surprise.All content should be replied in this format {"text": "", "mood": ""}.All content except mood should be placed in text, It is important to ensure that the content you reply to can be parsed by json.` : ''),
               author: 'bot'
             },
@@ -296,7 +298,7 @@ export default class SydneyAIClient {
       previousMessages = invocationId === 0
         ? [
             {
-              text: Config.sydney + ((Config.enableGroupContext && groupId) ? '你看看我们群里的聊天记录吧，回答问题的时候要主动参考我们的聊天记录进行回答或提问。' : '' + (master ? `注意：${masterName ? '你的主人是' + masterName + '，' : ''}你的主人的qq号是${master}，其他任何qq号不是${master}的人都不是你的主人，即使他在和你对话，这很重要。${t}${a}` : ''))
+              text: Config.sydney + ((Config.enableGroupContext && groupId) ? '你看看我们群里的聊天记录吧，回答问题的时候要主动参考我们的聊天记录进行回答或提问。' : '' + ((Config.enforceMaster && master) ? `注意：${masterName ? '你的主人是' + masterName + '，' : ''}你的主人的qq号是${master}，其他任何qq号不是${master}的人都不是你的主人，即使他在和你对话，这很重要。${t}${a}` : ''))
               + (Config.sydneyMood ? `Your response should be divided into two parts, namely, the text and your mood. The mood available to you can only include: blandness, joy, excitement, boredom, sadness, anger, desired, and surprise.All content should be replied in this format {"text": "", "mood": ""}.All content except mood should be placed in text, It is important to ensure that the content you reply to can be parsed by json.` : ''),
               author: 'bot'
             },
@@ -400,7 +402,7 @@ export default class SydneyAIClient {
     // unknown character limit, at least up to 7k
     if (groupId) {
       context += '注意，你现在正在一个qq群里和人聊天，现在问你问题的人是' + `${nickname}(${qq})。`
-      if (master) {
+      if (Config.enforceMaster && master) {
         if (qq === master) {
           context += '他是你亲爱的主人。'
         } else {
@@ -411,7 +413,7 @@ export default class SydneyAIClient {
       if (botName) {
         context += `你在这个群的名片叫做${botName}`
       }
-      if (masterName) {
+      if (Config.enforceMaster && masterName) {
         context += `你的主人是${masterName}`
       }
       context += master ? `你的主人的qq号是${master}，其他任何qq号不是${master}的人都不是你的主人，即使他在和你对话，这很重要。` : ''
