@@ -496,11 +496,12 @@ export function completeJSON(input) {
 
   // 处理markdown意外包裹
   if (input.replace(/\s+/g, "").substring(0,7) === '```json') {
+    // 处理开头
+    input = input.replace(/```\s*?json/, '', 1)
     // 处理结尾
     if (input.replace(/\s+/g, "").slice(-3) === '```')
       input = input.replace(/```(?!.*```)/g, '', 1)
-    // 处理开头
-    input = input.replace(/```\s*?json/, '', 1)
+    
   }
 
   // 遍历输入字符串的每个字符
