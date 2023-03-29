@@ -514,6 +514,9 @@ export class chatgpt extends plugin {
       }
       if (e.user_id == Bot.uin) return false
       prompt = e.raw_message.trim()
+      let me = e.group.pickMember(Bot.uin)
+      let card = me.card || me.nickname
+      prompt = prompt.replace(`@${card}`, '').trim()
     } else {
       let ats = e.message.filter(m => m.type === 'at')
       if (!e.atme && ats.length > 0) {

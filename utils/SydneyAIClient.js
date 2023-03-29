@@ -436,7 +436,7 @@ export default class SydneyAIClient {
         context += chats
           .map(chat => {
             let sender = chat.sender
-            return `${sender.card} （qq：${sender.user_id}，群角色 ${roleMap[sender.role] || '普通成员'}，${sender.area ? '来自' + sender.area + '，' : ''} ${sender.age}岁， 群头衔：${sender.title}， 性别：${sender.sex}，时间：${formatDate(new Date(chat.time * 1000))}） 说：${chat.raw_message} 发言时间：\n`
+            return `【${sender.card}】（qq：${sender.user_id}，昵称：${sender.nickname}，群角色 ${roleMap[sender.role] || '普通成员'}，${sender.area ? '来自' + sender.area + '，' : ''} ${sender.age}岁， 群头衔：${sender.title}， 性别：${sender.sex}，时间：${formatDate(new Date(chat.time * 1000))}） 说：${chat.raw_message} 发言时间：\n`
           })
           .join('\n')
       }
