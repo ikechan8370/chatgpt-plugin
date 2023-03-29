@@ -294,7 +294,8 @@ export function supportGuoba () {
         },
         {
           field: 'enableRobotAt',
-          label: '是否允许机器人真at。',
+          label: '是否允许机器人真at',
+          bottomHelpMessage: '开启后机器人的回复如果at群友会真的at',
           component: 'Switch'
         },
         {

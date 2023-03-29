@@ -12,7 +12,7 @@ import {
   makeForwardMsg,
   upsertMessage,
   randomString,
-  getDefaultUserSetting, isCN
+  getDefaultUserSetting, isCN, getMasterQQ
 } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
@@ -1022,6 +1022,14 @@ export class chatgpt extends plugin {
                 opt.qq = e.sender.user_id
                 opt.nickname = e.sender.card
                 opt.groupName = e.group.name
+                opt.botName = e.isGroup ? (e.group.pickMember(Bot.uin).card || e.group.pickMember(Bot.uin).nickname) : Bot.nickname
+                let master = (await getMasterQQ())[0]
+                if (master && e.group) {
+                  opt.masterName = e.group.pickMember(master).card || e.group.pickMember(master).nickname
+                }
+                if (master && !e.group) {
+                  opt.masterName = Bot.getFriendList().get(master)?.nickname
+                }
                 let latestChat = await e.group.getChatHistory(0, 1)
                 let seq = latestChat[0].seq
                 let chats = []
