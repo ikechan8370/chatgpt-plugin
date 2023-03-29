@@ -506,7 +506,7 @@ export class chatgpt extends plugin {
   async chatgpt (e) {
     let prompt
     if (this.toggleMode === 'at') {
-      if (!e.raw_message || e.msg.startsWith('#')) {
+      if (!e.raw_message || e.msg?.startsWith('#')) {
         return false
       }
       if (e.isGroup && !e.atme) {

@@ -290,7 +290,11 @@ export default class SydneyAIClient {
         ? [
             {
               text: pureSydneyInstruction,
-              author: 'user'
+              author: 'bot'
+            },
+            {
+              text: '好的，我是Sydney，你的AI助手。',
+              author: 'bot'
             },
             // ...(Config.sydneyBrainWash ? Array.from({ length: Math.max(1, Config.sydneyBrainWashStrength - Math.floor(previousCachedMessages.length / 2)) }, () => [...hello]).flat() : []),
             ...pm
@@ -305,7 +309,7 @@ export default class SydneyAIClient {
         ? [
             {
               text: Config.sydney + ((Config.enableGroupContext && groupId) ? '你看看我们群里的聊天记录吧，回答问题的时候要参考我们的聊天记录。' : ''),
-              author: 'user'
+              author: 'bot'
             },
             {
               text: `好的，我是${Config.sydneyBrainWashName}。`,
@@ -436,7 +440,7 @@ export default class SydneyAIClient {
         context += chats
           .map(chat => {
             let sender = chat.sender
-            return `【${sender.card}】（qq：${sender.user_id}，昵称：${sender.nickname}，群角色 ${roleMap[sender.role] || '普通成员'}，${sender.area ? '来自' + sender.area + '，' : ''} ${sender.age}岁， 群头衔：${sender.title}， 性别：${sender.sex}，时间：${formatDate(new Date(chat.time * 1000))}） 说：${chat.raw_message} 发言时间：\n`
+            return `【${sender.card || sender.nickname}】（qq：${sender.user_id}，${roleMap[sender.role] || '普通成员'}，${sender.area ? '来自' + sender.area + '，' : ''} ${sender.age}岁， 群头衔：${sender.title}， 性别：${sender.sex}，时间：${formatDate(new Date(chat.time * 1000))}） 说：${chat.raw_message}`
           })
           .join('\n')
       }
