@@ -311,6 +311,12 @@ export function supportGuoba () {
           component: 'Switch'
         },
         {
+          field: 'enforceMaster',
+          label: '加强主人认知',
+          bottomHelpMessage: '加强主人认知。希望机器人认清主人，避免NTR可开启。开启后可能会与自设定的内容有部分冲突。sydney模式可以放心开启。',
+          component: 'Switch'
+        },
+        {
           field: 'sydneyContext',
           label: 'Bing的扩展资料',
           bottomHelpMessage: 'AI将会从你提供的扩展资料中学习到一些知识，帮助它更好地回答你的问题。实际相当于使用edge侧边栏Bing时读取的你当前浏览网页的内容。如果太长可能容易到达GPT-4的8192token上限。',
