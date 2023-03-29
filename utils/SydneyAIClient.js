@@ -289,7 +289,7 @@ export default class SydneyAIClient {
       previousMessages = invocationId === 0
         ? [
             {
-              text: pureSydneyInstruction,
+              text: pureSydneyInstruction + (Config.sydneyMood ? `Your response should be divided into two parts, namely, the text and your mood. All content should be replied in this format {"text": "", "mood": ""}. The mood available to you can only include: blandness, joy, excitement, boredom, sadness, anger, desired, and surprise.` : ''),
               author: 'bot'
             },
             // ...(Config.sydneyBrainWash ? Array.from({ length: Math.max(1, Config.sydneyBrainWashStrength - Math.floor(previousCachedMessages.length / 2)) }, () => [...hello]).flat() : []),
@@ -304,7 +304,7 @@ export default class SydneyAIClient {
       previousMessages = invocationId === 0
         ? [
             {
-              text: Config.sydney + ((Config.enableGroupContext && groupId) ? '你看看我们群里的聊天记录吧，回答问题的时候要参考我们的聊天记录。' : ''),
+              text: Config.sydney + ((Config.enableGroupContext && groupId) ? '你看看我们群里的聊天记录吧，回答问题的时候要参考我们的聊天记录。' : '') + (Config.sydneyMood ? `Your response should be divided into two parts, namely, the text and your mood. All content should be replied in this format {"text": "", "mood": ""}. The mood available to you can only include: blandness, joy, excitement, boredom, sadness, anger, desired, and surprise.` : ''),
               author: 'bot'
             },
             {

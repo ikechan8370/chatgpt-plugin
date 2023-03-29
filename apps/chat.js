@@ -12,6 +12,7 @@ import {
   makeForwardMsg,
   upsertMessage,
   randomString,
+  completeJSON,
   getDefaultUserSetting, isCN
 } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
@@ -738,9 +739,28 @@ export class chatgpt extends plugin {
         await redis.set(key, JSON.stringify(previousConversation), Config.conversationPreserveTime > 0 ? { EX: Config.conversationPreserveTime } : {})
       }
       let response = chatMessage?.text
+      let mood = 'blandness'
       if (!response) {
         await e.reply('没有任何回复', true)
         return
+      }
+      // 分离内容和情绪
+      if (Config.sydneyMood) {
+        let temp_response = {}
+        try {
+          temp_response = JSON.parse(response)
+        } catch (error) {
+          // 尝试还原json格式
+          try {
+            temp_response = JSON.parse(completeJSON(response))
+          } catch (error) {
+            logger.error('数据格式错误')
+          }
+        }
+        if (temp_response.text) response = temp_response.text
+        if (temp_response.mood) mood = temp_response.mood
+      } else {
+        mood = ''
       }
       // 检索是否有屏蔽词
       const blockWord = Config.blockWords.find(word => response.toLowerCase().includes(word.toLowerCase()))
@@ -798,7 +818,7 @@ export class chatgpt extends plugin {
       } else if (userSetting.usePicture || (Config.autoUsePicture && response.length > Config.autoUsePictureThreshold)) {
         // todo use next api of chatgpt to complete incomplete respoonse
         try {
-          await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', response, prompt, quotemessage, Config.showQRCode)
+          await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', response, prompt, quotemessage, mood, Config.showQRCode)
         } catch (err) {
           logger.warn('error happened while uploading content to the cache server. QR Code will not be showed in this picture.')
           logger.error(err)
@@ -916,7 +936,7 @@ export class chatgpt extends plugin {
     return true
   }
 
-  async renderImage (e, template, content, prompt, quote = [], cache = false) {
+  async renderImage (e, template, content, prompt, quote = [], mood = '', cache = false) {
     let cacheData = { file: '', cacheUrl: Config.cacheUrl }
     if (cache) {
       if (Config.cacheEntry) cacheData.file = randomString()
@@ -932,6 +952,7 @@ export class chatgpt extends plugin {
             prompt: new Buffer.from(prompt).toString('base64'),
             senderName: e.sender.nickname,
             style: Config.toneStyle,
+            mood: mood,
             quote
           },
           bing: use === 'bing',
@@ -955,6 +976,7 @@ export class chatgpt extends plugin {
       quotes: quote,
       cache: cacheData,
       style: Config.toneStyle,
+      mood: mood,
       version
     }, { retType: Config.quoteReply ? 'base64' : '' }), e.isGroup && Config.quoteReply)
   }
