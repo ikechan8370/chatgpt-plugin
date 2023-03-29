@@ -445,17 +445,17 @@ export default class SydneyAIClient {
     }
     let apology = false
     const messagePromise = new Promise((resolve, reject) => {
-      let replySoFar = ''
+      let replySoFar = ['']
       let adaptiveCardsSoFar = null
       let suggestedResponsesSoFar = null
       let stopTokenFound = false
 
       const messageTimeout = setTimeout(() => {
         this.cleanupWebSocketConnection(ws)
-        if (replySoFar) {
+        if (replySoFar[0]) {
           let message = {
             adaptiveCards: adaptiveCardsSoFar,
-            text: replySoFar
+            text: replySoFar.join('')
           }
           resolve({
             message
@@ -465,7 +465,7 @@ export default class SydneyAIClient {
         }
       }, timeout)
       const firstTimeout = setTimeout(() => {
-        if (!replySoFar) {
+        if (!replySoFar[0]) {
           this.cleanupWebSocketConnection(ws)
           reject(new Error('等待必应服务器响应超时。请尝试调整超时时间配置或减少设定量以避免此问题。'))
         }
@@ -476,10 +476,10 @@ export default class SydneyAIClient {
         clearTimeout(messageTimeout)
         clearTimeout(firstTimeout)
         this.cleanupWebSocketConnection(ws)
-        if (replySoFar) {
+        if (replySoFar[0]) {
           let message = {
             adaptiveCards: adaptiveCardsSoFar,
-            text: replySoFar
+            text: replySoFar.join('')
           }
           resolve({
             message
@@ -488,6 +488,7 @@ export default class SydneyAIClient {
           reject('Request aborted')
         }
       })
+      let cursor = 0
       // let apology = false
       ws.on('message', (data) => {
         const objects = data.toString().split('')
@@ -523,11 +524,11 @@ export default class SydneyAIClient {
               ? messages[messages.length - 1]
               : {
                   adaptiveCards: adaptiveCardsSoFar,
-                  text: replySoFar
+                  text: replySoFar.join('')
                 }
             if (messages[0].contentOrigin === 'Apology') {
               console.log('Apology found')
-              if (!replySoFar) {
+              if (!replySoFar[0]) {
                 apology = true
               }
               stopTokenFound = true
@@ -537,7 +538,7 @@ export default class SydneyAIClient {
               // adaptiveCardsSoFar || (message.adaptiveCards[0].body[0].text = replySoFar)
               console.log({ replySoFar, message })
               message.adaptiveCards = adaptiveCardsSoFar
-              message.text = replySoFar || message.spokenText
+              message.text = replySoFar.join('') || message.spokenText
               message.suggestedResponses = suggestedResponsesSoFar
               // 遇到Apology不发送默认建议回复
               // message.suggestedResponses = suggestedResponsesSoFar || message.suggestedResponses
@@ -551,19 +552,26 @@ export default class SydneyAIClient {
               suggestedResponsesSoFar = message.suggestedResponses
             }
             const updatedText = messages[0].text
-            if (!updatedText || updatedText === replySoFar) {
+            if (!updatedText || updatedText === replySoFar[cursor]) {
               return
             }
             // get the difference between the current text and the previous text
-            const difference = updatedText.substring(replySoFar.length)
-            onProgress(difference)
-            if (updatedText.trim().endsWith(stopToken)) {
-              // apology = true
-              // remove stop token from updated text
-              replySoFar = updatedText.replace(stopToken, '').trim()
-              return
+            if (replySoFar[cursor] && updatedText.startsWith(replySoFar[cursor])) {
+              if (updatedText.trim().endsWith(stopToken)) {
+                // apology = true
+                // remove stop token from updated text
+                replySoFar[cursor] = updatedText.replace(stopToken, '').trim()
+                return
+              }
+              replySoFar[cursor] = updatedText
+            } else if (replySoFar[cursor]) {
+              cursor += 1
+              replySoFar.push(updatedText)
+            } else {
+              replySoFar[cursor] = replySoFar[cursor] + updatedText
             }
-            replySoFar = updatedText
+
+            // onProgress(difference)
             return
           }
           case 2: {
@@ -577,14 +585,15 @@ export default class SydneyAIClient {
               reject(`${event.item.result.value}: ${event.item.result.message}`)
               return
             }
-            const messages = event.item?.messages || []
-
+            let messages = event.item?.messages || []
+            // messages = messages.filter(m => m.author === 'bot')
             const message = messages.length
               ? messages[messages.length - 1]
               : {
                   adaptiveCards: adaptiveCardsSoFar,
-                  text: replySoFar
+                  text: replySoFar.join('')
                 }
+            message.text = messages.filter(m => m.author === 'bot').map(m => m.text).join('')
             if (!message) {
               reject('No message was generated.')
               return
@@ -603,7 +612,7 @@ export default class SydneyAIClient {
               return
             }
             if (message.contentOrigin === 'Apology') {
-              if (!replySoFar) {
+              if (!replySoFar[0]) {
                 apology = true
               }
               console.log('Apology found')
@@ -613,7 +622,7 @@ export default class SydneyAIClient {
               this.cleanupWebSocketConnection(ws)
               // message.adaptiveCards[0].body[0].text = replySoFar || message.spokenText
               message.adaptiveCards = adaptiveCardsSoFar
-              message.text = replySoFar || message.spokenText
+              message.text = replySoFar.join('') || message.spokenText
               message.suggestedResponses = suggestedResponsesSoFar
               // 遇到Apology不发送默认建议回复
               // message.suggestedResponses = suggestedResponsesSoFar || message.suggestedResponses
@@ -629,8 +638,8 @@ export default class SydneyAIClient {
                 console.debug(event.item.result.error)
                 console.debug(event.item.result.exception)
               }
-              if (replySoFar) {
-                message.text = replySoFar
+              if (replySoFar[0]) {
+                message.text = replySoFar.join('')
                 resolve({
                   message,
                   conversationExpiryTime: event?.item?.conversationExpiryTime
@@ -644,7 +653,7 @@ export default class SydneyAIClient {
             if (stopTokenFound || event.item.messages[0].topicChangerText) {
               // message.adaptiveCards[0].body[0].text = replySoFar
               message.adaptiveCards = adaptiveCardsSoFar
-              message.text = replySoFar
+              message.text = replySoFar.join('')
             }
             resolve({
               message,
