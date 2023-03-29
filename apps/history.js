@@ -57,7 +57,7 @@ export class history extends plugin {
             messages: [],
             createdAt: Date.now()
           }
-          let key = `CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`
+          let key = `CHATGPT:CONVERSATIONS_BING:${queryUser}`
           let previousConversation = await redis.get(key) || JSON.stringify({})
           previousConversation = JSON.parse(previousConversation)
           let parentMessageId = previousConversation.parentMessageId
