@@ -757,9 +757,10 @@ export class chatgpt extends plugin {
         } catch (error) {
           // 尝试还原json格式
           try {
-            temp_response = JSON.parse(completeJSON(response))
+            temp_response = completeJSON(response)
+            temp_response = JSON.parse(temp_response)
           } catch (error) {
-            logger.error('数据格式错误')
+            logger.error('数据格式错误',error)
           }
         }
         if (temp_response.text) response = temp_response.text

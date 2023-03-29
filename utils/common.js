@@ -493,6 +493,16 @@ export function completeJSON(input) {
   // 定义一个变量，用来记录当前是否在引号内
   let inQuote = false
   let countColon = 0
+
+  // 处理markdown意外包裹
+  if (input.replace(/\s+/g, "").substring(0,7) === '```json') {
+    // 处理结尾
+    if (input.replace(/\s+/g, "").slice(-3) === '```')
+      input = input.replace(/```(?!.*```)/g, '', 1)
+    // 处理开头
+    input = input.replace(/```\s*?json/, '', 1)
+  }
+
   // 遍历输入字符串的每个字符
   for (let i = 0; i < input.length; i++) {
     // 获取当前字符
@@ -581,7 +591,7 @@ export function completeJSON(input) {
     }
   }
   // 如果仍未封口，检查当前格式并封口
-  if (result.slice(-1) != '}') {
+  if (result.trim().slice(-1) != '}') {
     // 如果参数仍未写完，抛弃后面的参数封口
     if (result.trim().slice(-1) === ",") {
       result = result.replace(/,(?=[^,]*$)/, "") + '}'
@@ -600,7 +610,6 @@ export function completeJSON(input) {
         result += ': ""}'
       else
         result += '}'
-
     }
   }
   // 返回结果
