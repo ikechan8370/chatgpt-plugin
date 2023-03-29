@@ -36,7 +36,7 @@ export class history extends plugin {
     let user = e.sender
     if (filtered.length > 0) {
       queryUser = filtered[0].qq
-      user = e.group.getMemberMap().get(queryUser)
+      user = (await e.group.getMemberMap()).get(queryUser)
     }
     switch (use) {
       case 'api': {
