@@ -613,6 +613,6 @@ export function completeJSON(input) {
         result += '}'
     }
   }
-  // 返回结果
-  return result
+  // 返回结果并兼容json换行
+  return result.replace(/\n/g, "\\\\n").replace(/\r/g, "\\\\r").replace(/\t/g, "\\\\t")
 }
