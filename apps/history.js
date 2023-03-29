@@ -33,8 +33,10 @@ export class history extends plugin {
     let chat = []
     let filtered = e.message.filter(m => m.type === 'at').filter(m => m.qq !== Bot.uin)
     let queryUser = e.sender.user_id
+    let user = e.sender
     if (filtered.length > 0) {
       queryUser = filtered[0].qq
+      user = e.group.getMemberMap().get(queryUser)
     }
     switch (use) {
       case 'api': {
@@ -92,8 +94,8 @@ export class history extends plugin {
     await e.reply(await render(e, 'chatgpt-plugin', 'content/History/index', {
       version: Config.version,
       user: {
-        qq: e.sender.user_id,
-        name: e.sender.card || e.sender.nickname || e.sender.user_id
+        qq: queryUser,
+        name: user.card || user.nickname || user.user_id
       },
       bot: {
         qq: Bot.uin,
