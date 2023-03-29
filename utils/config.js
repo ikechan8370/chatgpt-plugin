@@ -37,6 +37,7 @@ const defaultConfig = {
   sydneyBrainWash: true,
   sydneyBrainWashStrength: 15,
   sydneyBrainWashName: 'Sydney',
+  sydneyMood: false,
   enableSuggestedResponses: false,
   api: defaultChatGPTAPI,
   apiBaseUrl: 'https://pimon.d201.cn/backend-api',
