@@ -690,7 +690,7 @@ export default class SydneyAIClient {
         conversation.messages.push(userMessage)
         conversation.messages.push(replyMessage)
       }
-
+      await this.conversationsCache.set(conversationKey, conversation)
       return {
         conversationSignature,
         conversationId,

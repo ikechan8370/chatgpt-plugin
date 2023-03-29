@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>聊天记录</title>
+</head>
+<body>
+<div class="content">
+    <div class="title">
+        聊天记录 {{user.name}}【User】 & {{bot.name}}【Bot】
+    </div>
+    {{each chat val}}
+    <div class="chat-bot">
+        <div>
+            <img src="https://q1.qlogo.cn/g?b=qq&s=0&nk={{user.qq}}" style="height:40px;margin-top:10px;margin-bottom:10px;margin-left: 10px">
+        </div>
+        <div style="margin: 10px;" class="blob-user">
+            {{val.prompt}}
+        </div>
+    </div>
+    <div class="chat-user">
+        <div style="margin: 10px;" class="blob-bot">
+            {{val.response}}
+        </div>
+        <div>
+            <img src="https://q1.qlogo.cn/g?b=qq&s=0&nk={{bot.qq}}" style="height:40px;margin-top:10px;margin-bottom:10px;margin-left: 10px">
+        </div>
+    </div>
+    {{/each}}
+    <div class="site-logo">
+        Created By Yunzai-Bot and ChatGPT-Plugin {{version}}
+    </div>
+</div>
+</body>
+</html>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        user-select: none;
+    }
+    body {
+        font-family: sans-serif;
+        font-size: 16px;
+        width: 600px;
+        color: #1e1f20;
+        transform: scale(1.5);
+        transform-origin: 0 0;
+    }
+    .content {
+        width: 600px;
+        border-radius: 5px;
+        background: #dbedee;
+    }
+    .title {
+        padding-top: 10px;
+        width: 90%;
+        margin: auto;
+        font-weight: bold;
+        height: 50px;
+        font-size: 20px;
+        text-align: center;
+    }
+    .chat-bot {
+        width: 540px;
+        padding-left: 30px;
+        padding-right: 30px;
+        margin-top: 5px;
+        margin-bottom: 5px;
+        display: flex;
+
+    }
+    .chat-user {
+        width: 540px;
+        margin-left: 30px;
+        margin-top: 5px;
+        margin-bottom: 5px;
+        display: flex;
+
+    }
+    .blob-bot {
+        /*border: #00c3ff solid 1px;*/
+        border-radius: 5px;
+        padding: 9px;
+        background: #abb8ff;
+        width: 480px;
+    }
+    .blob-user {
+        /*border: #00c3ff solid 1px;*/
+        border-radius: 5px;
+        padding: 9px;
+        background: #b2d797;
+    }
+    .site-logo {
+        text-align: center;
+        padding-bottom: 20px;
+    }
+</style>
