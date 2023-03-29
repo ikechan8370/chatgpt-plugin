@@ -85,6 +85,10 @@ export class history extends plugin {
         break
       }
     }
+    if (chat.length === 0) {
+      await e.reply('无聊天记录', e.isGroup)
+      return true
+    }
     await e.reply(await render(e, 'chatgpt-plugin', 'content/History/index', {
       version: Config.version,
       user: {
