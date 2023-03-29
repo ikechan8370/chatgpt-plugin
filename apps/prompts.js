@@ -2,7 +2,7 @@ import plugin from '../../../lib/plugins/plugin.js'
 import fs from 'fs'
 import _ from 'lodash'
 import { Config } from '../utils/config.js'
-import {getMasterQQ, limitString, makeForwardMsg, maskQQ} from '../utils/common.js'
+import { getMasterQQ, limitString, makeForwardMsg, maskQQ } from '../utils/common.js'
 import { deleteOnePrompt, getPromptByName, readPrompts, saveOnePrompt } from '../utils/prompts.js'
 export class help extends plugin {
   constructor (e) {
@@ -57,10 +57,14 @@ export class help extends plugin {
           fnc: 'browsePrompt'
         },
         {
+          reg: '^#(chatgpt|ChatGPT)(在线)?预览设定详情',
+          fnc: 'detailCloudPrompt'
+        },
+        {
           reg: '^#(chatgpt|ChatGPT)设定帮助$',
           fnc: 'helpPrompt',
           permission: 'master'
-        },
+        }
         // {
         //   reg: '^#(chatgpt|ChatGPT)(开启|关闭)洗脑$',
         //   fnc: 'setSydneyBrainWash',
@@ -364,6 +368,27 @@ export class help extends plugin {
     this.finish('uploadPromptR18')
   }
 
+  async detailCloudPrompt (e) {
+    let name = e.msg.replace(/^#(chatgpt|ChatGPT)(在线)?预览设定详情/, '')
+    let response = await fetch('https://chatgpt.roki.best/prompt?name=' + name, {
+      method: 'GET',
+      headers: {
+        'FROM-CHATGPT': 'ikechan8370'
+      }
+    })
+    if (response.status === 200) {
+      let r = await response.json()
+      if (r.code === 200) {
+        const { prompt, title, description, r18, qq, use } = r.data
+        await e.reply(`设定名称：【${title}】\n贡献者：${qq}\n作者备注：${description}\n是否r18：${r18 ? '是' : '否'}\n建议使用场景：${use}\n设定内容预览：${limitString(prompt, 500)}`)
+      } else {
+        await e.reply('获取设定详情失败：' + r.msg)
+      }
+    } else {
+      await this.reply('获取设定详情失败：' + await response.text())
+    }
+  }
+
   async browsePrompt (e) {
     let search = e.msg.replace(/^#(chatgpt|ChatGPT)(在线)?(浏览|查找)设定/, '')
     let split = search.split('页码')
@@ -386,7 +411,8 @@ export class help extends plugin {
         output += `|  【${c.title}】  |  ${maskQQ(c.qq)}  | ${c.createTime} | ${c.r18} | ${c.use}｜\n`
       })
       output += '**************************************************************************\n'
-      output += `                       当前为第${pageable.pageNumber + 1}页，共${totalElements}个设定`
+      output += `                       当前为第${pageable.pageNumber + 1}页，共${totalElements}个设定\n`
+      output += `                       您可以使用#chatgpt浏览设定页码${pageable.pageNumber + 2}跳转到第${pageable.pageNumber + 2}页\n`
       await this.reply(output)
     } else {
       await this.reply('查询失败：' + await response.text())

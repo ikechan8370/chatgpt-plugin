@@ -75,7 +75,8 @@ const defaultConfig = {
   groupContextLength: 50,
   enableRobotAt: true,
   maxNumUserMessagesInConversation: 18,
-  version: 'v2.4.7'
+  sydneyApologyIgnored: true,
+  version: 'v2.4.8'
 }
 const _path = process.cwd()
 let config = {}

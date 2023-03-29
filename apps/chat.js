@@ -507,14 +507,19 @@ export class chatgpt extends plugin {
   async chatgpt (e) {
     let prompt
     if (this.toggleMode === 'at') {
-      if (!e.msg || e.msg.startsWith('#')) {
+      if (!e.raw_message || e.msg?.startsWith('#')) {
         return false
       }
       if (e.isGroup && !e.atme) {
         return false
       }
       if (e.user_id == Bot.uin) return false
-      prompt = e.msg.trim()
+      prompt = e.raw_message.trim()
+      if (e.isGroup) {
+        let me = e.group.pickMember(Bot.uin)
+        let card = me.card || me.nickname
+        prompt = prompt.replace(`@${card}`, '').trim()
+      }
     } else {
       let ats = e.message.filter(m => m.type === 'at')
       if (!e.atme && ats.length > 0) {
@@ -523,7 +528,7 @@ export class chatgpt extends plugin {
         }
         return false
       }
-      prompt = _.trimStart(e.msg.trimStart(), '#chat').trim()
+      prompt = _.replace(e.raw_message.trimStart(), '#chat', '').trim()
       if (prompt.length === 0) {
         return false
       }
@@ -871,7 +876,7 @@ export class chatgpt extends plugin {
       }
       return false
     }
-    let prompt = _.trimStart(e.msg.trimStart(), '#chat1').trim()
+    let prompt = _.replace(e.raw_message.trimStart(), '#chat1', '').trim()
     if (prompt.length === 0) {
       return false
     }
@@ -890,7 +895,7 @@ export class chatgpt extends plugin {
       }
       return false
     }
-    let prompt = _.trimStart(e.msg.trimStart(), '#chat3').trim()
+    let prompt = _.replace(e.raw_message.trimStart(), '#chat3', '').trim()
     if (prompt.length === 0) {
       return false
     }
@@ -909,7 +914,7 @@ export class chatgpt extends plugin {
       }
       return false
     }
-    let prompt = _.trimStart(e.msg.trimStart(), '#chatglm').trim()
+    let prompt = _.replace(e.raw_message.trimStart(), '#chatglm', '').trim()
     if (prompt.length === 0) {
       return false
     }
@@ -928,7 +933,7 @@ export class chatgpt extends plugin {
       }
       return false
     }
-    let prompt = _.trimStart(e.msg.trimStart(), '#bing').trim()
+    let prompt = _.replace(e.raw_message.trimStart(), '#bing', '').trim()
     if (prompt.length === 0) {
       return false
     }
