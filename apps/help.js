@@ -199,7 +199,7 @@ let helpData = [
       {
         icon: 'switch',
         title: '#chatgpt使用设定【设定名】',
-        desc: '使用某个设定。如果处于自设定模式，会自动修改洗脑名称。'
+        desc: '使用某个设定。'
       },
       {
         icon: 'confirm',
@@ -221,21 +221,21 @@ let helpData = [
         title: '#chatgpt导入设定',
         desc: '导入其他人分享的设定。注意：相同名字的设定，会覆盖本地已有的设定'
       },
-      {
-        icon: 'confirm',
-        title: '#chatgpt开启/关闭洗脑',
-        desc: '开启或关闭洗脑'
-      },
-      {
-        icon: 'confirm',
-        title: '#chatgpt设置洗脑强度+【强度】',
-        desc: '设置洗脑强度'
-      },
-      {
-        icon: 'confirm',
-        title: '#chatgpt设置洗脑名称+【名称】',
-        desc: '设置洗脑名称'
-      },
+      // {
+      //   icon: 'confirm',
+      //   title: '#chatgpt开启/关闭洗脑',
+      //   desc: '开启或关闭洗脑'
+      // },
+      // {
+      //   icon: 'confirm',
+      //   title: '#chatgpt设置洗脑强度+【强度】',
+      //   desc: '设置洗脑强度'
+      // },
+      // {
+      //   icon: 'confirm',
+      //   title: '#chatgpt设置洗脑名称+【名称】',
+      //   desc: '设置洗脑名称'
+      // },
       {
         icon: 'help',
         title: '#chatgpt设定帮助',

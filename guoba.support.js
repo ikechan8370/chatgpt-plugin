@@ -293,6 +293,11 @@ export function supportGuoba () {
           component: 'InputNumber'
         },
         {
+          field: 'enableRobotAt',
+          label: '是否允许机器人真at。',
+          component: 'Switch'
+        },
+        {
           field: 'sydney',
           label: 'Custom的设定',
           bottomHelpMessage: '仅自设定模式下有效。你可以自己改写设定，让Sydney变成你希望的样子。可能存在不稳定的情况。',
@@ -316,28 +321,28 @@ export function supportGuoba () {
           bottomHelpMessage: '即使配置了proxy，依然使用sydney反代',
           component: 'Switch'
         },
-        {
-          field: 'sydneyBrainWash',
-          label: '开启强制洗脑',
-          bottomHelpMessage: '仅自设定模式下有效。如果发现自设定模式下总是回复类似于换个话题之类的话，可以开启强制洗脑试试，如果还不行就调整你的设定',
-          component: 'Switch'
-        },
-        {
-          field: 'sydneyBrainWashName',
-          label: 'Custom模式下的称呼',
-          bottomHelpMessage: '仅自设定模式下有效。如果开启了强制洗脑，务必准确填写这个才能精准洗脑。不开启洗脑可以不管这个',
-          component: 'Input'
-        },
-        {
-          field: 'sydneyBrainWashStrength',
-          label: '洗脑强度',
-          bottomHelpMessage: '仅自设定模式下有效。洗脑强度。默认为15，可以酌情调整。太大的话可能长对话会影响对话质量',
-          component: 'InputNumber',
-          componentProps: {
-            min: 0,
-            max: 100
-          }
-        },
+        // {
+        //   field: 'sydneyBrainWash',
+        //   label: '开启强制洗脑',
+        //   bottomHelpMessage: '仅自设定模式下有效。如果发现自设定模式下总是回复类似于换个话题之类的话，可以开启强制洗脑试试，如果还不行就调整你的设定',
+        //   component: 'Switch'
+        // },
+        // {
+        //   field: 'sydneyBrainWashName',
+        //   label: 'Custom模式下的称呼',
+        //   bottomHelpMessage: '仅自设定模式下有效。如果开启了强制洗脑，务必准确填写这个才能精准洗脑。不开启洗脑可以不管这个',
+        //   component: 'Input'
+        // },
+        // {
+        //   field: 'sydneyBrainWashStrength',
+        //   label: '洗脑强度',
+        //   bottomHelpMessage: '仅自设定模式下有效。洗脑强度。默认为15，可以酌情调整。太大的话可能长对话会影响对话质量',
+        //   component: 'InputNumber',
+        //   componentProps: {
+        //     min: 0,
+        //     max: 100
+        //   }
+        // },
         {
           label: '以下为API3方式的配置。',
           component: 'Divider'
@@ -472,6 +477,11 @@ export function supportGuoba () {
           field: 'helloPrompt',
           label: '打招呼所说文字的引导文字',
           bottomHelpMessage: '将会用这段文字询问ChatGPT，由ChatGPT给出随机的打招呼文字。',
+          component: 'Input'
+        },
+        {
+          field: 'emojiBaseURL',
+          label: '合成emoji的API地址，默认谷歌厨房',
           component: 'Input'
         }
       ],

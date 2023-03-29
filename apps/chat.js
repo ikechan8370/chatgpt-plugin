@@ -21,6 +21,7 @@ import fetch from 'node-fetch'
 import { deleteConversation, getConversations, getLatestMessageIdByConversationId } from '../utils/conversation.js'
 import { convertSpeaker, generateAudio, speakers } from '../utils/tts.js'
 import ChatGLMClient from '../utils/chatglm.js'
+import {convertFaces} from "../utils/face.js";
 try {
   await import('keyv')
 } catch (err) {
@@ -776,7 +777,7 @@ export class chatgpt extends plugin {
             audioErr = true
           }
           if (Config.alsoSendText || audioErr) {
-            await this.reply(`${response}`, e.isGroup)
+            await this.reply(await convertFaces(response, Config.enableRobotAt, e), e.isGroup)
             if (quotemessage.length > 0) {
               this.reply(await makeForwardMsg(this.e, quotemessage))
             }
@@ -807,7 +808,7 @@ export class chatgpt extends plugin {
           this.reply(`建议的回复：\n${chatMessage.suggestedResponses}`)
         }
       } else {
-        await this.reply(`${response}`, e.isGroup)
+        await this.reply(await convertFaces(response, Config.enableRobotAt, e), e.isGroup)
         if (quotemessage.length > 0) {
           this.reply(await makeForwardMsg(this.e, quotemessage))
         }
