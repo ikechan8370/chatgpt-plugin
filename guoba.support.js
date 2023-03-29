@@ -304,6 +304,12 @@ export function supportGuoba () {
           component: 'InputTextArea'
         },
         {
+          field: 'sydneyApologyIgnored',
+          label: 'Bing抱歉是否不计入聊天记录',
+          bottomHelpMessage: '有时无限抱歉，就关掉这个再多问几次试试，可能有奇效',
+          component: 'Switch'
+        },
+        {
           field: 'sydneyContext',
           label: 'Bing的扩展资料',
           bottomHelpMessage: 'AI将会从你提供的扩展资料中学习到一些知识，帮助它更好地回答你的问题。实际相当于使用edge侧边栏Bing时读取的你当前浏览网页的内容。如果太长可能容易到达GPT-4的8192token上限。',

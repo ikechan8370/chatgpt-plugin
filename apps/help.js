@@ -213,8 +213,13 @@ let helpData = [
       },
       {
         icon: 'confirm',
-        title: '#chatgpt浏览设定(+关键词)(页码X)',
+        title: '#chatgpt(在线)浏览设定(+关键词)(页码X)',
         desc: '搜索公开的设定。默认返回前十条，使用页码X可以翻页，使用关键词可以检索。页码从1开始。'
+      },
+      {
+        icon: 'smiley-wink',
+        title: '#chatgpt预览设定详情(+设定名)',
+        desc: '根据设定名称预览云端设定的详情信息。'
       },
       {
         icon: 'confirm',
