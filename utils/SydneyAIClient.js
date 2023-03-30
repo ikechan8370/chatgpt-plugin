@@ -264,7 +264,7 @@ export default class SydneyAIClient {
       if (pm.filter(m => m.author === 'user').length < Config.maxNumUserMessagesInConversation - 1) {
         pm.push(m)
       } else {
-        exceedConversations.push(e)
+        exceedConversations.push(m)
       }
     })
     pm = pm.reverse()
