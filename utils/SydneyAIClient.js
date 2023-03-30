@@ -259,9 +259,12 @@ export default class SydneyAIClient {
       })
     let pm = []
     // 无限续杯
+    let exceedConversations = []
     previousCachedMessages.reverse().forEach(m => {
       if (pm.filter(m => m.author === 'user').length < Config.maxNumUserMessagesInConversation - 1) {
         pm.push(m)
+      } else {
+        exceedConversations.push(e)
       }
     })
     pm = pm.reverse()
@@ -434,6 +437,13 @@ export default class SydneyAIClient {
     }
     if (Config.debug) {
       logger.info(context)
+    }
+    if (exceedConversations.length > 0) {
+      context += '\nThese are some conversations records between you and I: \n'
+      context += exceedConversations.map(m => {
+        return `${m.author}: ${m.text}`
+      }).join('\n')
+      context += '\n'
     }
     if (context) {
       obj.arguments[0].previousMessages.push({
