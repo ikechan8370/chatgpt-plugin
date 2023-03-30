@@ -22,7 +22,7 @@ import fetch from 'node-fetch'
 import { deleteConversation, getConversations, getLatestMessageIdByConversationId } from '../utils/conversation.js'
 import { convertSpeaker, generateAudio, speakers } from '../utils/tts.js'
 import ChatGLMClient from '../utils/chatglm.js'
-import {convertFaces} from "../utils/face.js";
+import { convertFaces } from '../utils/face.js'
 try {
   await import('keyv')
 } catch (err) {
@@ -729,7 +729,7 @@ export class chatgpt extends plugin {
         previousConversation.conversation = {
           conversationId: chatMessage.conversationId
         }
-        if (use === 'bing') {
+        if (use === 'bing' && !chatMessage.error) {
           previousConversation.clientId = chatMessage.clientId
           previousConversation.invocationId = chatMessage.invocationId
           previousConversation.parentMessageId = chatMessage.parentMessageId
@@ -740,8 +740,11 @@ export class chatgpt extends plugin {
         if (Config.debug) {
           logger.info(chatMessage)
         }
-        previousConversation.num = previousConversation.num + 1
-        await redis.set(key, JSON.stringify(previousConversation), Config.conversationPreserveTime > 0 ? { EX: Config.conversationPreserveTime } : {})
+        if (!chatMessage.error) {
+          // 没错误的时候再更新，不然易出错就对话没了
+          previousConversation.num = previousConversation.num + 1
+          await redis.set(key, JSON.stringify(previousConversation), Config.conversationPreserveTime > 0 ? { EX: Config.conversationPreserveTime } : {})
+        }
       }
       let response = chatMessage?.text
       let mood = 'blandness'
@@ -760,7 +763,7 @@ export class chatgpt extends plugin {
             temp_response = completeJSON(response)
             temp_response = JSON.parse(temp_response)
           } catch (error) {
-            logger.error('数据格式错误',error)
+            logger.error('数据格式错误', error)
           }
         }
         if (temp_response.text) response = temp_response.text
@@ -774,14 +777,14 @@ export class chatgpt extends plugin {
         await this.reply('返回内容存在敏感词，我不想回答你', true)
         return false
       }
-      //处理中断的代码区域
-      const codeBlockCount = (response.match(/```/g) || []).length;
-      const shouldAddClosingBlock = codeBlockCount % 2 === 1 && !response.endsWith('```');
+      // 处理中断的代码区域
+      const codeBlockCount = (response.match(/```/g) || []).length
+      const shouldAddClosingBlock = codeBlockCount % 2 === 1 && !response.endsWith('```')
       if (shouldAddClosingBlock) {
-        response += '\n```';
+        response += '\n```'
       }
       if (codeBlockCount && !shouldAddClosingBlock) {
-        response = response.replace(/```$/, '\n```');
+        response = response.replace(/```$/, '\n```')
       }
 
       let quotemessage = []
@@ -958,7 +961,7 @@ export class chatgpt extends plugin {
             prompt: new Buffer.from(prompt).toString('base64'),
             senderName: e.sender.nickname,
             style: Config.toneStyle,
-            mood: mood,
+            mood,
             quote
           },
           bing: use === 'bing',
@@ -982,7 +985,7 @@ export class chatgpt extends plugin {
       quotes: quote,
       cache: cacheData,
       style: Config.toneStyle,
-      mood: mood,
+      mood,
       version
     }, { retType: Config.quoteReply ? 'base64' : '' }), e.isGroup && Config.quoteReply)
   }
@@ -1104,7 +1107,11 @@ export class chatgpt extends plugin {
           }
         } while (retry > 0)
         if (errorMessage) {
-          return { text: errorMessage }
+          response = response || {}
+          return {
+            text: errorMessage,
+            error: true
+          }
         } else {
           return {
             text: response.response,
