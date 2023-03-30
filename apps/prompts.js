@@ -237,7 +237,7 @@ export class help extends plugin {
   async removeSharePrompt (e) {
     let master = (await getMasterQQ())[0]
     let name = e.msg.replace(/^#(chatgpt|ChatGPT)(删除|取消|撤销)共享设定/, '')
-    let response = await fetch(`https://chatgpt.roki.best/prompt?name=${name}&qq=${master}?`, {
+    let response = await fetch(`https://chatgpt.roki.best/prompt?name=${name}&qq=${master || Bot.uin}?`, {
       method: 'DELETE',
       headers: {
         'FROM-CHATGPT': 'ikechan8370'
@@ -340,7 +340,7 @@ export class help extends plugin {
     let toUploadBody = {
       title: currentUse,
       prompt: content,
-      qq: (await getMasterQQ())[0], // 上传者设定为主人qq而不是机器人qq
+      qq: (await getMasterQQ())[0] || Bot.uin, // 上传者设定为主人qq或机器人qq
       use: extraData.use === 'Custom' ? 'Sydney' : 'ChatGPT',
       r18,
       description
