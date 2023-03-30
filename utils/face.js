@@ -1,4 +1,5 @@
-// import { segment } from 'oicq'
+import _ from 'lodash'
+import {segment} from "oicq";
 export const faceMap = {
   0: '惊讶',
   1: '撇嘴',
@@ -506,11 +507,11 @@ export async function convertFaces (msg, handleAt = false, e) {
         tmpFace += msg[i]
       } else {
         foundFace = false
-        if (faceMapReverse[tmpFace]) {
+        if (faceMapReverse[tmpFace] || faceMapReverse['/' + tmpFace] || faceMapReverse[_.trimStart(tmpFace, '/')]) {
           if (tmpMsg) {
             msgs.push(tmpMsg)
           }
-          msgs.push(segment.face(parseInt(faceMapReverse[tmpFace])))
+          msgs.push(segment.face(parseInt(faceMapReverse[tmpFace] || faceMapReverse['/' + tmpFace] || faceMapReverse[_.trimStart(tmpFace, '/')])))
           tmpMsg = ''
         } else {
           tmpMsg += `[${tmpFace}]`
@@ -533,11 +534,11 @@ export async function convertFaces (msg, handleAt = false, e) {
 
 export function testConvertFaces () {
   const toTest = [
-    '你好啊[微笑][惊讶]'
+    '你好啊[/微笑][惊讶]哈哈[/拜谢]'
   ]
   toTest.forEach(t => {
     console.log(convertFaces(t))
   })
 }
 
-// testConvertFaces()
+testConvertFaces()
