@@ -531,7 +531,7 @@ export function completeJSON(input) {
     // 结束结构追加数据
     if (!inQuote && onStructure && char === ',') {
       // 追加结构
-      result[tempKey] = tempValue
+      result[tempKey] = tempValue.replace(/\\n/g, "\n").replace(/\\r/g, "\r").replace(/\\t/g, "\t")
       // 结束结构清除数据
       onStructure = false
       inQuote = false
@@ -542,7 +542,7 @@ export function completeJSON(input) {
   }
   // 处理截断的json数据
   if (onStructure && tempKey != '') {
-    result[tempKey] = tempValue
+    result[tempKey] = tempValue.replace(/\\n/g, "\n").replace(/\\r/g, "\r").replace(/\\t/g, "\t")
   }
   return result
 }
