@@ -751,18 +751,7 @@ export class chatgpt extends plugin {
       }
       // 分离内容和情绪
       if (Config.sydneyMood) {
-        let temp_response = {}
-        try {
-          temp_response = JSON.parse(response)
-        } catch (error) {
-          // 尝试还原json格式
-          try {
-            temp_response = completeJSON(response)
-            temp_response = JSON.parse(temp_response)
-          } catch (error) {
-            logger.error('数据格式错误',error)
-          }
-        }
+        let temp_response = completeJSON(response)
         if (temp_response.text) response = temp_response.text
         if (temp_response.mood) mood = temp_response.mood
       } else {
