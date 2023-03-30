@@ -486,3 +486,133 @@ export function maskQQ (qq) {
   let newqq = qq.slice(0, 3) + '*'.repeat(len - 7) + qq.slice(len - 3) // 替换中间3位为*
   return newqq
 }
+
+export function completeJSON(input) {
+  // 定义一个变量，用来存储结果
+  let result = ""
+  // 定义一个变量，用来记录当前是否在引号内
+  let inQuote = false
+  let countColon = 0
+
+  // 处理markdown意外包裹
+  if (input.replace(/\s+/g, "").substring(0,7) === '```json') {
+    // 处理开头
+    input = input.replace(/```\s*?json/, '', 1)
+    // 处理结尾
+    if (input.replace(/\s+/g, "").slice(-3) === '```')
+      input = input.replace(/```(?!.*```)/g, '', 1)
+    
+  }
+
+  // 遍历输入字符串的每个字符
+  for (let i = 0; i < input.length; i++) {
+    // 获取当前字符
+    let char = input[i];
+    // 如果当前字符是引号
+    if (char === '"') {
+      // 切换引号内的状态
+      inQuote = !inQuote
+      // 将当前字符添加到结果中
+      result += char
+    }
+    // 如果当前字符是冒号
+    else if (char === ':') {
+      // 如果不在引号内
+      if (!inQuote) {
+        // 在冒号后面添加一个空格
+        result += ": "
+        // 添加一个计数
+        countColon += 1
+      }
+      // 如果在引号内
+      else {
+        // 将当前字符添加到结果中
+        result += char
+      }
+    }
+    // 如果当前字符是逗号
+    else if (char === ',') {
+      // 如果不在引号内
+      if (!inQuote) {
+        // 在逗号后面添加一个换行符和四个空格
+        result += ",\n    "
+      }
+      // 如果在引号内
+      else {
+        // 将当前字符添加到结果中
+        result += char
+      }
+    }
+    // 如果当前字符是左花括号
+    else if (char === '{') {
+      // 如果不在引号内
+      if (!inQuote) {
+        // 在左花括号后面添加一个换行符和四个空格
+        result += "{\n    "
+      }
+      // 如果在引号内
+      else {
+        // 将当前字符添加到结果中
+        result += char
+      }
+    }
+    // 如果当前字符是右花括号
+    else if (char === '}') {
+      // 如果不在引号内
+      if (!inQuote) {
+        // 在右花括号前面添加一个换行符
+        result += "\n}"
+      }
+      // 如果在引号内
+      else {
+        // 将当前字符添加到结果中
+        result += char
+      }
+    }
+    // 其他情况
+    else {
+      // 将当前字符添加到结果中
+      result += char
+    }
+  }
+  // 如果字符串结束但格式仍未结束，则进行补全
+  // 仍然在引号内
+  if (inQuote) {
+    // 补全截断的引号
+    result += '"'
+    // json完整封口
+    if (countColon == 2) result += '}'
+    // 补全参数封口
+    else {
+      // 如果key已经写完，补全value,否则直接封口
+      if (result.trim().slice(-6) === '"mood"')
+        result += ': ""}'
+      else
+        result += '}'
+    }
+  }
+  // 如果仍未封口，检查当前格式并封口
+  if (result.trim().slice(-1) != '}') {
+    // 如果参数仍未写完，抛弃后面的参数封口
+    if (result.trim().slice(-1) === ",") {
+      result = result.replace(/,(?=[^,]*$)/, "") + '}'
+      return result
+    }
+    // 补全缺失的参数
+    if (result.trim().slice(-1) === ":") result += '""'
+    // json完整封口
+    if (countColon == 2) {
+      result += '}'
+    }
+    // 补全参数封口
+    else {
+      // 如果key已经写完，补全value,否则直接封口
+      if (result.trim().slice(-6) === '"mood"')
+        result += ': ""}'
+      else
+        result += '}'
+    }
+  }
+  // 返回结果并兼容json换行
+  return result.replace(/\n/g, "\\\\n").replace(/\r/g, "\\\\r").replace(/\t/g, "\\\\t")
+}

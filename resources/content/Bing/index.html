@@ -62,6 +62,13 @@
                         <span class="height-50"></span>
                     </div>
                 </div>
+                {{if mood != ''}}
+                <div class="col-xl-12">
+                    <div class="contact-shape">
+                        <img src="{{pluResPath}}content/static/picture/{{mood}}.png" alt="">
+                    </div>
+                </div>
+                {{/if}}
             </div>
             {{if quote}}
             <div class="row">

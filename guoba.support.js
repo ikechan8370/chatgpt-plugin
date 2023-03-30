@@ -334,6 +334,12 @@ export function supportGuoba () {
           bottomHelpMessage: '即使配置了proxy，依然使用sydney反代',
           component: 'Switch'
         },
+        {
+          field: 'sydneyMood',
+          label: '情感显示',
+          bottomHelpMessage: '开启Sydney的情感显示，仅在图片模式下生效。',
+          component: 'Switch'
+        },
         // {
         //   field: 'sydneyBrainWash',
         //   label: '开启强制洗脑',
