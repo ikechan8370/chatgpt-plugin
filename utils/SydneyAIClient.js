@@ -676,33 +676,37 @@ export default class SydneyAIClient {
     }
     ws.send(`${messageJson}`)
 
-    const {
-      message: reply,
-      conversationExpiryTime
-    } = await messagePromise
-
-    const replyMessage = {
-      id: crypto.randomUUID(),
-      parentMessageId: userMessage.id,
-      role: 'Bing',
-      message: reply.text,
-      details: reply
-    }
-    if (!Config.sydneyApologyIgnored || !apology) {
-      conversation.messages.push(userMessage)
-      conversation.messages.push(replyMessage)
-    }
-    await this.conversationsCache.set(conversationKey, conversation)
-    return {
-      conversationSignature,
-      conversationId,
-      clientId,
-      invocationId: invocationId + 1,
-      messageId: replyMessage.id,
-      conversationExpiryTime,
-      response: reply.text,
-      details: reply,
-      apology: Config.sydneyApologyIgnored && apology
+    try {
+      const {
+        message: reply,
+        conversationExpiryTime
+      } = await messagePromise
+      const replyMessage = {
+        id: crypto.randomUUID(),
+        parentMessageId: userMessage.id,
+        role: 'Bing',
+        message: reply.text,
+        details: reply
+      }
+      if (!Config.sydneyApologyIgnored || !apology) {
+        conversation.messages.push(userMessage)
+        conversation.messages.push(replyMessage)
+      }
+      await this.conversationsCache.set(conversationKey, conversation)
+      return {
+        conversationSignature,
+        conversationId,
+        clientId,
+        invocationId: invocationId + 1,
+        messageId: replyMessage.id,
+        conversationExpiryTime,
+        response: reply.text,
+        details: reply,
+        apology: Config.sydneyApologyIgnored && apology
+      }
+    } catch (err) {
+      await this.conversationsCache.set(conversationKey, conversation)
+      throw err
     }
   }
 

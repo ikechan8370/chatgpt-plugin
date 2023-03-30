@@ -50,6 +50,11 @@ let helpData = [
         icon: 'destroy-other',
         title: '#结束对话 @某人',
         desc: '结束该用户当前对话，下次开启对话机器人将遗忘掉本次对话内容。'
+      },
+      {
+        icon: 'confirm',
+        title: '#chatgpt(导出)聊天记录',
+        desc: '图片形式导出聊天记录，目前仅支持Bing下的Sydney和自定义'
       }
     ]
   },
