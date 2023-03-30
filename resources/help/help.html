@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>bangzhu</title>
+</head>
+<body>
+<div class="container">
+  <div class="title">
+    ChatGPT-Plugin v2.4.9 帮助
+  </div>
+  <div class="chart" id="chart">
+    <div class="block"></div>
+    <div class="block"></div>
+    <div class="block"></div>
+    <div class="block"></div>
+    <div class="block"></div>
+    <div class="block"></div>
+    <div class="block"></div>
+    <div class="block"></div>
+    <div class="block"></div>
+    <div class="block"></div>
+  </div>
+</div>
+</body>
+</html>
+<style>
+  .container {
+    width: 700px;
+    background: #6B84FF;
+    border-radius: 5px;
+    background: url("../img/icon/chatgpt.png");
+    min-height: 1000px;
+    background-repeat: no-repeat;
+    background-size: 1500px 1500px;
+    background-position: -100px 0;
+  }
+  .title {
+    padding-top: 20px;
+    font-size: 22px;
+    font-weight: bolder;
+    font-family: "Josefin Sans", sans-serif;
+    color: #e7fff4;
+    text-align: center;
+    background-image: -webkit-linear-gradient(left, #ffffff, #ecfffd, #d9ffec);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 30px;
+
+  }
+  .chart {
+    border-radius: 5px;
+    width: 620px;
+    margin-left: 45px;
+    background: inherit;
+    min-height: 800px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 0 15px 15px #d8e1ff;
+    /*filter: blur(10px);*/
+  }
+  .chart:before {
+    border-radius: 5px;
+    content: '';
+    width: 630px;
+    height: 100%;
+    background: inherit;
+    position: absolute;
+    left: 35px;
+    /*right: 0;*/
+    top: 100px;
+    /*bottom: 0;*/
+    /*opacity: 0.9;*/
+    /*box-shadow: inset 0 0 0 200px rgba(255,255,255,0.3);*/
+    filter: blur(10px);
+  }
+  .block {
+    width: 151px;
+    height: 200px;
+    border: #b7c7ff solid 2px;
+    position: absolute;
+    box-shadow: 0 0 3px 3px #d8e1ff;
+    /*border-radius: 2px;*/
+  }
+</style>
+<script>
+  const chart = document.getElementById('chart');
+  const block = chart.querySelectorAll('.block');
+
+  const chartWidth = chart.offsetWidth;
+  const chartHeight = chart.offsetHeight;
+
+  const blockWidth = block[0].offsetWidth;
+  const blockHeight = block[0].offsetHeight;
+
+  const blocksPerRow = Math.floor(chartWidth / blockWidth);
+  const rows = Math.ceil(block.length / blocksPerRow);
+
+  for (let i = 0; i < block.length; i++) {
+    const row = Math.floor(i / blocksPerRow);
+    const col = i % blocksPerRow;
+
+    block[i].style.top = (row * blockHeight) + 'px';
+    block[i].style.left = (col * blockWidth) + 'px';
+  }
+
+</script>
