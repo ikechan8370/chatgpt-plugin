@@ -15,7 +15,7 @@
 * 支持单人连续对话Conversation，群聊中支持加入其他人的对话
 * API模式下，使用 gpt-3.5-turbo API，ChatGPT官网同款模型，仅需OpenAI Api Key，开箱即用。**注意收费**
 * 支持问答图片截图
-* 支持AI性格调教
+* 支持AI性格调教，强烈推荐Bing自定义模式
 * 支持对接vits回答直接转语音
 * API3模式下，绕过Cloudflare防护直接访问ChatGPT的SSE API，与官方体验一致，且保留对话记录，在官网可查。免费。
 * (Deprecated)提供基于浏览器的解决方案作为备选，API3不可用的情况下或担心账户安全的用户可以选择使用浏览器模式。

@@ -237,7 +237,7 @@ export class help extends plugin {
   async removeSharePrompt (e) {
     let master = (await getMasterQQ())[0]
     let name = e.msg.replace(/^#(chatgpt|ChatGPT)(删除|取消|撤销)共享设定/, '')
-    let response = await fetch(`https://chatgpt.roki.best/prompt?name=${name}&qq=${master}?`, {
+    let response = await fetch(`https://chatgpt.roki.best/prompt?name=${name}&qq=${master || (Bot.uin + '')}?`, {
       method: 'DELETE',
       headers: {
         'FROM-CHATGPT': 'ikechan8370'
@@ -323,6 +323,10 @@ export class help extends plugin {
   }
 
   async uploadPromptR18 () {
+    let master = (await getMasterQQ())[0]
+    if (Config.debug) {
+      logger.mark('主人qq号：' + master)
+    }
     if (this.e.msg.trim() === '取消') {
       await redis.del('CHATGPT:UPLOAD_PROMPT')
       await this.reply('已取消上传', true)
@@ -340,7 +344,7 @@ export class help extends plugin {
     let toUploadBody = {
       title: currentUse,
       prompt: content,
-      qq: (await getMasterQQ())[0], // 上传者设定为主人qq而不是机器人qq
+      qq: master || (Bot.uin + ''), // 上传者设定为主人qq或机器人qq
       use: extraData.use === 'Custom' ? 'Sydney' : 'ChatGPT',
       r18,
       description

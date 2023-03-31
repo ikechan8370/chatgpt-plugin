@@ -1,5 +1,5 @@
 import _ from 'lodash'
-import {segment} from "oicq";
+// import {segment} from "oicq";
 export const faceMap = {
   0: '惊讶',
   1: '撇嘴',
@@ -541,4 +541,4 @@ export function testConvertFaces () {
   })
 }
 
-testConvertFaces()
+// testConvertFaces()

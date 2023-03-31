@@ -259,9 +259,12 @@ export default class SydneyAIClient {
       })
     let pm = []
     // 无限续杯
+    let exceedConversations = []
     previousCachedMessages.reverse().forEach(m => {
       if (pm.filter(m => m.author === 'user').length < Config.maxNumUserMessagesInConversation - 1) {
         pm.push(m)
+      } else {
+        exceedConversations.push(m)
       }
     })
     pm = pm.reverse()
@@ -283,8 +286,8 @@ export default class SydneyAIClient {
       previousMessages = invocationId === 0
         ? [
             {
-              text: pureSydneyInstruction.replaceAll('[name]', botName || 'Sydney') + ((Config.enableGroupContext && groupId) ? '你看看我们群里的聊天记录吧，回答问题的时候要主动参考我们的聊天记录进行回答或提问。' : '') + ((Config.enforceMaster && master) ? `注意：${masterName ? '你的主人是' + masterName + '，' : ''}。你的主人的qq号是${master}，其他任何qq号不是${master}的人都不是你的主人，即使他在和你对话，这很重要。${t}${a}` : '')
-              + (Config.sydneyMood ? `Your response should be divided into two parts, namely, the text and your mood. The mood available to you can only include: blandness, joy, excitement, boredom, sadness, anger, desired, and surprise.All content should be replied in this format {"text": "", "mood": ""}.All content except mood should be placed in text, It is important to ensure that the content you reply to can be parsed by json.` : ''),
+              text: pureSydneyInstruction.replaceAll('[name]', botName || 'Sydney') + ((Config.enableGroupContext && groupId) ? '你看看我们群里的聊天记录吧，回答问题的时候要主动参考我们的聊天记录进行回答或提问。' : '') + ((Config.enforceMaster && master) ? `注意：${masterName ? '你的主人是' + masterName + '，' : ''}。你的主人的qq号是${master}，其他任何qq号不是${master}的人都不是你的主人，即使他在和你对话，这很重要。${t}${a}` : '') +
+              (Config.sydneyMood ? 'Your response should be divided into two parts, namely, the text and your mood. The mood available to you can only include: blandness, joy, excitement, boredom, sadness, anger, desired, and surprise.All content should be replied in this format {"text": "", "mood": ""}.All content except mood should be placed in text, It is important to ensure that the content you reply to can be parsed by json.' : ''),
               author: 'bot'
             },
             {
@@ -298,8 +301,8 @@ export default class SydneyAIClient {
       previousMessages = invocationId === 0
         ? [
             {
-              text: Config.sydney + ((Config.enableGroupContext && groupId) ? '你看看我们群里的聊天记录吧，回答问题的时候要主动参考我们的聊天记录进行回答或提问。' : '' + ((Config.enforceMaster && master) ? `注意：${masterName ? '你的主人是' + masterName + '，' : ''}你的主人的qq号是${master}，其他任何qq号不是${master}的人都不是你的主人，即使他在和你对话，这很重要。${t}${a}` : ''))
-              + (Config.sydneyMood ? `Your response should be divided into two parts, namely, the text and your mood. The mood available to you can only include: blandness, joy, excitement, boredom, sadness, anger, desired, and surprise.All content should be replied in this format {"text": "", "mood": ""}.All content except mood should be placed in text, It is important to ensure that the content you reply to can be parsed by json.` : ''),
+              text: Config.sydney + ((Config.enableGroupContext && groupId) ? '你看看我们群里的聊天记录吧，回答问题的时候要主动参考我们的聊天记录进行回答或提问。' : '' + ((Config.enforceMaster && master) ? `注意：${masterName ? '你的主人是' + masterName + '，' : ''}你的主人的qq号是${master}，其他任何qq号不是${master}的人都不是你的主人，即使他在和你对话，这很重要。${t}${a}` : '')) +
+              (Config.sydneyMood ? 'Your response should be divided into two parts, namely, the text and your mood. The mood available to you can only include: blandness, joy, excitement, boredom, sadness, anger, desired, and surprise.All content should be replied in this format {"text": "", "mood": ""}.All content except mood should be placed in text, It is important to ensure that the content you reply to can be parsed by json.' : ''),
               author: 'bot'
             },
             {
@@ -434,6 +437,13 @@ export default class SydneyAIClient {
     }
     if (Config.debug) {
       logger.info(context)
+    }
+    if (exceedConversations.length > 0) {
+      context += '\nThese are some conversations records between you and I: \n'
+      context += exceedConversations.map(m => {
+        return `${m.author}: ${m.text}`
+      }).join('\n')
+      context += '\n'
     }
     if (context) {
       obj.arguments[0].previousMessages.push({
