@@ -39,6 +39,11 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
+          reg: '#chatgpt(查看|浏览)(必应|Bing |bing )(token|Token)',
+          fnc: 'getBingAccessToken',
+          permission: 'master'
+        },
+        {
           reg: '^#chatgpt切换浏览器$',
           fnc: 'useBrowserBasedSolution',
           permission: 'master'
@@ -154,6 +159,16 @@ export class ChatgptManagement extends plugin {
     return false
   }
 
+  async getBingAccessToken (e) {
+    let tokens = await redis.get('CHATGPT:BING_TOKEN')
+    tokens = tokens.split('|')
+    tokens = tokens.map((item, index) => (
+      `【${index}】 Token：${item.substring(0, 5 / 2) + '...' + item.substring(item.length - 5 / 2, item.length)}`
+    )).join('\n')
+    await this.reply(`${tokens}`, true)
+    return false
+  }
+  
   async delBingAccessToken (e) {
     this.setContext('deleteBingToken')
     let tokens = await redis.get('CHATGPT:BING_TOKEN')
@@ -196,6 +211,7 @@ export class ChatgptManagement extends plugin {
       let bingToken = await redis.get('CHATGPT:BING_TOKEN')
       bingToken = bingToken.split('|')
       if (!bingToken.includes(token)) bingToken.push(token)
+      bingToken = bingToken.filter (function (element) { return element !== '' })
       token = bingToken.join('|')
     }
     await redis.set('CHATGPT:BING_TOKEN', token)
@@ -215,6 +231,7 @@ export class ChatgptManagement extends plugin {
     }
     const removeToken = bingToken[tokenId]
     bingToken.splice(tokenId, 1)
+    bingToken = bingToken.filter (function (element) { return element !== '' })
     let token = bingToken.join('|')
     await redis.set('CHATGPT:BING_TOKEN', token)
     await this.reply(`Token ${removeToken.substring(0, 5 / 2) + '...' + removeToken.substring(removeToken.length - 5 / 2, removeToken.length)} 移除成功`, true)
