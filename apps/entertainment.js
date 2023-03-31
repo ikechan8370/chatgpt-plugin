@@ -20,7 +20,7 @@ export class Entertainment extends plugin {
           permission: 'master'
         },
         {
-          reg: `^${emojiRegex()}{2}`,
+          reg: `^(${emojiRegex()}){2}$`,
           fnc: 'combineEmoj'
         }
       ]
