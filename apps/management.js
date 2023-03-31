@@ -28,7 +28,7 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
-          reg: '#chatgpt(设置|绑定)(必应|Bing |bing )(token|Token)',
+          reg: '#chatgpt(设置|绑定|添加)(必应|Bing |bing )(token|Token)',
           fnc: 'setBingAccessToken',
           permission: 'master'
         },
@@ -157,7 +157,9 @@ export class ChatgptManagement extends plugin {
     this.setContext('deleteBingToken')
     let tokens = await redis.get('CHATGPT:BING_TOKEN')
     tokens = tokens.split('|')
-    tokens = tokens.map((item, index) => ({No: index, token: item.substring(0, 5 / 2) + '...' + item.substring(item.length - 5 / 2, item.length)})).join('\n')
+    tokens = tokens.map((item, index) => (
+      `编号：${index}  Token：${item.substring(0, 5 / 2) + '...' + item.substring(item.length - 5 / 2, item.length)}`
+    )).join('\n')
     await this.reply(`请发送要删除的token编号\n${tokens}`, true)
     return false
   }
@@ -209,7 +211,7 @@ export class ChatgptManagement extends plugin {
       return
     }
     const removeToken = bingToken[tokenId]
-    bingToken = bingToken.splice(tokenId, 1)
+    bingToken.splice(tokenId, 1)
     let token = bingToken.join('|')
     await redis.set('CHATGPT:BING_TOKEN', token)
     await this.reply(`Token ${removeToken.substring(0, 5 / 2) + '...' + removeToken.substring(removeToken.length - 5 / 2, removeToken.length)} 移除成功`, true)
