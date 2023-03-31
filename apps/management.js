@@ -28,8 +28,13 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
-          reg: '#chatgpt(设置|绑定)(必应|Bing |bing )(token|Token)',
+          reg: '#chatgpt(设置|绑定|添加)(必应|Bing |bing )(token|Token)',
           fnc: 'setBingAccessToken',
+          permission: 'master'
+        },
+        {
+          reg: '#chatgpt(删除|移除)(必应|Bing |bing )(token|Token)',
+          fnc: 'delBingAccessToken',
           permission: 'master'
         },
         {
@@ -148,12 +153,23 @@ export class ChatgptManagement extends plugin {
     return false
   }
 
+  async delBingAccessToken (e) {
+    this.setContext('deleteBingToken')
+    let tokens = await redis.get('CHATGPT:BING_TOKEN')
+    tokens = tokens.split('|')
+    tokens = tokens.map((item, index) => (
+      `【${index}】 Token：${item.substring(0, 5 / 2) + '...' + item.substring(item.length - 5 / 2, item.length)}`
+    )).join('\n')
+    await this.reply(`请发送要删除的token编号\n${tokens}`, true)
+    return false
+  }
+
   async saveBingToken () {
     if (!this.e.msg) return
     let token = this.e.msg
     if (token.length < 215) {
       await this.reply('Bing Token格式错误，请确定获取了有效的_U Cookie或完整的Cookie', true)
-      this.finish('saveToken')
+      this.finish('saveBingToken')
       return
     }
     let cookie
@@ -171,12 +187,35 @@ export class ChatgptManagement extends plugin {
         logger.info('bing token 有效')
       } else {
         logger.error('bing token 无效', res)
+        // 移除无效token
         await this.reply(`经检测，Bing Token无效。来自Bing的错误提示：${res.result?.message}`)
       }
     })
+    let bingToken = await redis.get('CHATGPT:BING_TOKEN')
+    bingToken = bingToken.split('|')
+    if (!bingToken.includes(token)) bingToken.push(token)
+    token = bingToken.join('|')
     await redis.set('CHATGPT:BING_TOKEN', token)
     await this.reply('Bing Token设置成功', true)
     this.finish('saveBingToken')
+  }
+
+  async deleteBingToken () {
+    if (!this.e.msg) return
+    let bingToken = await redis.get('CHATGPT:BING_TOKEN')
+    bingToken = bingToken.split('|')
+    let tokenId = this.e.msg
+    if (!bingToken[tokenId]) {
+      await this.reply('Token编号错误！', true)
+      this.finish('deleteBingToken')
+      return
+    }
+    const removeToken = bingToken[tokenId]
+    bingToken.splice(tokenId, 1)
+    let token = bingToken.join('|')
+    await redis.set('CHATGPT:BING_TOKEN', token)
+    await this.reply(`Token ${removeToken.substring(0, 5 / 2) + '...' + removeToken.substring(removeToken.length - 5 / 2, removeToken.length)} 移除成功`, true)
+    this.finish('deleteBingToken')
   }
 
   async saveToken () {

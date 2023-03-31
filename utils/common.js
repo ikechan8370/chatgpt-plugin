@@ -488,131 +488,61 @@ export function maskQQ (qq) {
 }
 
 export function completeJSON(input) {
-  // 定义一个变量，用来存储结果
-  let result = ""
-  // 定义一个变量，用来记录当前是否在引号内
+  let result = {}
+
+  let inJson = false
   let inQuote = false
-  let countColon = 0
-
-  // 处理markdown意外包裹
-  if (input.replace(/\s+/g, "").substring(0,7) === '```json') {
-    // 处理开头
-    input = input.replace(/```\s*?json/, '', 1)
-    // 处理结尾
-    if (input.replace(/\s+/g, "").slice(-3) === '```')
-      input = input.replace(/```(?!.*```)/g, '', 1)
-    
-  }
-
-  // 遍历输入字符串的每个字符
+  let onStructure = false
+  let isKey = true
+  let tempKey = ''
+  let tempValue = ''
   for (let i = 0; i < input.length; i++) {
     // 获取当前字符
     let char = input[i];
-    // 如果当前字符是引号
-    if (char === '"') {
-      // 切换引号内的状态
+    // 获取到json头
+    if (!inJson && char === '{') {
+      inJson = true
+      continue
+    }
+    // 如果不再json中，忽略当前字符
+    if (!inJson) continue
+
+    // 获取结构引号
+    if (char === '"' && input[i - 1] != '\\') {
       inQuote = !inQuote
-      // 将当前字符添加到结果中
-      result += char
+      // 如果是开始数据，则确保当前结构开放
+      if (inQuote) onStructure = true
+      continue
     }
-    // 如果当前字符是冒号
-    else if (char === ':') {
-      // 如果不在引号内
-      if (!inQuote) {
-        // 在冒号后面添加一个空格
-        result += ": "
-        // 添加一个计数
-        countColon += 1
-      }
-      // 如果在引号内
-      else {
-        // 将当前字符添加到结果中
-        result += char
-      }
+    // 获取:切换kv
+    if (!inQuote && onStructure && char === ':') {
+      isKey = !isKey
+      continue
     }
-    // 如果当前字符是逗号
-    else if (char === ',') {
-      // 如果不在引号内
-      if (!inQuote) {
-        // 在逗号后面添加一个换行符和四个空格
-        result += ",\n    "
-      }
-      // 如果在引号内
-      else {
-        // 将当前字符添加到结果中
-        result += char
+    // 将字符写入缓存
+    if (inQuote && onStructure) {
+      // 根据当前类型写入对应缓存
+      if (isKey) {
+        tempKey += char
+      } else {
+        tempValue += char
       }
     }
-    // 如果当前字符是左花括号
-    else if (char === '{') {
-      // 如果不在引号内
-      if (!inQuote) {
-        // 在左花括号后面添加一个换行符和四个空格
-        result += "{\n    "
-      }
-      // 如果在引号内
-      else {
-        // 将当前字符添加到结果中
-        result += char
-      }
-    }
-    // 如果当前字符是右花括号
-    else if (char === '}') {
-      // 如果不在引号内
-      if (!inQuote) {
-        // 在右花括号前面添加一个换行符
-        result += "\n}"
-      }
-      // 如果在引号内
-      else {
-        // 将当前字符添加到结果中
-        result += char
-      }
-    }
-    // 其他情况
-    else {
-      // 将当前字符添加到结果中
-      result += char
+    // 结束结构追加数据
+    if (!inQuote && onStructure && char === ',') {
+      // 追加结构
+      result[tempKey] = tempValue.replace(/\\n/g, "\n").replace(/\\r/g, "\r").replace(/\\t/g, "\t")
+      // 结束结构清除数据
+      onStructure = false
+      inQuote = false
+      isKey = true
+      tempKey = ''
+      tempValue = ''
     }
   }
-  // 如果字符串结束但格式仍未结束，则进行补全
-  // 仍然在引号内
-  if (inQuote) {
-    // 补全截断的引号
-    result += '"'
-    // json完整封口
-    if (countColon == 2) result += '}'
-    // 补全参数封口
-    else {
-      // 如果key已经写完，补全value,否则直接封口
-      if (result.trim().slice(-6) === '"mood"')
-        result += ': ""}'
-      else
-        result += '}'
-    }
+  // 处理截断的json数据
+  if (onStructure && tempKey != '') {
+    result[tempKey] = tempValue.replace(/\\n/g, "\n").replace(/\\r/g, "\r").replace(/\\t/g, "\t")
   }
-  // 如果仍未封口，检查当前格式并封口
-  if (result.trim().slice(-1) != '}') {
-    // 如果参数仍未写完，抛弃后面的参数封口
-    if (result.trim().slice(-1) === ",") {
-      result = result.replace(/,(?=[^,]*$)/, "") + '}'
-      return result
-    }
-    // 补全缺失的参数
-    if (result.trim().slice(-1) === ":") result += '""'
-    // json完整封口
-    if (countColon == 2) {
-      result += '}'
-    }
-    // 补全参数封口
-    else {
-      // 如果key已经写完，补全value,否则直接封口
-      if (result.trim().slice(-6) === '"mood"')
-        result += ': ""}'
-      else
-        result += '}'
-    }
-  }
-  // 返回结果并兼容json换行
-  return result.replace(/\n/g, "\\\\n").replace(/\r/g, "\\\\r").replace(/\t/g, "\\\\t")
+  return result
 }
