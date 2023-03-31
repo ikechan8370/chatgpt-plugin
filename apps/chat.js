@@ -939,7 +939,7 @@ export class chatgpt extends plugin {
   async renderImage (e, template, content, prompt, quote = [], mood = '', cache = false) {
     let cacheData = { file: '', cacheUrl: Config.cacheUrl }
     if (cache) {
-      if (Config.cacheEntry) cacheData.file = randomString()
+      cacheData.file = randomString()
       const use = await redis.get('CHATGPT:USE')
       const cacheresOption = {
         method: 'POST',
@@ -956,16 +956,13 @@ export class chatgpt extends plugin {
             quote
           },
           bing: use === 'bing',
-          entry: Config.cacheEntry ? cacheData.file : ''
+          entry: cacheData.file
         })
       }
-      if (Config.cacheEntry) {
-        fetch(`${Config.cacheUrl}/cache`, cacheresOption)
-      } else {
-        const cacheres = await fetch(`${Config.cacheUrl}/cache`, cacheresOption)
-        if (cacheres.ok) {
-          cacheData = Object.assign({}, cacheData, await cacheres.json())
-        }
+      const cacheres = await fetch(`http://localhost:3321/cache`, cacheresOption)
+      if (cacheres.ok) {
+        console.log(cacheData)
+        cacheData = Object.assign({}, cacheData, await cacheres.json())
       }
     }
     await e.reply(await render(e, 'chatgpt-plugin', template, {

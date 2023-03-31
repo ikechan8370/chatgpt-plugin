@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import { Config } from './utils/config.js'
+import { createServer } from './server/index.js'
 
 if (!global.segment) {
   global.segment = (await import('oicq')).segment
@@ -26,6 +27,10 @@ for (let i in files) {
   }
   apps[name] = ret[i].value[Object.keys(ret[i].value)[0]]
 }
+
+// 启动服务器
+console.log(await createServer())
+
 logger.info('**************************************')
 logger.info('chatgpt-plugin加载成功')
 logger.info(`当前版本${Config.version}`)
