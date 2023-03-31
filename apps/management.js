@@ -3,6 +3,7 @@ import { Config } from '../utils/config.js'
 import { BingAIClient } from '@waylaidwanderer/chatgpt-api'
 import { exec } from 'child_process'
 import { checkPnpm, formatDuration, parseDuration } from '../utils/common.js'
+import SydneyAIClient from "../utils/SydneyAIClient.js";
 
 export class ChatgptManagement extends plugin {
   constructor (e) {
@@ -176,7 +177,7 @@ export class ChatgptManagement extends plugin {
     if (token?.indexOf('=') > -1) {
       cookie = token
     }
-    const bingAIClient = new BingAIClient({
+    const bingAIClient = new SydneyAIClient({
       userToken: token, // "_U" cookie from bing.com
       cookie,
       debug: Config.debug
