@@ -158,7 +158,7 @@ export class ChatgptManagement extends plugin {
     let tokens = await redis.get('CHATGPT:BING_TOKEN')
     tokens = tokens.split('|')
     tokens = tokens.map((item, index) => (
-      `编号：${index}  Token：${item.substring(0, 5 / 2) + '...' + item.substring(item.length - 5 / 2, item.length)}`
+      `【${index}】 Token：${item.substring(0, 5 / 2) + '...' + item.substring(item.length - 5 / 2, item.length)}`
     )).join('\n')
     await this.reply(`请发送要删除的token编号\n${tokens}`, true)
     return false
