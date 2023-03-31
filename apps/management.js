@@ -192,10 +192,12 @@ export class ChatgptManagement extends plugin {
         await this.reply(`经检测，Bing Token无效。来自Bing的错误提示：${res.result?.message}`)
       }
     })
-    let bingToken = await redis.get('CHATGPT:BING_TOKEN')
-    bingToken = bingToken.split('|')
-    if (!bingToken.includes(token)) bingToken.push(token)
-    token = bingToken.join('|')
+    if (await redis.exists('CHATGPT:BING_TOKEN') != 0) {
+      let bingToken = await redis.get('CHATGPT:BING_TOKEN')
+      bingToken = bingToken.split('|')
+      if (!bingToken.includes(token)) bingToken.push(token)
+      token = bingToken.join('|')
+    }
     await redis.set('CHATGPT:BING_TOKEN', token)
     await this.reply('Bing Token设置成功', true)
     this.finish('saveBingToken')
