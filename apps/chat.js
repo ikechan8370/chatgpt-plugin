@@ -712,7 +712,8 @@ export class chatgpt extends plugin {
         parentMessageId: previousConversation.parentMessageId,
         clientId: previousConversation.clientId,
         invocationId: previousConversation.invocationId,
-        conversationSignature: previousConversation.conversationSignature
+        conversationSignature: previousConversation.conversationSignature,
+        bingToken: previousConversation.bingToken
       }
     }
 
@@ -734,6 +735,7 @@ export class chatgpt extends plugin {
           previousConversation.invocationId = chatMessage.invocationId
           previousConversation.parentMessageId = chatMessage.parentMessageId
           previousConversation.conversationSignature = chatMessage.conversationSignature
+          previousConversation.bingToken = chatMessage.bingToken
         } else {
           previousConversation.parentMessageId = chatMessage.id
         }
@@ -994,6 +996,13 @@ export class chatgpt extends plugin {
       }
       case 'bing': {
         let bingToken = await redis.get('CHATGPT:BING_TOKEN')
+        // 负载均衡
+        if (!conversation.bingToken) {
+          const bingTokens = bingToken.split('|')
+          const select = Math.floor(Math.random() * bingTokens.length)
+          bingToken = bingTokens[select]
+        } else bingToken = conversation.bingToken
+
         if (!bingToken) {
           throw new Error('未绑定Bing Cookie，请使用#chatgpt设置必应token命令绑定Bing Cookie')
         }
@@ -1110,7 +1119,8 @@ export class chatgpt extends plugin {
             clientId: response.clientId,
             invocationId: response.invocationId,
             conversationSignature: response.conversationSignature,
-            parentMessageId: response.apology ? conversation.parentMessageId : response.messageId
+            parentMessageId: response.apology ? conversation.parentMessageId : response.messageId,
+            bingToken: bingToken
           }
         }
       }
