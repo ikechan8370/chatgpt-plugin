@@ -325,13 +325,19 @@ export function supportGuoba () {
         {
           field: 'sydneyReverseProxy',
           label: 'sydney反代',
-          bottomHelpMessage: '仅自设定模式下有效。国内ip无法正常使用sydney和自设定模式，如果有bing.com的反代可以填在此处，或者使用proxy',
+          bottomHelpMessage: '仅悉尼和自设定模式下有效，用于创建对话（默认不用于正式对话）。目前国内ip和部分境外IDC IP由于微软限制创建对话，如果有bing.com的反代可以填在此处，或者使用proxy',
           component: 'Input'
         },
         {
           field: 'sydneyForceUseReverse',
           label: '强制使用sydney反代',
-          bottomHelpMessage: '即使配置了proxy，依然使用sydney反代',
+          bottomHelpMessage: '即使配置了proxy，创建对话时依然使用sydney反代',
+          component: 'Switch'
+        },
+        {
+          field: 'sydneyWebsocketUseProxy',
+          label: '对话使用sydney反代',
+          bottomHelpMessage: '（beta）默认情况下仅创建对话走反代，对话时仍然直连微软。开启本选项将使对话过程也走反代，可能有助于在不方便更换ip和token的情况下解决throttle限流问题。需反代支持。',
           component: 'Switch'
         },
         {
@@ -340,28 +346,6 @@ export function supportGuoba () {
           bottomHelpMessage: '开启Sydney的情感显示，仅在图片模式下生效。',
           component: 'Switch'
         },
-        // {
-        //   field: 'sydneyBrainWash',
-        //   label: '开启强制洗脑',
-        //   bottomHelpMessage: '仅自设定模式下有效。如果发现自设定模式下总是回复类似于换个话题之类的话，可以开启强制洗脑试试，如果还不行就调整你的设定',
-        //   component: 'Switch'
-        // },
-        // {
-        //   field: 'sydneyBrainWashName',
-        //   label: 'Custom模式下的称呼',
-        //   bottomHelpMessage: '仅自设定模式下有效。如果开启了强制洗脑，务必准确填写这个才能精准洗脑。不开启洗脑可以不管这个',
-        //   component: 'Input'
-        // },
-        // {
-        //   field: 'sydneyBrainWashStrength',
-        //   label: '洗脑强度',
-        //   bottomHelpMessage: '仅自设定模式下有效。洗脑强度。默认为15，可以酌情调整。太大的话可能长对话会影响对话质量',
-        //   component: 'InputNumber',
-        //   componentProps: {
-        //     min: 0,
-        //     max: 100
-        //   }
-        // },
         {
           label: '以下为API3方式的配置。',
           component: 'Divider'

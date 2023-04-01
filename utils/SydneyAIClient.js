@@ -134,11 +134,15 @@ export default class SydneyAIClient {
     let WebSocket = await getWebSocket()
     return new Promise((resolve, reject) => {
       let agent
+      let sydneyHost = 'wss://sydney.bing.com'
       if (this.opts.proxy) {
         agent = new HttpsProxyAgent(this.opts.proxy)
       }
-      let ws = new WebSocket('wss://sydney.bing.com/sydney/ChatHub', { agent })
-
+      if (Config.sydneyWebsocketUseProxy) {
+        sydneyHost = Config.sydneyReverseProxy.replace('https://', 'wss://').replace('http://', 'ws://')
+      }
+      logger.mark(`use sydney websocket host: ${sydneyHost}`)
+      let ws = new WebSocket(sydneyHost + '/sydney/ChatHub', { agent })
       ws.on('error', (err) => {
         reject(err)
       })
@@ -378,6 +382,7 @@ export default class SydneyAIClient {
             author: 'user',
             inputMethod: 'Keyboard',
             text: message,
+            // messageType: 'Chat'
             messageType: 'SearchQuery'
           },
           conversationSignature,
