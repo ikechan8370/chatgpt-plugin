@@ -303,6 +303,34 @@ export async function render (e, pluginKey, htmlPath, data = {}, renderCfg = {})
   return renderCfg.retType === 'msgId' ? ret : true
 }
 
+export async function renderUrl (e, url, renderCfg = {}) {
+  await puppeteer.browserInit()
+  const page = await puppeteer.browser.newPage()
+  let base64
+  try {
+    await page.goto(url, { timeout: 120000 })
+    let buff = base64 = await page.screenshot({fullPage:true})
+    base64 = segment.image(buff)
+    await page.close().catch((err) => logger.error(err))
+  } catch (error) {
+    logger.error(`图片生成失败:${this.model}:${error}`)
+    /** 关闭浏览器 */
+    if (puppeteer.browser) {
+      await puppeteer.browser.close().catch((err) => logger.error(err))
+    }
+    puppeteer.browser = false
+  }
+
+  if (renderCfg.retType === 'base64') {
+    return base64
+  }
+  let ret = true
+  if (base64) {
+    ret = await e.reply(base64)
+  }
+  return renderCfg.retType === 'msgId' ? ret : true
+}
+
 export function getDefaultUserSetting () {
   return {
     usePicture: Config.defaultUsePicture,

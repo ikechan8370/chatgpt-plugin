@@ -7,7 +7,7 @@ import { ChatGPTAPI } from 'chatgpt'
 import { BingAIClient } from '@waylaidwanderer/chatgpt-api'
 import SydneyAIClient from '../utils/SydneyAIClient.js'
 import {
-  render,
+  render,renderUrl,
   getMessageById,
   makeForwardMsg,
   upsertMessage,
@@ -959,23 +959,16 @@ export class chatgpt extends plugin {
           entry: cacheData.file
         })
       }
-      const cacheres = await fetch(`http://localhost:3321/cache`, cacheresOption)
+      const cacheres = await fetch(`http://47.242.61.68:3321/cache`, cacheresOption)
       if (cacheres.ok) {
         console.log(cacheData)
         cacheData = Object.assign({}, cacheData, await cacheres.json())
       }
     }
-    await e.reply(await render(e, 'chatgpt-plugin', template, {
-      content: new Buffer.from(content).toString('base64'),
-      prompt: new Buffer.from(prompt).toString('base64'),
-      senderName: e.sender.nickname,
-      quote: quote.length > 0,
-      quotes: quote,
-      cache: cacheData,
-      style: Config.toneStyle,
-      mood,
-      version
-    }, { retType: Config.quoteReply ? 'base64' : '' }), e.isGroup && Config.quoteReply)
+    if (cacheData.error)
+    await this.reply(`出现错误：${cacheData.error}`, true)
+    else
+    await e.reply(await renderUrl(e, 'http://localhost:3321/page/'+cacheData.file, { retType: Config.quoteReply ? 'base64' : '' }), e.isGroup && Config.quoteReply)
   }
 
   async sendMessage (prompt, conversation = {}, use, e) {
