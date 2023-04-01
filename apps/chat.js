@@ -952,8 +952,8 @@ export class chatgpt extends plugin {
             prompt: new Buffer.from(prompt).toString('base64'),
             senderName: e.sender.nickname,
             style: Config.toneStyle,
-            mood,
-            quote
+            mood: mood,
+            quote: quote
           },
           bing: use === 'bing',
           entry: cacheData.file

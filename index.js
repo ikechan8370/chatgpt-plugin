@@ -29,7 +29,7 @@ for (let i in files) {
 }
 
 // 启动服务器
-console.log(await createServer())
+await createServer()
 
 logger.info('**************************************')
 logger.info('chatgpt-plugin加载成功')

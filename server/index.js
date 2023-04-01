@@ -40,14 +40,20 @@ server.post('/cache', async (request, reply) => {
         const dir = 'ChatGPTCache';
         const filename = body.entry + '.json';
         const filepath = path.join(dir, filename);
+        const regexUrl = /\b((?:https?|ftp|file):\/\/[-a-zA-Z0-9+&@#\/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#\/%=~_|])/g;
         try {
           fs.mkdirSync(dir, { recursive: true });
           fs.writeFileSync(filepath, JSON.stringify({
             user: body.content.senderName,
-            bot: body.bing ? 'Bing' : 'ChatGPT',
+            bot: (body.bing ? 'Bing' : 'ChatGPT') + `\n页面访问地址:\n【http://47.242.61.68:3321/page/${body.entry}】`,
             question: body.content.prompt,
             message: body.content.content,
-            quote: []
+            quote: body.content.quote.map((item) => (
+              {
+                text: item.replace(/(.{30}).+/, "$1..."),
+                url: item.match(regexUrl)[0]
+              }
+            ))
           }));
           reply.send({ file: body.entry, cacheUrl: `http://47.242.61.68:3321/page/${body.entry}` });
         } catch (err) {
