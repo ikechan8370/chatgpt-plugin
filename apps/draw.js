@@ -248,7 +248,7 @@ export class dalle extends plugin {
     try {
       await client.getImages(prompt, e)
     } catch (err) {
-      await e.reply('绘图失败：' + e)
+      await e.reply('绘图失败：' + err)
     }
   }
 }
