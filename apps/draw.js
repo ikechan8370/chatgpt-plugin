@@ -242,12 +242,12 @@ export class dalle extends plugin {
       bingToken = bingTokens[select]
     }
     let client = new BingDrawClient({
-      baseUrl: 'https://bing.ikechan8370.com',
+      baseUrl: Config.sydneyReverseProxy,
       userToken: bingToken
     })
     try {
       await client.getImages(prompt, e)
-    } catch (e) {
+    } catch (err) {
       await e.reply('绘图失败：' + e)
     }
   }
