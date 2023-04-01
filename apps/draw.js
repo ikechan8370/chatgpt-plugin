@@ -31,7 +31,8 @@ export class dalle extends plugin {
         },
         {
           reg: '^#bing(画图|绘图)',
-          fnc: 'bingDraw'
+          fnc: 'bingDraw',
+          permission: 'master'
         }
       ]
     })
