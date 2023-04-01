@@ -3,7 +3,7 @@ import { Config } from '../utils/config.js'
 import { BingAIClient } from '@waylaidwanderer/chatgpt-api'
 import { exec } from 'child_process'
 import { checkPnpm, formatDuration, parseDuration } from '../utils/common.js'
-import SydneyAIClient from "../utils/SydneyAIClient.js";
+import SydneyAIClient from '../utils/SydneyAIClient.js'
 
 export class ChatgptManagement extends plugin {
   constructor (e) {
@@ -168,7 +168,7 @@ export class ChatgptManagement extends plugin {
     await this.reply(`${tokens}`, true)
     return false
   }
-  
+
   async delBingAccessToken (e) {
     this.setContext('deleteBingToken')
     let tokens = await redis.get('CHATGPT:BING_TOKEN')
@@ -211,7 +211,7 @@ export class ChatgptManagement extends plugin {
       let bingToken = await redis.get('CHATGPT:BING_TOKEN')
       bingToken = bingToken.split('|')
       if (!bingToken.includes(token)) bingToken.push(token)
-      bingToken = bingToken.filter (function (element) { return element !== '' })
+      bingToken = bingToken.filter(function (element) { return element !== '' })
       token = bingToken.join('|')
     }
     await redis.set('CHATGPT:BING_TOKEN', token)
@@ -224,14 +224,14 @@ export class ChatgptManagement extends plugin {
     let bingToken = await redis.get('CHATGPT:BING_TOKEN')
     bingToken = bingToken.split('|')
     let tokenId = this.e.msg
-    if (!bingToken[tokenId]) {
+    if (bingToken[tokenId] === null || bingToken[tokenId] === undefined) {
       await this.reply('Token编号错误！', true)
       this.finish('deleteBingToken')
       return
     }
     const removeToken = bingToken[tokenId]
     bingToken.splice(tokenId, 1)
-    bingToken = bingToken.filter (function (element) { return element !== '' })
+    bingToken = bingToken.filter(function (element) { return element !== '' })
     let token = bingToken.join('|')
     await redis.set('CHATGPT:BING_TOKEN', token)
     await this.reply(`Token ${removeToken.substring(0, 5 / 2) + '...' + removeToken.substring(removeToken.length - 5 / 2, removeToken.length)} 移除成功`, true)

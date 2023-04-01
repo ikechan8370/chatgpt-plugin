@@ -206,6 +206,13 @@ export class chatgpt extends plugin {
         await redis.del(`CHATGPT:QQ_CONVERSATION:${e.sender.user_id}`)
         await this.reply('已退出当前对话，该对话仍然保留。请@我进行聊天以开启新的对话', true)
       } else if (use === 'bing' && (Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom')) {
+        let c = await redis.get(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
+        if (!c) {
+          await this.reply('当前没有开启对话', true)
+          return
+        } else {
+          await redis.del(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
+        }
         const conversation = {
           store: new KeyvFile({ filename: 'cache.json' }),
           namespace: Config.toneStyle
@@ -735,7 +742,11 @@ export class chatgpt extends plugin {
           previousConversation.invocationId = chatMessage.invocationId
           previousConversation.parentMessageId = chatMessage.parentMessageId
           previousConversation.conversationSignature = chatMessage.conversationSignature
-          previousConversation.bingToken = chatMessage.bingToken
+          if (Config.toneStyle !== 'Sydney' && Config.toneStyle !== 'Custom') {
+            previousConversation.bingToken = chatMessage.bingToken
+          } else {
+            previousConversation.bingToken = ''
+          }
         } else {
           previousConversation.parentMessageId = chatMessage.id
         }
@@ -996,15 +1007,23 @@ export class chatgpt extends plugin {
       }
       case 'bing': {
         let bingToken = await redis.get('CHATGPT:BING_TOKEN')
-        // 负载均衡
-        if (!conversation.bingToken) {
-          const bingTokens = bingToken.split('|')
-          const select = Math.floor(Math.random() * bingTokens.length)
-          bingToken = bingTokens[select]
-        } else bingToken = conversation.bingToken
-
         if (!bingToken) {
           throw new Error('未绑定Bing Cookie，请使用#chatgpt设置必应token命令绑定Bing Cookie')
+        }
+        const bingTokens = bingToken.split('|')
+        // 负载均衡
+        if (Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom') {
+          // sydney下不需要保证同一token
+          const select = Math.floor(Math.random() * bingTokens.length)
+          bingToken = bingTokens[select]
+        } else {
+          // bing 下，需要保证同一对话使用同一账号的token
+          if (!conversation.bingToken) {
+            const select = Math.floor(Math.random() * bingTokens.length)
+            bingToken = bingTokens[select]
+          } else if (bingTokens.indexOf(conversation.bingToken) > -1) {
+            bingToken = conversation.bingToken
+          }
         }
         let cookies
         if (bingToken?.indexOf('=') > -1) {
