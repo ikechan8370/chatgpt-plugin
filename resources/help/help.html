@@ -10,23 +10,40 @@
     ChatGPT-Plugin v2.4.9 帮助
   </div>
   <div class="chart" id="chart">
-    <div class="block"></div>
-    <div class="block"></div>
-    <div class="block"></div>
-    <div class="block"></div>
-    <div class="block"></div>
-    <div class="block"></div>
-    <div class="block"></div>
-    <div class="block"></div>
-    <div class="block"></div>
-    <div class="block"></div>
+    <div class="chart-category">
+      聊天
+    </div>
+    <div class="chart-right" id="chart-right">
+      <div class="block">
+        <div class="icon">
+          <img src="../img/icon/chat.png">
+        </div>
+        <div class="block-title">
+          与机器人聊天
+        </div>
+        <div class="block-content">
+          @机器人进行聊天，或者使用前缀#chat
+        </div>
+
+      </div>
+      <div class="block"></div>
+      <div class="block"></div>
+      <div class="block"></div>
+      <div class="block"></div>
+      <div class="block"></div>
+      <div class="block"></div>
+      <div class="block"></div>
+      <div class="block"></div>
+      <div class="block"></div>
+    </div>
+
   </div>
 </div>
 </body>
 </html>
 <style>
   .container {
-    width: 700px;
+    width: 830px;
     background: #6B84FF;
     border-radius: 5px;
     background: url("../img/icon/chatgpt.png");
@@ -46,12 +63,12 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     margin-bottom: 30px;
-
   }
   .chart {
+    display: flex;
     border-radius: 5px;
-    width: 620px;
-    margin-left: 45px;
+    width: 675px;
+    margin-left: 75px;
     background: inherit;
     min-height: 800px;
     overflow: hidden;
@@ -59,14 +76,31 @@
     box-shadow: 0 0 15px 15px #d8e1ff;
     /*filter: blur(10px);*/
   }
+  .chart-category {
+    width: 60px;
+    font-size: 20px;
+    color: #ffffff;
+    text-align: center;
+    height: 317px;
+    font-weight: bold;
+    border-bottom: #b7c7ff solid 2px;
+    /*border-right: #b7c7ff solid 2px;*/
+    padding-top: 290px;
+    /*box-shadow: 0 0 3px 3px #d8e1ff;*/
+  }
+  .chart-right {
+    width: 620px;
+    position: absolute;
+    left: 60px;
+  }
   .chart:before {
     border-radius: 5px;
     content: '';
-    width: 630px;
+    width: 6360px;
     height: 100%;
     background: inherit;
     position: absolute;
-    left: 35px;
+    left: 75px;
     /*right: 0;*/
     top: 100px;
     /*bottom: 0;*/
@@ -79,12 +113,38 @@
     height: 200px;
     border: #b7c7ff solid 2px;
     position: absolute;
-    box-shadow: 0 0 3px 3px #d8e1ff;
+    /*box-shadow: 0 0 3px 3px #d8e1ff;*/
     /*border-radius: 2px;*/
+  }
+
+  .icon {
+    width: 50px;
+    text-align: center;
+    margin: auto;
+    padding-top: 20px;
+  }
+  .icon img {
+    width: 50px;
+  }
+  .block-title {
+    font-size: 18px;
+    text-align: center;
+    color: #ffffff;
+    margin-top: 10px;
+    font-weight: bold;
+  }
+  .block-content {
+    font-weight: bold;
+    color: #ffffff;
+    padding-top: 10px;
+    width: 90%;
+    margin: auto;
+    font-size: 14px;
+    text-align: center;
   }
 </style>
 <script>
-  const chart = document.getElementById('chart');
+  const chart = document.getElementById('chart-right');
   const block = chart.querySelectorAll('.block');
 
   const chartWidth = chart.offsetWidth;

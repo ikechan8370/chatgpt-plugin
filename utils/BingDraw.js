@@ -66,7 +66,11 @@ export default class BingDrawClient {
     logger.info({ pollingUrl })
     logger.info('waiting for bing draw results...')
     let timeoutTimes = 50
+    let found = false
     let timer = setInterval(async () => {
+      if (found) {
+        return
+      }
       let r = await fetch(pollingUrl, {
         headers: {
           accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
@@ -83,6 +87,7 @@ export default class BingDrawClient {
       if (rText) {
         // logger.info(rText)
         logger.info('got bing draw results!')
+        found = true
         let regex = /src="([^"]+)"/g
         let imageLinks = rText.match(regex)
         if (!imageLinks || imageLinks.length === 0) {
