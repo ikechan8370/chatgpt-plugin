@@ -1049,50 +1049,52 @@ export class chatgpt extends plugin {
         let errorMessage = ''
 
         do {
-          let abtrs = await getAvailableBingToken(conversation, throttledTokens)
-          bingToken = abtrs.bingToken
-          allThrottled = abtrs.allThrottled
-          if (bingToken?.indexOf('=') > -1) {
-            cookies = bingToken
-          }
-          bingAIClient.opts.userToken = bingToken
-          bingAIClient.opts.cookies = cookies
           try {
             let opt = _.cloneDeep(conversation) || {}
             opt.toneStyle = Config.toneStyle
             opt.context = Config.sydneyContext
-            opt.messageType = allThrottled ? 'Chat' : 'SearchQuery'
-            if (Config.enableGroupContext && e.isGroup) {
-              try {
-                opt.groupId = e.group_id
-                opt.qq = e.sender.user_id
-                opt.nickname = e.sender.card
-                opt.groupName = e.group.name
-                opt.botName = e.isGroup ? (e.group.pickMember(Bot.uin).card || e.group.pickMember(Bot.uin).nickname) : Bot.nickname
-                let master = (await getMasterQQ())[0]
-                if (master && e.group) {
-                  opt.masterName = e.group.pickMember(master).card || e.group.pickMember(master).nickname
+            if (Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom') {
+              let abtrs = await getAvailableBingToken(conversation, throttledTokens)
+              bingToken = abtrs.bingToken
+              allThrottled = abtrs.allThrottled
+              if (bingToken?.indexOf('=') > -1) {
+                cookies = bingToken
+              }
+              bingAIClient.opts.userToken = bingToken
+              bingAIClient.opts.cookies = cookies
+              opt.messageType = allThrottled ? 'Chat' : 'SearchQuery'
+              if (Config.enableGroupContext && e.isGroup) {
+                try {
+                  opt.groupId = e.group_id
+                  opt.qq = e.sender.user_id
+                  opt.nickname = e.sender.card
+                  opt.groupName = e.group.name
+                  opt.botName = e.isGroup ? (e.group.pickMember(Bot.uin).card || e.group.pickMember(Bot.uin).nickname) : Bot.nickname
+                  let master = (await getMasterQQ())[0]
+                  if (master && e.group) {
+                    opt.masterName = e.group.pickMember(master).card || e.group.pickMember(master).nickname
+                  }
+                  if (master && !e.group) {
+                    opt.masterName = Bot.getFriendList().get(master)?.nickname
+                  }
+                  let latestChat = await e.group.getChatHistory(0, 1)
+                  let seq = latestChat[0].seq
+                  let chats = []
+                  while (chats.length < Config.groupContextLength) {
+                    let chatHistory = await e.group.getChatHistory(seq, 20)
+                    chats.push(...chatHistory)
+                  }
+                  chats = chats.slice(0, Config.groupContextLength)
+                  let mm = await e.group.getMemberMap()
+                  chats.forEach(chat => {
+                    let sender = mm.get(chat.sender.user_id)
+                    chat.sender = sender
+                  })
+                  // console.log(chats)
+                  opt.chats = chats
+                } catch (err) {
+                  logger.warn('获取群聊聊天记录失败，本次对话不携带聊天记录', err)
                 }
-                if (master && !e.group) {
-                  opt.masterName = Bot.getFriendList().get(master)?.nickname
-                }
-                let latestChat = await e.group.getChatHistory(0, 1)
-                let seq = latestChat[0].seq
-                let chats = []
-                while (chats.length < Config.groupContextLength) {
-                  let chatHistory = await e.group.getChatHistory(seq, 20)
-                  chats.push(...chatHistory)
-                }
-                chats = chats.slice(0, Config.groupContextLength)
-                let mm = await e.group.getMemberMap()
-                chats.forEach(chat => {
-                  let sender = mm.get(chat.sender.user_id)
-                  chat.sender = sender
-                })
-                // console.log(chats)
-                opt.chats = chats
-              } catch (err) {
-                logger.warn('获取群聊聊天记录失败，本次对话不携带聊天记录', err)
               }
             }
             response = await bingAIClient.sendMessage(prompt, opt, (token) => {
