@@ -1006,25 +1006,8 @@ export class chatgpt extends plugin {
         return await this.chatgptBrowserBased(prompt, conversation)
       }
       case 'bing': {
-        let bingToken = await redis.get('CHATGPT:BING_TOKEN')
-        if (!bingToken) {
-          throw new Error('未绑定Bing Cookie，请使用#chatgpt设置必应token命令绑定Bing Cookie')
-        }
-        const bingTokens = bingToken.split('|')
-        // 负载均衡
-        if (Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom') {
-          // sydney下不需要保证同一token
-          const select = Math.floor(Math.random() * bingTokens.length)
-          bingToken = bingTokens[select]
-        } else {
-          // bing 下，需要保证同一对话使用同一账号的token
-          if (!conversation.bingToken) {
-            const select = Math.floor(Math.random() * bingTokens.length)
-            bingToken = bingTokens[select]
-          } else if (bingTokens.indexOf(conversation.bingToken) > -1) {
-            bingToken = conversation.bingToken
-          }
-        }
+        let throttledTokens = []
+        let { bingToken, allThrottled } = await getAvailableBingToken(conversation, throttledTokens)
         let cookies
         if (bingToken?.indexOf('=') > -1) {
           cookies = bingToken
@@ -1064,11 +1047,21 @@ export class chatgpt extends plugin {
         let reply = ''
         let retry = 3
         let errorMessage = ''
+
         do {
+          let abtrs = await getAvailableBingToken(conversation, throttledTokens)
+          bingToken = abtrs.bingToken
+          allThrottled = abtrs.allThrottled
+          if (bingToken?.indexOf('=') > -1) {
+            cookies = bingToken
+          }
+          bingAIClient.opts.userToken = bingToken
+          bingAIClient.opts.cookies = cookies
           try {
             let opt = _.cloneDeep(conversation) || {}
             opt.toneStyle = Config.toneStyle
             opt.context = Config.sydneyContext
+            opt.messageType = allThrottled ? 'Chat' : 'SearchQuery'
             if (Config.enableGroupContext && e.isGroup) {
               try {
                 opt.groupId = e.group_id
@@ -1119,8 +1112,13 @@ export class chatgpt extends plugin {
             break
           } catch (error) {
             const message = error?.message || error?.data?.message || error || '出错了'
-            retry--
-            errorMessage = message === 'Timed out waiting for response. Try enabling debug mode to see more information.' ? (reply ? `${reply}\n不行了，我的大脑过载了，处理不过来了!` : '必应的小脑瓜不好使了，不知道怎么回答！') : message
+            if (message.indexOf('限流') > -1) {
+              throttledTokens.push(bingToken)
+              // 不减次数
+            } else {
+              retry--
+              errorMessage = message === 'Timed out waiting for response. Try enabling debug mode to see more information.' ? (reply ? `${reply}\n不行了，我的大脑过载了，处理不过来了!` : '必应的小脑瓜不好使了，不知道怎么回答！') : message
+            }
           }
         } while (retry > 0)
         if (errorMessage) {
@@ -1139,7 +1137,7 @@ export class chatgpt extends plugin {
             invocationId: response.invocationId,
             conversationSignature: response.conversationSignature,
             parentMessageId: response.apology ? conversation.parentMessageId : response.messageId,
-            bingToken: bingToken
+            bingToken
           }
         }
       }
@@ -1366,5 +1364,41 @@ export class chatgpt extends plugin {
       sendMessageOption = Object.assign(sendMessageOption, conversation)
     }
     return await this.chatGPTApi.sendMessage(prompt, sendMessageOption)
+  }
+}
+
+async function getAvailableBingToken (conversation, throttled = []) {
+  let allThrottled = false
+  let bingToken = await redis.get('CHATGPT:BING_TOKEN')
+  if (!bingToken) {
+    throw new Error('未绑定Bing Cookie，请使用#chatgpt设置必应token命令绑定Bing Cookie')
+  }
+  const bingTokens = bingToken.split('|')
+  // 负载均衡
+  if (Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom') {
+    // sydney下不需要保证同一token
+    let notThrottled = bingTokens.filter(t => throttled.indexOf(t) === -1)
+    if (notThrottled.length > 0) {
+      bingToken = notThrottled[0]
+    } else {
+      // 全都被限流了，随便找一个算了
+      allThrottled = true
+      const select = Math.floor(Math.random() * bingTokens.length)
+      bingToken = bingTokens[select]
+    }
+    // const select = Math.floor(Math.random() * bingTokens.length)
+    // bingToken = bingTokens[select]
+  } else {
+    // bing 下，需要保证同一对话使用同一账号的token
+    if (!conversation.bingToken) {
+      const select = Math.floor(Math.random() * bingTokens.length)
+      bingToken = bingTokens[select]
+    } else if (bingTokens.indexOf(conversation.bingToken) > -1) {
+      bingToken = conversation.bingToken
+    }
+  }
+  return {
+    bingToken,
+    allThrottled
   }
 }

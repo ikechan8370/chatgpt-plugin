@@ -78,7 +78,7 @@ const defaultConfig = {
   maxNumUserMessagesInConversation: 20,
   sydneyApologyIgnored: true,
   enforceMaster: false,
-  version: 'v2.4.10'
+  version: 'v2.4.11'
 }
 const _path = process.cwd()
 let config = {}

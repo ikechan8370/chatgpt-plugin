@@ -217,8 +217,12 @@ export default class SydneyAIClient {
       abortController = new AbortController(),
       timeout = Config.defaultTimeoutMs,
       firstMessageTimeout = Config.sydneyFirstMessageTimeout,
-      groupId, nickname, qq, groupName, chats, botName, masterName
+      groupId, nickname, qq, groupName, chats, botName, masterName,
+      messageType = 'SearchQuery'
     } = opts
+    if (messageType === 'Chat') {
+      logger.warn('该Bing账户token已被限流，降级至使用非搜索模式。本次对话AI将无法使用Bing搜索返回的内容')
+    }
     if (typeof onProgress !== 'function') {
       onProgress = () => {}
     }
@@ -382,8 +386,8 @@ export default class SydneyAIClient {
             author: 'user',
             inputMethod: 'Keyboard',
             text: message,
-            // messageType: 'Chat'
-            messageType: 'SearchQuery'
+            messageType
+            // messageType: 'SearchQuery'
           },
           conversationSignature,
           participant: {
@@ -621,6 +625,10 @@ export default class SydneyAIClient {
               if (event.item?.result) {
                 if (event.item?.result?.exception?.indexOf('maximum context length') > -1) {
                   reject('对话长度太长啦！超出8193token，请结束对话重新开始')
+                } else if (event.item?.result.value === 'Throttled') {
+                  reject('该账户的SERP请求已被限流')
+                  logger.warn('该账户的SERP请求已被限流')
+                  logger.warn(JSON.stringify(event.item?.result))
                 } else {
                   reject(`${event.item?.result.value}\n${event.item?.result.error}\n${event.item?.result.exception}`)
                 }
@@ -717,7 +725,7 @@ export default class SydneyAIClient {
         conversationExpiryTime,
         response: reply.text,
         details: reply,
-        apology: Config.sydneyApologyIgnored && apology
+        apology: Config.sydneyApologyIgnored && apology,
       }
     } catch (err) {
       await this.conversationsCache.set(conversationKey, conversation)
