@@ -168,7 +168,7 @@ export function supportGuoba () {
         {
           field: 'proxy',
           label: '代理服务器地址',
-          bottomHelpMessage: '数据通过代理服务器发送，http或socks5代理。',
+          bottomHelpMessage: '数据通过代理服务器发送，http或socks5代理。配置后需重启。',
           component: 'Input'
         },
         {
@@ -337,7 +337,7 @@ export function supportGuoba () {
         {
           field: 'sydneyWebsocketUseProxy',
           label: '对话使用sydney反代',
-          bottomHelpMessage: '（beta）默认情况下仅创建对话走反代，对话时仍然直连微软。开启本选项将使对话过程也走反代，可能有助于在不方便更换ip和token的情况下解决throttle限流问题。需反代支持。',
+          bottomHelpMessage: '【一般情况无需也不建议开启】默认情况下仅创建对话走反代，对话时仍然直连微软。开启本选项将使对话过程也走反，需反代支持。',
           component: 'Switch'
         },
         {

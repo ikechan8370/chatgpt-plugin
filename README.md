@@ -14,12 +14,12 @@
 
 * 支持单人连续对话Conversation，群聊中支持加入其他人的对话
 * API模式下，使用 gpt-3.5-turbo API，ChatGPT官网同款模型，仅需OpenAI Api Key，开箱即用。**注意收费**
-* 支持问答图片截图
+* 支持问答图片截图和聊天记录导出
 * 支持AI性格调教，强烈推荐Bing自定义模式
 * 支持对接vits回答直接转语音
 * API3模式下，绕过Cloudflare防护直接访问ChatGPT的SSE API，与官方体验一致，且保留对话记录，在官网可查。免费。
-* (Deprecated)提供基于浏览器的解决方案作为备选，API3不可用的情况下或担心账户安全的用户可以选择使用浏览器模式。
-* 支持新[必应](https://www.bing.com/new)（Beta）
+* (已不再维护)提供基于浏览器的解决方案作为备选，API3不可用的情况下或担心账户安全的用户可以选择使用浏览器模式。
+* 支持新[必应](https://www.bing.com/new)（token负载均衡，限流降级）
 * 2023-03-15 API3支持GPT-4尝鲜，需要Plus用户
 * 支持[ChatGLM](https://github.com/THUDM/ChatGLM-6B)模型。基于[自建API](https://github.com/ikechan8370/SimpleChatGLM6BAPI)
 
@@ -33,16 +33,15 @@ Node.js >= 18 / Node.js >= 14(with node-fetch)
 
 ### 安装
 
-在安装之前，请先判断自己需要使用哪种模式，本插件支持官方API/第三方API/浏览器/必应四种模式。也可以选择**我全都要**(通过qq发送命令`#chatgpt切换浏览器/API/API3/Bing`实时切换)
-
-对于轻量用户可以先使用API模式，有较高要求再转为使用其他模式。
+在安装之前，请先判断自己需要使用哪种模式，本插件支持官方API/第三方API/~~浏览器~~/必应四种模式。也可以选择**我全都要**(通过qq发送命令`#chatgpt切换浏览器/API/API3/Bing`实时切换)
 
 > #### API模式和浏览器模式如何选择？
 >
 > * API模式会调用OpenAI官方提供的gpt-3.5-turbo API，ChatGPT官网同款模型，只需要提供API Key。一般情况下，该种方式响应速度更快，可配置项多，且不会像chatGPT官网一样总出现不可用的现象，但注意API调用是收费的，新用户有18美元试用金可用于支付，价格为`$0.0020/ 1K tokens`。（问题和回答**加起来**算token）
 > * API3模式会调用第三方提供的官网反代API，他会帮你绕过CF防护，需要提供ChatGPT的Token。效果与官网和浏览器一致，但稳定性不一定。发送#chatgpt设置token来设置token。
 > * (Deprecated)浏览器模式通过在本地启动Chrome等浏览器模拟用户访问ChatGPT网站，使得获得和官方以及API2模式一模一样的回复质量，同时保证安全性。缺点是本方法对环境要求较高，需要提供桌面环境和一个可用的代理（能够访问ChatGPT的IP地址），且响应速度不如API，而且高峰期容易无法使用。一般作为API3的下位替代。
-> * 必应（Bing）将调用微软新必应接口进行对话。需要在必应网页能够正常使用新必应且设置有效的Bing登录Cookie方可使用。
+> * 必应（Bing）将调用微软新必应接口进行对话。需要在必应网页能够正常使用新必应且设置有效的Bing登录Cookie方可使用。强烈推荐
+
 1. 进入 Yunzai根目录
 
 2. 请将 chatgpt-plugin 放置在 Yunzai-Bot 的 plugins 目录下
@@ -55,73 +54,45 @@ cd plugins/chatgpt-plugin
 pnpm i
 ```
 
-如果是手工下载的 zip 压缩包，请将解压后的 chatgpt-plugin 文件夹（请删除压缩自带的-master后缀）放置在 Yunzai-Bot 目录下的 plugins 文件夹内
+如果是手工下载的 zip 压缩包，请将解压后的 chatgpt-plugin 文件夹（请删除压缩自带的-master或版本号后缀）放置在 Yunzai-Bot 目录下的 plugins 文件夹内
 
-> 浏览器模式仅为备选，如您需要使用浏览器模式，您还需要有**桌面环境**，优先级建议：API≈必应>API3>浏览器
-> 2.20更新：必应被大削，变得蠢了，建议还是API/API3优先
+> ~~浏览器模式仅为备选，如您需要使用浏览器模式，您还需要有**桌面环境**，优先级建议：API≈必应>API3>浏览器~~\
+> ~~2.20更新：必应被大削，变得蠢了，建议还是API/API3优先~~\
+> 4.2更新：必应站起来了，必应天下第一。建议都用必应，别用API/API3了。浏览器模式除非极其特殊的需求否则强烈建议不使用，已经不维护了。
 
 3. 修改配置
-**本插件配置项比较多，建议使用[锅巴面板](https://github.com/guoba-yunzai/Guoba-Plugin)修改**
+**本插件配置项比较多，强烈建议使用[锅巴面板](https://github.com/guoba-yunzai/Guoba-Plugin)修改**
 
    复制`plugins/chatgpt-plugin/config/config.example.json`并将其改名为`config.json`\
-   编辑`plugins/chatgpt-plugin/config/config.json`文件，修改必要配置项
-
+   编辑`plugins/chatgpt-plugin/config/config.json`文件，修改必要配置项 \
+   **请勿直接修改config.example.json**
+   
 4. 重启Yunzai-Bot
-
-> ### 我想使用浏览器模式，但是我是linux云服务器没有桌面环境怎么办？
->
-> linux云服务器可以安装窗口管理器和vnc创建并访问虚拟桌面环境
->
-> 1. 安装xvfb和fluxbox
->
->    - Ubuntu：`sudo apt-get install x11vnc xvfb fluxbox`
->
->    - CentOS：`sudo yum install x11vnc Xvfb fluxbox`
->
-> 2. 启动桌面环境
->
->    建议用tmux或screen等使其能够后台运行
->
->    注意：本命令使用默认5900端口和**无密码**，注意通过防火墙等保护，**切勿**在公网环境或不安全的网络环境下使用！！！
->    `x11vnc -create -env FD_PROG=/usr/bin/fluxbox -env X11VNC_FINDDISPLAY_ALWAYS_FAILS=1   -env X11VNC_CREATE_GEOM=${1:-1024x768x16}   -nopw -forever`
->
-> 3. 使用vnc客户端连接至云桌面
->
->    右键Applications > Shells > Bash打开终端，然后进入Yunzai目录下运行node app即可。
->
-> 4. 执行pnpm i时，sharp安装失败
->
->     sharp不影响chatgpt聊天，仅影响Dalle2绘图功能。ubuntu可以执行`apt install libvips-dev`之后再`pnpm i`
->
-> 实测该方案资源占用低，运行稳定，基本1核2G的轻量云服务器就足够了。
+如通过锅巴面板升级可以热加载，无需重启。
 
 ---
-
-
 
 ### 相关配置
 
 #### 配置文件相关
 
-配置文件位置：`plugins/chatgpt-plugin/config/config.js`
+配置文件位置：`plugins/chatgpt-plugin/config/config.json`
 
 部分关键配置项，其他请参照文件内注释：
 
-|       名称        |        含义         |                          解释                          |
-| :---------------: | :-----------------: | :----------------------------------------------------: |
-|       PROXY       |      代理地址       |   请在此处配置你的代理，例如`http://127.0.0.1:7890`    |
-|      API_KEY      | openai账号的API Key | 获取地址：https://platform.openai.com/account/api-keys |
-| username/password | openai的账号和密码  |                           /                            |
+|        名称         |        含义         |                        解释                         |
+|:-----------------:| :-----------------: |:-------------------------------------------------:|
+|       proxy       |      代理地址       |       请在此处配置你的代理，例如`http://127.0.0.1:7890`        |
+|      apiKey       | openai账号的API Key | 获取地址：https://platform.openai.com/account/api-keys |
 
 #### Token相关
 
 与Token相关的设置需在qq与机器人对话设置，设置后方可使用对应的api
 
-|        名称         |         含义         |                             解释                             |        设置方式        |
-| :-----------------: | :------------------: | :----------------------------------------------------------: | :--------------------: |
-| ChatGPT AccessToken | ChatGPT登录后的Token |                        具体解释见下方                        |   \#chatgpt设置token   |
-|      必应token      |  必应登录后的Token   | 必应（Bing）将调用微软新必应接口进行对话。需要在必应网页能够正常使用新必应且设置有效的Bing 登录Cookie方可使用 | \#chatgpt设置必应token |
-
+|        名称         |         含义         |                             解释                             |                           设置方式                           |
+| :-----------------: | :------------------: | :----------------------------------------------------------: |:--------------------------------------------------------:|
+| ChatGPT AccessToken | ChatGPT登录后的Token |                        具体解释见下方                        |                     \#chatgpt设置token                     |
+|      必应token      |  必应登录后的Token   | 必应（Bing）将调用微软新必应接口进行对话。需要在必应网页能够正常使用新必应且设置有效的Bing 登录Cookie方可使用 | \#chatgpt设置必应token/\#chatgpt删除必应token/\#chatgpt查看必应token |
 
 
 > #### 我没有注册openai账号？如何获取
@@ -142,7 +113,6 @@ pnpm i
 >
 > #### ChatGPT AccessToken 设置了有什么用？我为什么用不了API模式
 >
-> - 请参考上方 [API模式和浏览器模式如何选择？](#API模式和浏览器模式如何选择？)
 > - 部分API需要在和机器人的聊天里输入`#chatgpt设置token`才可以使用
 >
 > #### 我有新必应的测试资格了，如何获取必应Token？
@@ -162,7 +132,6 @@ pnpm i
 >
 >
 > 其他问题可以参考使用的api库 https://github.com/transitive-bullshit/chatgpt-api 以及 https://github.com/waylaidwanderer/node-chatgpt-api
-
 
 
 ### 使用方法
@@ -229,7 +198,7 @@ pnpm i
 
 ## TODO
 
-* prompt预设与共享
+* 预设分群组和个人
 
 ## 其他
 
@@ -268,7 +237,7 @@ pnpm i
 ## 交流群
 
 * QQ 559567232 [问题交流]
-* QQ 126132049 [吹水和机器人激情碰撞]
+* QQ 126132049 [机器人试验场]
 
 ## 感谢
 

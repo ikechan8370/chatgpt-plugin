@@ -1053,8 +1053,9 @@ export class chatgpt extends plugin {
             let opt = _.cloneDeep(conversation) || {}
             opt.toneStyle = Config.toneStyle
             opt.context = Config.sydneyContext
+            // 重新拿存储的token，因为可能之前有过期的被删了
+            let abtrs = await getAvailableBingToken(conversation, throttledTokens)
             if (Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom') {
-              let abtrs = await getAvailableBingToken(conversation, throttledTokens)
               bingToken = abtrs.bingToken
               allThrottled = abtrs.allThrottled
               if (bingToken?.indexOf('=') > -1) {
@@ -1096,6 +1097,22 @@ export class chatgpt extends plugin {
                   logger.warn('获取群聊聊天记录失败，本次对话不携带聊天记录', err)
                 }
               }
+            } else {
+              // 重新创建client，因为token可能换到别的了
+              if (bingToken?.indexOf('=') > -1) {
+                cookies = bingToken
+              }
+              let bingOption = {
+                userToken: abtrs.bingToken, // "_U" cookie from bing.com
+                cookies,
+                debug: Config.debug,
+                proxy: Config.proxy,
+                host: Config.sydneyReverseProxy
+              }
+              if (Config.proxy && Config.sydneyReverseProxy && !Config.sydneyForceUseReverse) {
+                delete bingOption.host
+              }
+              bingAIClient = new BingAIClient(bingOption)
             }
             response = await bingAIClient.sendMessage(prompt, opt, (token) => {
               reply += token
@@ -1117,6 +1134,16 @@ export class chatgpt extends plugin {
             if (message.indexOf('限流') > -1) {
               throttledTokens.push(bingToken)
               // 不减次数
+            } else if (message.indexOf('UnauthorizedRequest') > -1) {
+              // token过期了
+              logger.warn(`token${bingToken}过期了，将自动移除`)
+              let savedBingToken = await redis.get('CHATGPT:BING_TOKEN')
+              savedBingToken = savedBingToken.split('|')
+              let tokenId = savedBingToken.indexOf(bingToken)
+              savedBingToken.splice(tokenId, 1)
+              savedBingToken = savedBingToken.filter(function (element) { return element !== '' })
+              await redis.set('CHATGPT:BING_TOKEN', savedBingToken.join('|'))
+              logger.mark(`token${bingToken}已移除`)
             } else {
               retry--
               errorMessage = message === 'Timed out waiting for response. Try enabling debug mode to see more information.' ? (reply ? `${reply}\n不行了，我的大脑过载了，处理不过来了!` : '必应的小脑瓜不好使了，不知道怎么回答！') : message
