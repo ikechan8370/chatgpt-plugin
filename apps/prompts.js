@@ -292,6 +292,7 @@ export class help extends plugin {
     let extraData = JSON.parse(await redis.get('CHATGPT:UPLOAD_PROMPT'))
     if (name !== '确定') {
       extraData.currentUse = name
+      await redis.set('CHATGPT:UPLOAD_PROMPT', JSON.stringify(extraData), 300)
     }
     if (!getPromptByName(extraData.currentUse)) {
       await redis.del('CHATGPT:UPLOAD_PROMPT')

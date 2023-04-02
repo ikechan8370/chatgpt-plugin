@@ -1130,6 +1130,7 @@ export class chatgpt extends plugin {
             errorMessage = ''
             break
           } catch (error) {
+            logger.error(error)
             const message = error?.message || error?.data?.message || error || '出错了'
             if (message && message.indexOf('限流') > -1) {
               throttledTokens.push(bingToken)
