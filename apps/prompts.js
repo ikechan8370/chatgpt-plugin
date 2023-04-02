@@ -237,7 +237,7 @@ export class help extends plugin {
   async removeSharePrompt (e) {
     let master = (await getMasterQQ())[0]
     let name = e.msg.replace(/^#(chatgpt|ChatGPT)(删除|取消|撤销)共享设定/, '')
-    let response = await fetch(`https://chatgpt.roki.best/prompt?name=${name}&qq=${master || (Bot.uin + '')}?`, {
+    let response = await fetch(`https://chatgpt.roki.best/prompt?name=${name}&qq=${master || (Bot.uin + '')}`, {
       method: 'DELETE',
       headers: {
         'FROM-CHATGPT': 'ikechan8370'
