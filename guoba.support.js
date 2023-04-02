@@ -287,7 +287,23 @@ export function supportGuoba () {
           component: 'Switch'
         },
         {
-          field: 'groupContextLength',
+          field: 'groupContextTip',
+          label: '机器人读取聊天记录时的后台prompt',
+          component: 'InputTextArea'
+        },
+        {
+          field: 'enforceMaster',
+          label: '加强主人认知',
+          bottomHelpMessage: '加强主人认知。希望机器人认清主人，避免NTR可开启。开启后可能会与自设定的内容有部分冲突。sydney模式可以放心开启。',
+          component: 'Switch'
+        },
+        // {
+        //   field: 'cognitiveReinforcementTip',
+        //   label: '加强主人认知的后台prompt',
+        //   component: 'InputTextArea'
+        // },
+        {
+            field: 'groupContextLength',
           label: '允许机器人读取近期的最多群聊聊天记录条数。',
           bottomHelpMessage: '允许机器人读取近期的最多群聊聊天记录条数。太多可能会超。默认50',
           component: 'InputNumber'
@@ -308,12 +324,6 @@ export function supportGuoba () {
           field: 'sydneyApologyIgnored',
           label: 'Bing抱歉是否不计入聊天记录',
           bottomHelpMessage: '有时无限抱歉，就关掉这个再多问几次试试，可能有奇效',
-          component: 'Switch'
-        },
-        {
-          field: 'enforceMaster',
-          label: '加强主人认知',
-          bottomHelpMessage: '加强主人认知。希望机器人认清主人，避免NTR可开启。开启后可能会与自设定的内容有部分冲突。sydney模式可以放心开启。',
           component: 'Switch'
         },
         {
