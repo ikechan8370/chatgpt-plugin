@@ -1131,10 +1131,10 @@ export class chatgpt extends plugin {
             break
           } catch (error) {
             const message = error?.message || error?.data?.message || error || '出错了'
-            if (message.indexOf('限流') > -1) {
+            if (message && message.indexOf('限流') > -1) {
               throttledTokens.push(bingToken)
               // 不减次数
-            } else if (message.indexOf('UnauthorizedRequest') > -1) {
+            } else if (message && message.indexOf('UnauthorizedRequest') > -1) {
               // token过期了
               logger.warn(`token${bingToken}过期了，将自动移除`)
               let savedBingToken = await redis.get('CHATGPT:BING_TOKEN')
