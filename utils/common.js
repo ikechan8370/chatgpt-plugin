@@ -309,6 +309,10 @@ export async function renderUrl (e, url, renderCfg = {}) {
   let base64
   try {
     await page.goto(url, { timeout: 120000 })
+    await page.setViewport({
+      width: 1280,
+      height: 720
+    })
     let buff = base64 = await page.screenshot({fullPage:true})
     base64 = segment.image(buff)
     await page.close().catch((err) => logger.error(err))
