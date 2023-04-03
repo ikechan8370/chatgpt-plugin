@@ -122,8 +122,8 @@ export default class SydneyAIClient {
     }
     if (response.status !== 200) {
       logger.error('创建sydney对话失败: status code: ' + response.status + response.statusText)
-      logger.error(text)
-      throw new Error(text)
+      logger.error('response body：' + text)
+      throw new Error('创建sydney对话失败: status code: ' + response.status + response.statusText)
     }
     try {
       return JSON.parse(text)
