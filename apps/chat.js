@@ -23,6 +23,7 @@ import { deleteConversation, getConversations, getLatestMessageIdByConversationI
 import { convertSpeaker, generateAudio, speakers } from '../utils/tts.js'
 import ChatGLMClient from '../utils/chatglm.js'
 import { convertFaces } from '../utils/face.js'
+import {parseInt} from "lodash/string.js";
 try {
   await import('keyv')
 } catch (err) {
@@ -1069,7 +1070,7 @@ export class chatgpt extends plugin {
                   opt.botName = e.isGroup ? (e.group.pickMember(Bot.uin).card || e.group.pickMember(Bot.uin).nickname) : Bot.nickname
                   let master = (await getMasterQQ())[0]
                   if (master && e.group) {
-                    opt.masterName = e.group.pickMember(master).card || e.group.pickMember(master).nickname
+                    opt.masterName = e.group.pickMember(parseInt(master)).card || e.group.pickMember(parseInt(master)).nickname
                   }
                   if (master && !e.group) {
                     opt.masterName = Bot.getFriendList().get(master)?.nickname
