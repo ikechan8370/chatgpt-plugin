@@ -3,7 +3,7 @@ import { Config } from '../utils/config.js'
 import { BingAIClient } from '@waylaidwanderer/chatgpt-api'
 import { exec } from 'child_process'
 import { checkPnpm, formatDuration, parseDuration } from '../utils/common.js'
-import SydneyAIClient from "../utils/SydneyAIClient.js";
+import SydneyAIClient from '../utils/SydneyAIClient.js'
 
 export class ChatgptManagement extends plugin {
   constructor (e) {
@@ -36,6 +36,11 @@ export class ChatgptManagement extends plugin {
         {
           reg: '#chatgpt(删除|移除)(必应|Bing |bing )(token|Token)',
           fnc: 'delBingAccessToken',
+          permission: 'master'
+        },
+        {
+          reg: '#chatgpt(查看|浏览)(必应|Bing |bing )(token|Token)',
+          fnc: 'getBingAccessToken',
           permission: 'master'
         },
         {
@@ -125,9 +130,32 @@ export class ChatgptManagement extends plugin {
           reg: '^#chatgpt查看(Bing|必应|Sydney|悉尼|sydney|bing)设定$',
           fnc: 'queryBingPromptPrefix',
           permission: 'master'
+        },
+        {
+          /** 命令正则匹配 */
+          reg: '^#(关闭|打开)群聊上下文',
+          /** 执行方法 */
+          fnc: 'enableGroupContext',
+          permission: 'master'
         }
       ]
     })
+  }
+  async enableGroupContext (e) {
+    const re = /#(关闭|打开)/
+    const match = e.msg.match(re)
+    //logger.info(match)
+    if (match) {
+      const action = match[1]
+      if (action === '关闭') {
+        Config.enableGroupContext = false // 关闭
+        await this.reply('已关闭群聊上下文功能', true) 
+      } else {
+        Config.enableGroupContext = true // 打开
+        await this.reply('已打开群聊上下文功能', true) 
+      }
+    }
+    return false
   }
 
   async turnOnConfirm (e) {
@@ -154,6 +182,15 @@ export class ChatgptManagement extends plugin {
     return false
   }
 
+  async getBingAccessToken (e) {
+    let tokens = await redis.get('CHATGPT:BING_TOKEN')
+    tokens = tokens.split('|')
+    tokens = tokens.map((item, index) => (
+      `【${index}】 Token：${item.substring(0, 5 / 2) + '...' + item.substring(item.length - 5 / 2, item.length)}`
+    )).join('\n')
+    await this.reply(`${tokens}`, true)
+    return false
+  }
   async delBingAccessToken (e) {
     this.setContext('deleteBingToken')
     let tokens = await redis.get('CHATGPT:BING_TOKEN')
@@ -192,10 +229,13 @@ export class ChatgptManagement extends plugin {
         await this.reply(`经检测，Bing Token无效。来自Bing的错误提示：${res.result?.message}`)
       }
     })
-    let bingToken = await redis.get('CHATGPT:BING_TOKEN')
-    bingToken = bingToken.split('|')
-    if (!bingToken.includes(token)) bingToken.push(token)
-    token = bingToken.join('|')
+    if (await redis.exists('CHATGPT:BING_TOKEN') != 0) {
+      let bingToken = await redis.get('CHATGPT:BING_TOKEN')
+      bingToken = bingToken.split('|')
+      if (!bingToken.includes(token)) bingToken.push(token)
+      bingToken = bingToken.filter(function (element) { return element !== '' })
+      token = bingToken.join('|')
+    }
     await redis.set('CHATGPT:BING_TOKEN', token)
     await this.reply('Bing Token设置成功', true)
     this.finish('saveBingToken')
@@ -206,13 +246,14 @@ export class ChatgptManagement extends plugin {
     let bingToken = await redis.get('CHATGPT:BING_TOKEN')
     bingToken = bingToken.split('|')
     let tokenId = this.e.msg
-    if (!bingToken[tokenId]) {
+    if (bingToken[tokenId] === null || bingToken[tokenId] === undefined) {
       await this.reply('Token编号错误！', true)
       this.finish('deleteBingToken')
       return
     }
     const removeToken = bingToken[tokenId]
     bingToken.splice(tokenId, 1)
+    bingToken = bingToken.filter(function (element) { return element !== '' })
     let token = bingToken.join('|')
     await redis.set('CHATGPT:BING_TOKEN', token)
     await this.reply(`Token ${removeToken.substring(0, 5 / 2) + '...' + removeToken.substring(removeToken.length - 5 / 2, removeToken.length)} 移除成功`, true)
