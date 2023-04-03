@@ -70,6 +70,7 @@ server.post('/cache', async (request, reply) => {
         const filename = body.entry + '.json';
         const filepath = path.join(dir, filename);
         const regexUrl = /\b((?:https?|ftp|file):\/\/[-a-zA-Z0-9+&@#\/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#\/%=~_|])/g;
+        const ip = getPublicIP()
         try {
           fs.mkdirSync(dir, { recursive: true });
           fs.writeFileSync(filepath, JSON.stringify({
@@ -78,6 +79,7 @@ server.post('/cache', async (request, reply) => {
             question: body.content.prompt,
             message: body.content.content,
             group: body.content.group,
+            herf: `http://${ip}:3321/page/${body.entry}`,
             quote: body.content.quote.map((item) => (
               {
                 text: item.replace(/(.{30}).+/, "$1..."),
@@ -85,10 +87,10 @@ server.post('/cache', async (request, reply) => {
               }
             ))
           }));
-          reply.send({ file: body.entry, cacheUrl: `http://${getPublicIP()}:3321/page/${body.entry}` });
+          reply.send({ file: body.entry, cacheUrl: `http://${ip}:3321/page/${body.entry}` });
         } catch (err) {
           console.error(err);
-          reply.send({ file: body.entry, cacheUrl: `http://${getPublicIP()}/page/${body.entry}`, error: '生成失败' });
+          reply.send({ file: body.entry, cacheUrl: `http://${ip}/page/${body.entry}`, error: '生成失败' });
         }
     }
 })
