@@ -809,7 +809,7 @@ export class chatgpt extends plugin {
           }
         }
         // 过滤‘括号’的内容不读，减少违和感
-        // let ttsResponse = response.replace(/[(（\[{<【《「『【〖【【【“‘'"@][^()（）\]}>】》」』】〗】】”’'@]*[)）\]}>】》」』】〗】】”’'@]/g, '')
+        let ttsResponse = response.replace(/[(（\[{<【《「『【〖【【【“‘'"@][^()（）\]}>】》」』】〗】】”’'@]*[)）\]}>】》」』】〗】】”’'@]/g, '')
         if (Config.ttsSpace && ttsResponse.length <= Config.ttsAutoFallbackThreshold) {
           try {
             let wav = await generateAudio(ttsResponse, speaker, '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）')
