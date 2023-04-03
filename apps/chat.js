@@ -23,7 +23,6 @@ import { deleteConversation, getConversations, getLatestMessageIdByConversationI
 import { convertSpeaker, generateAudio, speakers } from '../utils/tts.js'
 import ChatGLMClient from '../utils/chatglm.js'
 import { convertFaces } from '../utils/face.js'
-import {parseInt} from "lodash/string.js";
 try {
   await import('keyv')
 } catch (err) {
