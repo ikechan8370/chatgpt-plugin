@@ -3,6 +3,7 @@ import { createImage, editImage, imageVariation } from '../utils/dalle.js'
 import { makeForwardMsg } from '../utils/common.js'
 import _ from 'lodash'
 import { Config } from '../utils/config.js'
+import BingDrawClient from '../utils/BingDraw.js'
 
 export class dalle extends plugin {
   constructor (e) {
@@ -27,6 +28,11 @@ export class dalle extends plugin {
         {
           reg: '^#(chatgpt|dalle)编辑图片',
           fnc: 'edit'
+        },
+        {
+          reg: '^#bing(画图|绘图)',
+          fnc: 'bingDraw',
+          permission: 'master'
         }
       ]
     })
@@ -220,6 +226,30 @@ export class dalle extends plugin {
       logger.error(err.response?.data?.error?.message || err.message || JSON.stringify(err.response || {}))
       this.reply(`图片编辑失败: ${err.response?.data?.error?.message || err.message || JSON.stringify(err.response || {})}`, true)
       await redis.del(`CHATGPT:EDIT:${e.sender.user_id}`)
+    }
+  }
+
+  async bingDraw (e) {
+    let prompt = e.msg.replace(/^#bing(画图|绘图)/, '')
+    let bingToken = await redis.get('CHATGPT:BING_TOKEN')
+    if (!bingToken) {
+      throw new Error('未绑定Bing Cookie，请使用#chatgpt设置必应token命令绑定Bing Cookie')
+    }
+    const bingTokens = bingToken.split('|')
+    // 负载均衡
+    if (Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom') {
+      // sydney下不需要保证同一token
+      const select = Math.floor(Math.random() * bingTokens.length)
+      bingToken = bingTokens[select]
+    }
+    let client = new BingDrawClient({
+      baseUrl: Config.sydneyReverseProxy,
+      userToken: bingToken
+    })
+    try {
+      await client.getImages(prompt, e)
+    } catch (err) {
+      await e.reply('绘图失败：' + err)
     }
   }
 }
