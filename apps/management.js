@@ -191,7 +191,6 @@ export class ChatgptManagement extends plugin {
     await this.reply(`${tokens}`, true)
     return false
   }
-
   async delBingAccessToken (e) {
     this.setContext('deleteBingToken')
     let tokens = await redis.get('CHATGPT:BING_TOKEN')
