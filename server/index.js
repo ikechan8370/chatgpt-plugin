@@ -54,7 +54,7 @@ await server.get('/page/*', (request, reply) => {
 server.post('/page', async (request, reply) => {
     const body = request.body || {};
     if (body.code) {
-        const dir = 'ChatGPTCache';
+        const dir = 'resources/ChatGPTCache';
         const filename = body.code + '.json';
         const filepath = path.join(dir, filename);
         
@@ -66,7 +66,7 @@ server.post('/page', async (request, reply) => {
 server.post('/cache', async (request, reply) => {
     const body = request.body || {};
     if (body.content) {
-        const dir = 'ChatGPTCache';
+        const dir = 'resources/ChatGPTCache';
         const filename = body.entry + '.json';
         const filepath = path.join(dir, filename);
         const regexUrl = /\b((?:https?|ftp|file):\/\/[-a-zA-Z0-9+&@#\/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#\/%=~_|])/g;
