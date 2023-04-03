@@ -130,9 +130,32 @@ export class ChatgptManagement extends plugin {
           reg: '^#chatgpt查看(Bing|必应|Sydney|悉尼|sydney|bing)设定$',
           fnc: 'queryBingPromptPrefix',
           permission: 'master'
+        },
+        {
+          /** 命令正则匹配 */
+          reg: '^#(关闭|打开)群聊上下文',
+          /** 执行方法 */
+          fnc: 'enableGroupContext',
+          permission: 'master'
         }
       ]
     })
+  }
+  async enableGroupContext (e) {
+    const re = /#(关闭|打开)/
+    const match = e.msg.match(re)
+    //logger.info(match)
+    if (match) {
+      const action = match[1]
+      if (action === '关闭') {
+        Config.enableGroupContext = false // 关闭
+        await this.reply('已关闭群聊上下文功能', true) 
+      } else {
+        Config.enableGroupContext = true // 打开
+        await this.reply('已打开群聊上下文功能', true) 
+      }
+    }
+    return false
   }
 
   async turnOnConfirm (e) {
