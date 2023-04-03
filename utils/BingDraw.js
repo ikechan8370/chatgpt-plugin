@@ -1,14 +1,28 @@
 import fetch from 'node-fetch'
 import { makeForwardMsg } from './common.js'
+import { Config } from './config.js'
+
+let proxy
+if (Config.proxy) {
+  try {
+    proxy = (await import('https-proxy-agent')).default
+  } catch (e) {
+    console.warn('未安装https-proxy-agent，请在插件目录下执行pnpm add https-proxy-agent')
+  }
+}
 export default class BingDrawClient {
   constructor (opts) {
     this.opts = opts
+    if (Config.proxy && !Config.sydneyForceUseReverse) {
+      // 如果设置代理，走代理
+      this.opts.baseUrl = 'https://www.bing.com'
+    }
   }
 
   async getImages (prompt, e) {
     let urlEncodedPrompt = encodeURIComponent(prompt)
     let url = `${this.opts.baseUrl}/images/create?q=${urlEncodedPrompt}&rt=4&FORM=GENCRE`
-    let response = await fetch(url, {
+    let fetchOptions = {
       method: 'POST',
       headers: {
         accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
@@ -21,7 +35,11 @@ export default class BingDrawClient {
         cookie: this.opts.cookies || `_U=${this.opts.userToken}`
       },
       redirect: 'manual'
-    })
+    }
+    if (Config.proxy) {
+      fetchOptions.agent = proxy(Config.proxy)
+    }
+    let response = await fetch(url, fetchOptions)
     let res = await response.text()
     if (res.toLowerCase().indexOf('this prompt has been blocked') > -1) {
       throw new Error('Your prompt has been blocked by Bing. Try to change any bad words and try again.')
