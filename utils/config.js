@@ -34,6 +34,7 @@ const defaultConfig = {
   sydney: pureSydneyInstruction,
   sydneyReverseProxy: 'https://666102.201666.xyz',
   sydneyForceUseReverse: false,
+  sydneyWebsocketUseProxy: false,
   sydneyBrainWash: true,
   sydneyBrainWashStrength: 15,
   sydneyBrainWashName: 'Sydney',
@@ -72,12 +73,13 @@ const defaultConfig = {
   sydneyContext: '',
   emojiBaseURL: 'https://www.gstatic.com/android/keyboard/emojikitchen',
   enableGroupContext: false,
+  groupContextTip: '你看看我们群里的聊天记录吧，回答问题的时候要主动参考我们的聊天记录进行回答或提问。但要看清楚哦，不要把我和其他人弄混啦，也不要把自己看晕啦~~',
   groupContextLength: 50,
   enableRobotAt: true,
   maxNumUserMessagesInConversation: 20,
   sydneyApologyIgnored: true,
   enforceMaster: false,
-  version: 'v2.4.10'
+  version: 'v2.4.11'
 }
 const _path = process.cwd()
 let config = {}

@@ -206,6 +206,13 @@ export class chatgpt extends plugin {
         await redis.del(`CHATGPT:QQ_CONVERSATION:${e.sender.user_id}`)
         await this.reply('已退出当前对话，该对话仍然保留。请@我进行聊天以开启新的对话', true)
       } else if (use === 'bing' && (Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom')) {
+        let c = await redis.get(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
+        if (!c) {
+          await this.reply('当前没有开启对话', true)
+          return
+        } else {
+          await redis.del(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
+        }
         const conversation = {
           store: new KeyvFile({ filename: 'cache.json' }),
           namespace: Config.toneStyle
@@ -517,8 +524,10 @@ export class chatgpt extends plugin {
       prompt = e.raw_message.trim()
       if (e.isGroup) {
         let me = e.group.pickMember(Bot.uin)
-        let card = me.card || me.nickname
+        let card = me.card
+        let nickname = me.nickname
         prompt = prompt.replace(`@${card}`, '').trim()
+        prompt = prompt.replace(`@${nickname}`, '').trim()
       }
     } else {
       let ats = e.message.filter(m => m.type === 'at')
@@ -735,8 +744,12 @@ export class chatgpt extends plugin {
           previousConversation.invocationId = chatMessage.invocationId
           previousConversation.parentMessageId = chatMessage.parentMessageId
           previousConversation.conversationSignature = chatMessage.conversationSignature
-          previousConversation.bingToken = chatMessage.bingToken
-        } else {
+          if (Config.toneStyle !== 'Sydney' && Config.toneStyle !== 'Custom') {
+            previousConversation.bingToken = chatMessage.bingToken
+          } else {
+            previousConversation.bingToken = ''
+          }
+        } else if (chatMessage.id) {
           previousConversation.parentMessageId = chatMessage.id
         }
         if (Config.debug) {
@@ -756,9 +769,9 @@ export class chatgpt extends plugin {
       }
       // 分离内容和情绪
       if (Config.sydneyMood) {
-        let temp_response = completeJSON(response)
-        if (temp_response.text) response = temp_response.text
-        if (temp_response.mood) mood = temp_response.mood
+        let tempResponse = completeJSON(response)
+        if (tempResponse.text) response = tempResponse.text
+        if (tempResponse.mood) mood = tempResponse.mood
       } else {
         mood = ''
       }
@@ -787,33 +800,27 @@ export class chatgpt extends plugin {
         })
       }
       if (useTTS) {
-        if (Config.ttsSpace && response.length <= Config.ttsAutoFallbackThreshold) {
-          let audioErr = false
-          try {
-            let wav = await generateAudio(response, speaker, '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）')
-            await e.reply(segment.record(wav))
-          } catch (err) {
-            await this.reply('合成语音发生错误，我用文本回复你吧')
-            audioErr = true
-          }
-          if (Config.alsoSendText || audioErr) {
-            await this.reply(await convertFaces(response, Config.enableRobotAt, e), e.isGroup)
-            if (quotemessage.length > 0) {
-              this.reply(await makeForwardMsg(this.e, quotemessage))
-            }
-            if (Config.enableSuggestedResponses && chatMessage.suggestedResponses) {
-              this.reply(`建议的回复：\n${chatMessage.suggestedResponses}`)
-            }
-          }
-        } else {
-          await this.reply('你没有配置转语音API或者文字太长了哦，我用文本回复你吧')
-          await this.reply(`${response}`, e.isGroup)
+        // 先把文字回复发出去，避免过久等待合成语音
+        if (Config.alsoSendText) {
+          await this.reply(await convertFaces(response, Config.enableRobotAt, e), e.isGroup)
           if (quotemessage.length > 0) {
             this.reply(await makeForwardMsg(this.e, quotemessage))
           }
           if (Config.enableSuggestedResponses && chatMessage.suggestedResponses) {
             this.reply(`建议的回复：\n${chatMessage.suggestedResponses}`)
           }
+        }
+        // 过滤‘括号’的内容不读，减少违和感
+        let ttsResponse = response.replace(/[(（\[{<【《「『【〖【【【“‘'"@][^()（）\]}>】》」』】〗】】”’'@]*[)）\]}>】》」』】〗】】”’'@]/g, '')
+        if (Config.ttsSpace && ttsResponse.length <= Config.ttsAutoFallbackThreshold) {
+          try {
+            let wav = await generateAudio(ttsResponse, speaker, '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）')
+            await e.reply(segment.record(wav))
+          } catch (err) {
+            await this.reply('合成语音发生错误~')
+          }
+        } else {
+          await this.reply('你没有配置转语音API或者文字太长了哦')
         }
       } else if (userSetting.usePicture || (Config.autoUsePicture && response.length > Config.autoUsePictureThreshold)) {
         // todo use next api of chatgpt to complete incomplete respoonse
@@ -995,17 +1002,8 @@ export class chatgpt extends plugin {
         return await this.chatgptBrowserBased(prompt, conversation)
       }
       case 'bing': {
-        let bingToken = await redis.get('CHATGPT:BING_TOKEN')
-        // 负载均衡
-        if (!conversation.bingToken) {
-          const bingTokens = bingToken.split('|')
-          const select = Math.floor(Math.random() * bingTokens.length)
-          bingToken = bingTokens[select]
-        } else bingToken = conversation.bingToken
-
-        if (!bingToken) {
-          throw new Error('未绑定Bing Cookie，请使用#chatgpt设置必应token命令绑定Bing Cookie')
-        }
+        let throttledTokens = []
+        let { bingToken, allThrottled } = await getAvailableBingToken(conversation, throttledTokens)
         let cookies
         if (bingToken?.indexOf('=') > -1) {
           cookies = bingToken
@@ -1045,43 +1043,72 @@ export class chatgpt extends plugin {
         let reply = ''
         let retry = 3
         let errorMessage = ''
+
         do {
           try {
             let opt = _.cloneDeep(conversation) || {}
             opt.toneStyle = Config.toneStyle
             opt.context = Config.sydneyContext
-            if (Config.enableGroupContext && e.isGroup) {
-              try {
-                opt.groupId = e.group_id
-                opt.qq = e.sender.user_id
-                opt.nickname = e.sender.card
-                opt.groupName = e.group.name
-                opt.botName = e.isGroup ? (e.group.pickMember(Bot.uin).card || e.group.pickMember(Bot.uin).nickname) : Bot.nickname
-                let master = (await getMasterQQ())[0]
-                if (master && e.group) {
-                  opt.masterName = e.group.pickMember(master).card || e.group.pickMember(master).nickname
-                }
-                if (master && !e.group) {
-                  opt.masterName = Bot.getFriendList().get(master)?.nickname
-                }
-                let latestChat = await e.group.getChatHistory(0, 1)
-                let seq = latestChat[0].seq
-                let chats = []
-                while (chats.length < Config.groupContextLength) {
-                  let chatHistory = await e.group.getChatHistory(seq, 20)
-                  chats.push(...chatHistory)
-                }
-                chats = chats.slice(0, Config.groupContextLength)
-                let mm = await e.group.getMemberMap()
-                chats.forEach(chat => {
-                  let sender = mm.get(chat.sender.user_id)
-                  chat.sender = sender
-                })
-                // console.log(chats)
-                opt.chats = chats
-              } catch (err) {
-                logger.warn('获取群聊聊天记录失败，本次对话不携带聊天记录', err)
+            // 重新拿存储的token，因为可能之前有过期的被删了
+            let abtrs = await getAvailableBingToken(conversation, throttledTokens)
+            if (Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom') {
+              bingToken = abtrs.bingToken
+              allThrottled = abtrs.allThrottled
+              if (bingToken?.indexOf('=') > -1) {
+                cookies = bingToken
               }
+              bingAIClient.opts.userToken = bingToken
+              bingAIClient.opts.cookies = cookies
+              opt.messageType = allThrottled ? 'Chat' : 'SearchQuery'
+              if (Config.enableGroupContext && e.isGroup) {
+                try {
+                  opt.groupId = e.group_id
+                  opt.qq = e.sender.user_id
+                  opt.nickname = e.sender.card
+                  opt.groupName = e.group.name
+                  opt.botName = e.isGroup ? (e.group.pickMember(Bot.uin).card || e.group.pickMember(Bot.uin).nickname) : Bot.nickname
+                  let master = (await getMasterQQ())[0]
+                  if (master && e.group) {
+                    opt.masterName = e.group.pickMember(master).card || e.group.pickMember(master).nickname
+                  }
+                  if (master && !e.group) {
+                    opt.masterName = Bot.getFriendList().get(master)?.nickname
+                  }
+                  let latestChat = await e.group.getChatHistory(0, 1)
+                  let seq = latestChat[0].seq
+                  let chats = []
+                  while (chats.length < Config.groupContextLength) {
+                    let chatHistory = await e.group.getChatHistory(seq, 20)
+                    chats.push(...chatHistory)
+                  }
+                  chats = chats.slice(0, Config.groupContextLength)
+                  let mm = await e.group.getMemberMap()
+                  chats.forEach(chat => {
+                    let sender = mm.get(chat.sender.user_id)
+                    chat.sender = sender
+                  })
+                  // console.log(chats)
+                  opt.chats = chats
+                } catch (err) {
+                  logger.warn('获取群聊聊天记录失败，本次对话不携带聊天记录', err)
+                }
+              }
+            } else {
+              // 重新创建client，因为token可能换到别的了
+              if (bingToken?.indexOf('=') > -1) {
+                cookies = bingToken
+              }
+              let bingOption = {
+                userToken: abtrs.bingToken, // "_U" cookie from bing.com
+                cookies,
+                debug: Config.debug,
+                proxy: Config.proxy,
+                host: Config.sydneyReverseProxy
+              }
+              if (Config.proxy && Config.sydneyReverseProxy && !Config.sydneyForceUseReverse) {
+                delete bingOption.host
+              }
+              bingAIClient = new BingAIClient(bingOption)
             }
             response = await bingAIClient.sendMessage(prompt, opt, (token) => {
               reply += token
@@ -1099,9 +1126,25 @@ export class chatgpt extends plugin {
             errorMessage = ''
             break
           } catch (error) {
+            logger.error(error)
             const message = error?.message || error?.data?.message || error || '出错了'
-            retry--
-            errorMessage = message === 'Timed out waiting for response. Try enabling debug mode to see more information.' ? (reply ? `${reply}\n不行了，我的大脑过载了，处理不过来了!` : '必应的小脑瓜不好使了，不知道怎么回答！') : message
+            if (message && message.indexOf('限流') > -1) {
+              throttledTokens.push(bingToken)
+              // 不减次数
+            } else if (message && message.indexOf('UnauthorizedRequest') > -1) {
+              // token过期了
+              logger.warn(`token${bingToken}过期了，将自动移除`)
+              let savedBingToken = await redis.get('CHATGPT:BING_TOKEN')
+              savedBingToken = savedBingToken.split('|')
+              let tokenId = savedBingToken.indexOf(bingToken)
+              savedBingToken.splice(tokenId, 1)
+              savedBingToken = savedBingToken.filter(function (element) { return element !== '' })
+              await redis.set('CHATGPT:BING_TOKEN', savedBingToken.join('|'))
+              logger.mark(`token${bingToken}已移除`)
+            } else {
+              retry--
+              errorMessage = message === 'Timed out waiting for response. Try enabling debug mode to see more information.' ? (reply ? `${reply}\n不行了，我的大脑过载了，处理不过来了!` : '必应的小脑瓜不好使了，不知道怎么回答！') : message
+            }
           }
         } while (retry > 0)
         if (errorMessage) {
@@ -1120,7 +1163,7 @@ export class chatgpt extends plugin {
             invocationId: response.invocationId,
             conversationSignature: response.conversationSignature,
             parentMessageId: response.apology ? conversation.parentMessageId : response.messageId,
-            bingToken: bingToken
+            bingToken
           }
         }
       }
@@ -1347,5 +1390,41 @@ export class chatgpt extends plugin {
       sendMessageOption = Object.assign(sendMessageOption, conversation)
     }
     return await this.chatGPTApi.sendMessage(prompt, sendMessageOption)
+  }
+}
+
+async function getAvailableBingToken (conversation, throttled = []) {
+  let allThrottled = false
+  let bingToken = await redis.get('CHATGPT:BING_TOKEN')
+  if (!bingToken) {
+    throw new Error('未绑定Bing Cookie，请使用#chatgpt设置必应token命令绑定Bing Cookie')
+  }
+  const bingTokens = bingToken.split('|')
+  // 负载均衡
+  if (Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom') {
+    // sydney下不需要保证同一token
+    let notThrottled = bingTokens.filter(t => throttled.indexOf(t) === -1)
+    if (notThrottled.length > 0) {
+      bingToken = notThrottled[0]
+    } else {
+      // 全都被限流了，随便找一个算了
+      allThrottled = true
+      const select = Math.floor(Math.random() * bingTokens.length)
+      bingToken = bingTokens[select]
+    }
+    // const select = Math.floor(Math.random() * bingTokens.length)
+    // bingToken = bingTokens[select]
+  } else {
+    // bing 下，需要保证同一对话使用同一账号的token
+    if (!conversation.bingToken) {
+      const select = Math.floor(Math.random() * bingTokens.length)
+      bingToken = bingTokens[select]
+    } else if (bingTokens.indexOf(conversation.bingToken) > -1) {
+      bingToken = conversation.bingToken
+    }
+  }
+  return {
+    bingToken,
+    allThrottled
   }
 }

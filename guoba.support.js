@@ -168,7 +168,7 @@ export function supportGuoba () {
         {
           field: 'proxy',
           label: '代理服务器地址',
-          bottomHelpMessage: '数据通过代理服务器发送，http或socks5代理。',
+          bottomHelpMessage: '数据通过代理服务器发送，http或socks5代理。配置后需重启。',
           component: 'Input'
         },
         {
@@ -287,7 +287,23 @@ export function supportGuoba () {
           component: 'Switch'
         },
         {
-          field: 'groupContextLength',
+          field: 'groupContextTip',
+          label: '机器人读取聊天记录时的后台prompt',
+          component: 'InputTextArea'
+        },
+        {
+          field: 'enforceMaster',
+          label: '加强主人认知',
+          bottomHelpMessage: '加强主人认知。希望机器人认清主人，避免NTR可开启。开启后可能会与自设定的内容有部分冲突。sydney模式可以放心开启。',
+          component: 'Switch'
+        },
+        // {
+        //   field: 'cognitiveReinforcementTip',
+        //   label: '加强主人认知的后台prompt',
+        //   component: 'InputTextArea'
+        // },
+        {
+            field: 'groupContextLength',
           label: '允许机器人读取近期的最多群聊聊天记录条数。',
           bottomHelpMessage: '允许机器人读取近期的最多群聊聊天记录条数。太多可能会超。默认50',
           component: 'InputNumber'
@@ -311,12 +327,6 @@ export function supportGuoba () {
           component: 'Switch'
         },
         {
-          field: 'enforceMaster',
-          label: '加强主人认知',
-          bottomHelpMessage: '加强主人认知。希望机器人认清主人，避免NTR可开启。开启后可能会与自设定的内容有部分冲突。sydney模式可以放心开启。',
-          component: 'Switch'
-        },
-        {
           field: 'sydneyContext',
           label: 'Bing的扩展资料',
           bottomHelpMessage: 'AI将会从你提供的扩展资料中学习到一些知识，帮助它更好地回答你的问题。实际相当于使用edge侧边栏Bing时读取的你当前浏览网页的内容。如果太长可能容易到达GPT-4的8192token上限。',
@@ -325,13 +335,19 @@ export function supportGuoba () {
         {
           field: 'sydneyReverseProxy',
           label: 'sydney反代',
-          bottomHelpMessage: '仅自设定模式下有效。国内ip无法正常使用sydney和自设定模式，如果有bing.com的反代可以填在此处，或者使用proxy',
+          bottomHelpMessage: '仅悉尼和自设定模式下有效，用于创建对话（默认不用于正式对话）。目前国内ip和部分境外IDC IP由于微软限制创建对话，如果有bing.com的反代可以填在此处，或者使用proxy',
           component: 'Input'
         },
         {
           field: 'sydneyForceUseReverse',
           label: '强制使用sydney反代',
-          bottomHelpMessage: '即使配置了proxy，依然使用sydney反代',
+          bottomHelpMessage: '即使配置了proxy，创建对话时依然使用sydney反代',
+          component: 'Switch'
+        },
+        {
+          field: 'sydneyWebsocketUseProxy',
+          label: '对话使用sydney反代',
+          bottomHelpMessage: '【一般情况无需也不建议开启】默认情况下仅创建对话走反代，对话时仍然直连微软。开启本选项将使对话过程也走反，需反代支持。',
           component: 'Switch'
         },
         {
@@ -340,28 +356,6 @@ export function supportGuoba () {
           bottomHelpMessage: '开启Sydney的情感显示，仅在图片模式下生效。',
           component: 'Switch'
         },
-        // {
-        //   field: 'sydneyBrainWash',
-        //   label: '开启强制洗脑',
-        //   bottomHelpMessage: '仅自设定模式下有效。如果发现自设定模式下总是回复类似于换个话题之类的话，可以开启强制洗脑试试，如果还不行就调整你的设定',
-        //   component: 'Switch'
-        // },
-        // {
-        //   field: 'sydneyBrainWashName',
-        //   label: 'Custom模式下的称呼',
-        //   bottomHelpMessage: '仅自设定模式下有效。如果开启了强制洗脑，务必准确填写这个才能精准洗脑。不开启洗脑可以不管这个',
-        //   component: 'Input'
-        // },
-        // {
-        //   field: 'sydneyBrainWashStrength',
-        //   label: '洗脑强度',
-        //   bottomHelpMessage: '仅自设定模式下有效。洗脑强度。默认为15，可以酌情调整。太大的话可能长对话会影响对话质量',
-        //   component: 'InputNumber',
-        //   componentProps: {
-        //     min: 0,
-        //     max: 100
-        //   }
-        // },
         {
           label: '以下为API3方式的配置。',
           component: 'Divider'
