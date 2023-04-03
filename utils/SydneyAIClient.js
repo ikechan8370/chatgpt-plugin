@@ -120,6 +120,11 @@ export default class SydneyAIClient {
       text = await response.text()
       retry--
     }
+    if (response.status !== 200) {
+      logger.error('创建sydney对话失败: status code: ' + response.status + response.statusText)
+      logger.error(text)
+      throw new Error(text)
+    }
     try {
       return JSON.parse(text)
     } catch (err) {
@@ -144,6 +149,7 @@ export default class SydneyAIClient {
       logger.mark(`use sydney websocket host: ${sydneyHost}`)
       let ws = new WebSocket(sydneyHost + '/sydney/ChatHub', { agent })
       ws.on('error', (err) => {
+        console.error(err)
         reject(err)
       })
 
@@ -332,7 +338,6 @@ export default class SydneyAIClient {
       role: 'User',
       message
     }
-
     const ws = await this.createWebSocketConnection()
     if (Config.debug) {
       logger.mark('sydney websocket constructed successful')
@@ -405,15 +410,6 @@ export default class SydneyAIClient {
       target: 'chat',
       type: 4
     }
-    // if (previousMessagesFormatted) {
-    //   obj.arguments[0].previousMessages.push({
-    //     author: 'user',
-    //     description: previousMessagesFormatted,
-    //     contextType: 'WebPage',
-    //     messageType: 'Context',
-    //     messageId: 'discover-web--page-ping-mriduna-----'
-    //   });
-    // }
     // simulates document summary function on Edge's Bing sidebar
     // unknown character limit, at least up to 7k
     if (groupId) {
@@ -694,6 +690,9 @@ export default class SydneyAIClient {
           default:
         }
       })
+      ws.on('error', err => {
+        reject(err)
+      })
     })
 
     const messageJson = JSON.stringify(obj)
@@ -701,9 +700,8 @@ export default class SydneyAIClient {
       console.debug(messageJson)
       console.debug('\n\n\n\n')
     }
-    ws.send(`${messageJson}`)
-
     try {
+      ws.send(`${messageJson}`)
       const {
         message: reply,
         conversationExpiryTime
@@ -729,7 +727,7 @@ export default class SydneyAIClient {
         conversationExpiryTime,
         response: reply.text,
         details: reply,
-        apology: Config.sydneyApologyIgnored && apology,
+        apology: Config.sydneyApologyIgnored && apology
       }
     } catch (err) {
       await this.conversationsCache.set(conversationKey, conversation)

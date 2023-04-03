@@ -524,8 +524,10 @@ export class chatgpt extends plugin {
       prompt = e.raw_message.trim()
       if (e.isGroup) {
         let me = e.group.pickMember(Bot.uin)
-        let card = me.card || me.nickname
+        let card = me.card
+        let nickname = me.nickname
         prompt = prompt.replace(`@${card}`, '').trim()
+        prompt = prompt.replace(`@${nickname}`, '').trim()
       }
     } else {
       let ats = e.message.filter(m => m.type === 'at')
@@ -747,7 +749,7 @@ export class chatgpt extends plugin {
           } else {
             previousConversation.bingToken = ''
           }
-        } else {
+        } else if (chatMessage.id) {
           previousConversation.parentMessageId = chatMessage.id
         }
         if (Config.debug) {
@@ -767,9 +769,9 @@ export class chatgpt extends plugin {
       }
       // 分离内容和情绪
       if (Config.sydneyMood) {
-        let temp_response = completeJSON(response)
-        if (temp_response.text) response = temp_response.text
-        if (temp_response.mood) mood = temp_response.mood
+        let tempResponse = completeJSON(response)
+        if (tempResponse.text) response = tempResponse.text
+        if (tempResponse.mood) mood = tempResponse.mood
       } else {
         mood = ''
       }
@@ -819,7 +821,7 @@ export class chatgpt extends plugin {
           }
         } else {
           await this.reply('你没有配置转语音API或者文字太长了哦')
-          }
+        }
       } else if (userSetting.usePicture || (Config.autoUsePicture && response.length > Config.autoUsePictureThreshold)) {
         // todo use next api of chatgpt to complete incomplete respoonse
         try {
