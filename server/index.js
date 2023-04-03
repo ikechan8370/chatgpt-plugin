@@ -75,7 +75,7 @@ server.post('/cache', async (request, reply) => {
             herf: `http://${ip}:3321/page/${body.entry}`,
             quote: body.content.quote.map((item) => (
               {
-                text: item.replace(/(.{30}).+/, "$1..."),
+                text: item.match(/"([^"]*)"(?![^"]*")/)[1].replace(/(.{150}).+/, "$1..."),
                 url: item.match(regexUrl)[0]
               }
             ))
