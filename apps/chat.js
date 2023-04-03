@@ -953,15 +953,15 @@ export class chatgpt extends plugin {
             senderName: e.sender.nickname,
             style: Config.toneStyle,
             mood: mood,
-            quote: quote
+            quote: quote,
+            group: e.isGroup ? e.group.name : ''
           },
           bing: use === 'bing',
           entry: cacheData.file
         })
       }
-      const cacheres = await fetch(`http://47.242.61.68:3321/cache`, cacheresOption)
+      const cacheres = await fetch(`http://localhost:3321/cache`, cacheresOption)
       if (cacheres.ok) {
-        console.log(cacheData)
         cacheData = Object.assign({}, cacheData, await cacheres.json())
       }
     }
