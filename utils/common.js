@@ -4,7 +4,6 @@ import { exec } from 'child_process'
 import lodash from 'lodash'
 import fs from 'node:fs'
 import path from 'node:path'
-import request from 'request'
 import buffer from 'buffer'
 import puppeteer from '../../../lib/puppeteer/puppeteer.js'
 import { Config } from './config.js'
@@ -583,18 +582,12 @@ export function completeJSON(input) {
 
 export async function isImage(link) {
   try {
-    let body = await request(link, {encoding: null})
-    let buf = buffer.Buffer.from(body)
-    let magic = buf.toString('hex', 0, 4)
-    switch (magic) {
-      case 'ffd8':
-      case '8950':
-      case '4749':
-        return true
-      default:
-        return false
-    }
+    let response = await fetch(link);
+    let body = await response.arrayBuffer();
+    let buf = buffer.Buffer.from(body);
+    let magic = buf.toString('hex', 0, 4);
+    return ['ffd8', '8950', '4749'].includes(magic);
   } catch (error) {
-    throw error
+    throw error;
   }
 }
