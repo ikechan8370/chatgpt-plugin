@@ -4,6 +4,8 @@ import { exec } from 'child_process'
 import lodash from 'lodash'
 import fs from 'node:fs'
 import path from 'node:path'
+import request from 'request'
+import buffer from 'buffer'
 import puppeteer from '../../../lib/puppeteer/puppeteer.js'
 import { Config } from './config.js'
 // export function markdownToText (markdown) {
@@ -577,4 +579,22 @@ export function completeJSON(input) {
     result[tempKey] = tempValue.replace(/\\n/g, "\n").replace(/\\r/g, "\r").replace(/\\t/g, "\t")
   }
   return result
+}
+
+export async function isImage(link) {
+  try {
+    let body = await request(link, {encoding: null})
+    let buf = buffer.Buffer.from(body)
+    let magic = buf.toString('hex', 0, 4)
+    switch (magic) {
+      case 'ffd8':
+      case '8950':
+      case '4749':
+        return true
+      default:
+        return false
+    }
+  } catch (error) {
+    throw error
+  }
 }

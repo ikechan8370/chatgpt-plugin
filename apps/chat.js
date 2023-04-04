@@ -13,6 +13,7 @@ import {
   upsertMessage,
   randomString,
   completeJSON,
+  isImage,
   getDefaultUserSetting, isCN, getMasterQQ
 } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
@@ -791,10 +792,10 @@ export class chatgpt extends plugin {
         response = response.replace(/```$/, '\n```')
       }
       // 处理内容中的图片
-      const regex = new RegExp("^https?:// (.+/)+.+ (. (gif|png|jpg|jpeg|webp|svg|psd|bmp|tif|jfif))$", "i");
-      // 使用字符串的match方法，匹配所有符合正则表达式的子串，返回一个数组
-      let imgUrls = response.match(regex);
-
+      const regex = /\b((?:https?|ftp|file):\/\/[-a-zA-Z0-9+&@#\/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#\/%=~_|])/g
+      var responseUrls = response.match(regex)
+      let images = await Promise.all(responseUrls.map(link => isImage(link)))
+      let imgUrls = responseUrls.filter((link, index) => images[index])
 
       let quotemessage = []
       if (chatMessage?.quote) {
