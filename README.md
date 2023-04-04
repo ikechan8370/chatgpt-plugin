@@ -8,9 +8,12 @@
 ![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/ikechan8370/chatgpt-plugin?label=latest%20version&logo=github)
 ![GitHub top language](https://img.shields.io/github/languages/top/ikechan8370/chatgpt-plugin?logo=github)
 
+### 推荐的相关文档和参考资料
+本README
 [文档1（建设中）](https://chatgpt-docs.err0r.top/) 
-[社区文档（LUCK小运版）](https://www.wolai.com/oA43vuW71aBnv7UsEysn4T) 
-[社区文档（鹤望兰版）](https://www.wolai.com/4FCxxWAdjbrHF29MCJmAQK) 
+[插件常见问题（鹤望兰版）](https://www.wolai.com/4FCxxWAdjbrHF29MCJmAQK) 
+[Yunzai常见问题（LUCK小运版）](https://www.wolai.com/oA43vuW71aBnv7UsEysn4T) 
+[憨憨博客](https://blog.hanhanz.top/)
 
 ## 特点
 
