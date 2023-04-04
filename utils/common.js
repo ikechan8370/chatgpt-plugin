@@ -582,12 +582,12 @@ export function completeJSON(input) {
 
 export async function isImage(link) {
   try {
-    let response = await fetch(link);
-    let body = await response.arrayBuffer();
-    let buf = buffer.Buffer.from(body);
-    let magic = buf.toString('hex', 0, 4);
-    return ['ffd8', '8950', '4749'].includes(magic);
+    let response = await fetch(link)
+    let body = await response.arrayBuffer()
+    let buf = buffer.Buffer.from(body)
+    let magic = buf.toString('hex', 0, 4)
+    return ['ffd8', '8950', '4749'].includes(magic)
   } catch (error) {
-    throw error;
+    throw error
   }
 }
