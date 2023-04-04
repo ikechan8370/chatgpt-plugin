@@ -44,6 +44,10 @@ await server.get('/page/*', (request, reply) => {
   const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
   reply.type('text/html').send(stream)
 })
+await server.get('/help', (request, reply) => {
+  const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
+  reply.type('text/html').send(stream)
+})
 server.post('/page', async (request, reply) => {
     const body = request.body || {};
     if (body.code) {
