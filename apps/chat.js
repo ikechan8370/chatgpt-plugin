@@ -797,12 +797,12 @@ export class chatgpt extends plugin {
       // 定义一个空数组，用来存放结果
       let imgUrls = [];
       // 使用for循环，遍历匹配到的子串数组
-      for (let i = 0; i < matches.length; i++) {
-        // 使用正则表达式的replace方法，替换掉子串中多余的部分，只保留图片链接
-        let link = matches[i].replace(/<img[^>]*?src=["']|["']/g, "");
-        // 将图片链接添加到结果数组中
-        imgUrls.push(link);
-      }
+      //for (let i = 0; i < matches.length; i++) {
+      //  // 使用正则表达式的replace方法，替换掉子串中多余的部分，只保留图片链接
+      //  let link = matches[i].replace(/<img[^>]*?src=["']|["']/g, "");
+      //  // 将图片链接添加到结果数组中
+      //  imgUrls.push(link);
+      //}
 
 
       let quotemessage = []
