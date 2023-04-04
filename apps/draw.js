@@ -31,8 +31,7 @@ export class dalle extends plugin {
         },
         {
           reg: '^#bing(画图|绘图)',
-          fnc: 'bingDraw',
-          permission: 'master'
+          fnc: 'bingDraw'
         }
       ]
     })
@@ -230,7 +229,16 @@ export class dalle extends plugin {
   }
 
   async bingDraw (e) {
+    let ttl = await redis.ttl(`CHATGPT:DRAW:${e.sender.user_id}`)
+    if (ttl > 0 && !e.isMaster) {
+      this.reply(`冷却中，请${ttl}秒后再试`)
+      return false
+    }
     let prompt = e.msg.replace(/^#bing(画图|绘图)/, '')
+    if (!prompt) {
+      this.reply('请提供绘图prompt')
+      return false
+    }
     let bingToken = await redis.get('CHATGPT:BING_TOKEN')
     if (!bingToken) {
       throw new Error('未绑定Bing Cookie，请使用#chatgpt设置必应token命令绑定Bing Cookie')
@@ -246,9 +254,11 @@ export class dalle extends plugin {
       baseUrl: Config.sydneyReverseProxy,
       userToken: bingToken
     })
+    await redis.set(`CHATGPT:DRAW:${e.sender.user_id}`, 'c', { EX: 30 })
     try {
       await client.getImages(prompt, e)
     } catch (err) {
+      await redis.del(`CHATGPT:DRAW:${e.sender.user_id}`)
       await e.reply('绘图失败：' + err)
     }
   }
