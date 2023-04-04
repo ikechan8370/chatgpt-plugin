@@ -7,7 +7,6 @@
     "chatgpt": "^5.1.1",
     "delay": "^5.0.0",
     "eventsource": "^2.0.2",
-    "http": "0.0.1-security",
     "https-proxy-agent": "5.0.1",
     "keyv": "^4.5.2",
     "keyv-file": "^0.2.0",

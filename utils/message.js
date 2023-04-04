@@ -60,6 +60,7 @@ export class OfficialChatGPTClient {
         },
         referrer: 'https://chat.openai.com/chat'
       }
+      logger.info('using api3 reverse proxy: ' + url)
       let requestLib = url.startsWith('https') ? https : http
       const req = requestLib.request(url, option, (res) => {
         statusCode = res.statusCode
