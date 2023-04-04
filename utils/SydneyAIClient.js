@@ -206,7 +206,8 @@ export default class SydneyAIClient {
 
   async sendMessage (
     message,
-    opts = {}
+    opts = {},
+    previousMessagesAgent
   ) {
     await this.initCache()
     if (!this.conversationsCache) {
@@ -262,15 +263,25 @@ export default class SydneyAIClient {
       messages: [],
       createdAt: Date.now()
     }
-
-    // TODO: limit token usage
-    const previousCachedMessages = this.constructor.getMessagesForConversation(conversation.messages, parentMessageId)
-      .map((message) => {
+    let previousCachedMessages
+    if (!previousMessagesAgent) {
+      // TODO: limit token usage
+      previousCachedMessages = this.constructor.getMessagesForConversation(conversation.messages, parentMessageId)
+        .map((message) => {
+          return {
+            text: message.message,
+            author: message.role === 'User' ? 'user' : 'bot'
+          }
+        })
+    } else {
+      previousCachedMessages = previousMessagesAgent.map((message) => {
         return {
-          text: message.message,
-          author: message.role === 'User' ? 'user' : 'bot'
+          text: message.content,
+          author: message.role === 'user' ? 'user' : 'bot'
         }
       })
+    }
+
     let pm = []
     // 无限续杯
     let exceedConversations = []
@@ -718,6 +729,12 @@ export default class SydneyAIClient {
         conversation.messages.push(replyMessage)
       }
       await this.conversationsCache.set(conversationKey, conversation)
+      await redis.set(`CHATGPT:CONVERSATIONS_BING:${qq}`, JSON.stringify({
+        parentMessageId: apology ? parentMessageId : replyMessage.id,
+        conversation: {
+          conversationId
+        }
+      }), Config.conversationPreserveTime > 0 ? { EX: Config.conversationPreserveTime } : {})
       return {
         conversationSignature,
         conversationId,

@@ -23,6 +23,8 @@ import { deleteConversation, getConversations, getLatestMessageIdByConversationI
 import { convertSpeaker, generateAudio, speakers } from '../utils/tts.js'
 import ChatGLMClient from '../utils/chatglm.js'
 import { convertFaces } from '../utils/face.js'
+import {JinyanTool, SydneyAgent, SydneyAIModel} from '../utils/SydneyAIModel.js'
+import {AgentExecutor, initializeAgentExecutor} from 'langchain/agents'
 try {
   await import('keyv')
 } catch (err) {
@@ -755,7 +757,7 @@ export class chatgpt extends plugin {
         if (Config.debug) {
           logger.info(chatMessage)
         }
-        if (!chatMessage.error) {
+        if (!chatMessage.error && Config.toneStyle !== 'sydney' && Config.toneStyle !== 'Custom') {
           // 没错误的时候再更新，不然易出错就对话没了
           previousConversation.num = previousConversation.num + 1
           await redis.set(key, JSON.stringify(previousConversation), Config.conversationPreserveTime > 0 ? { EX: Config.conversationPreserveTime } : {})
@@ -1009,19 +1011,29 @@ export class chatgpt extends plugin {
           cookies = bingToken
         }
         let bingAIClient
+        let executor
+        let clientOpts
         if (Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom') {
           const cacheOptions = {
             namespace: Config.toneStyle,
             store: new KeyvFile({ filename: 'cache.json' })
           }
-          bingAIClient = new SydneyAIClient({
+          clientOpts = {
             userToken: bingToken, // "_U" cookie from bing.com
             cookies,
             debug: Config.debug,
             cache: cacheOptions,
             user: e.sender.user_id,
             proxy: Config.proxy
-          })
+          }
+          // bingAIClient = new SydneyAIClient({
+          //   userToken: bingToken, // "_U" cookie from bing.com
+          //   cookies,
+          //   debug: Config.debug,
+          //   cache: cacheOptions,
+          //   user: e.sender.user_id,
+          //   proxy: Config.proxy
+          // })
           // Sydney不实现上下文传递，删除上下文索引
           delete conversation.clientId
           delete conversation.invocationId
@@ -1057,9 +1069,10 @@ export class chatgpt extends plugin {
               if (bingToken?.indexOf('=') > -1) {
                 cookies = bingToken
               }
-              bingAIClient.opts.userToken = bingToken
-              bingAIClient.opts.cookies = cookies
+              clientOpts.userToken = bingToken
+              clientOpts.cookies = cookies
               opt.messageType = allThrottled ? 'Chat' : 'SearchQuery'
+
               if (Config.enableGroupContext && e.isGroup) {
                 try {
                   opt.groupId = e.group_id
@@ -1093,6 +1106,13 @@ export class chatgpt extends plugin {
                   logger.warn('获取群聊聊天记录失败，本次对话不携带聊天记录', err)
                 }
               }
+              let model = new SydneyAIModel(Object.assign(opt, clientOpts))
+              const tools = [new JinyanTool()]
+              executor = AgentExecutor.fromAgentAndTools({
+                agent: SydneyAgent.fromLLMAndTools(model, tools),
+                tools,
+                returnIntermediateSteps: true
+              })
             } else {
               // 重新创建client，因为token可能换到别的了
               if (bingToken?.indexOf('=') > -1) {
@@ -1110,10 +1130,18 @@ export class chatgpt extends plugin {
               }
               bingAIClient = new BingAIClient(bingOption)
             }
-            response = await bingAIClient.sendMessage(prompt, opt, (token) => {
-              reply += token
-            })
-            if (response.details.adaptiveCards?.[0]?.body?.[0]?.text?.trim()) {
+            if (executor) {
+              response = await executor.call({ input: prompt })
+              response = {
+                response: response.output
+              }
+            } else {
+              response = await bingAIClient.sendMessage(prompt, opt, (token) => {
+                reply += token
+              })
+            }
+
+            if (response.details?.adaptiveCards?.[0]?.body?.[0]?.text?.trim()) {
               if (response.response === undefined) {
                 response.response = response.details.adaptiveCards?.[0]?.body?.[0]?.text?.trim()
               }
@@ -1122,7 +1150,7 @@ export class chatgpt extends plugin {
               })
               response.quote = response.details.adaptiveCards?.[0]?.body?.[0]?.text?.replace(/\[\^[0-9]+\^\]/g, '').replace(response.response, '').split('\n')
             }
-            response.suggestedResponses = response.details.suggestedResponses?.map(s => s.text).join('\n')
+            response.suggestedResponses = response.details?.suggestedResponses?.map(s => s.text).join('\n')
             errorMessage = ''
             break
           } catch (error) {
