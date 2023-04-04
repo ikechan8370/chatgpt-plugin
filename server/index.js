@@ -69,6 +69,7 @@ server.post('/cache', async (request, reply) => {
           fs.writeFileSync(filepath, JSON.stringify({
             user: body.content.senderName,
             bot: (body.bing ? 'Bing' : 'ChatGPT'),
+            userImg: body.userImg || '',
             question: body.content.prompt,
             message: body.content.content,
             group: body.content.group,
@@ -78,7 +79,10 @@ server.post('/cache', async (request, reply) => {
                 text: item.match(/"([^"]*)"(?![^"]*")/)[1].replace(/(.{150}).+/, "$1..."),
                 url: item.match(regexUrl)[0]
               }
-            ))
+            )),
+            images: body.content.images || [],
+            suggest: body.content.suggest || [],
+            time: new Date()
           }));
           reply.send({ file: body.entry, cacheUrl: `http://${ip}:3321/page/${body.entry}` });
         } catch (err) {

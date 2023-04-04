@@ -825,7 +825,7 @@ export class chatgpt extends plugin {
       } else if (userSetting.usePicture || (Config.autoUsePicture && response.length > Config.autoUsePictureThreshold)) {
         // todo use next api of chatgpt to complete incomplete respoonse
         try {
-          await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', response, prompt, quotemessage, mood, Config.showQRCode)
+          await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', response, prompt, quotemessage, mood, chatMessage.suggestedResponses, Config.showQRCode)
         } catch (err) {
           logger.warn('error happened while uploading content to the cache server. QR Code will not be showed in this picture.')
           logger.error(err)
@@ -943,7 +943,7 @@ export class chatgpt extends plugin {
     return true
   }
 
-  async renderImage (e, template, content, prompt, quote = [], mood = '', cache = false) {
+  async renderImage (e, template, content, prompt, quote = [], mood = '', suggest = [], cache = false) {
     let cacheData = { file: '', cacheUrl: Config.cacheUrl }
     if (cache) {
       cacheData.file = randomString()
@@ -961,10 +961,12 @@ export class chatgpt extends plugin {
             style: Config.toneStyle,
             mood: mood,
             quote: quote,
-            group: e.isGroup ? e.group.name : ''
+            group: e.isGroup ? e.group.name : '',
+            suggest: suggest
           },
           bing: use === 'bing',
-          entry: cacheData.file
+          entry: cacheData.file,
+          userImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${e.sender.user_id}`
         })
       }
       const cacheres = await fetch(`http://127.0.0.1:3321/cache`, cacheresOption)
