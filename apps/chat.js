@@ -793,9 +793,12 @@ export class chatgpt extends plugin {
       }
       // 处理内容中的图片
       const regex = /\b((?:https?|ftp|file):\/\/[-a-zA-Z0-9+&@#\/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#\/%=~_|])/g
-      var responseUrls = response.match(regex)
-      let images = await Promise.all(responseUrls.map(link => isImage(link)))
-      let imgUrls = responseUrls.filter((link, index) => images[index])
+      let responseUrls = response.match(regex)
+      let imgUrls = []
+      if (responseUrls) {
+        let images = await Promise.all(responseUrls.map(link => isImage(link)))
+        imgUrls = responseUrls.filter((link, index) => images[index])
+      }
 
       let quotemessage = []
       if (chatMessage?.quote) {
