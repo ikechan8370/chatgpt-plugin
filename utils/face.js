@@ -509,7 +509,7 @@ export async function convertFaces (msg, handleAt = false, e) {
         foundFace = false
         if (faceMapReverse[tmpFace] || faceMapReverse['/' + tmpFace] || faceMapReverse[_.trimStart(tmpFace, '/')]) {
           if (tmpMsg) {
-            msgs.push(tmpMsg)
+            msgs.push(segment.text(tmpMsg))
           }
           msgs.push(segment.face(parseInt(faceMapReverse[tmpFace] || faceMapReverse['/' + tmpFace] || faceMapReverse[_.trimStart(tmpFace, '/')])))
           tmpMsg = ''
@@ -521,13 +521,13 @@ export async function convertFaces (msg, handleAt = false, e) {
     }
   }
   if (tmpMsg) {
-    msgs.push(tmpMsg)
+    msgs.push(segment.text(tmpMsg))
   }
   if (tmpFace) {
-    msgs.push(`[${tmpFace}`)
+    msgs.push(segment.text(`[${tmpFace}`))
   }
   if (handleAt && tmpAt) {
-    msgs.push(`@${tmpAt}`)
+    msgs.push(segment.text(`@${tmpAt}`))
   }
   return msgs
 }

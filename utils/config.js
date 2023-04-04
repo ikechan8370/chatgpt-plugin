@@ -14,7 +14,7 @@ const defaultConfig = {
   defaultUsePicture: false,
   defaultUseTTS: false,
   defaultTTSRole: '纳西妲',
-  alsoSendText: false,
+  alsoSendText: true,
   autoUsePicture: true,
   autoUsePictureThreshold: 1200,
   ttsAutoFallbackThreshold: 99,

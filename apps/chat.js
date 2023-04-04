@@ -24,7 +24,8 @@ import { convertSpeaker, generateAudio, speakers } from '../utils/tts.js'
 import ChatGLMClient from '../utils/chatglm.js'
 import { convertFaces } from '../utils/face.js'
 import {JinyanTool, SydneyAgent, SydneyAIModel} from '../utils/SydneyAIModel.js'
-import {AgentExecutor, initializeAgentExecutor} from 'langchain/agents'
+import { initializeAgentExecutor} from 'langchain/agents'
+import {AgentExecutor} from "../utils/LLMAgent.js";
 try {
   await import('keyv')
 } catch (err) {
@@ -1106,6 +1107,7 @@ export class chatgpt extends plugin {
                   logger.warn('获取群聊聊天记录失败，本次对话不携带聊天记录', err)
                 }
               }
+              delete opt.parentMessageId
               let model = new SydneyAIModel(Object.assign(opt, clientOpts))
               const tools = [new JinyanTool()]
               executor = AgentExecutor.fromAgentAndTools({

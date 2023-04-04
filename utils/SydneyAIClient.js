@@ -218,13 +218,14 @@ export default class SydneyAIClient {
       conversationId,
       clientId,
       invocationId = 0,
-      parentMessageId = invocationId || crypto.randomUUID(),
+      qq,
+      parentMessageId = invocationId || await redis.get(`CHATGPT_CONVERSATIONS:${qq}`) || crypto.randomUUID(),
       onProgress,
       context,
       abortController = new AbortController(),
       timeout = Config.defaultTimeoutMs,
       firstMessageTimeout = Config.sydneyFirstMessageTimeout,
-      groupId, nickname, qq, groupName, chats, botName, masterName,
+      groupId, nickname, groupName, chats, botName, masterName,
       messageType = 'SearchQuery'
     } = opts
     if (messageType === 'Chat') {
@@ -264,24 +265,24 @@ export default class SydneyAIClient {
       createdAt: Date.now()
     }
     let previousCachedMessages
-    if (!previousMessagesAgent) {
-      // TODO: limit token usage
-      previousCachedMessages = this.constructor.getMessagesForConversation(conversation.messages, parentMessageId)
-        .map((message) => {
-          return {
-            text: message.message,
-            author: message.role === 'User' ? 'user' : 'bot'
-          }
-        })
-    } else {
-      previousCachedMessages = previousMessagesAgent.map((message) => {
+
+    // TODO: limit token usage
+    previousCachedMessages = this.constructor.getMessagesForConversation(conversation.messages, parentMessageId)
+      .map((message) => {
         return {
-          text: message.content,
-          author: message.role === 'user' ? 'user' : 'bot'
+          text: message.message,
+          author: message.role === 'User' ? 'user' : 'bot'
         }
       })
-    }
 
+    let previousCachedMessagesAgent = previousMessagesAgent.map((message) => {
+      return {
+        text: message.content,
+        author: message.role === 'user' ? 'user' : 'bot'
+      }
+    })
+
+    previousCachedMessages.push(...previousCachedMessagesAgent)
     let pm = []
     // 无限续杯
     let exceedConversations = []
@@ -450,7 +451,7 @@ export default class SydneyAIClient {
         context += chats
           .map(chat => {
             let sender = chat.sender
-            return `【${sender.card || sender.nickname}】（qq：${sender.user_id}，${roleMap[sender.role] || '普通成员'}，${sender.area ? '来自' + sender.area + '，' : ''} ${sender.age}岁， 群头衔：${sender.title}， 性别：${sender.sex}，时间：${formatDate(new Date(chat.time * 1000))}） 说：${chat.raw_message}`
+            return `【${sender.card || sender.nickname}】（qq：${sender.user_id}，${roleMap[sender.role] || '普通成员'}，${sender.area ? '来自' + sender.area + '，' : ''} ${sender.age}岁， ${sender.title ? '群头衔：' + sender.title : ''}， 性别：${sender.sex}，时间：${formatDate(new Date(chat.time * 1000))}） 说：${chat.raw_message}`
           })
           .join('\n')
       }
