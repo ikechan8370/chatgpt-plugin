@@ -74,6 +74,7 @@ server.post('/cache', async (request, reply) => {
             user: body.content.senderName,
             bot: (body.bing ? 'Bing' : 'ChatGPT'),
             userImg: body.userImg || '',
+            botImg: body.botImg || '',
             question: body.content.prompt,
             message: body.content.content,
             group: body.content.group,
