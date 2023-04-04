@@ -829,7 +829,7 @@ export class chatgpt extends plugin {
       } else if (userSetting.usePicture || (Config.autoUsePicture && response.length > Config.autoUsePictureThreshold)) {
         // todo use next api of chatgpt to complete incomplete respoonse
         try {
-          await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', response, prompt, quotemessage, mood, chatMessage.suggestedResponses.split("\n").filter(Boolean), imgUrls, Config.showQRCode)
+          await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', response, prompt, quotemessage, mood, chatMessage.suggestedResponses, imgUrls, Config.showQRCode)
         } catch (err) {
           logger.warn('error happened while uploading content to the cache server. QR Code will not be showed in this picture.')
           logger.error(err)
@@ -947,7 +947,7 @@ export class chatgpt extends plugin {
     return true
   }
 
-  async renderImage (e, template, content, prompt, quote = [], mood = '', suggest = [], imgUrls = [], cache = false) {
+  async renderImage (e, template, content, prompt, quote = [], mood = '', suggest = '', imgUrls = [], cache = false) {
     let cacheData = { file: '', cacheUrl: Config.cacheUrl }
     if (cache) {
       cacheData.file = randomString()
@@ -966,7 +966,7 @@ export class chatgpt extends plugin {
             mood: mood,
             quote: quote,
             group: e.isGroup ? e.group.name : '',
-            suggest: suggest,
+            suggest: suggest ? suggest.split("\n").filter(Boolean) : [],
             images: imgUrls
           },
           bing: use === 'bing',
