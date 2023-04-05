@@ -791,15 +791,7 @@ export class chatgpt extends plugin {
       if (codeBlockCount && !shouldAddClosingBlock) {
         response = response.replace(/```$/, '\n```')
       }
-      // 处理内容中的图片
-      const regex = /\b((?:https?|ftp|file):\/\/[-a-zA-Z0-9+&@#\/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#\/%=~_|])/g
-      let responseUrls = response.match(regex)
-      let imgUrls = []
-      if (responseUrls) {
-        let images = await Promise.all(responseUrls.map(link => isImage(link)))
-        imgUrls = responseUrls.filter((link, index) => images[index])
-      }
-
+      // 处理引用
       let quotemessage = []
       if (chatMessage?.quote) {
         chatMessage.quote.forEach(function (item, index) {
@@ -807,6 +799,14 @@ export class chatgpt extends plugin {
             quotemessage.push(item)
           }
         })
+      }
+      // 处理内容和引用中的图片
+      const regex = /\b((?:https?|ftp|file):\/\/[-a-zA-Z0-9+&@#\/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#\/%=~_|])/g
+      let responseUrls = (response + '  quotemessage:' + quotemessage.join(' ')).match(regex)
+      let imgUrls = []
+      if (responseUrls) {
+        let images = await Promise.all(responseUrls.map(link => isImage(link)))
+        imgUrls = responseUrls.filter((link, index) => images[index])
       }
       if (useTTS) {
         // 先把文字回复发出去，避免过久等待合成语音
