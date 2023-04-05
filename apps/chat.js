@@ -837,7 +837,7 @@ export class chatgpt extends plugin {
       } else if (userSetting.usePicture || (Config.autoUsePicture && response.length > Config.autoUsePictureThreshold)) {
         // todo use next api of chatgpt to complete incomplete respoonse
         try {
-          await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', response, prompt, quotemessage, mood, chatMessage.suggestedResponses, imgUrls, Config.showQRCode)
+          await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', response, prompt, quotemessage, mood, chatMessage.suggestedResponses, imgUrls)
         } catch (err) {
           logger.warn('error happened while uploading content to the cache server. QR Code will not be showed in this picture.')
           logger.error(err)
@@ -955,38 +955,37 @@ export class chatgpt extends plugin {
     return true
   }
 
-  async renderImage (e, template, content, prompt, quote = [], mood = '', suggest = '', imgUrls = [], cache = false) {
+  async renderImage (e, template, content, prompt, quote = [], mood = '', suggest = '', imgUrls = []) {
     let cacheData = { file: '', cacheUrl: Config.cacheUrl }
-    if (cache) {
-      cacheData.file = randomString()
-      const use = await redis.get('CHATGPT:USE')
-      const cacheresOption = {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
+    cacheData.file = randomString()
+    const use = await redis.get('CHATGPT:USE')
+    const cacheresOption = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        content: {
+          content: new Buffer.from(content).toString('base64'),
+          prompt: new Buffer.from(prompt).toString('base64'),
+          senderName: e.sender.nickname,
+          style: Config.toneStyle,
+          mood: mood,
+          quote: quote,
+          group: e.isGroup ? e.group.name : '',
+          suggest: suggest ? suggest.split("\n").filter(Boolean) : [],
+          images: imgUrls
         },
-        body: JSON.stringify({
-          content: {
-            content: new Buffer.from(content).toString('base64'),
-            prompt: new Buffer.from(prompt).toString('base64'),
-            senderName: e.sender.nickname,
-            style: Config.toneStyle,
-            mood: mood,
-            quote: quote,
-            group: e.isGroup ? e.group.name : '',
-            suggest: suggest ? suggest.split("\n").filter(Boolean) : [],
-            images: imgUrls
-          },
-          bing: use === 'bing',
-          entry: cacheData.file,
-          userImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${e.sender.user_id}`,
-          botImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${Bot.uin}`
-        })
-      }
-      const cacheres = await fetch(`http://127.0.0.1:3321/cache`, cacheresOption)
-      if (cacheres.ok) {
-        cacheData = Object.assign({}, cacheData, await cacheres.json())
-      }
+        bing: use === 'bing',
+        entry: cacheData.file,
+        userImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${e.sender.user_id}`,
+        botImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${Bot.uin}`,
+        QR: Config.showQRCode
+      })
+    }
+    const cacheres = await fetch(`http://127.0.0.1:3321/cache`, cacheresOption)
+    if (cacheres.ok) {
+      cacheData = Object.assign({}, cacheData, await cacheres.json())
     }
     if (cacheData.error)
     await this.reply(`出现错误：${cacheData.error}`, true)
