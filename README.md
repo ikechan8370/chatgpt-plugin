@@ -270,6 +270,12 @@ ChatGLM
 * https://huggingface.co/THUDM/chatglm-6b
 * https://github.com/THUDM/ChatGLM-6B
 
+## 赞助
+
+如果觉得本项目好玩或者对你有帮助，愿意的话可以赞助我一口快乐水：
+
+https://afdian.net/a/ikechan8370
+
 ## 贡献者
 
 感谢以下贡献者
