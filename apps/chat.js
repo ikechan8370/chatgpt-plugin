@@ -778,6 +778,9 @@ export class chatgpt extends plugin {
         await e.reply('没有任何回复', true)
         return
       }
+      if (response === 'message has been sent by langchain tools') {
+        return
+      }
       // 分离内容和情绪
       if (Config.sydneyMood) {
         let tempResponse = completeJSON(response)

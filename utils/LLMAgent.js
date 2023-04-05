@@ -51,7 +51,7 @@ export class AgentExecutor extends BaseChain {
       console.log(observation)
     })
     if (action.actions.filter(a => a.action === 'send').length > 0) {
-      return { output: '' }
+      return { output: 'message has been sent by langchain tools' }
     }
     return getOutput(action)
   }
