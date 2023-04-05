@@ -50,10 +50,11 @@ export class AgentExecutor extends BaseChain {
         : `${action.action} is not a valid tool, try another one.`
       console.log(observation)
     })
-    if (action.actions.filter(a => a.action === 'send').length > 0) {
+    let output = getOutput(action)
+    if (action.actions.filter(a => a.action === 'send').length > 0 && !output.output) {
       return { output: 'message has been sent by langchain tools' }
     }
-    return getOutput(action)
+    return output
   }
 
   _chainType () {

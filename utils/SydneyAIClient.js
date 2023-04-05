@@ -361,7 +361,7 @@ export default class SydneyAIClient {
     if (Config.debug) {
       logger.mark('sydney websocket constructed successful')
     }
-    const toneOption = 'h3imaginative'
+    const toneOption = 'h3precise'
     const obj = {
       arguments: [
         {
