@@ -213,13 +213,19 @@ export default class SydneyAIClient {
     if (!this.conversationsCache) {
       throw new Error('no support conversationsCache')
     }
+    let qq = opts.qq
+    let conver = await redis.get(`CHATGPT_CONVERSATIONS:${qq}`)
+    if (!conver) {
+      conver = {}
+    } else {
+      conver = JSON.parse(conver)
+    }
     let {
       conversationSignature,
-      conversationId,
+      conversationId = conver.conversation?.conversationId,
       clientId,
       invocationId = 0,
-      qq,
-      parentMessageId = invocationId || await redis.get(`CHATGPT_CONVERSATIONS:${qq}`) || crypto.randomUUID(),
+      parentMessageId = invocationId || conver.parentMessageId || crypto.randomUUID(),
       onProgress,
       context,
       abortController = new AbortController(),
@@ -366,10 +372,23 @@ export default class SydneyAIClient {
             'responsible_ai_policy_235',
             'enablemm',
             toneOption,
+            // 'galileo',
             'dtappid',
             'cricinfo',
             'cricinfov2',
             'dv3sugg'
+          ],
+          allowedMessageTypes: [
+            'Chat',
+            // 'InternalSearchQuery',
+            // 'InternalSearchResult',
+            'Disengaged',
+            // 'InternalLoaderMessage',
+            // 'RenderCardRequest',
+            // 'AdsQuery',
+            'SemanticSerp',
+            // 'GenerateContentQuery',
+            'SearchQuery'
           ],
           sliceIds: [
             '222dtappid',

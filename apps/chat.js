@@ -23,7 +23,14 @@ import { deleteConversation, getConversations, getLatestMessageIdByConversationI
 import { convertSpeaker, generateAudio, speakers } from '../utils/tts.js'
 import ChatGLMClient from '../utils/chatglm.js'
 import { convertFaces } from '../utils/face.js'
-import {JinyanTool, SydneyAgent, SydneyAIModel} from '../utils/SydneyAIModel.js'
+import {
+  JinyanTool,
+  KickOutTool,
+  SendAvatarTool,
+  SendPictureTool,
+  SydneyAgent,
+  SydneyAIModel
+} from '../utils/SydneyAIModel.js'
 import { initializeAgentExecutor} from 'langchain/agents'
 import {AgentExecutor} from "../utils/LLMAgent.js";
 try {
@@ -1108,8 +1115,9 @@ export class chatgpt extends plugin {
                 }
               }
               delete opt.parentMessageId
+              delete opt.conversationId
               let model = new SydneyAIModel(Object.assign(opt, clientOpts))
-              const tools = [new JinyanTool()]
+              const tools = [new JinyanTool(), new KickOutTool(), new SendPictureTool(), new SendAvatarTool()]
               executor = AgentExecutor.fromAgentAndTools({
                 agent: SydneyAgent.fromLLMAndTools(model, tools),
                 tools,
