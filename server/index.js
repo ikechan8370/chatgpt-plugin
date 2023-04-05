@@ -79,12 +79,7 @@ server.post('/cache', async (request, reply) => {
             message: body.content.content,
             group: body.content.group,
             herf: `http://${body.cacheHost || ip}:3321/page/${body.entry}`,
-            quote: body.content.quote.map((item) => (
-              {
-                text: item.match(/"([^"]*)"(?![^"]*")/)[1].replace(/(.{150}).+/, "$1..."),
-                url: item.match(regexUrl)[0]
-              }
-            )),
+            quote: body.content.quote,
             images: body.content.images || [],
             suggest: body.content.suggest || [],
             time: new Date()

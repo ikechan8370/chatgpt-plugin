@@ -795,18 +795,21 @@ export class chatgpt extends plugin {
       let quotemessage = []
       if (chatMessage?.quote) {
         chatMessage.quote.forEach(function (item, index) {
-          if (item.trim() !== '') {
+          if (item.text.trim() !== '') {
             quotemessage.push(item)
           }
         })
       }
       // 处理内容和引用中的图片
       const regex = /\b((?:https?|ftp|file):\/\/[-a-zA-Z0-9+&@#\/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#\/%=~_|])/g
-      let responseUrls = (response + '  quotemessage:' + quotemessage.join(' ')).match(regex)
+      let responseUrls = response.match(regex)
       let imgUrls = []
       if (responseUrls) {
         let images = await Promise.all(responseUrls.map(link => isImage(link)))
         imgUrls = responseUrls.filter((link, index) => images[index])
+      }
+      for (let quote of quotemessage) {
+        if (quote.imageLink) imgUrls.push(quote.imageLink)
       }
       if (useTTS) {
         // 先把文字回复发出去，避免过久等待合成语音
@@ -977,7 +980,7 @@ export class chatgpt extends plugin {
           bing: use === 'bing',
           entry: cacheData.file,
           userImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${e.sender.user_id}`,
-          botImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${e.user_id}`
+          botImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${Bot.uin}`
         })
       }
       const cacheres = await fetch(`http://127.0.0.1:3321/cache`, cacheresOption)
@@ -1123,9 +1126,21 @@ export class chatgpt extends plugin {
               response.response = response.response.replace(/\[\^[0-9]+\^\]/g, (str) => {
                 return str.replace(/[/^]/g, '')
               })
-              response.quote = response.details.adaptiveCards?.[0]?.body?.[0]?.text?.replace(/\[\^[0-9]+\^\]/g, '').replace(response.response, '').split('\n')
+              // 有了新的引用属性
+              // response.quote = response.details.adaptiveCards?.[0]?.body?.[0]?.text?.replace(/\[\^[0-9]+\^\]/g, '').replace(response.response, '').split('\n')
             }
             response.suggestedResponses = response.details.suggestedResponses?.map(s => s.text).join('\n')
+            // 新引用属性读取数据
+            if (response.details.sourceAttributions) {
+              response.quote = []
+              for (let quote of response.details.sourceAttributions) {
+                response.quote.push({
+                  text: quote.providerDisplayName,
+                  url: quote.seeMoreUrl,
+                  imageLink: quote.imageLink || ''
+                })
+              }
+            }
             errorMessage = ''
             break
           } catch (error) {
