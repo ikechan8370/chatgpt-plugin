@@ -50,7 +50,9 @@ export class AgentExecutor extends BaseChain {
         : `${action.action} is not a valid tool, try another one.`
       console.log(observation)
     })
-
+    if (action.actions.filter(a => a.action === 'send').length > 0) {
+      return { output: '' }
+    }
     return getOutput(action)
   }
 

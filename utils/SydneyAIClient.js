@@ -232,7 +232,8 @@ export default class SydneyAIClient {
       timeout = Config.defaultTimeoutMs,
       firstMessageTimeout = Config.sydneyFirstMessageTimeout,
       groupId, nickname, groupName, chats, botName, masterName,
-      messageType = 'SearchQuery'
+      messageType = 'Chat'
+      // messageType = 'SearchQuery'
     } = opts
     if (messageType === 'Chat') {
       logger.warn('该Bing账户token已被限流，降级至使用非搜索模式。本次对话AI将无法使用Bing搜索返回的内容')

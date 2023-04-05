@@ -245,7 +245,7 @@ export class JinyanTool extends Tool {
     }
   }
 
-  description = 'Useful when you want to ban someone. The input to this tool should be the group number, the qq number of the one who should be banned and the mute duration in seconds(at least 60, the number should be an integer multiple of 60), these three number should be concated with a space. '
+  description = 'Useful when you want to ban someone. The input to this tool should be the group number, the qq number of the one who should be banned and the mute duration in seconds(at least 60, at most 180, the number should be an integer multiple of 60), these three number should be concated with a space. '
 }
 
 export class KickOutTool extends Tool {
@@ -265,6 +265,105 @@ export class KickOutTool extends Tool {
   }
 
   description = 'Useful when you want to kick someone out of the group. The input to this tool should be the group number, the qq number of the one who should be kicked out, these two number should be concated with a space. '
+}
+
+export class SendMessageTool extends Tool {
+  name = 'send'
+  async _call (input) {
+    try {
+      const lastSpaceIndex = input.lastIndexOf(' ')
+      console.log(lastSpaceIndex)
+      const text = input.substring(0, lastSpaceIndex)
+      let groupId = input.substring(lastSpaceIndex + 1)
+      groupId = parseInt(groupId.trim())
+      console.log('send', text, groupId)
+      let groupList = await Bot.getGroupList()
+      if (groupList.get(groupId)) {
+        let group = await Bot.pickGroup(groupId, true)
+        await group.sendMsg(text)
+      } else {
+        let friend = await Bot.pickFriend(groupId)
+        await friend.sendMsg(text)
+      }
+      return 'success'
+    } catch (error) {
+      logger.error(error)
+      return "I don't know how to do that."
+    }
+  }
+
+  description = 'Use this tool if you want to send a text message to a group chat or private chat with someone. If you know the group number, use the group number instead of the qq number first. The input should be the text content to be sent and the target group number or qq number，and they should be concat with a space'
+}
+
+export class SendDiceTool extends Tool {
+  name = 'sendDice'
+  async _call (input) {
+    try {
+      let [num, groupId] = input.trim().split(' ')
+      num = parseInt(num.trim())
+      groupId = parseInt(groupId.trim())
+      console.log('sendDice', num, groupId)
+      let groupList = await Bot.getGroupList()
+      if (groupList.get(groupId)) {
+        let group = await Bot.pickGroup(groupId, true)
+        await group.sendMsg(segment.dice(num))
+      } else {
+        let friend = await Bot.pickFriend(groupId)
+        await friend.sendMsg(segment.dice(num))
+      }
+      return 'success'
+    } catch (error) {
+      logger.error(error)
+      return "I don't know how to do that."
+    }
+  }
+
+  description = 'If you want to roll dice, use this tool. If you know the group number, use the group number instead of the qq number first. The input should be the number of dice to be cast (1-6) and the target group number or qq number，and they should be concat with a space'
+}
+
+export class SendRPSTool extends Tool {
+  name = 'sendRPS'
+  async _call (input) {
+    try {
+      let [num, groupId] = input.trim().split(' ')
+      num = parseInt(num.trim())
+      groupId = parseInt(groupId.trim())
+      console.log('sendRPS', num, groupId)
+      let groupList = await Bot.getGroupList()
+      if (groupList.get(groupId)) {
+        let group = await Bot.pickGroup(groupId, true)
+        await group.sendMsg(segment.rps(num))
+      } else {
+        let friend = await Bot.pickFriend(groupId)
+        await friend.sendMsg(segment.rps(num))
+      }
+      return 'success'
+    } catch (error) {
+      logger.error(error)
+      return "I don't know how to do that."
+    }
+  }
+
+  description = 'Use this tool if you want to play rock paper scissors. If you know the group number, use the group number instead of the qq number first. The input should be the number 1, 2 or 3 to represent rock-paper-scissors and the target group number or qq number，and they should be concat with a space'
+}
+
+export class EditCardTool extends Tool {
+  name = 'editCard'
+
+  async _call (input) {
+    try {
+      let [groupId, qq, card] = input.trim().split(' ')
+      groupId = parseInt(groupId.trim())
+      qq = parseInt(qq.trim())
+      let group = await Bot.pickGroup(groupId)
+      await group.setCard(qq, card)
+      return new Date().getTime() + ''
+    } catch (error) {
+      return "I don't know how to do that."
+    }
+  }
+
+  description = '当你想要修改某个群员的群名片时有用。输入应该是群号、qq号和群名片，用空格隔开。'
 }
 
 export class SendAvatarTool extends Tool {

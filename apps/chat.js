@@ -24,15 +24,16 @@ import { convertSpeaker, generateAudio, speakers } from '../utils/tts.js'
 import ChatGLMClient from '../utils/chatglm.js'
 import { convertFaces } from '../utils/face.js'
 import {
+  EditCardTool,
   JinyanTool,
   KickOutTool,
   SendAvatarTool,
   SendPictureTool,
   SydneyAgent,
-  SydneyAIModel
+  SydneyAIModel,
+  SendMessageTool, SendDiceTool, SendRPSTool
 } from '../utils/SydneyAIModel.js'
-import { initializeAgentExecutor} from 'langchain/agents'
-import {AgentExecutor} from "../utils/LLMAgent.js";
+import { AgentExecutor } from '../utils/LLMAgent.js'
 try {
   await import('keyv')
 } catch (err) {
@@ -1080,7 +1081,8 @@ export class chatgpt extends plugin {
               clientOpts.userToken = bingToken
               clientOpts.cookies = cookies
               opt.messageType = allThrottled ? 'Chat' : 'SearchQuery'
-
+              // todo delete debug
+              opt.messageType = 'Chat'
               if (Config.enableGroupContext && e.isGroup) {
                 try {
                   opt.groupId = e.group_id
@@ -1102,7 +1104,7 @@ export class chatgpt extends plugin {
                     let chatHistory = await e.group.getChatHistory(seq, 20)
                     chats.push(...chatHistory)
                   }
-                  chats = chats.slice(0, Config.groupContextLength)
+                  chats = chats.reverse().slice(0, Config.groupContextLength).reverse()
                   let mm = await e.group.getMemberMap()
                   chats.forEach(chat => {
                     let sender = mm.get(chat.sender.user_id)
@@ -1117,7 +1119,16 @@ export class chatgpt extends plugin {
               delete opt.parentMessageId
               delete opt.conversationId
               let model = new SydneyAIModel(Object.assign(opt, clientOpts))
-              const tools = [new JinyanTool(), new KickOutTool(), new SendPictureTool(), new SendAvatarTool()]
+              const tools = [
+                new JinyanTool(),
+                new KickOutTool(),
+                new SendPictureTool(),
+                new SendAvatarTool(),
+                new EditCardTool(),
+                new SendMessageTool(),
+                new SendDiceTool(),
+                new SendRPSTool()
+              ]
               executor = AgentExecutor.fromAgentAndTools({
                 agent: SydneyAgent.fromLLMAndTools(model, tools),
                 tools,
