@@ -79,6 +79,8 @@ const defaultConfig = {
   maxNumUserMessagesInConversation: 20,
   sydneyApologyIgnored: true,
   enforceMaster: false,
+  preview: false,
+  serverPort: 3321,
   version: 'v2.4.11'
 }
 const _path = process.cwd()

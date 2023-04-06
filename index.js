@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import { Config } from './utils/config.js'
+import { createServer } from './server/index.js'
 
 if (!global.segment) {
   global.segment = (await import('oicq')).segment
@@ -26,6 +27,17 @@ for (let i in files) {
   }
   apps[name] = ret[i].value[Object.keys(ret[i].value)[0]]
 }
+
+try {
+  await import('fastify')
+  await import('@fastify/cors')
+  await import('@fastify/static')
+  // 启动服务器
+  await createServer()
+} catch (err) {
+  logger.warn('【ChatGPT-Plugin】依赖fastify、@fastify/cors、@fastify/static未安装，可能影响系统Api服务运行，当前Api服务模块已禁用，建议执行pnpm install fastify @fastify/cors @fastify/static安装')
+}
+
 logger.info('**************************************')
 logger.info('chatgpt-plugin加载成功')
 logger.info(`当前版本${Config.version}`)

@@ -1,0 +1,107 @@
+{
+    "AI聊天": [
+        {
+            "icon": "fas fa-comments",
+            "title": "聊天",
+            "text": "<span class=\"text-xs font-semibold inline-block py-1 px-2 uppercase rounded text-blueGray-600 bg-blueGray-200\">私聊</span>或在群中<span class=\"text-xs font-semibold inline-block py-1 px-2 uppercase rounded text-blueGray-600 bg-blueGray-200\">@我+内容</span>进行聊天",
+            "list": []
+        },
+        {
+            "icon": "fas fa-comments",
+            "title": "指定模式聊天",
+            "text": "分别使用**API**/**API3**/**ChatGLM**/**Bing**模式进行聊天，无视主人设定的全局模式",
+            "list": [
+                "#chat1",
+                "#chat3",
+                "#chatglm",
+                "#bing"
+            ]
+        },
+        {
+            "icon": "fas fa-comments",
+            "title": "ChatGPT切换对话",
+            "text": "切换到指定对话当中<span class=\"text-xs font-semibold inline-block py-1 px-2 uppercase rounded text-blueGray-600 bg-blueGray-200\">仅API3可用</span>",
+            "list": [
+                "#chatgpt切换对话+对话id"
+            ]
+        },
+        {
+            "icon": "fas fa-comments",
+            "title": "ChatGPT加入对话",
+            "text": "加入到某人当前进行对话当中<span class=\"text-xs font-semibold inline-block py-1 px-2 uppercase rounded text-blueGray-600 bg-blueGray-200\">仅API3可用</span>",
+            "list": [
+                "#chatgpt加入对话+@某人"
+            ]
+        },
+        {
+            "icon": "fas fa-comments",
+            "title": "删除对话",
+            "text": "删除指定对话，并清空与用户的关联信息。@用户时支持多个用户",
+            "list": [
+                "#chatgpt删除对话+对话id或@用户"
+            ]
+        },
+        {
+            "icon": "fas fa-comments",
+            "title": "结束对话",
+            "text": "结束自己当前对话，下次开启对话机器人将遗忘掉本次对话内容",
+            "list": [
+                "#结束对话"
+            ]
+        },
+        {
+            "icon": "fas fa-comments",
+            "title": "结束全部对话",
+            "text": "结束正在与本机器人进行对话的全部用户的对话",
+            "list": [
+                "#结束全部对话"
+            ]
+        },
+        {
+            "icon": "fas fa-comments",
+            "title": "聊天记录",
+            "text": "图片形式导出聊天记录<span class=\"text-xs font-semibold inline-block py-1 px-2 uppercase rounded text-blueGray-600 bg-blueGray-200\">仅支持Bing下的Sydney和自定义</span>",
+            "list": [
+                "#chatgpt聊天记录",
+                "#chatgpt导出聊天记录"
+            ],
+            "tip": "管理员功能"
+        }
+    ],
+    "AI画图": [
+        {
+            "icon": "fas fa-comments",
+            "title": "画图",
+            "text": "调用**OpenAI Dalle API**进行绘图，需要有**API key**并消耗余额。图片大小只能是<span class=\"text-xs font-semibold inline-block py-1 px-2 uppercase rounded text-blueGray-600 bg-blueGray-200\">256x256</span><span class=\"text-xs font-semibold inline-block py-1 px-2 uppercase rounded text-blueGray-600 bg-blueGray-200\">512x512</span><span class=\"text-xs font-semibold inline-block py-1 px-2 uppercase rounded text-blueGray-600 bg-blueGray-200\">1024x1024</span>中的一个，默认画图**1**张，大小<span class=\"text-xs font-semibold inline-block py-1 px-2 uppercase rounded text-blueGray-600 bg-blueGray-200\">512x512</span>",
+            "list": [
+                "#chatgpt画图+prompt",
+                "#chatgpt画图+prompt(/张数/图片大小)"
+            ]
+        },
+        {
+            "icon": "fas fa-comments",
+            "title": "改图",
+            "text": "调用**OpenAI Dalle API**进行绘图，需要有**API key**并消耗余额。可同时发送图片或回复图片",
+            "list": [
+                "#chatgpt改图"
+            ]
+        },
+        {
+            "icon": "fas fa-comments",
+            "title": "画图开关",
+            "text": "开启或关闭画图功能",
+            "list": [
+                "#结束全部对话"
+            ],
+            "tip": "管理员功能"
+        }
+    ],
+    "插件管理": [
+        {
+            "icon": "fas fa-comments",
+            "title": "施工中",
+            "text": "插件管理帮助仍在编写当中！",
+            "list": []
+        }
+    ]
+}

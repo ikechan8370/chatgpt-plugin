@@ -7,12 +7,13 @@ import { ChatGPTAPI } from 'chatgpt'
 import { BingAIClient } from '@waylaidwanderer/chatgpt-api'
 import SydneyAIClient from '../utils/SydneyAIClient.js'
 import {
-  render,
+  render,renderUrl,
   getMessageById,
   makeForwardMsg,
   upsertMessage,
   randomString,
   completeJSON,
+  isImage,
   getDefaultUserSetting, isCN, getMasterQQ
 } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
@@ -790,14 +791,25 @@ export class chatgpt extends plugin {
       if (codeBlockCount && !shouldAddClosingBlock) {
         response = response.replace(/```$/, '\n```')
       }
-
+      // 处理引用
       let quotemessage = []
       if (chatMessage?.quote) {
         chatMessage.quote.forEach(function (item, index) {
-          if (item.trim() !== '') {
+          if (item.text.trim() !== '') {
             quotemessage.push(item)
           }
         })
+      }
+      // 处理内容和引用中的图片
+      const regex = /\b((?:https?|ftp|file):\/\/[-a-zA-Z0-9+&@#\/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#\/%=~_|])/g
+      let responseUrls = response.match(regex)
+      let imgUrls = []
+      if (responseUrls) {
+        let images = await Promise.all(responseUrls.map(link => isImage(link)))
+        imgUrls = responseUrls.filter((link, index) => images[index])
+      }
+      for (let quote of quotemessage) {
+        if (quote.imageLink) imgUrls.push(quote.imageLink)
       }
       if (useTTS) {
         // 先把文字回复发出去，避免过久等待合成语音
@@ -825,7 +837,7 @@ export class chatgpt extends plugin {
       } else if (userSetting.usePicture || (Config.autoUsePicture && response.length > Config.autoUsePictureThreshold)) {
         // todo use next api of chatgpt to complete incomplete respoonse
         try {
-          await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', response, prompt, quotemessage, mood, Config.showQRCode)
+          await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', response, prompt, quotemessage, mood, chatMessage.suggestedResponses, imgUrls)
         } catch (err) {
           logger.warn('error happened while uploading content to the cache server. QR Code will not be showed in this picture.')
           logger.error(err)
@@ -943,11 +955,11 @@ export class chatgpt extends plugin {
     return true
   }
 
-  async renderImage (e, template, content, prompt, quote = [], mood = '', cache = false) {
+  async renderImage (e, template, content, prompt, quote = [], mood = '', suggest = '', imgUrls = []) {
     let cacheData = { file: '', cacheUrl: Config.cacheUrl }
-    if (cache) {
-      if (Config.cacheEntry) cacheData.file = randomString()
-      const use = await redis.get('CHATGPT:USE')
+    const use = await redis.get('CHATGPT:USE')
+    if (Config.preview) {
+      cacheData.file = randomString()
       const cacheresOption = {
         method: 'POST',
         headers: {
@@ -959,33 +971,69 @@ export class chatgpt extends plugin {
             prompt: new Buffer.from(prompt).toString('base64'),
             senderName: e.sender.nickname,
             style: Config.toneStyle,
-            mood,
-            quote
+            mood: mood,
+            quote: quote,
+            group: e.isGroup ? e.group.name : '',
+            suggest: suggest ? suggest.split("\n").filter(Boolean) : [],
+            images: imgUrls
           },
           bing: use === 'bing',
-          entry: Config.cacheEntry ? cacheData.file : ''
+          entry: cacheData.file,
+          userImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${e.sender.user_id}`,
+          botImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${Bot.uin}`,
+          QR: Config.showQRCode
         })
       }
-      if (Config.cacheEntry) {
-        fetch(`${Config.cacheUrl}/cache`, cacheresOption)
-      } else {
-        const cacheres = await fetch(`${Config.cacheUrl}/cache`, cacheresOption)
-        if (cacheres.ok) {
-          cacheData = Object.assign({}, cacheData, await cacheres.json())
-        }
+      const cacheres = await fetch(`http://127.0.0.1:${Config.serverPort || 3321}/cache`, cacheresOption)
+      if (cacheres.ok) {
+        cacheData = Object.assign({}, cacheData, await cacheres.json())
       }
-    }
-    await e.reply(await render(e, 'chatgpt-plugin', template, {
-      content: new Buffer.from(content).toString('base64'),
-      prompt: new Buffer.from(prompt).toString('base64'),
-      senderName: e.sender.nickname,
-      quote: quote.length > 0,
-      quotes: quote,
-      cache: cacheData,
-      style: Config.toneStyle,
-      mood,
-      version
-    }, { retType: Config.quoteReply ? 'base64' : '' }), e.isGroup && Config.quoteReply)
+      if (cacheData.error)
+      await this.reply(`出现错误：${cacheData.error}`, true)
+      else
+      await e.reply(await renderUrl(e, `http://127.0.0.1:${Config.serverPort || 3321}/page/${cacheData.file}`, { retType: Config.quoteReply ? 'base64' : '' }), e.isGroup && Config.quoteReply)
+    } else {
+      
+        if (Config.cacheEntry) cacheData.file = randomString()
+        const cacheresOption = {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            content: {
+              content: new Buffer.from(content).toString('base64'),
+              prompt: new Buffer.from(prompt).toString('base64'),
+              senderName: e.sender.nickname,
+              style: Config.toneStyle,
+              mood,
+              quote
+            },
+            bing: use === 'bing',
+            entry: Config.cacheEntry ? cacheData.file : ''
+          })
+        }
+        if (Config.cacheEntry) {
+          fetch(`${Config.cacheUrl}/cache`, cacheresOption)
+        } else {
+          const cacheres = await fetch(`${Config.cacheUrl}/cache`, cacheresOption)
+          if (cacheres.ok) {
+            cacheData = Object.assign({}, cacheData, await cacheres.json())
+          }
+        }
+        await e.reply(await render(e, 'chatgpt-plugin', template, {
+          content: new Buffer.from(content).toString('base64'),
+          prompt: new Buffer.from(prompt).toString('base64'),
+          senderName: e.sender.nickname,
+          quote: quote.length > 0,
+          quotes: quote,
+          cache: cacheData,
+          style: Config.toneStyle,
+          mood,
+          version
+        }, { retType: Config.quoteReply ? 'base64' : '' }), e.isGroup && Config.quoteReply)
+      }
+    
   }
 
   async sendMessage (prompt, conversation = {}, use, e) {
@@ -1120,9 +1168,21 @@ export class chatgpt extends plugin {
               response.response = response.response.replace(/\[\^[0-9]+\^\]/g, (str) => {
                 return str.replace(/[/^]/g, '')
               })
-              response.quote = response.details.adaptiveCards?.[0]?.body?.[0]?.text?.replace(/\[\^[0-9]+\^\]/g, '').replace(response.response, '').split('\n')
+              // 有了新的引用属性
+              // response.quote = response.details.adaptiveCards?.[0]?.body?.[0]?.text?.replace(/\[\^[0-9]+\^\]/g, '').replace(response.response, '').split('\n')
             }
             response.suggestedResponses = response.details.suggestedResponses?.map(s => s.text).join('\n')
+            // 新引用属性读取数据
+            if (response.details.sourceAttributions) {
+              response.quote = []
+              for (let quote of response.details.sourceAttributions) {
+                response.quote.push({
+                  text: quote.providerDisplayName,
+                  url: quote.seeMoreUrl,
+                  imageLink: quote.imageLink || ''
+                })
+              }
+            }
             errorMessage = ''
             break
           } catch (error) {
