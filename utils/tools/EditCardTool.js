@@ -5,9 +5,13 @@ export class EditCardTool extends Tool {
 
   async _call (input) {
     try {
-      let [groupId, qq, card] = input.trim().split(' ', 3)
+      let groupId = input.match(/^\d+/)[0]
+      let left = input.replace(groupId, '')
+      let qq = left.trimStart().match(/^\d+/)[0]
+      let card = left.replace(qq, '').trim()
       groupId = parseInt(groupId.trim())
       qq = parseInt(qq.trim())
+      logger.info('edit card: ', groupId, qq)
       let group = await Bot.pickGroup(groupId)
       await group.setCard(qq, card)
       return new Date().getTime() + ''

@@ -214,7 +214,7 @@ export default class SydneyAIClient {
       throw new Error('no support conversationsCache')
     }
     let qq = opts.qq
-    let conver = await redis.get(`CHATGPT_CONVERSATIONS:${qq}`)
+    let conver = await redis.get(`CHATGPT:CONVERSATIONS_BING:${qq}`)
     if (!conver) {
       conver = {}
     } else {
@@ -361,7 +361,7 @@ export default class SydneyAIClient {
     if (Config.debug) {
       logger.mark('sydney websocket constructed successful')
     }
-    const toneOption = 'h3precise' // h3imaginative h3precise galileo harmonyv3
+    const toneOption = 'h3imaginative' // h3imaginative h3precise galileo harmonyv3
     const obj = {
       arguments: [
         {
@@ -373,6 +373,12 @@ export default class SydneyAIClient {
             'responsible_ai_policy_235',
             'enablemm',
             toneOption,
+            'dltokens18k',
+            'bfprss',
+            'saharafreq',
+            'deepleofreq',
+            'wlthrottle',
+            'dl_edge_desc',
             // 'galileo',
             'dtappid',
             'cricinfo',
