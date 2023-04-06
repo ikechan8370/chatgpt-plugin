@@ -63,7 +63,7 @@ server.post('/page', async (request, reply) => {
 
 server.post('/help', async (request, reply) => {
   const body = request.body || {}
-  if (body.code) {
+  if (body.use) {
       const dir = 'plugins/chatgpt-plugin/resources'
       const filename = 'help.json'
       const filepath = path.join(dir, filename)
