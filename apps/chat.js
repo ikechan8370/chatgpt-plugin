@@ -5,7 +5,6 @@ import { v4 as uuid } from 'uuid'
 import delay from 'delay'
 import { ChatGPTAPI } from 'chatgpt'
 import { BingAIClient } from '@waylaidwanderer/chatgpt-api'
-import SydneyAIClient from '../utils/SydneyAIClient.js'
 import {
   render,
   getMessageById,
@@ -23,17 +22,18 @@ import { deleteConversation, getConversations, getLatestMessageIdByConversationI
 import { convertSpeaker, generateAudio, speakers } from '../utils/tts.js'
 import ChatGLMClient from '../utils/chatglm.js'
 import { convertFaces } from '../utils/face.js'
-import {
-  EditCardTool,
-  JinyanTool,
-  KickOutTool,
-  SendAvatarTool,
-  SendPictureTool,
-  SydneyAgent,
-  SydneyAIModel,
-  SendMessageTool, SendDiceTool, SendRPSTool
-} from '../utils/SydneyAIModel.js'
 import { AgentExecutor } from '../utils/LLMAgent.js'
+import { JinyanTool } from '../utils/tools/JinyanTool.js'
+import { KickOutTool } from '../utils/tools/KickOutTool.js'
+import { SendPictureTool } from '../utils/tools/SendPictureTool.js'
+import { SendAvatarTool } from '../utils/tools/SendAvatarTool.js'
+import { EditCardTool } from '../utils/tools/EditCardTool.js'
+import { SendMessageTool } from '../utils/tools/SendMessageTool.js'
+import { SendDiceTool } from '../utils/tools/SendDiceTool.js'
+import { SendRPSTool } from '../utils/tools/SendRPSTool.js'
+import { SydneyAgent, SydneyAIModel } from '../utils/SydneyAIModel.js'
+import {SendMusicTool} from "../utils/tools/SendMusicTool.js";
+import {SendVideoTool} from "../utils/tools/SendBilibiliTool.js";
 try {
   await import('keyv')
 } catch (err) {
@@ -1130,7 +1130,9 @@ export class chatgpt extends plugin {
                 new EditCardTool(),
                 new SendMessageTool(),
                 new SendDiceTool(),
-                new SendRPSTool()
+                new SendRPSTool(),
+                new SendMusicTool(),
+                  new SendVideoTool()
               ]
               executor = AgentExecutor.fromAgentAndTools({
                 agent: SydneyAgent.fromLLMAndTools(model, tools),
