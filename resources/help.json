@@ -18,7 +18,7 @@
             ]
         },
         {
-            "icon": "fas fa-comments",
+            "icon": "fas fa-comment",
             "title": "ChatGPT切换对话",
             "text": "切换到指定对话当中<span class=\"text-xs font-semibold inline-block py-1 px-2 uppercase rounded text-blueGray-600 bg-blueGray-200\">仅API3可用</span>",
             "list": [
@@ -26,7 +26,7 @@
             ]
         },
         {
-            "icon": "fas fa-comments",
+            "icon": "fas fa-comment",
             "title": "ChatGPT加入对话",
             "text": "加入到某人当前进行对话当中<span class=\"text-xs font-semibold inline-block py-1 px-2 uppercase rounded text-blueGray-600 bg-blueGray-200\">仅API3可用</span>",
             "list": [
@@ -34,7 +34,7 @@
             ]
         },
         {
-            "icon": "fas fa-comments",
+            "icon": "fas fa-trash ",
             "title": "删除对话",
             "text": "删除指定对话，并清空与用户的关联信息。@用户时支持多个用户",
             "list": [
@@ -42,7 +42,7 @@
             ]
         },
         {
-            "icon": "fas fa-comments",
+            "icon": "fas fa-outdent",
             "title": "结束对话",
             "text": "结束自己当前对话，下次开启对话机器人将遗忘掉本次对话内容",
             "list": [
@@ -50,7 +50,7 @@
             ]
         },
         {
-            "icon": "fas fa-comments",
+            "icon": "fas fa-eraser",
             "title": "结束全部对话",
             "text": "结束正在与本机器人进行对话的全部用户的对话",
             "list": [
@@ -58,7 +58,7 @@
             ]
         },
         {
-            "icon": "fas fa-comments",
+            "icon": "fas fa-book",
             "title": "聊天记录",
             "text": "图片形式导出聊天记录<span class=\"text-xs font-semibold inline-block py-1 px-2 uppercase rounded text-blueGray-600 bg-blueGray-200\">仅支持Bing下的Sydney和自定义</span>",
             "list": [
@@ -66,11 +66,29 @@
                 "#chatgpt导出聊天记录"
             ],
             "tip": "管理员功能"
+        },
+        {
+            "icon": "fas fa-cube",
+            "title": "聊天回复模式",
+            "text": "设置机器人以图片模式、文本模式或语音模式回复",
+            "list": [
+                "#chatgpt图片模式",
+                "#chatgpt文本模式",
+                "#chatgpt语音模式"
+            ]
+        },
+        {
+            "icon": "fas fa-headphones",
+            "title": "语音角色",
+            "text": "设置语音模式下回复的角色音色",
+            "list": [
+                "#chatgpt设置语音角色"
+            ]
         }
     ],
     "AI画图": [
         {
-            "icon": "fas fa-comments",
+            "icon": "fas fa-paint-brush",
             "title": "画图",
             "text": "调用**OpenAI Dalle API**进行绘图，需要有**API key**并消耗余额。图片大小只能是<span class=\"text-xs font-semibold inline-block py-1 px-2 uppercase rounded text-blueGray-600 bg-blueGray-200\">256x256</span><span class=\"text-xs font-semibold inline-block py-1 px-2 uppercase rounded text-blueGray-600 bg-blueGray-200\">512x512</span><span class=\"text-xs font-semibold inline-block py-1 px-2 uppercase rounded text-blueGray-600 bg-blueGray-200\">1024x1024</span>中的一个，默认画图**1**张，大小<span class=\"text-xs font-semibold inline-block py-1 px-2 uppercase rounded text-blueGray-600 bg-blueGray-200\">512x512</span>",
             "list": [
@@ -79,7 +97,7 @@
             ]
         },
         {
-            "icon": "fas fa-comments",
+            "icon": "fas fa-paint-brush",
             "title": "改图",
             "text": "调用**OpenAI Dalle API**进行绘图，需要有**API key**并消耗余额。可同时发送图片或回复图片",
             "list": [
@@ -87,21 +105,130 @@
             ]
         },
         {
-            "icon": "fas fa-comments",
+            "icon": "fas fa-toggle-on",
             "title": "画图开关",
             "text": "开启或关闭画图功能",
             "list": [
-                "#结束全部对话"
+                "#chatgpt开启画图",
+                "#chatgpt关闭画图"
             ],
             "tip": "管理员功能"
         }
     ],
     "插件管理": [
         {
+            "icon": "fas fa-list",
+            "title": "对话列表",
+            "text": "查询当前哪些人正在与机器人聊天.目前<span class=\"text-xs font-semibold inline-block py-1 px-2 uppercase rounded text-blueGray-600 bg-blueGray-200\">API3模式</span>下支持切换对话",
+            "list": [
+                "#chatgpt对话列表"
+            ],
+            "tip": "管理员功能"
+        },
+        {
+            "icon": "fas fa-microphone-slash",
+            "title": "闭嘴",
+            "text": "让机器人在某群闭嘴，不指定群时认为全局闭嘴",
+            "list": [
+                "#chatgpt本群闭嘴",
+                "#chatgpt群xxx闭嘴",
+                "#chatgpt闭嘴(x秒/分钟/小时)",
+                "#chatgpt本群张嘴",
+                "#chatgpt本群开口",
+                "#chatgpt群xxx说话",
+                "#chatgpt上班",
+                "#chatgpt查看闭嘴"
+            ],
+            "tip": "管理员功能"
+        },
+        {
+            "icon": "fas fa-list",
+            "title": "Chat队列",
+            "text": "移出或清空当前对话等待队列，若前方对话卡死可使用本命令。仅<span class=\"text-xs font-semibold inline-block py-1 px-2 uppercase rounded text-blueGray-600 bg-blueGray-200\">API3模式</span>下可用",
+            "list": [
+                "#清空chat队列",
+                "#移出chat队列首位"
+            ],
+            "tip": "管理员功能"
+        },
+        {
+            "icon": "fas fa-check",
+            "title": "问题确认",
+            "text": "开启或关闭机器人收到消息后的确认回复消息",
+            "list": [
+                "#chatgpt开启问题确认",
+                "#chatgpt关闭问题确认"
+            ],
+            "tip": "管理员功能"
+        },
+        {
+            "icon": "fas fa-cube",
+            "title": "切换模式",
+            "text": "切换使用的后端会话模式",
+            "list": [
+                "#chatgpt切换浏览器",
+                "#chatgpt切换API",
+                "#chatgpt切换API3",
+                "#chatgpt切换Bing",
+                "#chatgpt切换ChatGLM"
+            ],
+            "tip": "管理员功能"
+        },
+        {
+            "icon": "fas fa-coffee",
+            "title": "必应风格",
+            "text": "切换Bing风格",
+            "list": [
+                "#chatgpt必应切换精准",
+                "#chatgpt必应切换均衡",
+                "#chatgpt必应切换创意",
+                "#chatgpt必应切换悉尼",
+                "#chatgpt必应切换自设定"
+            ],
+            "tip": "管理员功能"
+        },
+        {
             "icon": "fas fa-comments",
-            "title": "施工中",
-            "text": "插件管理帮助仍在编写当中！",
-            "list": []
+            "title": "必应建议",
+            "text": "开关Bing模式下的建议回复",
+            "list": [
+                "#chatgpt必应开启建议回复",
+                "#chatgpt必应关闭建议回复"
+            ],
+            "tip": "管理员功能"
+        }
+    ],
+    "系统设置": [
+        {
+            "icon": "fas fa-key",
+            "title": "Token与APIKey",
+            "text": "设置必应和open的Token和ApiKey",
+            "list": [
+                "#chatgpt设置必应token",
+                "#chatgpt设置APIKey"
+            ],
+            "tip": "管理员功能"
+        },
+        {
+            "icon": "fas fa-credit-card",
+            "title": "试用额度",
+            "text": "查询OpenAI API剩余试用额度",
+            "list": [
+                "#OpenAI剩余额度"
+            ],
+            "tip": "管理员功能"
+        },
+        {
+            "icon": "fas fa-coffee",
+            "title": "风格",
+            "text": "设置和查看AI的默认风格设定",
+            "list": [
+                "#chatgpt设置API设定",
+                "#chatgpt设置Sydney设定",
+                "#chatgpt查看API设定",
+                "#chatgpt查看Sydney设定"
+            ],
+            "tip": "管理员功能"
         }
     ]
 }

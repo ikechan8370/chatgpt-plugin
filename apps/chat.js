@@ -981,6 +981,7 @@ export class chatgpt extends plugin {
           entry: cacheData.file,
           userImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${e.sender.user_id}`,
           botImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${Bot.uin}`,
+          cacheHost: Config.serverHost,
           QR: Config.showQRCode
         })
       }

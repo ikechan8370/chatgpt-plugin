@@ -513,6 +513,12 @@ export function supportGuoba () {
           bottomHelpMessage: '系统Api服务开启的端口号，如需外网访问请将系统防火墙和服务器防火墙对应端口开放,修改后请重启',
           component: 'InputNumber',
         },
+        {
+          field: 'serverHost',
+          label: '系统服务访问域名',
+          bottomHelpMessage: '使用域名代替公网ip，适用于有服务器和域名的朋友避免暴露ip使用',
+          component: 'Input'
+        },
       ],
       // 获取配置数据方法（用于前端填充显示数据）
       getConfigData () {
