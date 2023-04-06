@@ -108,7 +108,7 @@ server.post('/cache', async (request, reply) => {
 })
 
 server.listen({
-    port: Config.serverPort,
+    port: 3321,
     host: '0.0.0.0'
 }, (error) => {
     if (error) {

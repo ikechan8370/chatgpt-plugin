@@ -507,12 +507,14 @@ export function supportGuoba () {
           bottomHelpMessage: '开启预览版本',
           component: 'Switch'
         },
+        /*
         {
           field: 'serverPort',
           label: '系统Api服务端口',
           bottomHelpMessage: '系统Api服务开启的端口号，如需外网访问请将系统防火墙和服务器防火墙对应端口开放',
           component: 'InputNumber',
         },
+        */
       ],
       // 获取配置数据方法（用于前端填充显示数据）
       getConfigData () {
