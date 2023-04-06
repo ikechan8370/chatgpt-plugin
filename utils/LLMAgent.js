@@ -42,15 +42,23 @@ export class AgentExecutor extends BaseChain {
     //   return getOutput(action)
     // }
     await this.callbackManager.handleAgentAction(action, verbose)
-
-    action.actions.forEach(async a => {
-      const tool = toolsByName[a.action?.toLowerCase()]
-      const observation = tool
-        ? await tool.call(a.action_input, verbose)
-        : `${action.action} is not a valid tool, try another one.`
-      console.log(observation)
-    })
     let output = await getOutput(action)
+    for (const a of action.actions) {
+      let toolName = a.action?.toLowerCase()
+      const lastSpaceIndex = a.action_input.lastIndexOf(' ')
+      console.log(lastSpaceIndex)
+      const text = a.action_input.substring(0, lastSpaceIndex)
+      if (toolName === 'send' && text === output.output) {
+        console.log('ignore send tool because it\'s the same as the final answer')
+      } else {
+        const tool = toolsByName[toolName]
+        const observation = tool
+          ? await tool.call(a.action_input, verbose)
+          : `${action.action} is not a valid tool, try another one.`
+        console.log(observation)
+      }
+    }
+
     if (action.actions.filter(a => a.action === 'send').length > 0 && !output.output) {
       return { output: 'message has been sent by langchain tools' }
     }

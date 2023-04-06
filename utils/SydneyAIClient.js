@@ -361,7 +361,7 @@ export default class SydneyAIClient {
     if (Config.debug) {
       logger.mark('sydney websocket constructed successful')
     }
-    const toneOption = 'h3precise'
+    const toneOption = 'h3imaginative' // h3imaginative h3precise galileo
     const obj = {
       arguments: [
         {
@@ -471,6 +471,9 @@ export default class SydneyAIClient {
         context += chats
           .map(chat => {
             let sender = chat.sender
+            if (!sender) {
+              return ''
+            }
             return `【${sender.card || sender.nickname}】（qq：${sender.user_id}，${roleMap[sender.role] || '普通成员'}，${sender.area ? '来自' + sender.area + '，' : ''} ${sender.age}岁， ${sender.title ? '群头衔：' + sender.title : ''}， 性别：${sender.sex}，时间：${formatDate(new Date(chat.time * 1000))}） 说：${chat.raw_message}`
           })
           .join('\n')
@@ -662,7 +665,16 @@ export default class SydneyAIClient {
                   logger.warn('该账户的SERP请求已被限流')
                   logger.warn(JSON.stringify(event.item?.result))
                 } else {
-                  reject(`${event.item?.result.value}\n${event.item?.result.error}\n${event.item?.result.exception}`)
+                  if (replySoFar[0]) {
+                    message.text = replySoFar.join('')
+                    resolve({
+                      message,
+                      conversationExpiryTime: event?.item?.conversationExpiryTime
+                    })
+                    return
+                  } else {
+                    reject(`${event.item?.result.value}\n${event.item?.result.error}\n${event.item?.result.exception}`)
+                  }
                 }
               } else {
                 reject('Unexpected message author.')

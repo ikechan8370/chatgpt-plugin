@@ -1193,6 +1193,8 @@ export class chatgpt extends plugin {
               savedBingToken = savedBingToken.filter(function (element) { return element !== '' })
               await redis.set('CHATGPT:BING_TOKEN', savedBingToken.join('|'))
               logger.mark(`token${bingToken}已移除`)
+            } else if (message.indexOf('Unhandled Exception') > -1) {
+              retry = retry - 0.25
             } else {
               retry--
               errorMessage = message === 'Timed out waiting for response. Try enabling debug mode to see more information.' ? (reply ? `${reply}\n不行了，我的大脑过载了，处理不过来了!` : '必应的小脑瓜不好使了，不知道怎么回答！') : message

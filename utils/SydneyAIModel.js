@@ -11,6 +11,7 @@ import {
   SystemMessagePromptTemplate
 } from 'langchain/prompts'
 import { AgentExecutor } from './LLMAgent.js'
+import {convertFaces} from "./face.js";
 
 export class SydneyAIModel extends BaseChatModel {
   constructor (props) {
@@ -53,7 +54,7 @@ export class SydneyAIModel extends BaseChatModel {
   }
 }
 
-const PREFIX = 'I want you to choose a tool from the following tools to complete the task or answer the question. Do not try to call the tools Microsoft provides to you such as action but except serp. You cannot choose any other tool which is not in the list below, this is important:'
+const PREFIX = 'I want you to choose a tool from the following tools to complete the task or answer the question. You CANNOT choose any other tool which is not in the list below, this is important:'
 const SUFFIX = `The way you use the tools is by specifying a json blob, denoted below by $JSON_BLOB
 Specifically, this $JSON_BLOB should have a "action" key (with the name of the tool to use) and a "action_input" key (with the input to the tool going here).
 The $JSON_BLOB should only contain a SINGLE action, do NOT return a list of multiple actions. 
@@ -71,7 +72,7 @@ Action:
 \`\`\`
 $JSON_BLOB
 \`\`\`
-Observation: (DO NOT EDIT) the result of the tool 
+Observation: the result of the tool (it it has result)
 ... (this Thought/Action/Observation can repeat N times)
 Thought: I think I should choose another tool or the same tool again to get more information
 Final Answer: the final answer to the original input question. Do not forget to use Final Answer to express your final answer`
@@ -199,8 +200,11 @@ class SydneyOutputParser extends AgentActionOutputParser {
         }
       }
     }
-    let s = jsonOutput.split('Final Answer: ')
+    let s = jsonOutput.split('Final Answer:')
     let returnValues = s[s.length - 1]
+    if (s.length === 1 && s.indexOf('```') > -1) {
+      returnValues = ''
+    }
     return {
       actions: responses,
       log: text,
@@ -271,19 +275,17 @@ export class SendMessageTool extends Tool {
   name = 'send'
   async _call (input) {
     try {
-      const lastSpaceIndex = input.lastIndexOf(' ')
-      console.log(lastSpaceIndex)
-      const text = input.substring(0, lastSpaceIndex)
-      let groupId = input.substring(lastSpaceIndex + 1)
+      let groupId = input.match(/\d+$/)[0]
+      const text = input.replace(groupId, '')
       groupId = parseInt(groupId.trim())
       console.log('send', text, groupId)
       let groupList = await Bot.getGroupList()
       if (groupList.get(groupId)) {
         let group = await Bot.pickGroup(groupId, true)
-        await group.sendMsg(text)
+        await group.sendMsg(await convertFaces(text, Config.enableRobotAt))
       } else {
         let friend = await Bot.pickFriend(groupId)
-        await friend.sendMsg(text)
+        await friend.sendMsg(await convertFaces(text, Config.enableRobotAt))
       }
       return 'success'
     } catch (error) {
@@ -352,7 +354,7 @@ export class EditCardTool extends Tool {
 
   async _call (input) {
     try {
-      let [groupId, qq, card] = input.trim().split(' ')
+      let [groupId, qq, card] = input.trim().split(' ', 3)
       groupId = parseInt(groupId.trim())
       qq = parseInt(qq.trim())
       let group = await Bot.pickGroup(groupId)
