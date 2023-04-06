@@ -310,7 +310,7 @@ export async function renderUrl (e, url, renderCfg = {}) {
   let base64
   try {
     await page.goto(url, { timeout: 120000 })
-    await page.setViewport({
+    await page.setViewport(renderCfg.Viewport || {
       width: 1280,
       height: 720
     })

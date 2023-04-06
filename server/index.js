@@ -52,7 +52,7 @@ await server.get('/help/*', (request, reply) => {
 server.post('/page', async (request, reply) => {
     const body = request.body || {}
     if (body.code) {
-        const dir = 'resources/ChatGPTCache'
+        const dir = 'resources/ChatGPTCache/page'
         const filename = body.code + '.json'
         const filepath = path.join(dir, filename)
         
@@ -76,7 +76,7 @@ server.post('/help', async (request, reply) => {
 server.post('/cache', async (request, reply) => {
     const body = request.body || {}
     if (body.content) {
-        const dir = 'resources/ChatGPTCache'
+        const dir = 'resources/ChatGPTCache/page'
         const filename = body.entry + '.json'
         const filepath = path.join(dir, filename)
         const regexUrl = /\b((?:https?|ftp|file):\/\/[-a-zA-Z0-9+&@#\/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#\/%=~_|])/g
@@ -104,8 +104,6 @@ server.post('/cache', async (request, reply) => {
         }
     }
 })
-
-
 
 server.listen({
     port: 3321,
