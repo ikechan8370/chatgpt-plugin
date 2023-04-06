@@ -1194,6 +1194,7 @@ export class chatgpt extends plugin {
               await redis.set('CHATGPT:BING_TOKEN', savedBingToken.join('|'))
               logger.mark(`token${bingToken}已移除`)
             } else if (message.indexOf('Unhandled Exception') > -1) {
+              errorMessage = message
               retry = retry - 0.25
             } else {
               retry--
