@@ -4,6 +4,7 @@ import { exec } from 'child_process'
 import lodash from 'lodash'
 import fs from 'node:fs'
 import path from 'node:path'
+import buffer from 'buffer'
 import puppeteer from '../../../lib/puppeteer/puppeteer.js'
 import { Config } from './config.js'
 // export function markdownToText (markdown) {
@@ -303,6 +304,38 @@ export async function render (e, pluginKey, htmlPath, data = {}, renderCfg = {})
   return renderCfg.retType === 'msgId' ? ret : true
 }
 
+export async function renderUrl (e, url, renderCfg = {}) {
+  await puppeteer.browserInit()
+  const page = await puppeteer.browser.newPage()
+  let base64
+  try {
+    await page.goto(url, { timeout: 120000 })
+    await page.setViewport(renderCfg.Viewport || {
+      width: 1280,
+      height: 720
+    })
+    let buff = base64 = await page.screenshot({fullPage:true})
+    base64 = segment.image(buff)
+    await page.close().catch((err) => logger.error(err))
+  } catch (error) {
+    logger.error(`图片生成失败:${this.model}:${error}`)
+    /** 关闭浏览器 */
+    if (puppeteer.browser) {
+      await puppeteer.browser.close().catch((err) => logger.error(err))
+    }
+    puppeteer.browser = false
+  }
+
+  if (renderCfg.retType === 'base64') {
+    return base64
+  }
+  let ret = true
+  if (base64) {
+    ret = await e.reply(base64)
+  }
+  return renderCfg.retType === 'msgId' ? ret : true
+}
+
 export function getDefaultUserSetting () {
   return {
     usePicture: Config.defaultUsePicture,
@@ -545,4 +578,16 @@ export function completeJSON(input) {
     result[tempKey] = tempValue.replace(/\\n/g, "\n").replace(/\\r/g, "\r").replace(/\\t/g, "\t")
   }
   return result
+}
+
+export async function isImage(link) {
+  try {
+    let response = await fetch(link)
+    let body = await response.arrayBuffer()
+    let buf = buffer.Buffer.from(body)
+    let magic = buf.toString('hex', 0, 4)
+    return ['ffd8', '8950', '4749'].includes(magic)
+  } catch (error) {
+    throw error
+  }
 }

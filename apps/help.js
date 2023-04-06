@@ -1,6 +1,6 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import { Config } from '../utils/config.js'
-import { render } from '../utils/common.js'
+import { render, renderUrl } from '../utils/common.js'
 let version = Config.version
 let helpData = [
   {
@@ -286,12 +286,25 @@ export class help extends plugin {
         {
           reg: '^#(chatgpt|ChatGPT)(命令|帮助|菜单|help|说明|功能|指令|使用说明)$',
           fnc: 'help'
+        },
+        {
+          reg: '^#帮助-',
+          fnc: 'newHelp'
         }
       ]
     })
   }
 
   async help (e) {
+    if (Config.preview)
+    await renderUrl(e, `http://127.0.0.1:${Config.serverPort || 3321}/help/`, {Viewport: {width: 800, height: 600}})
+    else
     await render(e, 'chatgpt-plugin', 'help/index', { helpData, version })
   }
+
+  async newHelp (e) {
+    let use = e.msg.replace(/^#帮助-/, '')
+    await renderUrl(e, `http://127.0.0.1:${Config.serverPort || 3321}/help/` + use, {Viewport: {width: 800, height: 600}})
+  }
+  
 }
