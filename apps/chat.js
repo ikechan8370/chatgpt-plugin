@@ -984,14 +984,14 @@ export class chatgpt extends plugin {
           QR: Config.showQRCode
         })
       }
-      const cacheres = await fetch(`http://127.0.0.1:3321/cache`, cacheresOption)
+      const cacheres = await fetch(`http://127.0.0.1:${Config.serverPort || 3321}/cache`, cacheresOption)
       if (cacheres.ok) {
         cacheData = Object.assign({}, cacheData, await cacheres.json())
       }
       if (cacheData.error)
       await this.reply(`出现错误：${cacheData.error}`, true)
       else
-      await e.reply(await renderUrl(e, 'http://127.0.0.1:3321/page/'+cacheData.file, { retType: Config.quoteReply ? 'base64' : '' }), e.isGroup && Config.quoteReply)
+      await e.reply(await renderUrl(e, `http://127.0.0.1:${Config.serverPort || 3321}/page/${cacheData.file}`, { retType: Config.quoteReply ? 'base64' : '' }), e.isGroup && Config.quoteReply)
     } else {
       
         if (Config.cacheEntry) cacheData.file = randomString()

@@ -93,13 +93,13 @@ server.post('/cache', async (request, reply) => {
             question: body.content.prompt,
             message: body.content.content,
             group: body.content.group,
-            herf: `http://${body.cacheHost || ip}:3321/page/${body.entry}`,
+            herf: `http://${body.cacheHost || ip}:${Config.serverPort || 3321}/page/${body.entry}`,
             quote: body.content.quote,
             images: body.content.images || [],
             suggest: body.content.suggest || [],
             time: new Date()
           }))
-          reply.send({ file: body.entry, cacheUrl: `http://${ip}:3321/page/${body.entry}` })
+          reply.send({ file: body.entry, cacheUrl: `http://${ip}:${Config.serverPort || 3321}/page/${body.entry}` })
         } catch (err) {
           console.error(err)
           reply.send({ file: body.entry, cacheUrl: `http://${ip}/page/${body.entry}`, error: '生成失败' })
@@ -108,7 +108,7 @@ server.post('/cache', async (request, reply) => {
 })
 
 server.listen({
-    port: 3321,
+    port: Config.serverPort || 3321,
     host: '0.0.0.0'
 }, (error) => {
     if (error) {
