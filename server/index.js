@@ -6,6 +6,8 @@ import fs from 'fs'
 import path from 'path'
 import http from 'http'
 
+import { Config } from '../utils/config.js'
+
 function getPublicIP() {
   return new Promise((resolve, reject) => {
     http.get('http://ipinfo.io/json', (res) => {
@@ -30,7 +32,7 @@ function getPublicIP() {
 export async function createServer() {
 const __dirname = path.resolve()
 const server = fastify({
-  logger: true
+  logger: Config.debug
 })
 
 
@@ -106,7 +108,7 @@ server.post('/cache', async (request, reply) => {
 })
 
 server.listen({
-    port: 3321,
+    port: Config.serverPort,
     host: '0.0.0.0'
 }, (error) => {
     if (error) {

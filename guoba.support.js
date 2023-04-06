@@ -496,7 +496,23 @@ export function supportGuoba () {
           field: 'emojiBaseURL',
           label: '合成emoji的API地址，默认谷歌厨房',
           component: 'Input'
-        }
+        },
+        {
+          label: '以下为预览版配置',
+          component: 'Divider'
+        },
+        {
+          field: 'preview',
+          label: '预览版本',
+          bottomHelpMessage: '开启预览版本',
+          component: 'Switch'
+        },
+        {
+          field: 'serverPort',
+          label: '系统Api服务端口',
+          bottomHelpMessage: '系统Api服务开启的端口号，如需外网访问请将系统防火墙和服务器防火墙对应端口开放',
+          component: 'InputNumber',
+        },
       ],
       // 获取配置数据方法（用于前端填充显示数据）
       getConfigData () {
