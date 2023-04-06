@@ -1,6 +1,6 @@
 import fetch from 'node-fetch'
 import { Tool } from 'langchain/agents'
-import { mkdirs } from '../common.js'
+import {formatDate, mkdirs} from '../common.js'
 import fs from 'fs'
 export class SendVideoTool extends Tool {
   name = 'sendVideo'
@@ -11,24 +11,27 @@ export class SendVideoTool extends Tool {
       let keyword = input.replace(groupId, '').trim()
       console.log(keyword)
       groupId = parseInt(groupId.trim())
-      let { arcurl, title, pic, description, videoUrl, headers, bvid } = await searchBilibili(keyword)
+      let { arcurl, title, pic, description, videoUrl, headers, bvid, author, play, pubdate, like } = await searchBilibili(keyword)
       let group = await Bot.pickGroup(groupId)
       console.log({ arcurl, title, pic, description, videoUrl })
       let msg = []
       msg.push(title.replace(/(<([^>]+)>)/ig, '') + '\n')
+      msg.push(`UP主：${author} 发布日期：${formatDate(new Date(pubdate * 1000))} 播放量：${play} 点赞：${like}\n`)
       msg.push(arcurl + '\n')
       msg.push(segment.image('https:' + pic))
       msg.push('\n' + description)
+      msg.push('\n视频在路上啦！')
       await group.sendMsg(msg)
       const videoResponse = await fetch(videoUrl, { headers })
       const fileType = videoResponse.headers.get('Content-Type').split('/')[1]
       let fileLoc = `data/chatgpt/videos/${bvid}.${fileType}`
       mkdirs('data/chatgpt/videos')
-      const blob = await videoResponse.blob()
-      const arrayBuffer = await blob.arrayBuffer()
-      const buffer = Buffer.from(arrayBuffer)
-      await fs.writeFileSync(fileLoc, buffer)
-      await group.sendMsg(segment.video(fileLoc))
+      videoResponse.blob().then(async blob => {
+        const arrayBuffer = await blob.arrayBuffer()
+        const buffer = Buffer.from(arrayBuffer)
+        await fs.writeFileSync(fileLoc, buffer)
+        await group.sendMsg(segment.video(fileLoc))
+      })
       return new Date().getTime() + ''
     } catch (error) {
       logger.error()
@@ -99,7 +102,8 @@ async function searchBilibili (name) {
       })
     let json = await response.json()
     if (json.data?.numResults > 0) {
-      let { arcurl, title, pic, description, bvid } = json.data.result[0]
+      let index = randomIndex()
+      let { arcurl, title, pic, description, bvid, author, play, pubdate, like } = json.data.result[Math.min(index, json.data.numResults)]
       let videoInfo = await fetch(`https://api.bilibili.com/x/web-interface/view?bvid=${bvid}`, {
         headers
       })
@@ -108,12 +112,32 @@ async function searchBilibili (name) {
       let downloadInfo = await fetch(`https://api.bilibili.com/x/player/playurl?bvid=${bvid}&cid=${cid}`, { headers })
       let videoUrl = (await downloadInfo.json()).data.durl[0].url
       return {
-        arcurl, title, pic, description, videoUrl, headers, bvid
+        arcurl, title, pic, description, videoUrl, headers, bvid, author, play, pubdate, like
       }
     }
   }
 
   return {}
+}
+
+function randomIndex() {
+  // Define weights for each index
+  const weights = [5, 4, 3, 2, 1, 1, 1, 1, 1, 1, 1];
+
+  // Compute the total weight
+  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+
+  // Generate a random number between 0 and the total weight
+  const randomNumber = Math.floor(Math.random() * totalWeight);
+
+  // Choose the index based on the random number and weights
+  let weightSum = 0;
+  for (let i = 0; i < weights.length; i++) {
+    weightSum += weights[i];
+    if (randomNumber < weightSum) {
+      return i;
+    }
+  }
 }
 
 // searchBilibili('茶叶蛋').then(res => {

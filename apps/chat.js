@@ -32,8 +32,8 @@ import { SendMessageTool } from '../utils/tools/SendMessageTool.js'
 import { SendDiceTool } from '../utils/tools/SendDiceTool.js'
 import { SendRPSTool } from '../utils/tools/SendRPSTool.js'
 import { SydneyAgent, SydneyAIModel } from '../utils/SydneyAIModel.js'
-import {SendMusicTool} from "../utils/tools/SendMusicTool.js";
-import {SendVideoTool} from "../utils/tools/SendBilibiliTool.js";
+import { SendMusicTool } from '../utils/tools/SendMusicTool.js'
+import { SendVideoTool } from '../utils/tools/SendBilibiliTool.js'
 try {
   await import('keyv')
 } catch (err) {
@@ -1085,7 +1085,7 @@ export class chatgpt extends plugin {
               clientOpts.cookies = cookies
               opt.messageType = allThrottled ? 'Chat' : 'SearchQuery'
               // todo delete debug
-              opt.messageType = 'Chat'
+              // opt.messageType = 'Chat'
               if (Config.enableGroupContext && e.isGroup) {
                 try {
                   opt.groupId = e.group_id
@@ -1132,7 +1132,7 @@ export class chatgpt extends plugin {
                 new SendDiceTool(),
                 new SendRPSTool(),
                 new SendMusicTool(),
-                  new SendVideoTool()
+                new SendVideoTool()
               ]
               executor = AgentExecutor.fromAgentAndTools({
                 agent: SydneyAgent.fromLLMAndTools(model, tools),
