@@ -288,7 +288,7 @@ export class help extends plugin {
           fnc: 'help'
         },
         {
-          reg: '^#帮助-$',
+          reg: '^#帮助-',
           fnc: 'newHelp'
         }
       ]
