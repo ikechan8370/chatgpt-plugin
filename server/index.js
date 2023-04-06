@@ -48,6 +48,7 @@ await server.get('/help', (request, reply) => {
   const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
   reply.type('text/html').send(stream)
 })
+
 server.post('/page', async (request, reply) => {
     const body = request.body || {}
     if (body.code) {
@@ -58,6 +59,18 @@ server.post('/page', async (request, reply) => {
         let data = fs.readFileSync(filepath, 'utf8')
         reply.send(data)
     }
+})
+
+server.post('/help', async (request, reply) => {
+  const body = request.body || {}
+  if (body.code) {
+      const dir = 'plugins/chatgpt-plugin/resources'
+      const filename = 'help.json'
+      const filepath = path.join(dir, filename)
+      let data = fs.readFileSync(filepath, 'utf8')
+      data = JSON.parse(data)
+      reply.send(data[body.use])
+  }
 })
 
 server.post('/cache', async (request, reply) => {
