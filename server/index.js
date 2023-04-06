@@ -89,7 +89,7 @@ export async function createServer() {
               question: body.content.prompt,
               message: body.content.content,
               group: body.content.group,
-              herf: `http://${body.cacheHost || ip}:${Config.serverPort || 3321}/page/${body.entry}`,
+              herf: `http://${body.cacheHost || (ip + ':' + Config.serverPort || 3321)}/page/${body.entry}`,
               quote: body.content.quote,
               images: body.content.images || [],
               suggest: body.content.suggest || [],
