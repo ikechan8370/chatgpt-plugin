@@ -1,6 +1,6 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import { Config } from '../utils/config.js'
-import { renderUrl } from '../utils/common.js'
+import { render, renderUrl } from '../utils/common.js'
 let version = Config.version
 let helpData = [
   {
@@ -296,8 +296,10 @@ export class help extends plugin {
   }
 
   async help (e) {
+    if (Config.preview)
     await renderUrl(e, 'http://127.0.0.1:3321/help/', {Viewport: {width: 800, height: 600}})
-    // await render(e, 'chatgpt-plugin', 'help/index', { helpData, version })
+    else
+    await render(e, 'chatgpt-plugin', 'help/index', { helpData, version })
   }
 
   async newHelp (e) {

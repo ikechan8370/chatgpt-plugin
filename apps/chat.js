@@ -957,40 +957,83 @@ export class chatgpt extends plugin {
 
   async renderImage (e, template, content, prompt, quote = [], mood = '', suggest = '', imgUrls = []) {
     let cacheData = { file: '', cacheUrl: Config.cacheUrl }
-    cacheData.file = randomString()
     const use = await redis.get('CHATGPT:USE')
-    const cacheresOption = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        content: {
+    if (Config.preview) {
+      cacheData.file = randomString()
+      const cacheresOption = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          content: {
+            content: new Buffer.from(content).toString('base64'),
+            prompt: new Buffer.from(prompt).toString('base64'),
+            senderName: e.sender.nickname,
+            style: Config.toneStyle,
+            mood: mood,
+            quote: quote,
+            group: e.isGroup ? e.group.name : '',
+            suggest: suggest ? suggest.split("\n").filter(Boolean) : [],
+            images: imgUrls
+          },
+          bing: use === 'bing',
+          entry: cacheData.file,
+          userImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${e.sender.user_id}`,
+          botImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${Bot.uin}`,
+          QR: Config.showQRCode
+        })
+      }
+      const cacheres = await fetch(`http://127.0.0.1:3321/cache`, cacheresOption)
+      if (cacheres.ok) {
+        cacheData = Object.assign({}, cacheData, await cacheres.json())
+      }
+      if (cacheData.error)
+      await this.reply(`出现错误：${cacheData.error}`, true)
+      else
+      await e.reply(await renderUrl(e, 'http://127.0.0.1:3321/page/'+cacheData.file, { retType: Config.quoteReply ? 'base64' : '' }), e.isGroup && Config.quoteReply)
+    } else {
+      
+        if (Config.cacheEntry) cacheData.file = randomString()
+        const cacheresOption = {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            content: {
+              content: new Buffer.from(content).toString('base64'),
+              prompt: new Buffer.from(prompt).toString('base64'),
+              senderName: e.sender.nickname,
+              style: Config.toneStyle,
+              mood,
+              quote
+            },
+            bing: use === 'bing',
+            entry: Config.cacheEntry ? cacheData.file : ''
+          })
+        }
+        if (Config.cacheEntry) {
+          fetch(`${Config.cacheUrl}/cache`, cacheresOption)
+        } else {
+          const cacheres = await fetch(`${Config.cacheUrl}/cache`, cacheresOption)
+          if (cacheres.ok) {
+            cacheData = Object.assign({}, cacheData, await cacheres.json())
+          }
+        }
+        await e.reply(await render(e, 'chatgpt-plugin', template, {
           content: new Buffer.from(content).toString('base64'),
           prompt: new Buffer.from(prompt).toString('base64'),
           senderName: e.sender.nickname,
+          quote: quote.length > 0,
+          quotes: quote,
+          cache: cacheData,
           style: Config.toneStyle,
-          mood: mood,
-          quote: quote,
-          group: e.isGroup ? e.group.name : '',
-          suggest: suggest ? suggest.split("\n").filter(Boolean) : [],
-          images: imgUrls
-        },
-        bing: use === 'bing',
-        entry: cacheData.file,
-        userImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${e.sender.user_id}`,
-        botImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${Bot.uin}`,
-        QR: Config.showQRCode
-      })
-    }
-    const cacheres = await fetch(`http://127.0.0.1:3321/cache`, cacheresOption)
-    if (cacheres.ok) {
-      cacheData = Object.assign({}, cacheData, await cacheres.json())
-    }
-    if (cacheData.error)
-    await this.reply(`出现错误：${cacheData.error}`, true)
-    else
-    await e.reply(await renderUrl(e, 'http://127.0.0.1:3321/page/'+cacheData.file, { retType: Config.quoteReply ? 'base64' : '' }), e.isGroup && Config.quoteReply)
+          mood,
+          version
+        }, { retType: Config.quoteReply ? 'base64' : '' }), e.isGroup && Config.quoteReply)
+      }
+    
   }
 
   async sendMessage (prompt, conversation = {}, use, e) {
