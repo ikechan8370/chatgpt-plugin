@@ -873,7 +873,7 @@ export class chatgpt extends plugin {
           await this.reply(`出现错误：${err}`, true, { recallMsg: e.isGroup ? 10 : 0 })
         } else {
           // 这里是否还需要上传到缓存服务器呐？多半是代理服务器的问题，本地也修不了，应该不用吧。
-          await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', `通信异常,错误信息如下 ${err}`, prompt)
+          await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', `通信异常,错误信息如下 ${err.message}`, prompt)
         }
       }
     }
@@ -981,19 +981,19 @@ export class chatgpt extends plugin {
           entry: cacheData.file,
           userImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${e.sender.user_id}`,
           botImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${Bot.uin}`,
-          QR: Config.showQRCode
+          cacheHost: Config.serverHost
         })
       }
-      const cacheres = await fetch(`http://127.0.0.1:${Config.serverPort || 3321}/cache`, cacheresOption)
+      const viewHost = Config.viewHost ? `${Config.viewHost}/` : `http://127.0.0.1:${Config.serverPort || 3321}/`
+      const cacheres = await fetch(viewHost + 'cache', cacheresOption)
       if (cacheres.ok) {
         cacheData = Object.assign({}, cacheData, await cacheres.json())
       }
       if (cacheData.error)
       await this.reply(`出现错误：${cacheData.error}`, true)
       else
-      await e.reply(await renderUrl(e, `http://127.0.0.1:${Config.serverPort || 3321}/page/${cacheData.file}`, { retType: Config.quoteReply ? 'base64' : '' }), e.isGroup && Config.quoteReply)
+      await e.reply(await renderUrl(e, viewHost + `page/${cacheData.file}?qr=${Config.showQRCode ? 'true' : 'false'}`, { retType: Config.quoteReply ? 'base64' : '', Viewport: {width: Config.chatViewWidth, height: parseInt(Config.chatViewWidth * 0.56)} }), e.isGroup && Config.quoteReply)
     } else {
-      
         if (Config.cacheEntry) cacheData.file = randomString()
         const cacheresOption = {
           method: 'POST',
