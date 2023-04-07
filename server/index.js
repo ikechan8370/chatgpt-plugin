@@ -49,6 +49,7 @@ export async function createServer() {
     const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
     reply.type('text/html').send(stream)
   })
+  // 页面数据获取
   server.post('/page', async (request, reply) => {
       const body = request.body || {}
       if (body.code) {
@@ -60,6 +61,7 @@ export async function createServer() {
           reply.send(data)
       }
   })
+  // 帮助内容获取
   server.post('/help', async (request, reply) => {
     const body = request.body || {}
     if (body.use) {
@@ -71,6 +73,7 @@ export async function createServer() {
         reply.send(data[body.use])
     }
   })
+  // 创建页面缓存内容
   server.post('/cache', async (request, reply) => {
       const body = request.body || {}
       if (body.content) {
@@ -83,7 +86,7 @@ export async function createServer() {
             fs.mkdirSync(dir, { recursive: true });
             fs.writeFileSync(filepath, JSON.stringify({
               user: body.content.senderName,
-              bot: (body.bing ? 'Bing' : 'ChatGPT'),
+              bot: Config.chatViewBotName || (body.bing ? 'Bing' : 'ChatGPT'),
               userImg: body.userImg || '',
               botImg: body.botImg || '',
               question: body.content.prompt,
