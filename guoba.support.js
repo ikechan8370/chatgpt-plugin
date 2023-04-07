@@ -519,6 +519,12 @@ export function supportGuoba () {
           bottomHelpMessage: '使用域名代替公网ip，适用于有服务器和域名的朋友避免暴露ip使用',
           component: 'Input'
         },
+        {
+          field: 'chatViewWidth',
+          label: '图片渲染宽度',
+          bottomHelpMessage: '聊天页面渲染窗口的宽度',
+          component: 'InputNumber',
+        },
       ],
       // 获取配置数据方法（用于前端填充显示数据）
       getConfigData () {

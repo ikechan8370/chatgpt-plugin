@@ -82,6 +82,7 @@ const defaultConfig = {
   preview: false,
   serverPort: 3321,
   serverHost: '',
+  chatViewWidth: 1280,
   version: 'v2.4.12'
 }
 const _path = process.cwd()

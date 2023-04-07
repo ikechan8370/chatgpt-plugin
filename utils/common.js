@@ -318,7 +318,7 @@ export async function renderUrl (e, url, renderCfg = {}) {
     base64 = segment.image(buff)
     await page.close().catch((err) => logger.error(err))
   } catch (error) {
-    logger.error(`图片生成失败:${this.model}:${error}`)
+    logger.error(`${url}图片生成失败:${error}`)
     /** 关闭浏览器 */
     if (puppeteer.browser) {
       await puppeteer.browser.close().catch((err) => logger.error(err))
