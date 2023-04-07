@@ -69,7 +69,7 @@ export async function makeForwardMsg (e, msg = [], dec = '') {
   msg.forEach(v => {
     forwardMsg.push({
       ...userInfo,
-      message: v.text
+      message: v
     })
   })
 
