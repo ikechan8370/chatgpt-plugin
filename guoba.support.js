@@ -520,6 +520,12 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
+          field: 'viewHost',
+          label: '渲染服务器地址',
+          bottomHelpMessage: '可选择第三方渲染服务器',
+          component: 'Input'
+        },
+        {
           field: 'chatViewWidth',
           label: '图片渲染宽度',
           bottomHelpMessage: '聊天页面渲染窗口的宽度',

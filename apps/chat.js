@@ -984,14 +984,15 @@ export class chatgpt extends plugin {
           cacheHost: Config.serverHost
         })
       }
-      const cacheres = await fetch(`http://127.0.0.1:${Config.serverPort || 3321}/cache`, cacheresOption)
+      const viewHost = Config.viewHost ? `${Config.viewHost}/` : `http://127.0.0.1:${Config.serverPort || 3321}/`
+      const cacheres = await fetch(viewHost + 'cache', cacheresOption)
       if (cacheres.ok) {
         cacheData = Object.assign({}, cacheData, await cacheres.json())
       }
       if (cacheData.error)
       await this.reply(`出现错误：${cacheData.error}`, true)
       else
-      await e.reply(await renderUrl(e, `http://127.0.0.1:${Config.serverPort || 3321}/page/${cacheData.file}?qr=${Config.showQRCode ? 'true' : 'false'}`, { retType: Config.quoteReply ? 'base64' : '', Viewport: {width: Config.chatViewWidth, height: parseInt(Config.chatViewWidth * 0.56)} }), e.isGroup && Config.quoteReply)
+      await e.reply(await renderUrl(e, viewHost + `page/${cacheData.file}?qr=${Config.showQRCode ? 'true' : 'false'}`, { retType: Config.quoteReply ? 'base64' : '', Viewport: {width: Config.chatViewWidth, height: parseInt(Config.chatViewWidth * 0.56)} }), e.isGroup && Config.quoteReply)
     } else {
         if (Config.cacheEntry) cacheData.file = randomString()
         const cacheresOption = {

@@ -82,6 +82,7 @@ const defaultConfig = {
   preview: false,
   serverPort: 3321,
   serverHost: '',
+  viewHost: '',
   chatViewWidth: 1280,
   version: 'v2.4.12'
 }
