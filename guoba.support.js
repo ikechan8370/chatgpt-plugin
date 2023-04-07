@@ -47,13 +47,13 @@ export function supportGuoba () {
         {
           field: 'defaultUsePicture',
           label: '全局图片模式',
-          bottomHelpMessage: '全局默认以图片形式回复。',
+          bottomHelpMessage: '全局默认以图片形式回复',
           component: 'Switch'
         },
         {
           field: 'defaultUseTTS',
           label: '全局语音模式',
-          bottomHelpMessage: '全局默认以语音形式回复，使用默认角色音色。',
+          bottomHelpMessage: '全局默认以语音形式回复，使用默认角色音色',
           component: 'Switch'
         },
         {
@@ -69,7 +69,7 @@ export function supportGuoba () {
           field: 'ttsAutoFallbackThreshold',
           label: '语音转文字阈值',
           helpMessage: '语音模式下，字数超过这个阈值就降级为文字',
-          bottomHelpMessage: '语音转为文字的阈值。',
+          bottomHelpMessage: '语音转为文字的阈值',
           component: 'InputNumber',
           componentProps: {
             min: 0,
@@ -85,14 +85,14 @@ export function supportGuoba () {
         {
           field: 'autoUsePicture',
           label: '长文本自动转图片',
-          bottomHelpMessage: '字数大于阈值会自动用图片发送，即使是文本模式。',
+          bottomHelpMessage: '字数大于阈值会自动用图片发送，即使是文本模式',
           component: 'Switch'
         },
         {
           field: 'autoUsePictureThreshold',
           label: '自动转图片阈值',
           helpMessage: '长文本自动转图片开启后才生效',
-          bottomHelpMessage: '自动转图片的字数阈值。',
+          bottomHelpMessage: '自动转图片的字数阈值',
           component: 'InputNumber',
           componentProps: {
             min: 0
@@ -111,7 +111,7 @@ export function supportGuoba () {
         {
           field: 'toggleMode',
           label: '触发方式',
-          bottomHelpMessage: 'at模式下只有at机器人才会回复。#chat模式下不需要at，但需要添加前缀#chat。',
+          bottomHelpMessage: 'at模式下只有at机器人才会回复。#chat模式下不需要at，但需要添加前缀#chat',
           component: 'Select',
           componentProps: {
             options: [
@@ -135,19 +135,19 @@ export function supportGuoba () {
         {
           field: 'showQRCode',
           label: '启用二维码',
-          bottomHelpMessage: '在图片模式中启用二维码。该对话内容将被发送至第三方服务器以进行渲染展示，如果不希望对话内容被上传到第三方服务器请关闭此功能。',
+          bottomHelpMessage: '在图片模式中启用二维码。该对话内容将被发送至第三方服务器以进行渲染展示，如果不希望对话内容被上传到第三方服务器请关闭此功能',
           component: 'Switch'
         },
         {
           field: 'cacheUrl',
           label: '渲染服务器地址',
-          bottomHelpMessage: '用于缓存图片模式会话内容并渲染的服务器地址。',
+          bottomHelpMessage: '用于缓存图片模式会话内容并渲染的服务器地址',
           component: 'Input'
         },
         {
           field: 'cacheEntry',
           label: '预制渲染服务器访问代码',
-          bottomHelpMessage: '图片内容渲染服务器开启预制访问代码，当渲染服务器访问较慢时可以开启,但无法保证访问代码可以正常访问页面。',
+          bottomHelpMessage: '图片内容渲染服务器开启预制访问代码，当渲染服务器访问较慢时可以开启,但无法保证访问代码可以正常访问页面',
           component: 'Switch'
         },
         {
@@ -168,13 +168,13 @@ export function supportGuoba () {
         {
           field: 'proxy',
           label: '代理服务器地址',
-          bottomHelpMessage: '数据通过代理服务器发送，http或socks5代理。配置后需重启。',
+          bottomHelpMessage: '数据通过代理服务器发送，http或socks5代理。配置后需重启',
           component: 'Input'
         },
         {
           field: 'debug',
           label: '调试信息',
-          bottomHelpMessage: '将输出更多调试信息，如果不希望控制台刷屏的话，可以关闭。',
+          bottomHelpMessage: '将输出更多调试信息，如果不希望控制台刷屏的话，可以关闭',
           component: 'Switch'
         },
         {
@@ -185,7 +185,7 @@ export function supportGuoba () {
           field: 'defaultTimeoutMs',
           label: '默认超时时间',
           helpMessage: '单位：毫秒',
-          bottomHelpMessage: '各个地方的默认超时时间。',
+          bottomHelpMessage: '各个地方的默认超时时间',
           component: 'InputNumber',
           componentProps: {
             min: 0
@@ -195,7 +195,7 @@ export function supportGuoba () {
           field: 'chromeTimeoutMS',
           label: '浏览器超时时间',
           helpMessage: '单位：毫秒',
-          bottomHelpMessage: '浏览器默认超时，浏览器可能需要更高的超时时间。',
+          bottomHelpMessage: '浏览器默认超时，浏览器可能需要更高的超时时间',
           component: 'InputNumber',
           componentProps: {
             min: 0
@@ -205,7 +205,7 @@ export function supportGuoba () {
           field: 'sydneyFirstMessageTimeout',
           label: 'Sydney模式接受首条信息超时时间',
           helpMessage: '单位：毫秒',
-          bottomHelpMessage: '超过该时间阈值未收到Bing的任何消息，则断开本次连接并重试（最多重试3次，失败后返回timeout waiting for first message）。',
+          bottomHelpMessage: '超过该时间阈值未收到Bing的任何消息，则断开本次连接并重试（最多重试3次，失败后将返回timeout waiting for first message）',
           component: 'InputNumber',
           componentProps: {
             min: 15000
@@ -218,7 +218,7 @@ export function supportGuoba () {
         {
           field: 'apiKey',
           label: 'OpenAI API Key',
-          bottomHelpMessage: 'OpenAI的ApiKey，用于访问OpenAI的API接口。',
+          bottomHelpMessage: 'OpenAI的ApiKey，用于访问OpenAI的API接口',
           component: 'InputPassword'
         },
         {
@@ -236,19 +236,19 @@ export function supportGuoba () {
         {
           field: 'promptPrefixOverride',
           label: 'AI风格',
-          bottomHelpMessage: '你可以在这里写入你希望AI回答的风格，比如希望优先回答中文，回答长一点等。',
+          bottomHelpMessage: '你可以在这里写入你希望AI回答的风格，比如希望优先回答中文，回答长一点等',
           component: 'InputTextArea'
         },
         {
           field: 'assistantLabel',
           label: 'AI名字',
-          bottomHelpMessage: 'AI认为的自己的名字，当你问他你是谁是他会回答这里的名字。',
+          bottomHelpMessage: 'AI认为的自己的名字，当你问他你是谁是他会回答这里的名字',
           component: 'Input'
         },
         {
           field: 'temperature',
           label: 'temperature',
-          bottomHelpMessage: '用于控制回复内容的多样性，数值越大回复越加随机、多元化，数值越小回复越加保守。',
+          bottomHelpMessage: '用于控制回复内容的多样性，数值越大回复越加随机、多元化，数值越小回复越加保守',
           component: 'InputNumber',
           componentProps: {
             min: 0,
@@ -262,7 +262,7 @@ export function supportGuoba () {
         {
           field: 'toneStyle',
           label: 'Bing模式',
-          bottomHelpMessage: '微软必应官方的三种应答风格。默认为均衡，Sydney为实验风格，独立与三种风格之外。',
+          bottomHelpMessage: '微软必应官方的三种应答风格。默认为均衡，Sydney为实验风格，独立与三种风格之外；自设定为自定义AI的回答风格',
           component: 'Select',
           componentProps: {
             options: [
@@ -294,7 +294,7 @@ export function supportGuoba () {
         {
           field: 'enforceMaster',
           label: '加强主人认知',
-          bottomHelpMessage: '加强主人认知。希望机器人认清主人，避免NTR可开启。开启后可能会与自设定的内容有部分冲突。sydney模式可以放心开启。',
+          bottomHelpMessage: '加强主人认知。希望机器人认清主人，避免NTR可开启。开启后可能会与自设定的内容有部分冲突。sydney模式可以放心开启',
           component: 'Switch'
         },
         // {
@@ -317,7 +317,7 @@ export function supportGuoba () {
         {
           field: 'sydney',
           label: 'Custom的设定',
-          bottomHelpMessage: '仅自设定模式下有效。你可以自己改写设定，让Sydney变成你希望的样子。可能存在不稳定的情况。',
+          bottomHelpMessage: '仅自设定模式下有效。你可以自己改写设定，让Sydney变成你希望的样子。可能存在不稳定的情况',
           component: 'InputTextArea'
         },
         {
@@ -329,7 +329,7 @@ export function supportGuoba () {
         {
           field: 'sydneyContext',
           label: 'Bing的扩展资料',
-          bottomHelpMessage: 'AI将会从你提供的扩展资料中学习到一些知识，帮助它更好地回答你的问题。实际相当于使用edge侧边栏Bing时读取的你当前浏览网页的内容。如果太长可能容易到达GPT-4的8192token上限。',
+          bottomHelpMessage: 'AI将会从你提供的扩展资料中学习到一些知识，帮助它更好地回答你的问题。实际相当于使用edge侧边栏Bing时读取的你当前浏览网页的内容。如果太长可能容易到达GPT-4的8192token上限',
           component: 'InputTextArea'
         },
         {
@@ -347,17 +347,17 @@ export function supportGuoba () {
         {
           field: 'sydneyWebsocketUseProxy',
           label: '对话使用sydney反代',
-          bottomHelpMessage: '【一般情况无需也不建议开启】默认情况下仅创建对话走反代，对话时仍然直连微软。开启本选项将使对话过程也走反，需反代支持。',
+          bottomHelpMessage: '【一般情况无需也不建议开启】默认情况下仅创建对话走反代，对话时仍然直连微软。开启本选项将使对话过程也走反，需反代支持',
           component: 'Switch'
         },
         {
           field: 'sydneyMood',
           label: '情感显示',
-          bottomHelpMessage: '开启Sydney的情感显示，仅在图片模式下生效。',
+          bottomHelpMessage: '开启Sydney的情感显示，仅在图片模式下生效',
           component: 'Switch'
         },
         {
-          label: '以下为API3方式的配置。',
+          label: '以下为API3方式的配置',
           component: 'Divider'
         },
         {
@@ -403,19 +403,19 @@ export function supportGuoba () {
         {
           field: 'UA',
           label: '浏览器UA',
-          bottomHelpMessage: '模拟浏览器UA，无特殊需求保持默认即可。',
+          bottomHelpMessage: '模拟浏览器UA，无特殊需求保持默认即可',
           component: 'InputTextArea'
         },
         {
           field: 'headless',
           label: '无头模式',
-          bottomHelpMessage: '无界面的服务器可以开启，但遇到验证码时可能无法使用。(实测很容易卡住，几乎不可用)。',
+          bottomHelpMessage: '无界面的服务器可以开启，但遇到验证码时可能无法使用。(实测很容易卡住，几乎不可用)',
           component: 'Switch'
         },
         {
           field: 'chromePath',
           label: 'Chrome路径',
-          bottomHelpMessage: '为空使用默认puppeteer的chromium，也可以传递自己本机安装的Chrome可执行文件地址，提高通过率。windows可以是‘C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe’，linux通过which查找路径。',
+          bottomHelpMessage: '为空使用默认puppeteer的chromium，也可以传递自己本机安装的Chrome可执行文件地址，提高通过率。windows可以是‘C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe’，linux通过which查找路径',
           component: 'Input'
         },
         {
@@ -435,7 +435,7 @@ export function supportGuoba () {
         {
           field: '2captchaToken',
           label: '验证码平台Token',
-          bottomHelpMessage: '可注册2captcha实现跳过验证码，收费服务但很便宜。否则可能会遇到验证码而卡住。',
+          bottomHelpMessage: '可注册2captcha实现跳过验证码，收费服务但很便宜。否则可能会遇到验证码而卡住',
           component: 'InputPassword'
         },
         {
@@ -489,7 +489,7 @@ export function supportGuoba () {
         {
           field: 'helloPrompt',
           label: '打招呼所说文字的引导文字',
-          bottomHelpMessage: '将会用这段文字询问ChatGPT，由ChatGPT给出随机的打招呼文字。',
+          bottomHelpMessage: '将会用这段文字询问ChatGPT，由ChatGPT给出随机的打招呼文字',
           component: 'Input'
         },
         {
