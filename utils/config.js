@@ -84,6 +84,7 @@ const defaultConfig = {
   serverHost: '',
   viewHost: '',
   chatViewWidth: 1280,
+  chatViewBotName: '',
   version: 'v2.4.12'
 }
 const _path = process.cwd()

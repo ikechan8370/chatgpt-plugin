@@ -531,6 +531,12 @@ export function supportGuoba () {
           bottomHelpMessage: '聊天页面渲染窗口的宽度',
           component: 'InputNumber',
         },
+        {
+          field: 'chatViewBotName',
+          label: 'Bot命名',
+          bottomHelpMessage: '新渲染模式强制修改Bot命名',
+          component: 'Input'
+        },
       ],
       // 获取配置数据方法（用于前端填充显示数据）
       getConfigData () {
