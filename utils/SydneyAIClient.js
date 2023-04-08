@@ -1,7 +1,8 @@
 import fetch, {
   Headers,
   Request,
-  Response
+  Response,
+  FormData, File
 } from 'node-fetch'
 import crypto from 'crypto'
 
@@ -207,7 +208,8 @@ export default class SydneyAIClient {
   async sendMessage (
     message,
     opts = {},
-    previousMessagesAgent
+    previousMessagesAgent,
+    extraContextAgent
   ) {
     await this.initCache()
     if (!this.conversationsCache) {
@@ -232,7 +234,8 @@ export default class SydneyAIClient {
       timeout = Config.defaultTimeoutMs,
       firstMessageTimeout = Config.sydneyFirstMessageTimeout,
       groupId, nickname, groupName, chats, botName, masterName,
-      messageType = 'Chat'
+      messageType = 'Chat',
+      img
       // messageType = 'SearchQuery'
     } = opts
     if (messageType === 'Chat') {
@@ -288,7 +291,9 @@ export default class SydneyAIClient {
         author: message.role === 'user' ? 'user' : 'bot'
       }
     })
-
+    if (previousCachedMessagesAgent[previousCachedMessagesAgent.length - 1].author === 'user') {
+      previousCachedMessagesAgent = previousCachedMessagesAgent.slice(0, previousCachedMessagesAgent.length - 2)
+    }
     previousCachedMessages.push(...previousCachedMessagesAgent)
     let pm = []
     // 无限续杯
@@ -361,7 +366,7 @@ export default class SydneyAIClient {
     if (Config.debug) {
       logger.mark('sydney websocket constructed successful')
     }
-    const toneOption = 'h3imaginative' // h3imaginative h3precise galileo harmonyv3
+    const toneOption = 'h3precise' // h3imaginative h3precise galileo harmonyv3
     const obj = {
       arguments: [
         {
@@ -485,15 +490,19 @@ export default class SydneyAIClient {
           .join('\n')
       }
     }
+
     if (Config.debug) {
       logger.info(context)
     }
     if (exceedConversations.length > 0) {
-      context += '\nThese are some conversations records between you and I: \n'
+      context += '\nThese are some records of the conversations between you and I: \n'
       context += exceedConversations.map(m => {
         return `${m.author}: ${m.text}`
       }).join('\n')
       context += '\n'
+    }
+    if (extraContextAgent) {
+      context += extraContextAgent
     }
     if (context) {
       obj.arguments[0].previousMessages.push({
