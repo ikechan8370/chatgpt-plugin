@@ -258,7 +258,7 @@ let helpData = [
     list: [
       {
         icon: 'smiley-wink',
-        title: '#chatgpt打招呼(群号)',
+        title: '#chatgpt打招呼(群号|帮助)',
         desc: '让AI随机到某个群去打招呼'
       },
       {
@@ -296,15 +296,11 @@ export class help extends plugin {
   }
 
   async help (e) {
-    if (Config.preview)
-    await renderUrl(e, `http://127.0.0.1:${Config.serverPort || 3321}/help/`, {Viewport: {width: 800, height: 600}})
-    else
-    await render(e, 'chatgpt-plugin', 'help/index', { helpData, version })
+    if (Config.preview) { await renderUrl(e, `http://127.0.0.1:${Config.serverPort || 3321}/help/`, { Viewport: { width: 800, height: 600 } }) } else { await render(e, 'chatgpt-plugin', 'help/index', { helpData, version }) }
   }
 
   async newHelp (e) {
     let use = e.msg.replace(/^#帮助-/, '').toUpperCase()
-    await renderUrl(e, `http://127.0.0.1:${Config.serverPort || 3321}/help/` + use, {Viewport: {width: 800, height: 600}})
+    await renderUrl(e, `http://127.0.0.1:${Config.serverPort || 3321}/help/` + use, { Viewport: { width: 800, height: 600 } })
   }
-  
 }

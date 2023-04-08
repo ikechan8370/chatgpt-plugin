@@ -4,6 +4,7 @@ import { BingAIClient } from '@waylaidwanderer/chatgpt-api'
 import { exec } from 'child_process'
 import { checkPnpm, formatDuration, parseDuration } from '../utils/common.js'
 import SydneyAIClient from '../utils/SydneyAIClient.js'
+import { convertSpeaker, speakers } from '../utils/tts.js'
 
 export class ChatgptManagement extends plugin {
   constructor (e) {
@@ -132,6 +133,11 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
+          reg: '^#chatgpt(打开|关闭|设置)?全局((图片模式|语音模式|(语音角色|角色语音|角色).+)|回复帮助)$',
+          fnc: 'setDefaultReplySetting',
+          permission: 'master'
+        },
+        {
           /** 命令正则匹配 */
           reg: '^#(关闭|打开)群聊上下文',
           /** 执行方法 */
@@ -141,21 +147,92 @@ export class ChatgptManagement extends plugin {
       ]
     })
   }
+
   async enableGroupContext (e) {
-    const re = /#(关闭|打开)/
-    const match = e.msg.match(re)
-    //logger.info(match)
+    const reg = /#(关闭|打开)/
+    const match = e.msg.match(reg)
     if (match) {
       const action = match[1]
       if (action === '关闭') {
         Config.enableGroupContext = false // 关闭
-        await this.reply('已关闭群聊上下文功能', true) 
+        await this.reply('已关闭群聊上下文功能', true)
       } else {
         Config.enableGroupContext = true // 打开
-        await this.reply('已打开群聊上下文功能', true) 
+        await this.reply('已打开群聊上下文功能', true)
       }
     }
     return false
+  }
+
+  async setDefaultReplySetting (e) {
+    const reg = /^#chatgpt(打开|关闭|设置)?全局((图片模式|语音模式|(语音角色|角色语音|角色).+)|回复帮助)$/
+    // logger.info(e.msg, e.raw_message)
+    let matchCommand = e.msg.match(reg)
+    if (matchCommand) {
+      let settingType = matchCommand[2]
+      switch (settingType) {
+        case '图片模式':
+          if (matchCommand[1] === '打开') {
+            Config.defaultUsePicture = true
+            Config.defaultUseTTS = false
+            await this.reply('ChatGPT将默认以图片回复', true)
+          } else if (matchCommand[1] === '关闭') {
+            Config.defaultUsePicture = false
+            if (Config.defaultUseTTS) {
+              await this.reply('ChatGPT将默认以语音回复', true)
+              return false
+            } else {
+              await this.reply('ChatGPT将默认以文本回复', true)
+            }
+          } else if (matchCommand[1] === '设置') {
+            await this.reply('请使用“#chatgpt打开全局图片模式”或“#chatgpt关闭全局图片模式”命令来设置', true)
+          }
+          break
+        case '语音模式':
+          if (!Config.ttsSpace) {
+            await this.reply('您没有配置VITS API，请前往锅巴面板进行配置')
+            return
+          }
+          if (matchCommand[1] === '打开') {
+            Config.defaultUseTTS = true
+            Config.defaultUsePicture = false
+            await this.reply('ChatGPT将默认以语音回复', true)
+          } else if (matchCommand[1] === '关闭') {
+            Config.defaultUseTTS = false
+            if (Config.defaultUsePicture) {
+              await this.reply('ChatGPT将默认以图片回复', true)
+              return false
+            } else {
+              await this.reply('ChatGPT将默认以文本回复', true)
+            }
+          } else if (matchCommand[1] === '设置') {
+            await this.reply('请使用“#chatgpt打开全局语音模式”或“#chatgpt关闭全局语音模式”命令来设置', true)
+          }
+          break
+        case '回复帮助':
+          await this.reply('可使用以下命令配置全局回复:\n' +
+              '#chatgpt(打开/关闭)全局(语音/图片)模式\n' +
+              '#chatgpt设置全局(语音角色|角色语音|角色)+角色名称', true)
+          break
+        default:
+          if (!Config.ttsSpace) {
+            await this.reply('您没有配置VITS API，请前往锅巴面板进行配置')
+            return
+          }
+          if (settingType.match(/(语音角色|角色语音|角色)/)) {
+            const speaker = matchCommand[2].replace(/(语音角色|角色语音|角色)/, '').trim() || '随机'
+            const ttsRole = convertSpeaker(speaker)
+            if (speakers.indexOf(ttsRole) >= 0) {
+              Config.defaultTTSRole = ttsRole
+              await this.reply(`ChatGPT默认语音角色已被设置为“${ttsRole}”`, true)
+            } else {
+              await this.reply(`抱歉，我还不认识“${ttsRole}”这个语音角色`, true)
+            }
+          } else {
+            await this.reply("无法识别的设置类型\n请使用'#chatgpt全局回复帮助'查看正确命令", true)
+          }
+      }
+    }
   }
 
   async turnOnConfirm (e) {
@@ -186,17 +263,18 @@ export class ChatgptManagement extends plugin {
     let tokens = await redis.get('CHATGPT:BING_TOKEN')
     tokens = tokens.split('|')
     tokens = tokens.map((item, index) => (
-      `【${index}】 Token：${item.substring(0, 5 / 2) + '...' + item.substring(item.length - 5 / 2, item.length)}`
+        `【${index}】 Token：${item.substring(0, 5 / 2) + '...' + item.substring(item.length - 5 / 2, item.length)}`
     )).join('\n')
     await this.reply(`${tokens}`, true)
     return false
   }
+
   async delBingAccessToken (e) {
     this.setContext('deleteBingToken')
     let tokens = await redis.get('CHATGPT:BING_TOKEN')
     tokens = tokens.split('|')
     tokens = tokens.map((item, index) => (
-      `【${index}】 Token：${item.substring(0, 5 / 2) + '...' + item.substring(item.length - 5 / 2, item.length)}`
+        `【${index}】 Token：${item.substring(0, 5 / 2) + '...' + item.substring(item.length - 5 / 2, item.length)}`
     )).join('\n')
     await this.reply(`请发送要删除的token编号\n${tokens}`, true)
     return false

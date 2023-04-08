@@ -14,7 +14,7 @@ import {
   randomString,
   completeJSON,
   isImage,
-  getDefaultUserSetting, isCN, getMasterQQ
+  getDefaultReplySetting, isCN, getMasterQQ
 } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
@@ -57,10 +57,10 @@ try {
 const defaultPropmtPrefix = ', a large language model trained by OpenAI. You answer as concisely as possible for each response (e.g. don’t be verbose). It is very important that you answer as concisely as possible, so please remember this. If you are generating a list, do not have too many items. Keep the number of items short.'
 const newFetch = (url, options = {}) => {
   const defaultOptions = Config.proxy
-    ? {
+      ? {
         agent: proxy(Config.proxy)
       }
-    : {}
+      : {}
   const mergedOptions = {
     ...defaultOptions,
     ...options
@@ -452,15 +452,15 @@ export class chatgpt extends plugin {
   }
 
   async switch2Picture (e) {
-    let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
-    if (!userSetting) {
-      userSetting = getDefaultUserSetting()
+    let userReplySetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
+    if (!userReplySetting) {
+      userReplySetting = getDefaultReplySetting()
     } else {
-      userSetting = JSON.parse(userSetting)
+      userReplySetting = JSON.parse(userReplySetting)
     }
-    userSetting.usePicture = true
-    userSetting.useTTS = false
-    await redis.set(`CHATGPT:USER:${e.sender.user_id}`, JSON.stringify(userSetting))
+    userReplySetting.usePicture = true
+    userReplySetting.useTTS = false
+    await redis.set(`CHATGPT:USER:${e.sender.user_id}`, JSON.stringify(userReplySetting))
     await this.reply('ChatGPT回复已转换为图片模式')
   }
 
@@ -484,7 +484,7 @@ export class chatgpt extends plugin {
     }
     let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
     if (!userSetting) {
-      userSetting = getDefaultUserSetting()
+      userSetting = getDefaultReplySetting()
     } else {
       userSetting = JSON.parse(userSetting)
     }
@@ -500,7 +500,7 @@ export class chatgpt extends plugin {
     }
     let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
     if (!userSetting) {
-      userSetting = getDefaultUserSetting()
+      userSetting = getDefaultReplySetting()
     } else {
       userSetting = JSON.parse(userSetting)
     }
@@ -567,7 +567,7 @@ export class chatgpt extends plugin {
         userSetting.useTTS = Config.defaultUseTTS
       }
     } else {
-      userSetting = getDefaultUserSetting()
+      userSetting = getDefaultReplySetting()
     }
     let useTTS = !!userSetting.useTTS
     let speaker = convertSpeaker(userSetting.ttsRole || Config.defaultTTSRole)
@@ -1426,19 +1426,19 @@ export class chatgpt extends plugin {
         Authorization: 'Bearer ' + Config.apiKey
       }
     })
-      .then(response => response.json())
-      .then(data => {
-        if (data.error) {
-          this.reply('获取失败：' + data.error.code)
-          return false
-        } else {
-          let total_granted = data.total_granted.toFixed(2)
-          let total_used = data.total_used.toFixed(2)
-          let total_available = data.total_available.toFixed(2)
-          let expires_at = new Date(data.grants.data[0].expires_at * 1000).toLocaleDateString().replace(/\//g, '-')
-          this.reply('总额度：$' + total_granted + '\n已经使用额度：$' + total_used + '\n当前剩余额度：$' + total_available + '\n到期日期(UTC)：' + expires_at)
-        }
-      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.error) {
+            this.reply('获取失败：' + data.error.code)
+            return false
+          } else {
+            let total_granted = data.total_granted.toFixed(2)
+            let total_used = data.total_used.toFixed(2)
+            let total_available = data.total_available.toFixed(2)
+            let expires_at = new Date(data.grants.data[0].expires_at * 1000).toLocaleDateString().replace(/\//g, '-')
+            this.reply('总额度：$' + total_granted + '\n已经使用额度：$' + total_used + '\n当前剩余额度：$' + total_available + '\n到期日期(UTC)：' + expires_at)
+          }
+        })
   }
 
   /**
