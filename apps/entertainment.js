@@ -6,6 +6,15 @@ import fs from 'fs'
 import { emojiRegex, googleRequestUrl } from '../utils/emoj/index.js'
 import fetch from 'node-fetch'
 import { mkdirs } from '../utils/common.js'
+import uploadRecord from "../utils/uploadRecord.js";
+
+let useSilk = false
+try {
+  await import('node-silk')
+  useSilk = true
+} catch (e) {
+  useSilk = false
+}
 export class Entertainment extends plugin {
   constructor (e) {
     super({
@@ -123,7 +132,11 @@ export class Entertainment extends plugin {
           logger.info(`打招呼给群聊${groupId}：` + message)
           if (Config.defaultUseTTS) {
             let audio = await generateAudio(message, Config.defaultTTSRole)
-            await Bot.sendGroupMsg(groupId, segment.record(audio))
+            if (useSilk) {
+              await Bot.sendGroupMsg(groupId, await uploadRecord(audio))
+            } else {
+              await Bot.sendGroupMsg(groupId, segment.record(audio))
+            }
           } else {
             await Bot.sendGroupMsg(groupId, message)
           }
