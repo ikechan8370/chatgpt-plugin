@@ -40,8 +40,8 @@ export class Entertainment extends plugin {
     })
     this.task = [
       {
-        // 设置十分钟左右的浮动
-        cron: '0 ' + Math.ceil(Math.random() * 10) + '7-23/' + Config.helloInterval + ' * * ?',
+        // 设置十分钟左右的浮动，显得不是那么机械~
+        cron: '0 ' + Math.ceil(Math.random() * 10) + ' 7-23/' + Config.helloInterval + ' * * ?',
         // cron: '0 ' + '*/' + Config.helloInterval + ' * * * ?',
         name: 'ChatGPT主动随机说话',
         fnc: this.sendRandomMessage.bind(this)
