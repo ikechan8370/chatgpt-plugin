@@ -205,7 +205,7 @@ export class ChatgptManagement extends plugin {
   async saveBingToken () {
     if (!this.e.msg) return
     let token = this.e.msg
-    if (token.length < 215) {
+    if (token.length < 100) {
       await this.reply('Bing Token格式错误，请确定获取了有效的_U Cookie或完整的Cookie', true)
       this.finish('saveBingToken')
       return

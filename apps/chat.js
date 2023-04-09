@@ -7,7 +7,7 @@ import { ChatGPTAPI } from 'chatgpt'
 import { BingAIClient } from '@waylaidwanderer/chatgpt-api'
 import SydneyAIClient from '../utils/SydneyAIClient.js'
 import {
-  render,renderUrl,
+  render, renderUrl,
   getMessageById,
   makeForwardMsg,
   upsertMessage,
@@ -24,6 +24,7 @@ import { deleteConversation, getConversations, getLatestMessageIdByConversationI
 import { convertSpeaker, generateAudio, speakers } from '../utils/tts.js'
 import ChatGLMClient from '../utils/chatglm.js'
 import { convertFaces } from '../utils/face.js'
+import uploadRecord from '../utils/uploadRecord.js'
 try {
   await import('keyv')
 } catch (err) {
@@ -38,7 +39,13 @@ if (Config.proxy) {
     console.warn('未安装https-proxy-agent，请在插件目录下执行pnpm add https-proxy-agent')
   }
 }
-
+let useSilk = false
+try {
+  await import('node-silk')
+  useSilk = true
+} catch (e) {
+  useSilk = false
+}
 /**
  * 每个对话保留的时长。单个对话内ai是保留上下文的。超时后销毁对话，再次对话创建新的对话。
  * 单位：秒
@@ -827,7 +834,17 @@ export class chatgpt extends plugin {
         if (Config.ttsSpace && ttsResponse.length <= Config.ttsAutoFallbackThreshold) {
           try {
             let wav = await generateAudio(ttsResponse, speaker, '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）')
-            await e.reply(segment.record(wav))
+            if (useSilk) {
+              try {
+                let sendable = await uploadRecord(wav)
+                await e.reply(sendable)
+              } catch (err) {
+                logger.error(err)
+                await e.reply(segment.record(wav))
+              }
+            } else {
+              await e.reply(segment.record(wav))
+            }
           } catch (err) {
             await this.reply('合成语音发生错误~')
           }
@@ -873,7 +890,7 @@ export class chatgpt extends plugin {
           await this.reply(`出现错误：${err}`, true, { recallMsg: e.isGroup ? 10 : 0 })
         } else {
           // 这里是否还需要上传到缓存服务器呐？多半是代理服务器的问题，本地也修不了，应该不用吧。
-          await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', `通信异常,错误信息如下 ${(typeof(err) === 'object' ? JSON.stringify(err) : err) || '未能确认错误类型！'}`, prompt)
+          await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', `通信异常,错误信息如下 ${err?.message || err?.data?.message || (typeof (err) === 'object' ? JSON.stringify(err) : err) || '未能确认错误类型！'}`, prompt)
         }
       }
     }
@@ -971,10 +988,10 @@ export class chatgpt extends plugin {
             prompt: new Buffer.from(prompt).toString('base64'),
             senderName: e.sender.nickname,
             style: Config.toneStyle,
-            mood: mood,
-            quote: quote,
+            mood,
+            quote,
             group: e.isGroup ? e.group.name : '',
-            suggest: suggest ? suggest.split("\n").filter(Boolean) : [],
+            suggest: suggest ? suggest.split('\n').filter(Boolean) : [],
             images: imgUrls
           },
           bing: use === 'bing',
@@ -989,51 +1006,47 @@ export class chatgpt extends plugin {
       if (cacheres.ok) {
         cacheData = Object.assign({}, cacheData, await cacheres.json())
       }
-      if (cacheData.error)
-      await this.reply(`出现错误：${cacheData.error}`, true)
-      else
-      await e.reply(await renderUrl(e, viewHost + `page/${cacheData.file}?qr=${Config.showQRCode ? 'true' : 'false'}`, { retType: Config.quoteReply ? 'base64' : '', Viewport: {width: Config.chatViewWidth, height: parseInt(Config.chatViewWidth * 0.56)} }), e.isGroup && Config.quoteReply)
+      if (cacheData.error) { await this.reply(`出现错误：${cacheData.error}`, true) } else { await e.reply(await renderUrl(e, viewHost + `page/${cacheData.file}?qr=${Config.showQRCode ? 'true' : 'false'}`, { retType: Config.quoteReply ? 'base64' : '', Viewport: { width: Config.chatViewWidth, height: parseInt(Config.chatViewWidth * 0.56) } }), e.isGroup && Config.quoteReply) }
     } else {
-        if (Config.cacheEntry) cacheData.file = randomString()
-        const cacheresOption = {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
+      if (Config.cacheEntry) cacheData.file = randomString()
+      const cacheresOption = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          content: {
+            content: new Buffer.from(content).toString('base64'),
+            prompt: new Buffer.from(prompt).toString('base64'),
+            senderName: e.sender.nickname,
+            style: Config.toneStyle,
+            mood,
+            quote
           },
-          body: JSON.stringify({
-            content: {
-              content: new Buffer.from(content).toString('base64'),
-              prompt: new Buffer.from(prompt).toString('base64'),
-              senderName: e.sender.nickname,
-              style: Config.toneStyle,
-              mood,
-              quote
-            },
-            bing: use === 'bing',
-            entry: Config.cacheEntry ? cacheData.file : ''
-          })
-        }
-        if (Config.cacheEntry) {
-          fetch(`${Config.cacheUrl}/cache`, cacheresOption)
-        } else {
-          const cacheres = await fetch(`${Config.cacheUrl}/cache`, cacheresOption)
-          if (cacheres.ok) {
-            cacheData = Object.assign({}, cacheData, await cacheres.json())
-          }
-        }
-        await e.reply(await render(e, 'chatgpt-plugin', template, {
-          content: new Buffer.from(content).toString('base64'),
-          prompt: new Buffer.from(prompt).toString('base64'),
-          senderName: e.sender.nickname,
-          quote: quote.length > 0,
-          quotes: quote,
-          cache: cacheData,
-          style: Config.toneStyle,
-          mood,
-          version
-        }, { retType: Config.quoteReply ? 'base64' : '' }), e.isGroup && Config.quoteReply)
+          bing: use === 'bing',
+          entry: Config.cacheEntry ? cacheData.file : ''
+        })
       }
-    
+      if (Config.cacheEntry) {
+        fetch(`${Config.cacheUrl}/cache`, cacheresOption)
+      } else {
+        const cacheres = await fetch(`${Config.cacheUrl}/cache`, cacheresOption)
+        if (cacheres.ok) {
+          cacheData = Object.assign({}, cacheData, await cacheres.json())
+        }
+      }
+      await e.reply(await render(e, 'chatgpt-plugin', template, {
+        content: new Buffer.from(content).toString('base64'),
+        prompt: new Buffer.from(prompt).toString('base64'),
+        senderName: e.sender.nickname,
+        quote: quote.length > 0,
+        quotes: quote,
+        cache: cacheData,
+        style: Config.toneStyle,
+        mood,
+        version
+      }, { retType: Config.quoteReply ? 'base64' : '' }), e.isGroup && Config.quoteReply)
+    }
   }
 
   async sendMessage (prompt, conversation = {}, use, e) {

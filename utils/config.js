@@ -17,7 +17,7 @@ const defaultConfig = {
   alsoSendText: false,
   autoUsePicture: true,
   autoUsePictureThreshold: 1200,
-  ttsAutoFallbackThreshold: 99,
+  ttsAutoFallbackThreshold: 299,
   conversationPreserveTime: 0,
   toggleMode: 'at',
   quoteReply: true,
@@ -85,7 +85,7 @@ const defaultConfig = {
   viewHost: '',
   chatViewWidth: 1280,
   chatViewBotName: '',
-  version: 'v2.4.12'
+  version: 'v2.4.13'
 }
 const _path = process.cwd()
 let config = {}
