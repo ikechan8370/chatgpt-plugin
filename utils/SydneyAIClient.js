@@ -438,7 +438,12 @@ export default class SydneyAIClient {
       `
         context += chats
           .map(chat => {
-            let sender = chat.sender
+            let sender = chat.sender || {}
+            // if (sender.user_id === Bot.uin && chat.raw_message.startsWith('建议的回复')) {
+            if (chat.raw_message.startsWith('建议的回复')) {
+              // 建议的回复太容易污染设定导致对话太固定跑偏了
+              return ''
+            }
             return `【${sender.card || sender.nickname}】（qq：${sender.user_id}，${roleMap[sender.role] || '普通成员'}，${sender.area ? '来自' + sender.area + '，' : ''} ${sender.age}岁， 群头衔：${sender.title}， 性别：${sender.sex}，时间：${formatDate(new Date(chat.time * 1000))}） 说：${chat.raw_message}`
           })
           .join('\n')
