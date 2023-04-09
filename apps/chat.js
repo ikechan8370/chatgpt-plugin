@@ -1006,7 +1006,7 @@ export class chatgpt extends plugin {
       if (cacheres.ok) {
         cacheData = Object.assign({}, cacheData, await cacheres.json())
       }
-      if (cacheData.error) { await this.reply(`出现错误：${cacheData.error}`, true) } else { await e.reply(await renderUrl(e, viewHost + `page/${cacheData.file}?qr=${Config.showQRCode ? 'true' : 'false'}`, { retType: Config.quoteReply ? 'base64' : '', Viewport: { width: Config.chatViewWidth, height: parseInt(Config.chatViewWidth * 0.56) } }), e.isGroup && Config.quoteReply) }
+      if (cacheData.error || cacheres.status === 200) { await this.reply(`出现错误：${cacheData.error || 'Server error' + cacheres.status}`, true) } else { await e.reply(await renderUrl(e, viewHost + `page/${cacheData.file}?qr=${Config.showQRCode ? 'true' : 'false'}`, { retType: Config.quoteReply ? 'base64' : '', Viewport: { width: Config.chatViewWidth, height: parseInt(Config.chatViewWidth * 0.56) } }), e.isGroup && Config.quoteReply) }
     } else {
       if (Config.cacheEntry) cacheData.file = randomString()
       const cacheresOption = {

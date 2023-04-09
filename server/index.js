@@ -81,8 +81,8 @@ export async function createServer() {
           const filename = body.entry + '.json'
           const filepath = path.join(dir, filename)
           const regexUrl = /\b((?:https?|ftp|file):\/\/[-a-zA-Z0-9+&@#\/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#\/%=~_|])/g
-          const ip = await getPublicIP()
           try {
+            const ip = await getPublicIP()
             fs.mkdirSync(dir, { recursive: true });
             fs.writeFileSync(filepath, JSON.stringify({
               user: body.content.senderName,
@@ -101,7 +101,7 @@ export async function createServer() {
             reply.send({ file: body.entry, cacheUrl: `http://${ip}:${Config.serverPort || 3321}/page/${body.entry}` })
           } catch (err) {
             console.error(err)
-            reply.send({ file: body.entry, cacheUrl: `http://${ip}/page/${body.entry}`, error: '生成失败' })
+            reply.send({ file: body.entry, cacheUrl: `http://${ip}:${Config.serverPort || 3321}/page/${body.entry}`, error: '生成失败' })
           }
       }
   })
