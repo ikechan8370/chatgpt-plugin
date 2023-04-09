@@ -436,11 +436,16 @@ export default class SydneyAIClient {
         context += `以下是一段qq群内的对话，提供给你作为上下文，你在回答所有问题时必须优先考虑这些信息，结合这些上下文进行回答，这很重要！！！。"
       `
         context += chats
-            .map(chat => {
-              let sender = chat.sender
-              return `【${sender.card || sender.nickname}】（qq：${sender.user_id}，${roleMap[sender.role] || '普通成员'}，${sender.area ? '来自' + sender.area + '，' : ''} ${sender.age}岁， 群头衔：${sender.title}， 性别：${sender.sex}，时间：${formatDate(new Date(chat.time * 1000))}） 说：${chat.raw_message}`
-            })
-            .join('\n')
+          .map(chat => {
+            let sender = chat.sender || {}
+            // if (sender.user_id === Bot.uin && chat.raw_message.startsWith('建议的回复')) {
+            if (chat.raw_message.startsWith('建议的回复')) {
+              // 建议的回复太容易污染设定导致对话太固定跑偏了
+              return ''
+            }
+            return `【${sender.card || sender.nickname}】（qq：${sender.user_id}，${roleMap[sender.role] || '普通成员'}，${sender.area ? '来自' + sender.area + '，' : ''} ${sender.age}岁， 群头衔：${sender.title}， 性别：${sender.sex}，时间：${formatDate(new Date(chat.time * 1000))}） 说：${chat.raw_message}`
+          })
+          .join('\n')
       }
     }
     if (Config.debug) {
