@@ -613,7 +613,7 @@ function isPrivateIP(ip) {
   }
   return false
 }
-export async function getPublicIP() {
+export function getPublicIP() {
   let interfaces = os.networkInterfaces()
   let myip = '127.0.0.1'
   for (let key in interfaces) {
