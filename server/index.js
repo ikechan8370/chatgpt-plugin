@@ -1,12 +1,11 @@
 import fastify from 'fastify'
-import fastifyCookie from 'fastify-cookie'
+import fastifyCookie from '@fastify/cookie'
 import cors from '@fastify/cors'
 import fstatic from '@fastify/static'
 
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
-import osUtils from 'os-utils'
 import schedule from 'node-schedule'
 
 import { Config } from '../utils/config.js'
@@ -46,9 +45,8 @@ async function getLoad() {
     const loadAvg = os.loadavg();
     return loadAvg[0] * 100
   } else if (platform === 'win32') {
-    // 如果是Windows，使用os-utils模块获取CPU使用率
-    const usage = await osUtils.cpuUsage()
-    return usage * 100
+    // 如果是Windows不获取性能
+    return 0
   } else {
     return 0
   }
