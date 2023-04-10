@@ -588,7 +588,7 @@ export async function isImage(link) {
     let magic = buf.toString('hex', 0, 4)
     return ['ffd8', '8950', '4749'].includes(magic)
   } catch (error) {
-    throw error
+    return false
   }
 }
 
