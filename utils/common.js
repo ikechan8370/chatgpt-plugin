@@ -5,7 +5,7 @@ import lodash from 'lodash'
 import fs from 'node:fs'
 import path from 'node:path'
 import buffer from 'buffer'
-import io from 'io'
+import os from 'os'
 import puppeteer from '../../../lib/puppeteer/puppeteer.js'
 import { Config } from './config.js'
 // export function markdownToText (markdown) {
