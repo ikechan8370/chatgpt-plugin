@@ -1109,8 +1109,10 @@ export class chatgpt extends plugin {
         do {
           try {
             let opt = _.cloneDeep(conversation) || {}
+            // 如果当前已开启对话，则本次对话不携带拓展资料
+            let c = await redis.get(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
+            if (!c) opt.context = Config.sydneyContext
             opt.toneStyle = Config.toneStyle
-            opt.context = Config.sydneyContext
             // 重新拿存储的token，因为可能之前有过期的被删了
             let abtrs = await getAvailableBingToken(conversation, throttledTokens)
             if (Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom') {
