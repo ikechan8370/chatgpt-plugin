@@ -4,29 +4,44 @@ import fstatic from '@fastify/static'
 
 import fs from 'fs'
 import path from 'path'
-import http from 'http'
+import os from 'os'
 
 import { Config } from '../utils/config.js'
 
+function isPrivateIP(ip) {
+  var match = ipRegex.exec(ip)
+  if (match) {
+    var a = parseInt(match[1])
+    var b = parseInt(match[2])
+    var c = parseInt(match[3])
+    var d = parseInt(match[4])
+    if (a === 10) {
+      return true
+    }
+    if (a === 172 && b >= 16 && b <= 31) {
+      return true
+    }
+    if (a === 192 && b === 168) {
+      return true
+    }
+  }
+  return false
+}
 function getPublicIP() {
-  return new Promise((resolve, reject) => {
-    http.get('http://ipinfo.io/json', (res) => {
-      let data = ''
-      res.on('data', (chunk) => {
-        data += chunk
-      });
-      res.on('end', () => {
-        try {
-          const ip = JSON.parse(data).ip
-          resolve(ip)
-        } catch (e) {
-          reject(e)
-        }
-      })
-    }).on('error', (err) => {
-      reject(err)
-    })
-  })
+  let interfaces = os.networkInterfaces()
+  let myip = '127.0.0.1'
+  for (let key in interfaces) {
+    let items = interfaces[key]
+    for (let i = 0; i < items.length; i++) {
+      let item = items[i]
+      // 排除内网IP和IPv6地址
+      if (!item.internal && item.family === 'IPv4' && !isPrivateIP(item.address)) {
+        myip = item.address
+        break
+      }
+    }
+  }
+  return myip
 }
 
 const __dirname = path.resolve()
@@ -82,7 +97,7 @@ export async function createServer() {
           const filepath = path.join(dir, filename)
           const regexUrl = /\b((?:https?|ftp|file):\/\/[-a-zA-Z0-9+&@#\/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#\/%=~_|])/g
           try {
-            const ip = await getPublicIP()
+            const ip = getPublicIP()
             fs.mkdirSync(dir, { recursive: true });
             fs.writeFileSync(filepath, JSON.stringify({
               user: body.content.senderName,
