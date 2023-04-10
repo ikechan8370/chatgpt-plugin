@@ -63,22 +63,22 @@ export async function createServer() {
   })
   await server.register(fastifyCookie)
   await server.get('/page/*', (request, reply) => {
-    Statistics.SystemAccess.count += 1
+    Statistics.WebAccess.count += 1
     const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
     reply.type('text/html').send(stream)
   })
   await server.get('/help/*', (request, reply) => {
-    Statistics.SystemAccess.count += 1
+    Statistics.WebAccess.count += 1
     const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
     reply.type('text/html').send(stream)
   })
   await server.get('/auth/*', (request, reply) => {
-    Statistics.SystemAccess.count += 1
+    Statistics.WebAccess.count += 1
     const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
     reply.type('text/html').send(stream)
   })
   await server.get('/admin/*', (request, reply) => {
-    Statistics.SystemAccess.count += 1
+    Statistics.WebAccess.count += 1
     const token = request.cookies.token || 'unknown'
     if (token != usertoken) {
         reply.redirect(301, '/auth/login')
