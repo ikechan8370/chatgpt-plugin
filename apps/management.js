@@ -2,7 +2,7 @@ import plugin from '../../../lib/plugins/plugin.js'
 import { Config } from '../utils/config.js'
 import { BingAIClient } from '@waylaidwanderer/chatgpt-api'
 import { exec } from 'child_process'
-import { checkPnpm, formatDuration, parseDuration } from '../utils/common.js'
+import { checkPnpm, formatDuration, parseDuration, getPublicIP } from '../utils/common.js'
 import SydneyAIClient from '../utils/SydneyAIClient.js'
 
 export class ChatgptManagement extends plugin {
@@ -136,6 +136,16 @@ export class ChatgptManagement extends plugin {
           reg: '^#(关闭|打开)群聊上下文',
           /** 执行方法 */
           fnc: 'enableGroupContext',
+          permission: 'master'
+        },
+        {
+          reg: '^#(设置|修改)管理密码',
+          fnc: 'setAdminPassword',
+          permission: 'master'
+        },
+        {
+          reg: '^#chatgpt系统配置',
+          fnc: 'adminPage',
           permission: 'master'
         }
       ]
@@ -653,4 +663,24 @@ export class ChatgptManagement extends plugin {
   async queryBingPromptPrefix (e) {
     await this.reply(Config.sydney, true)
   }
+
+  async setAdminPassword (e) {
+    this.setContext('saveAdminPassword')
+    await this.reply('请发送系统管理密码', true)
+    return false
+  }
+  
+  async saveAdminPassword (e) {
+    if (!this.e.msg) return
+    let passwd = this.e.msg
+    await redis.set('CHATGPT:ADMIN_PASSWD', passwd)
+    await this.reply('设置成功', true)
+    this.finish('saveAdminPassword')
+  }
+
+  async adminPage (e) {
+    const viewHost = Config.viewHost ? `${Config.viewHost}/` : `http://${getPublicIP()}:${Config.serverPort || 3321}/`
+    await this.reply(`请登录${viewHost + 'admin/settings'}进行系统配置`, true)
+  }
+  
 }

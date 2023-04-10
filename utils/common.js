@@ -5,6 +5,7 @@ import lodash from 'lodash'
 import fs from 'node:fs'
 import path from 'node:path'
 import buffer from 'buffer'
+import io from 'io'
 import puppeteer from '../../../lib/puppeteer/puppeteer.js'
 import { Config } from './config.js'
 // export function markdownToText (markdown) {
@@ -590,4 +591,41 @@ export async function isImage(link) {
   } catch (error) {
     throw error
   }
+}
+
+function isPrivateIP(ip) {
+  const ipRegex = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/
+  let match = ipRegex.exec(ip)
+  if (match) {
+    let a = parseInt(match[1])
+    let b = parseInt(match[2])
+    let c = parseInt(match[3])
+    let d = parseInt(match[4])
+    if (a === 10) {
+      return true
+    }
+    if (a === 172 && b >= 16 && b <= 31) {
+      return true
+    }
+    if (a === 192 && b === 168) {
+      return true
+    }
+  }
+  return false
+}
+export async function getPublicIP() {
+  let interfaces = os.networkInterfaces()
+  let myip = '127.0.0.1'
+  for (let key in interfaces) {
+    let items = interfaces[key]
+    for (let i = 0; i < items.length; i++) {
+      let item = items[i]
+      // 排除内网IP和IPv6地址
+      if (!item.internal && item.family === 'IPv4' && !isPrivateIP(item.address)) {
+        myip = item.address
+        break
+      }
+    }
+  }
+  return myip
 }
