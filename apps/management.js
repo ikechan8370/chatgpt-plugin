@@ -679,7 +679,7 @@ export class ChatgptManagement extends plugin {
   }
 
   async adminPage (e) {
-    const viewHost = Config.viewHost ? `${Config.viewHost}/` : `http://${getPublicIP()}:${Config.serverPort || 3321}/`
+    const viewHost = Config.serverHost ? `http://${Config.serverHost}/` : `http://${getPublicIP()}:${Config.serverPort || 3321}/`
     await this.reply(`请登录${viewHost + 'admin/settings'}进行系统配置`, true)
   }
   
