@@ -63,22 +63,18 @@ export async function createServer() {
   })
   await server.register(fastifyCookie)
   await server.get('/page/*', (request, reply) => {
-    Statistics.WebAccess.count += 1
     const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
     reply.type('text/html').send(stream)
   })
   await server.get('/help/*', (request, reply) => {
-    Statistics.WebAccess.count += 1
     const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
     reply.type('text/html').send(stream)
   })
   await server.get('/auth/*', (request, reply) => {
-    Statistics.WebAccess.count += 1
     const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
     reply.type('text/html').send(stream)
   })
   await server.get('/admin/*', (request, reply) => {
-    Statistics.WebAccess.count += 1
     const token = request.cookies.token || 'unknown'
     if (token != usertoken) {
         reply.redirect(301, '/auth/login')
@@ -88,7 +84,6 @@ export async function createServer() {
   })
   // 登录
   server.post('/login', async (request, reply) => {
-    Statistics.SystemAccess.count += 1
     const body = request.body || {}
     if (body.qq && body.passwd) {
       if (body.qq == Bot.uin && await redis.get('CHATGPT:ADMIN_PASSWD') == body.passwd) {
@@ -104,7 +99,6 @@ export async function createServer() {
   })
   // 页面数据获取
   server.post('/page', async (request, reply) => {
-    Statistics.SystemAccess.count += 1
     const body = request.body || {}
     if (body.code) {
       const dir = 'resources/ChatGPTCache/page'
@@ -116,7 +110,6 @@ export async function createServer() {
   })
   // 帮助内容获取
   server.post('/help', async (request, reply) => {
-    Statistics.SystemAccess.count += 1
     const body = request.body || {}
     if (body.use) {
       const dir = 'plugins/chatgpt-plugin/resources'
@@ -129,7 +122,6 @@ export async function createServer() {
   })
   // 创建页面缓存内容
   server.post('/cache', async (request, reply) => {
-    Statistics.SystemAccess.count += 1
     const body = request.body || {}
     if (body.content) {
       const dir = 'resources/ChatGPTCache/page'
@@ -163,22 +155,49 @@ export async function createServer() {
   })
   // 获取系统状态
   server.post('/system-statistics', async (request, reply) => {
-    Statistics.SystemAccess.count += 1
     Statistics.SystemLoad.count = await getLoad()
     reply.send(Statistics)
   })
 
   server.post('/sysconfig', async (request, reply) => {
-    Statistics.SystemAccess.count += 1
     const token = request.cookies.token || 'unknown'
     if (token != usertoken) {
       reply.send({err: '未登录'})
     } else {
-      reply.send(Config)
+      let redisConfig = {}
+      if (await redis.exists('CHATGPT:BING_TOKENS') != 0) {
+        bingTokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
+        redisConfig.bingTokens = bingTokens
+      } else {
+        redisConfig.bingTokens = []
+      }
+      reply.send({
+        chatConfig: Config,
+        redisConfig: redisConfig
+      })
     }
   })
-  
+  server.post('/saveconfig', async (request, reply) => {
+    const token = request.cookies.token || 'unknown'
+    if (token != usertoken) {
+      reply.send({err: '未登录'})
+    } else {
+      const body = request.body || {}
+      const chatdata = body.chatConfig || {}
+      for (let [keyPath, value] of Object.entries(chatdata)) {
+        if (keyPath === 'blockWords' || keyPath === 'promptBlockWords' || keyPath === 'initiativeChatGroups') { value = value.toString().split(/[,，;；\|]/) }
+        if (Config[keyPath] != value) { Config[keyPath] = value }
+      }
+    }
+  })
 
+  fastify.addHook('onRequest', (request, reply, done) => {
+    if(request.method == 'POST')
+    Statistics.SystemAccess.count += 1
+    if(request.method == 'GET')
+    Statistics.WebAccess.count += 1
+    done()
+  })
   //定时任务
   var rule = new schedule.RecurrenceRule();
   rule.hour = 0;
@@ -201,7 +220,7 @@ export async function createServer() {
     host: '0.0.0.0'
   }, (error) => {
     if (error) {
-      console.error(error);
+      console.error(error)
     }
     server.log.info(`server listening on ${server.server.address().port}`)
   })

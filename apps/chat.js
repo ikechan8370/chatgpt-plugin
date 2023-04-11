@@ -1204,17 +1204,22 @@ export class chatgpt extends plugin {
             const message = error?.message || error?.data?.message || error || '出错了'
             if (message && message.indexOf('限流') > -1) {
               throttledTokens.push(bingToken)
+              let bingTokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
+              const badBingToken = bingTokens.findIndex(element => element.Token === bingToken)
+              const now = new Date()
+              const hours = now.getHours()
+              now.setHours(hours + 6)
+              bingTokens[badBingToken].State = '受限'
+              bingTokens[index].DisactivationTime = now
+              await redis.set('CHATGPT:BING_TOKENS', JSON.stringify(bingTokens))
               // 不减次数
             } else if (message && message.indexOf('UnauthorizedRequest') > -1) {
               // token过期了
-              logger.warn(`token${bingToken}过期了，将自动移除`)
-              let savedBingToken = await redis.get('CHATGPT:BING_TOKEN')
-              savedBingToken = savedBingToken.split('|')
-              let tokenId = savedBingToken.indexOf(bingToken)
-              savedBingToken.splice(tokenId, 1)
-              savedBingToken = savedBingToken.filter(function (element) { return element !== '' })
-              await redis.set('CHATGPT:BING_TOKEN', savedBingToken.join('|'))
-              logger.mark(`token${bingToken}已移除`)
+              let bingTokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
+              const badBingToken = bingTokens.findIndex(element => element.Token === bingToken)
+              bingTokens[badBingToken].State = '过期'
+              await redis.set('CHATGPT:BING_TOKENS', JSON.stringify(bingTokens))
+              logger.warn(`token${bingToken}已过期`)
             } else {
               retry--
               errorMessage = message === 'Timed out waiting for response. Try enabling debug mode to see more information.' ? (reply ? `${reply}\n不行了，我的大脑过载了，处理不过来了!` : '必应的小脑瓜不好使了，不知道怎么回答！') : message
@@ -1469,34 +1474,49 @@ export class chatgpt extends plugin {
 
 async function getAvailableBingToken (conversation, throttled = []) {
   let allThrottled = false
-  let bingToken = await redis.get('CHATGPT:BING_TOKEN')
   if (!bingToken) {
     throw new Error('未绑定Bing Cookie，请使用#chatgpt设置必应token命令绑定Bing Cookie')
   }
-  const bingTokens = bingToken.split('|')
-  // 负载均衡
-  if (Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom') {
-    // sydney下不需要保证同一token
-    let notThrottled = bingTokens.filter(t => throttled.indexOf(t) === -1)
-    if (notThrottled.length > 0) {
-      bingToken = notThrottled[0]
-    } else {
-      // 全都被限流了，随便找一个算了
-      allThrottled = true
-      const select = Math.floor(Math.random() * bingTokens.length)
-      bingToken = bingTokens[select]
+
+  let bingToken = ''
+  let bingTokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
+  const normal = bingTokens.filter(element => element.State === '正常')
+  const restricted = bingTokens.filter(element => element.State === '受限')
+
+  // 判断受限的token是否已经可以解除
+  for (const restrictedToken of restricted) {
+    const now = new Date()
+    const tk = new Date(restrictedToken.DisactivationTime)
+    if (tk <= now) {
+      const index = bingTokens.findIndex(element => element.Token === restrictedToken.Token)
+      bingTokens[index].Usage = 0
+      bingTokens[index].State = '正常'
     }
-    // const select = Math.floor(Math.random() * bingTokens.length)
-    // bingToken = bingTokens[select]
+  }
+  if (normal.length > 0) {
+    const minElement = normal.reduce((min, current) => {
+      return current.Usage < min.Usage ? current : min
+    })
+    bingToken = minElement.Token
+  } else if (restricted.length > 0) {
+    allThrottled = true
+    const minElement = restricted.reduce((min, current) => {
+      return current.Usage < min.Usage ? current : min
+    })
+    bingToken = minElement.Token
   } else {
+    throw new Error('全部Token均已失效，暂时无法使用')
+  }
+  if (Config.toneStyle != 'Sydney' && Config.toneStyle != 'Custom') {
     // bing 下，需要保证同一对话使用同一账号的token
-    if (!conversation.bingToken) {
-      const select = Math.floor(Math.random() * bingTokens.length)
-      bingToken = bingTokens[select]
-    } else if (bingTokens.indexOf(conversation.bingToken) > -1) {
+    if (bingTokens.findIndex(element => element.Token === conversation.bingToken) > -1) {
       bingToken = conversation.bingToken
     }
   }
+  // 记录使用情况
+  const index = bingTokens.findIndex(element => element.Token === bingToken)
+  bingTokens[index].Usage += 1
+  await redis.set('CHATGPT:BING_TOKENS', JSON.stringify(bingTokens))
   return {
     bingToken,
     allThrottled
