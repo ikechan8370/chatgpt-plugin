@@ -87,6 +87,9 @@ const defaultConfig = {
   viewHost: '',
   chatViewWidth: 1280,
   chatViewBotName: '',
+  enablePrivateChat: false,
+  groupWhitelist: [],
+  groupBlacklist: [],
   version: 'v2.4.13'
 }
 const _path = process.cwd()

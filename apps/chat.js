@@ -467,7 +467,7 @@ export class chatgpt extends plugin {
   async switch2Text (e) {
     let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
     if (!userSetting) {
-      userSetting = getDefaultUserSetting()
+      userSetting = getDefaultReplySetting()
     } else {
       userSetting = JSON.parse(userSetting)
     }
@@ -520,6 +520,20 @@ export class chatgpt extends plugin {
    * #chatgpt
    */
   async chatgpt (e) {
+    if (!e.isMaster && e.isPrivate && !Config.enablePrivateChat) {
+      this.reply('ChatGpt私聊通道已关闭。')
+      return false
+    }
+    if (e.isGroup) {
+      const whitelist = Config.groupWhitelist.filter(group => group.trim())
+      if (whitelist.length > 0 && !whitelist.includes(e.group_id.toString())) {
+        return false
+      }
+      const blacklist = Config.groupBlacklist.filter(group => group.trim())
+      if (blacklist.length > 0 && blacklist.includes(e.group_id.toString())) {
+        return false
+      }
+    }
     let prompt
     if (this.toggleMode === 'at') {
       if (!e.raw_message || e.msg?.startsWith('#')) {

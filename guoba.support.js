@@ -39,9 +39,27 @@ export function supportGuoba () {
           component: 'InputTextArea'
         },
         {
+          field: 'groupWhitelist',
+          label: '群聊白名单',
+          bottomHelpMessage: '设置后只有白名单内的群可以使用本插件。用英文逗号隔开',
+          component: 'Input'
+        },
+        {
+          field: 'groupBlacklist',
+          label: '群聊黑名单',
+          bottomHelpMessage: '设置后名单内的群禁止使用本插件。用英文逗号隔开',
+          component: 'Input'
+        },
+        {},
+        {
           field: 'imgOcr',
           label: '图片识别',
           bottomHelpMessage: '是否识别消息中图片的文字内容，需要同时包含图片和消息才生效',
+          component: 'Switch'
+        },
+        {
+          field: 'enablePrivateChat',
+          label: '是否允许私聊机器人',
           component: 'Switch'
         },
         {
