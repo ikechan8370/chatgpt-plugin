@@ -126,8 +126,8 @@ export async function createServer() {
       const filename = body.entry + '.json'
       const filepath = path.join(dir, filename)
       const regexUrl = /\b((?:https?|ftp|file):\/\/[-a-zA-Z0-9+&@#\/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#\/%=~_|])/g
+      const ip = await getPublicIP()
       try {
-        const ip = await getPublicIP()
         fs.mkdirSync(dir, { recursive: true });
         fs.writeFileSync(filepath, JSON.stringify({
           user: body.content.senderName,

@@ -593,7 +593,12 @@ export async function isImage(link) {
 }
 
 export async function getPublicIP() {
-  const res = await fetch('https://api.ipify.org?format=json')
-  const data = await res.json()
-  return data.ip
+  try {
+    const res = await fetch('https://api.ipify.org?format=json')
+    const data = await res.json()
+    return data.ip
+  } catch (err) {
+    return '127.0.0.1'
+  }
+  
 }
