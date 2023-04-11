@@ -189,7 +189,7 @@ export async function createServer() {
     }
   })
 
-  fastify.addHook('onRequest', (request, reply, done) => {
+  server.addHook('onRequest', (request, reply, done) => {
     if(request.method == 'POST')
     Statistics.SystemAccess.count += 1
     if(request.method == 'GET')
