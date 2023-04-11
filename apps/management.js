@@ -44,6 +44,11 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
+          reg: '#chatgpt(迁移|恢复)(必应|Bing |bing )(token|Token)',
+          fnc: 'migrateBingAccessToken',
+          permission: 'master'
+        },
+        {
           reg: '^#chatgpt切换浏览器$',
           fnc: 'useBrowserBasedSolution',
           permission: 'master'
@@ -218,10 +223,11 @@ export class ChatgptManagement extends plugin {
 
   async getBingAccessToken (e) {
     let tokens = await redis.get('CHATGPT:BING_TOKENS')
-    tokens = JSON.parse(tokens)
-    tokens = tokens.map((item, index) => (
+    if (tokens) tokens = JSON.parse(tokens) 
+    else tokens = []
+    tokens = tokens.length > 0 ? tokens.map((item, index) => (
       `【${index}】 Token：${item.Token.substring(0, 5 / 2) + '...' + item.Token.substring(item.Token.length - 5 / 2, item.Token.length)}`
-    )).join('\n')
+    )).join('\n') : '无必应Token记录'
     await this.reply(`${tokens}`, true)
     return false
   }
@@ -229,10 +235,11 @@ export class ChatgptManagement extends plugin {
   async delBingAccessToken (e) {
     this.setContext('deleteBingToken')
     let tokens = await redis.get('CHATGPT:BING_TOKENS')
-    tokens = JSON.parse(tokens)
-    tokens = tokens.map((item, index) => (
+    if (tokens) tokens = JSON.parse(tokens) 
+    else tokens = []
+    tokens = tokens.length > 0 ? tokens.map((item, index) => (
       `【${index}】 Token：${item.Token.substring(0, 5 / 2) + '...' + item.Token.substring(item.Token.length - 5 / 2, item.Token.length)}`
-    )).join('\n')
+    )).join('\n') : '无必应Token记录'
     await this.reply(`请发送要删除的token编号\n${tokens}`, true)
     return false
   }

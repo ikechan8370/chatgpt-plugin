@@ -164,7 +164,10 @@ export async function createServer() {
     } else {
       let redisConfig = {}
       if (await redis.exists('CHATGPT:BING_TOKENS') != 0) {
-        bingTokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
+        let bingTokens = await redis.get('CHATGPT:BING_TOKENS')
+        if (bingTokens)
+        bingTokens = JSON.parse(bingTokens)
+        else bingTokens = []
         redisConfig.bingTokens = bingTokens
       } else {
         redisConfig.bingTokens = []

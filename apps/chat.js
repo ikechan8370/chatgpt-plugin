@@ -1474,7 +1474,7 @@ export class chatgpt extends plugin {
 
 async function getAvailableBingToken (conversation, throttled = []) {
   let allThrottled = false
-  if (!bingToken) {
+  if (!await redis.get('CHATGPT:BING_TOKENS')) {
     throw new Error('未绑定Bing Cookie，请使用#chatgpt设置必应token命令绑定Bing Cookie')
   }
 
