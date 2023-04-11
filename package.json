@@ -5,6 +5,7 @@
   "dependencies": {
     "@fastify/cors": "^8.2.0",
     "@fastify/static": "^6.9.0",
+    "@fastify/cookie": "^8.3.0",
     "@waylaidwanderer/chatgpt-api": "^1.33.2",
     "chatgpt": "^5.1.1",
     "delay": "^5.0.0",
@@ -21,8 +22,7 @@
     "random": "^4.1.0",
     "undici": "^5.21.0",
     "uuid": "^9.0.0",
-    "ws": "^8.13.0",
-    "os-utils": "^0.0.14"
+    "ws": "^8.13.0"
   },
   "optionalDependencies": {
     "jimp": "^0.22.7",
