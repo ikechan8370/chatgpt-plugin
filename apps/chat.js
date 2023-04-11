@@ -531,7 +531,8 @@ export class chatgpt extends plugin {
       if (e.user_id == Bot.uin) return false
       prompt = e.raw_message.trim()
       if (e.isGroup) {
-        let me = e.group.pickMember(Bot.uin)
+        let mm = await this.e.group.getMemberMap()
+        let me = mm.get(Bot.uin)
         let card = me.card
         let nickname = me.nickname
         prompt = prompt.replace(`@${card}`, '').trim()
