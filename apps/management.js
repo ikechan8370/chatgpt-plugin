@@ -210,7 +210,7 @@ export class ChatgptManagement extends plugin {
             .concat(blacklist)
       }
     }
-    await this.reply(`群聊${isWhiteList ? '白' : '黑'}名单已更新，可通过'#chatgpt查看群聊${isWhiteList ? '白' : '黑'}名单'命令查看最新名单`, e.isGroup)
+    await this.reply(`群聊${isWhiteList ? '白' : '黑'}名单已更新，可通过\n'#chatgpt查看群聊${isWhiteList ? '白' : '黑'}名单'查看最新名单\n#chatgpt移除群聊${isWhiteList ? '白' : '黑'}名单'管理名单`, e.isGroup)
     this.finish('saveList')
   }
 
