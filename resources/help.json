@@ -205,6 +205,9 @@
             "text": "设置必应和open的Token和ApiKey",
             "list": [
                 "#chatgpt设置必应token",
+                "#chatgpt删除必应token",
+                "#chatgpt查看必应token",
+                "#chatgpt迁移必应token",
                 "#chatgpt设置APIKey"
             ],
             "tip": "管理员功能"
@@ -216,7 +219,7 @@
             "list": [
                 "#OpenAI剩余额度"
             ],
-            "tip": "管理员功能"
+            "tip": "失效"
         },
         {
             "icon": "fas fa-coffee",
@@ -227,6 +230,16 @@
                 "#chatgpt设置Sydney设定",
                 "#chatgpt查看API设定",
                 "#chatgpt查看Sydney设定"
+            ],
+            "tip": "管理员功能"
+        },
+        {
+            "icon": "fas fa-key",
+            "title": "管理面板",
+            "text": "后台管理面板",
+            "list": [
+                "#chatgpt系统管理",
+                "#修改管理密码"
             ],
             "tip": "管理员功能"
         }

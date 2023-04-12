@@ -1,7 +1,7 @@
 import { Configuration, OpenAIApi } from 'openai'
-import {Config, defaultOpenAIAPI, defaultOpenAIReverseProxy, officialChatGPTAPI} from './config.js'
+import { Config, defaultOpenAIAPI, defaultOpenAIReverseProxy } from './config.js'
 import fs from 'fs'
-import {isCN, mkdirs} from './common.js'
+import { isCN, mkdirs } from './common.js'
 let proxy
 if (Config.proxy) {
   try {
@@ -47,7 +47,6 @@ export async function createImage (prompt, n = 1, size = '512x512') {
 }
 
 export async function imageVariation (imageUrl, n = 1, size = '512x512') {
-
   let basePath = Config.openAiBaseUrl
   if (Config.openAiBaseUrl && Config.proxy && !Config.openAiForceUseReverse) {
     // 如果配了proxy，而且有反代，但是没开启强制反代

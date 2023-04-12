@@ -239,17 +239,36 @@ export class dalle extends plugin {
       this.reply('请提供绘图prompt')
       return false
     }
-    let bingToken = await redis.get('CHATGPT:BING_TOKEN')
+    
+    let bingToken = ''
+    if (await redis.exists('CHATGPT:BING_TOKENS') != 0) {
+      let bingTokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
+      const normal = bingTokens.filter(element => element.State === '正常')
+      const restricted = bingTokens.filter(element => element.State === '受限')
+      if (normal.length > 0) {
+        const minElement = normal.reduce((min, current) => {
+          return current.Usage < min.Usage ? current : min
+        })
+        bingToken = minElement.Token
+      } else if (restricted.length > 0) {
+        allThrottled = true
+        const minElement = restricted.reduce((min, current) => {
+          return current.Usage < min.Usage ? current : min
+        })
+        bingToken = minElement.Token
+      } else {
+        throw new Error('全部Token均已失效，暂时无法使用')
+      }
+    }
     if (!bingToken) {
       throw new Error('未绑定Bing Cookie，请使用#chatgpt设置必应token命令绑定Bing Cookie')
     }
-    const bingTokens = bingToken.split('|')
-    // 负载均衡
-    if (Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom') {
-      // sydney下不需要保证同一token
-      const select = Math.floor(Math.random() * bingTokens.length)
-      bingToken = bingTokens[select]
-    }
+    // 记录token使用
+    let bingTokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
+    const index = bingTokens.findIndex(element => element.Token === bingToken)
+    bingTokens[index].Usage += 1
+    await redis.set('CHATGPT:BING_TOKENS', JSON.stringify(bingTokens))
+
     let client = new BingDrawClient({
       baseUrl: Config.sydneyReverseProxy,
       userToken: bingToken

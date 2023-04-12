@@ -1,8 +1,7 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import { Config } from '../utils/config.js'
-import { BingAIClient } from '@waylaidwanderer/chatgpt-api'
 import { exec } from 'child_process'
-import { checkPnpm, formatDuration, parseDuration } from '../utils/common.js'
+import { checkPnpm, formatDuration, parseDuration, getPublicIP } from '../utils/common.js'
 import SydneyAIClient from '../utils/SydneyAIClient.js'
 import { convertSpeaker, speakers } from '../utils/tts.js'
 let isWhiteList = true
@@ -42,6 +41,11 @@ export class ChatgptManagement extends plugin {
         {
           reg: '#chatgpt(查看|浏览)(必应|Bing |bing )(token|Token)',
           fnc: 'getBingAccessToken',
+          permission: 'master'
+        },
+        {
+          reg: '#chatgpt(迁移|恢复)(必应|Bing |bing )(token|Token)',
+          fnc: 'migrateBingAccessToken',
           permission: 'master'
         },
         {
@@ -151,18 +155,28 @@ export class ChatgptManagement extends plugin {
         },
         {
           reg: '^#chatgpt(设置|添加)群聊[白黑]名单$',
-          fnc: 'setList'
-          // permission: 'master'
+          fnc: 'setList',
+          permission: 'master'
         },
         {
           reg: '^#chatgpt查看群聊[白黑]名单$',
-          fnc: 'checkGroupList'
-          // permission: 'master'
+          fnc: 'checkGroupList',
+          permission: 'master'
         },
         {
           reg: '^#chatgpt(删除|移除)群聊[白黑]名单$',
-          fnc: 'delGroupList'
-          // permission: 'master'
+          fnc: 'delGroupList',
+          permission: 'master'
+        },
+        {
+          reg: '^#(设置|修改)管理密码',
+          fnc: 'setAdminPassword',
+          permission: 'master'
+        },
+        {
+          reg: '^#chatgpt系统(设置|配置|管理)',
+          fnc: 'adminPage',
+          permission: 'master'
         }
       ]
     })
@@ -383,23 +397,49 @@ export class ChatgptManagement extends plugin {
     return false
   }
 
+  async migrateBingAccessToken () {
+    let token = await redis.get('CHATGPT:BING_TOKEN')
+    if (token) {
+      token = token.split('|')
+      token = token.map((item, index) => (
+        {
+          Token: item,
+          State: '正常',
+          Usage: 0,
+        }
+      ))
+    } else {
+      token = []
+    }
+    let tokens = await redis.get('CHATGPT:BING_TOKENS')
+    if (tokens) {
+      tokens = JSON.parse(tokens)
+    } else {
+      tokens = []
+    }
+    await redis.set('CHATGPT:BING_TOKENS', JSON.stringify([...token, ...tokens]))
+    await this.reply(`迁移完成`, true)
+  }
+
   async getBingAccessToken (e) {
-    let tokens = await redis.get('CHATGPT:BING_TOKEN')
-    tokens = tokens.split('|')
-    tokens = tokens.map((item, index) => (
-        `【${index}】 Token：${item.substring(0, 5 / 2) + '...' + item.substring(item.length - 5 / 2, item.length)}`
-    )).join('\n')
+    let tokens = await redis.get('CHATGPT:BING_TOKENS')
+    if (tokens) tokens = JSON.parse(tokens) 
+    else tokens = []
+    tokens = tokens.length > 0 ? tokens.map((item, index) => (
+      `【${index}】 Token：${item.Token.substring(0, 5 / 2) + '...' + item.Token.substring(item.Token.length - 5 / 2, item.Token.length)}`
+    )).join('\n') : '无必应Token记录'
     await this.reply(`${tokens}`, true)
     return false
   }
 
   async delBingAccessToken (e) {
     this.setContext('deleteBingToken')
-    let tokens = await redis.get('CHATGPT:BING_TOKEN')
-    tokens = tokens.split('|')
-    tokens = tokens.map((item, index) => (
-        `【${index}】 Token：${item.substring(0, 5 / 2) + '...' + item.substring(item.length - 5 / 2, item.length)}`
-    )).join('\n')
+    let tokens = await redis.get('CHATGPT:BING_TOKENS')
+    if (tokens) tokens = JSON.parse(tokens) 
+    else tokens = []
+    tokens = tokens.length > 0 ? tokens.map((item, index) => (
+      `【${index}】 Token：${item.Token.substring(0, 5 / 2) + '...' + item.Token.substring(item.Token.length - 5 / 2, item.Token.length)}`
+    )).join('\n') : '无必应Token记录'
     await this.reply(`请发送要删除的token编号\n${tokens}`, true)
     return false
   }
@@ -428,38 +468,57 @@ export class ChatgptManagement extends plugin {
       } else {
         logger.error('bing token 无效', res)
         // 移除无效token
+        if (await redis.exists('CHATGPT:BING_TOKENS') != 0) {
+          let bingToken = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
+          const element = bingToken.findIndex(element => element.token === token)
+          if (element >= 0) {
+            bingToken[element].State = '异常'
+            await redis.set('CHATGPT:BING_TOKENS', JSON.stringify(bingToken))
+          }
+        }
         await this.reply(`经检测，Bing Token无效。来自Bing的错误提示：${res.result?.message}`)
       }
     })
-    if (await redis.exists('CHATGPT:BING_TOKEN') != 0) {
-      let bingToken = await redis.get('CHATGPT:BING_TOKEN')
-      bingToken = bingToken.split('|')
-      if (!bingToken.includes(token)) bingToken.push(token)
-      bingToken = bingToken.filter(function (element) { return element !== '' })
-      token = bingToken.join('|')
+    let bingToken = []
+    if (await redis.exists('CHATGPT:BING_TOKENS') != 0) {
+      bingToken = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
+      if (!bingToken.some(element => element.token === token)) bingToken.push({
+        Token: token,
+        State: '正常',
+        Usage: 0,
+      })
+    } else {
+      bingToken = [{
+        Token: token,
+        State: '正常',
+        Usage: 0,
+      }]
     }
-    await redis.set('CHATGPT:BING_TOKEN', token)
+    await redis.set('CHATGPT:BING_TOKENS', JSON.stringify(bingToken))
     await this.reply('Bing Token设置成功', true)
     this.finish('saveBingToken')
   }
 
   async deleteBingToken () {
     if (!this.e.msg) return
-    let bingToken = await redis.get('CHATGPT:BING_TOKEN')
-    bingToken = bingToken.split('|')
     let tokenId = this.e.msg
-    if (bingToken[tokenId] === null || bingToken[tokenId] === undefined) {
-      await this.reply('Token编号错误！', true)
+    if (await redis.exists('CHATGPT:BING_TOKENS') != 0) {
+      let bingToken = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
+      if (tokenId >= 0 && tokenId < bingToken.length) {
+        const removeToken = bingToken[tokenId].Token
+        bingToken.splice(tokenId,1)
+        await redis.set('CHATGPT:BING_TOKENS', JSON.stringify(bingToken))
+        await this.reply(`Token ${removeToken.substring(0, 5 / 2) + '...' + removeToken.substring(removeToken.length - 5 / 2, removeToken.length)} 移除成功`, true)
+        this.finish('deleteBingToken')
+      } else {
+        await this.reply('Token编号错误！', true)
+        this.finish('deleteBingToken')
+        return
+      }
+    } else {
+      await this.reply('Token记录异常', true)
       this.finish('deleteBingToken')
-      return
     }
-    const removeToken = bingToken[tokenId]
-    bingToken.splice(tokenId, 1)
-    bingToken = bingToken.filter(function (element) { return element !== '' })
-    let token = bingToken.join('|')
-    await redis.set('CHATGPT:BING_TOKEN', token)
-    await this.reply(`Token ${removeToken.substring(0, 5 / 2) + '...' + removeToken.substring(removeToken.length - 5 / 2, removeToken.length)} 移除成功`, true)
-    this.finish('deleteBingToken')
   }
 
   async saveToken () {
@@ -855,4 +914,24 @@ export class ChatgptManagement extends plugin {
   async queryBingPromptPrefix (e) {
     await this.reply(Config.sydney, true)
   }
+
+  async setAdminPassword (e) {
+    this.setContext('saveAdminPassword')
+    await this.reply('请发送系统管理密码', true)
+    return false
+  }
+  
+  async saveAdminPassword (e) {
+    if (!this.e.msg) return
+    let passwd = this.e.msg
+    await redis.set('CHATGPT:ADMIN_PASSWD', passwd)
+    await this.reply('设置成功', true)
+    this.finish('saveAdminPassword')
+  }
+
+  async adminPage (e) {
+    const viewHost = Config.serverHost ? `http://${Config.serverHost}/` : `http://${await getPublicIP()}:${Config.serverPort || 3321}/`
+    await this.reply(`请登录${viewHost + 'admin/settings'}进行系统配置`, true)
+  }
+  
 }

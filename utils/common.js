@@ -13,6 +13,8 @@ import { Config } from './config.js'
 //    .processSync(markdown ?? '')
 //    .toString()
 // }
+
+let localIP = ''
 export function escapeHtml (str) {
   const htmlEntities = {
     '&': '&amp;',
@@ -588,6 +590,20 @@ export async function isImage (link) {
     let magic = buf.toString('hex', 0, 4)
     return ['ffd8', '8950', '4749'].includes(magic)
   } catch (error) {
-    throw error
+    return false
   }
+}
+
+export async function getPublicIP() {
+  try {
+    if (localIP === '') {
+      const res = await fetch('https://api.ipify.org?format=json')
+      const data = await res.json()
+      localIP = data.ip
+    }
+    return localIP
+  } catch (err) {
+    return '127.0.0.1'
+  }
+  
 }
