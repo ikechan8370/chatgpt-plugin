@@ -228,7 +228,7 @@ export async function createServer() {
   
   server.listen({
     port: Config.serverPort || 3321,
-    host: '0.0.0.0'
+    host: '::'
   }, (error) => {
     if (error) {
       console.error(error)
