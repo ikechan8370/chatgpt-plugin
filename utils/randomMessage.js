@@ -1,6 +1,5 @@
 import { Config } from './config.js'
 import { ChatGPTAPI } from 'chatgpt'
-import { getMessageById, upsertMessage } from './common.js'
 import fetch from 'node-fetch'
 let proxy
 if (Config.proxy) {

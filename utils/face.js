@@ -489,6 +489,10 @@ export async function convertFaces (msg, handleAt = false, e) {
     if (!foundFace) {
       if (handleAt && msg[i] === '@') {
         foundAt = true
+        if (tmpMsg) {
+          msgs.push(tmpMsg)
+          tmpMsg = ''
+        }
         continue
       }
       if (handleAt && foundAt) {
