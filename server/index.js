@@ -172,6 +172,9 @@ export async function createServer() {
       } else {
         redisConfig.bingTokens = []
       }
+      if (await redis.exists('CHATGPT:CONFIRM') != 0) {
+        redisConfig.turnConfirm = await redis.get('CHATGPT:CONFIRM') === 'on'
+      }
       reply.send({
         chatConfig: Config,
         redisConfig: redisConfig
@@ -188,6 +191,13 @@ export async function createServer() {
       for (let [keyPath, value] of Object.entries(chatdata)) {
         if (keyPath === 'blockWords' || keyPath === 'promptBlockWords' || keyPath === 'initiativeChatGroups') { value = value.toString().split(/[,，;；\|]/) }
         if (Config[keyPath] != value) { Config[keyPath] = value }
+      }
+      const redisConfig = body.redisConfig || {}
+      if (redisConfig.bingTokens != null) {
+        await redis.set('CHATGPT:BING_TOKENS', JSON.stringify(redisConfig.bingTokens))
+      }
+      if (redisConfig.turnConfirm != null) {
+        await redis.set('CHATGPT:CONFIRM', redisConfig.turnConfirm ? 'on' : 'off')
       }
     }
   })

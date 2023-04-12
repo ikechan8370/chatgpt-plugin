@@ -149,7 +149,7 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
-          reg: '^#chatgpt系统配置',
+          reg: '^#chatgpt系统(设置|配置|管理)',
           fnc: 'adminPage',
           permission: 'master'
         }
