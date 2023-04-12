@@ -101,12 +101,14 @@ export class Entertainment extends plugin {
   async sendMessage (e) {
     if (e.msg.match(/^#chatgpt打招呼帮助/) !== null) {
       await this.reply('设置主动打招呼的群聊名单，群号之间以,隔开，参数之间空格隔开\n' +
+          '#chatgpt打招呼+群号：立即在指定群聊发起打招呼' +
           '#chatgpt查看打招呼\n' +
           '#chatgpt删除打招呼：删除主动打招呼群聊，可指定若干个群号\n' +
           '#chatgpt设置打招呼：可指定1-3个参数，依次是更新打招呼列表、打招呼间隔时间和触发概率、更新打招呼所有配置项')
       return false
     }
     let groupId = e.msg.replace(/^#chatgpt打招呼/, '')
+    logger.info(groupId)
     groupId = parseInt(groupId)
     if (groupId && !Bot.getGroupList().get(groupId)) {
       await e.reply('机器人不在这个群里！')
