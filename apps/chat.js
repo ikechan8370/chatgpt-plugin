@@ -693,7 +693,7 @@ export class chatgpt extends plugin {
     let previousConversation
     let conversation = {}
     let key
-    if (use === 'api3' && use === 'api4') {
+    if (use === 'api3' || use === 'api4') {
       // api3 支持对话穿插，因此不按照qq号来进行判断了
       let conversationId = await redis.get(`CHATGPT:QQ_CONVERSATION:${e.sender.user_id}`)
       if (conversationId) {
