@@ -243,7 +243,7 @@ export async function createServer() {
     userData.chat.forEach(function (item, index) {
       const filename = item.herf.substring(item.herf.lastIndexOf("/") + 1) + '.json'
       const filepath = path.join(dir, filename)
-      fs.unlink(filepath)
+      fs.unlinkSync(filepath)
     })
     userData.chat = []
     await setUserData(user.user, userData)
