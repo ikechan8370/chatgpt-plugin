@@ -820,8 +820,13 @@ export class chatgpt extends plugin {
         if (quote.imageLink) imgUrls.push(quote.imageLink)
       }
       if (useTTS) {
+        // 过滤‘括号’的内容不读，减少违和感
+        let ttsResponse = response.replace(/[(（\[{<【《「『【〖【【【“‘'"@][^()（）\]}>】》」』】〗】】”’'@]*[)）\]}>】》」』】〗】】”’'@]/g, '')
         // 先把文字回复发出去，避免过久等待合成语音
-        if (Config.alsoSendText) {
+        if (Config.alsoSendText || ttsResponse.length > Config.ttsAutoFallbackThreshold) {
+          if(ttsResponse.length > Config.ttsAutoFallbackThreshold){
+            await this.reply('回复的内容过长，已转为文本模式')
+          }
           await this.reply(await convertFaces(response, Config.enableRobotAt, e), e.isGroup)
           if (quotemessage.length > 0) {
             this.reply(await makeForwardMsg(this.e, quotemessage.map(msg => `${msg.text} - ${msg.url}`)))
@@ -830,8 +835,6 @@ export class chatgpt extends plugin {
             this.reply(`建议的回复：\n${chatMessage.suggestedResponses}`)
           }
         }
-        // 过滤‘括号’的内容不读，减少违和感
-        let ttsResponse = response.replace(/[(（\[{<【《「『【〖【【【“‘'"@][^()（）\]}>】》」』】〗】】”’'@]*[)）\]}>】》」』】〗】】”’'@]/g, '')
         if (Config.ttsSpace && ttsResponse.length <= Config.ttsAutoFallbackThreshold) {
           try {
             let wav = await generateAudio(ttsResponse, speaker, '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）')
@@ -849,8 +852,8 @@ export class chatgpt extends plugin {
           } catch (err) {
             await this.reply('合成语音发生错误~')
           }
-        } else {
-          await this.reply('你没有配置转语音API或者文字太长了哦')
+        } else if(!Config.ttsSpace){
+          await this.reply('你没有配置转语音API哦')
         }
       } else if (userSetting.usePicture || (Config.autoUsePicture && response.length > Config.autoUsePictureThreshold)) {
         // todo use next api of chatgpt to complete incomplete respoonse
