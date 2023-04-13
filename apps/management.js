@@ -723,11 +723,19 @@ export class ChatgptManagement extends plugin {
   }
 
   async setAdminPassword (e) {
+    if (e.isGroup) {
+      await this.reply('请私聊发生命令', true)
+      return true
+    }
     this.setContext('saveAdminPassword')
     await this.reply('请发送系统管理密码', true)
     return false
   }
   async setUserPassword (e) {
+    if (e.isGroup) {
+      await this.reply('请私聊发生命令', true)
+      return true
+    }
     this.setContext('saveUserPassword')
     await this.reply('请发送系统用户密码', true)
     return false
