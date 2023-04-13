@@ -220,6 +220,23 @@ export async function createServer() {
     reply.send(userData.chat)
   })
 
+  //清除缓存数据
+  server.post('/cleanCache', async (request, reply) => {
+    const token = request.cookies.token || 'unknown'
+    let user = usertoken.find(user => user.token === token)
+    if (!user) user = {user: ''}
+    const userData = await getUserData(user.user)
+    const dir = 'resources/ChatGPTCache/page'
+    userData.forEach(function (item, index) {
+      const filename = item.herf.substring(item.herf.lastIndexOf("/") + 1) + '.json'
+      const filepath = path.join(dir, filename)
+      fs.unlink(filepath)
+    })
+    userData.chat = []
+    await setUserData(user.user, userData)
+    reply.send({state: true})
+  })
+
   // 获取系统参数
   server.post('/sysconfig', async (request, reply) => {
     const token = request.cookies.token || 'unknown'
