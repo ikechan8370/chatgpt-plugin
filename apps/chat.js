@@ -14,7 +14,7 @@ import {
   randomString,
   completeJSON,
   isImage,
-  getDefaultUserSetting, isCN, getMasterQQ
+  getDefaultReplySetting, isCN, getMasterQQ
 } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
@@ -57,10 +57,10 @@ try {
 const defaultPropmtPrefix = ', a large language model trained by OpenAI. You answer as concisely as possible for each response (e.g. don’t be verbose). It is very important that you answer as concisely as possible, so please remember this. If you are generating a list, do not have too many items. Keep the number of items short.'
 const newFetch = (url, options = {}) => {
   const defaultOptions = Config.proxy
-    ? {
+      ? {
         agent: proxy(Config.proxy)
       }
-    : {}
+      : {}
   const mergedOptions = {
     ...defaultOptions,
     ...options
@@ -452,22 +452,22 @@ export class chatgpt extends plugin {
   }
 
   async switch2Picture (e) {
-    let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
-    if (!userSetting) {
-      userSetting = getDefaultUserSetting()
+    let userReplySetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
+    if (!userReplySetting) {
+      userReplySetting = getDefaultReplySetting()
     } else {
-      userSetting = JSON.parse(userSetting)
+      userReplySetting = JSON.parse(userReplySetting)
     }
-    userSetting.usePicture = true
-    userSetting.useTTS = false
-    await redis.set(`CHATGPT:USER:${e.sender.user_id}`, JSON.stringify(userSetting))
+    userReplySetting.usePicture = true
+    userReplySetting.useTTS = false
+    await redis.set(`CHATGPT:USER:${e.sender.user_id}`, JSON.stringify(userReplySetting))
     await this.reply('ChatGPT回复已转换为图片模式')
   }
 
   async switch2Text (e) {
     let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
     if (!userSetting) {
-      userSetting = getDefaultUserSetting()
+      userSetting = getDefaultReplySetting()
     } else {
       userSetting = JSON.parse(userSetting)
     }
@@ -484,7 +484,7 @@ export class chatgpt extends plugin {
     }
     let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
     if (!userSetting) {
-      userSetting = getDefaultUserSetting()
+      userSetting = getDefaultReplySetting()
     } else {
       userSetting = JSON.parse(userSetting)
     }
@@ -500,7 +500,7 @@ export class chatgpt extends plugin {
     }
     let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
     if (!userSetting) {
-      userSetting = getDefaultUserSetting()
+      userSetting = getDefaultReplySetting()
     } else {
       userSetting = JSON.parse(userSetting)
     }
@@ -520,6 +520,20 @@ export class chatgpt extends plugin {
    * #chatgpt
    */
   async chatgpt (e) {
+    if (!e.isMaster && e.isPrivate && !Config.enablePrivateChat) {
+      this.reply('ChatGpt私聊通道已关闭。')
+      return false
+    }
+    if (e.isGroup) {
+      const whitelist = Config.groupWhitelist.filter(group => group.trim())
+      if (whitelist.length > 0 && !whitelist.includes(e.group_id.toString())) {
+        return false
+      }
+      const blacklist = Config.groupBlacklist.filter(group => group.trim())
+      if (blacklist.length > 0 && blacklist.includes(e.group_id.toString())) {
+        return false
+      }
+    }
     let prompt
     if (this.toggleMode === 'at') {
       if (!e.raw_message || e.msg?.startsWith('#')) {
@@ -568,7 +582,7 @@ export class chatgpt extends plugin {
         userSetting.useTTS = Config.defaultUseTTS
       }
     } else {
-      userSetting = getDefaultUserSetting()
+      userSetting = getDefaultReplySetting()
     }
     let useTTS = !!userSetting.useTTS
     let speaker = convertSpeaker(userSetting.ttsRole || Config.defaultTTSRole)
@@ -830,8 +844,18 @@ export class chatgpt extends plugin {
             this.reply(`建议的回复：\n${chatMessage.suggestedResponses}`)
           }
         }
-        // 过滤‘括号’的内容不读，减少违和感
-        let ttsResponse = response.replace(/[(（\[{<【《「『【〖【【【“‘'"@][^()（）\]}>】》」』】〗】】”’'@]*[)）\]}>】》」』】〗】】”’'@]/g, '')
+        // 处理tts输入文本
+        let ttsResponse, ttsRegex
+        const regex = /^\/(.*)\/([gimuy]*)$/
+        const match = Config.ttsRegex.match(regex)
+        if (match) {
+          const pattern = match[1]
+          const flags = match[2]
+          ttsRegex = new RegExp(pattern, flags) // 返回新的正则表达式对象
+        } else {
+          ttsRegex = ''
+        }
+        ttsResponse = response.replace(ttsRegex, '')
         if (Config.ttsSpace && ttsResponse.length <= Config.ttsAutoFallbackThreshold) {
           try {
             let wav = await generateAudio(ttsResponse, speaker, '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）')
@@ -1437,19 +1461,19 @@ export class chatgpt extends plugin {
         Authorization: 'Bearer ' + Config.apiKey
       }
     })
-      .then(response => response.json())
-      .then(data => {
-        if (data.error) {
-          this.reply('获取失败：' + data.error.code)
-          return false
-        } else {
-          let total_granted = data.total_granted.toFixed(2)
-          let total_used = data.total_used.toFixed(2)
-          let total_available = data.total_available.toFixed(2)
-          let expires_at = new Date(data.grants.data[0].expires_at * 1000).toLocaleDateString().replace(/\//g, '-')
-          this.reply('总额度：$' + total_granted + '\n已经使用额度：$' + total_used + '\n当前剩余额度：$' + total_available + '\n到期日期(UTC)：' + expires_at)
-        }
-      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.error) {
+            this.reply('获取失败：' + data.error.code)
+            return false
+          } else {
+            let total_granted = data.total_granted.toFixed(2)
+            let total_used = data.total_used.toFixed(2)
+            let total_available = data.total_available.toFixed(2)
+            let expires_at = new Date(data.grants.data[0].expires_at * 1000).toLocaleDateString().replace(/\//g, '-')
+            this.reply('总额度：$' + total_granted + '\n已经使用额度：$' + total_used + '\n当前剩余额度：$' + total_available + '\n到期日期(UTC)：' + expires_at)
+          }
+        })
   }
 
   /**

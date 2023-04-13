@@ -112,7 +112,7 @@ export async function pTimeout (
   const cancelablePromise = new Promise((resolve, reject) => {
     if (typeof milliseconds !== 'number' || Math.sign(milliseconds) !== 1) {
       throw new TypeError(
-              `Expected \`milliseconds\` to be a positive number, got \`${milliseconds}\``
+          `Expected \`milliseconds\` to be a positive number, got \`${milliseconds}\``
       )
     }
 
@@ -146,11 +146,11 @@ export async function pTimeout (
         }
 
         const errorMessage =
-                        typeof message === 'string'
-                          ? message
-                          : `Promise timed out after ${milliseconds} milliseconds`
+              typeof message === 'string'
+                ? message
+                : `Promise timed out after ${milliseconds} milliseconds`
         const timeoutError =
-                        message instanceof Error ? message : new Error(errorMessage)
+              message instanceof Error ? message : new Error(errorMessage)
 
         if (typeof promise.cancel === 'function') {
           promise.cancel()
@@ -179,19 +179,19 @@ export async function pTimeout (
   return cancelablePromise
 }
 /**
-     TODO: Remove below function and just 'reject(signal.reason)' when targeting Node 18.
-     */
+ TODO: Remove below function and just 'reject(signal.reason)' when targeting Node 18.
+ */
 function getAbortedReason (signal) {
   const reason =
-            signal.reason === undefined
-              ? getDOMException('This operation was aborted.')
-              : signal.reason
+      signal.reason === undefined
+        ? getDOMException('This operation was aborted.')
+        : signal.reason
 
   return reason instanceof Error ? reason : getDOMException(reason)
 }
 /**
-     TODO: Remove AbortError and just throw DOMException when targeting Node 18.
-     */
+ TODO: Remove AbortError and just throw DOMException when targeting Node 18.
+ */
 function getDOMException (errorMessage) {
   return globalThis.DOMException === undefined
     ? new Error(errorMessage)
@@ -239,18 +239,18 @@ export async function getMasterQQ () {
 }
 
 /**
-   *
-   * @param pluginKey plugin key
-   * @param htmlPath html文件路径，相对于plugin resources目录
-   * @param data 渲染数据
-   * @param renderCfg 渲染配置
-   * @param renderCfg.retType 返回值类型
-   * * default/空：自动发送图片，返回true
-   * * msgId：自动发送图片，返回msg id
-   * * base64: 不自动发送图像，返回图像base64数据
-   * @param renderCfg.beforeRender({data}) 可改写渲染的data数据
-   * @returns {Promise<boolean>}
-   */
+ *
+ * @param pluginKey plugin key
+ * @param htmlPath html文件路径，相对于plugin resources目录
+ * @param data 渲染数据
+ * @param renderCfg 渲染配置
+ * @param renderCfg.retType 返回值类型
+ * * default/空：自动发送图片，返回true
+ * * msgId：自动发送图片，返回msg id
+ * * base64: 不自动发送图像，返回图像base64数据
+ * @param renderCfg.beforeRender({data}) 可改写渲染的data数据
+ * @returns {Promise<boolean>}
+ */
 export async function render (e, pluginKey, htmlPath, data = {}, renderCfg = {}) {
   // 处理传入的path
   htmlPath = htmlPath.replace(/.html$/, '')
@@ -316,7 +316,7 @@ export async function renderUrl (e, url, renderCfg = {}) {
       width: 1280,
       height: 720
     })
-    let buff = base64 = await page.screenshot({fullPage:true})
+    let buff = base64 = await page.screenshot({ fullPage: true })
     base64 = segment.image(buff)
     await page.close().catch((err) => logger.error(err))
   } catch (error) {
@@ -338,7 +338,7 @@ export async function renderUrl (e, url, renderCfg = {}) {
   return renderCfg.retType === 'msgId' ? ret : true
 }
 
-export function getDefaultUserSetting () {
+export function getDefaultReplySetting () {
   return {
     usePicture: Config.defaultUsePicture,
     useTTS: Config.defaultUseTTS,
@@ -522,7 +522,7 @@ export function maskQQ (qq) {
   return newqq
 }
 
-export function completeJSON(input) {
+export function completeJSON (input) {
   let result = {}
 
   let inJson = false
@@ -533,7 +533,7 @@ export function completeJSON(input) {
   let tempValue = ''
   for (let i = 0; i < input.length; i++) {
     // 获取当前字符
-    let char = input[i];
+    let char = input[i]
     // 获取到json头
     if (!inJson && char === '{') {
       inJson = true
@@ -566,7 +566,7 @@ export function completeJSON(input) {
     // 结束结构追加数据
     if (!inQuote && onStructure && char === ',') {
       // 追加结构
-      result[tempKey] = tempValue.replace(/\\n/g, "\n").replace(/\\r/g, "\r").replace(/\\t/g, "\t")
+      result[tempKey] = tempValue.replace(/\\n/g, '\n').replace(/\\r/g, '\r').replace(/\\t/g, '\t')
       // 结束结构清除数据
       onStructure = false
       inQuote = false
@@ -577,12 +577,12 @@ export function completeJSON(input) {
   }
   // 处理截断的json数据
   if (onStructure && tempKey != '') {
-    result[tempKey] = tempValue.replace(/\\n/g, "\n").replace(/\\r/g, "\r").replace(/\\t/g, "\t")
+    result[tempKey] = tempValue.replace(/\\n/g, '\n').replace(/\\r/g, '\r').replace(/\\t/g, '\t')
   }
   return result
 }
 
-export async function isImage(link) {
+export async function isImage (link) {
   try {
     let response = await fetch(link)
     let body = await response.arrayBuffer()

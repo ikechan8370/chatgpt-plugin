@@ -150,6 +150,21 @@ let helpData = [
         icon: 'confirm',
         title: '#chatgpt必应(开启|关闭)建议回复',
         desc: '开关Bing模式下的建议回复。'
+      },
+      {
+        icon: 'list',
+        title: '#(关闭|打开)群聊上下文',
+        desc: '开启后将会发送近期群聊中的对话给机器人提供参考'
+      },
+      {
+        icon: 'switch',
+        title: '#chatgpt(允许|禁止|打开|关闭|同意)私聊',
+        desc: '开启后将关闭本插件的私聊通道。(主人不影响)'
+      },
+      {
+        icon: 'token',
+        title: '#chatgpt(设置|添加)群聊[白黑]名单',
+        desc: '白名单配置后只有白名单内的群可使用本插件，配置黑名单则会在对应群聊禁用本插件'
       }
     ]
   },
@@ -258,13 +273,18 @@ let helpData = [
     list: [
       {
         icon: 'smiley-wink',
-        title: '#chatgpt打招呼(群号)',
+        title: '#chatgpt打招呼(群号|帮助)',
         desc: '让AI随机到某个群去打招呼'
       },
       {
         icon: 'help',
         title: '#chatgpt模式帮助',
         desc: '查看多种聊天模式的区别及当前使用的模式'
+      },
+      {
+        icon: 'help',
+        title: '#chatgpt全局回复帮助',
+        desc: '获取配置全局回复模式和全局语音角色的命令帮助'
       },
       {
         icon: 'help',
@@ -296,15 +316,11 @@ export class help extends plugin {
   }
 
   async help (e) {
-    if (Config.preview)
-    await renderUrl(e, `http://127.0.0.1:${Config.serverPort || 3321}/help/`, {Viewport: {width: 800, height: 600}})
-    else
-    await render(e, 'chatgpt-plugin', 'help/index', { helpData, version })
+    if (Config.preview) { await renderUrl(e, `http://127.0.0.1:${Config.serverPort || 3321}/help/`, { Viewport: { width: 800, height: 600 } }) } else { await render(e, 'chatgpt-plugin', 'help/index', { helpData, version }) }
   }
 
   async newHelp (e) {
     let use = e.msg.replace(/^#帮助-/, '').toUpperCase().trim()
     await renderUrl(e, `http://127.0.0.1:${Config.serverPort || 3321}/help/` + use, {Viewport: {width: 800, height: 600}})
   }
-  
 }

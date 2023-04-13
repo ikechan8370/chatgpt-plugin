@@ -39,9 +39,27 @@ export function supportGuoba () {
           component: 'InputTextArea'
         },
         {
+          field: 'groupWhitelist',
+          label: '群聊白名单',
+          bottomHelpMessage: '设置后只有白名单内的群可以使用本插件。用英文逗号隔开',
+          component: 'Input'
+        },
+        {
+          field: 'groupBlacklist',
+          label: '群聊黑名单',
+          bottomHelpMessage: '设置后名单内的群禁止使用本插件。用英文逗号隔开',
+          component: 'Input'
+        },
+        {},
+        {
           field: 'imgOcr',
           label: '图片识别',
           bottomHelpMessage: '是否识别消息中图片的文字内容，需要同时包含图片和消息才生效',
+          component: 'Switch'
+        },
+        {
+          field: 'enablePrivateChat',
+          label: '是否允许私聊机器人',
           component: 'Switch'
         },
         {
@@ -64,6 +82,12 @@ export function supportGuoba () {
           componentProps: {
             options: speakers.concat('随机').map(s => { return { label: s, value: s } })
           }
+        },
+        {
+          field: 'ttsRegex',
+          label: '语音过滤正则表达式',
+          bottomHelpMessage: '语音模式下，配置此项以过滤不想被读出来的内容。表达式测试地址：https://www.runoob.com/regexp/regexp-syntax.html',
+          component: 'Input'
         },
         {
           field: 'ttsAutoFallbackThreshold',
@@ -303,7 +327,7 @@ export function supportGuoba () {
         //   component: 'InputTextArea'
         // },
         {
-            field: 'groupContextLength',
+          field: 'groupContextLength',
           label: '允许机器人读取近期的最多群聊聊天记录条数。',
           bottomHelpMessage: '允许机器人读取近期的最多群聊聊天记录条数。太多可能会超。默认50',
           component: 'InputNumber'
@@ -488,9 +512,28 @@ export function supportGuoba () {
         },
         {
           field: 'helloPrompt',
-          label: '打招呼所说文字的引导文字',
+          label: '打招呼prompt',
           bottomHelpMessage: '将会用这段文字询问ChatGPT，由ChatGPT给出随机的打招呼文字',
           component: 'Input'
+        },
+        {
+          field: 'helloInterval',
+          label: '打招呼间隔(小时)',
+          component: 'InputNumber',
+          componentProps: {
+            min: 1,
+            max: 24
+          }
+        },
+        {
+          field: 'helloProbability',
+          label: '打招呼的触发概率(%)',
+          bottomHelpMessage: '设置为100则每次经过间隔时间必定触发主动打招呼事件。',
+          component: 'InputNumber',
+          componentProps: {
+            min: 0,
+            max: 100
+          }
         },
         {
           field: 'emojiBaseURL',
@@ -511,7 +554,7 @@ export function supportGuoba () {
           field: 'serverPort',
           label: '系统Api服务端口',
           bottomHelpMessage: '系统Api服务开启的端口号，如需外网访问请将系统防火墙和服务器防火墙对应端口开放,修改后请重启',
-          component: 'InputNumber',
+          component: 'InputNumber'
         },
         {
           field: 'serverHost',
@@ -529,14 +572,14 @@ export function supportGuoba () {
           field: 'chatViewWidth',
           label: '图片渲染宽度',
           bottomHelpMessage: '聊天页面渲染窗口的宽度',
-          component: 'InputNumber',
+          component: 'InputNumber'
         },
         {
           field: 'chatViewBotName',
           label: 'Bot命名',
           bottomHelpMessage: '新渲染模式强制修改Bot命名',
           component: 'Input'
-        },
+        }
       ],
       // 获取配置数据方法（用于前端填充显示数据）
       getConfigData () {

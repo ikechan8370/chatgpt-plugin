@@ -3,10 +3,12 @@ import { Config } from '../utils/config.js'
 import { exec } from 'child_process'
 import { checkPnpm, formatDuration, parseDuration, getPublicIP } from '../utils/common.js'
 import SydneyAIClient from '../utils/SydneyAIClient.js'
+import { convertSpeaker, speakers } from '../utils/tts.js'
 import md5 from 'md5'
 import path from 'path'
 import fs from 'fs'
 
+let isWhiteList = true
 export class ChatgptManagement extends plugin {
   constructor (e) {
     super({
@@ -139,10 +141,35 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
+          reg: '^#chatgpt(打开|关闭|设置)?全局((图片模式|语音模式|(语音角色|角色语音|角色).*)|回复帮助)$',
+          fnc: 'setDefaultReplySetting',
+          permission: 'master'
+        },
+        {
           /** 命令正则匹配 */
-          reg: '^#(关闭|打开)群聊上下文',
+          reg: '^#(关闭|打开)群聊上下文$',
           /** 执行方法 */
           fnc: 'enableGroupContext',
+          permission: 'master'
+        },
+        {
+          reg: '^#chatgpt(允许|禁止|打开|关闭|同意)私聊$',
+          fnc: 'enablePrivateChat',
+          permission: 'master'
+        },
+        {
+          reg: '^#chatgpt(设置|添加)群聊[白黑]名单$',
+          fnc: 'setList',
+          permission: 'master'
+        },
+        {
+          reg: '^#chatgpt查看群聊[白黑]名单$',
+          fnc: 'checkGroupList',
+          permission: 'master'
+        },
+        {
+          reg: '^#chatgpt(删除|移除)群聊[白黑]名单$',
+          fnc: 'delGroupList',
           permission: 'master'
         },
         {
@@ -166,21 +193,196 @@ export class ChatgptManagement extends plugin {
       ]
     })
   }
+
+  async setList (e) {
+    this.setContext('saveList')
+    isWhiteList = e.msg.includes('白')
+    const listType = isWhiteList ? '白名单' : '黑名单'
+    await this.reply(`请发送需要设置的群聊${listType}，群号间使用,隔开`, e.isGroup)
+    return false
+  }
+
+  async saveList (e) {
+    if (!this.e.msg) return
+    const groupNums = this.e.msg.match(/\d+/g)
+    const groupList = Array.isArray(groupNums) ? this.e.msg.match(/\d+/g).filter(value => /^[1-9]\d{8,9}/.test(value)) : []
+    if (!groupList.length) {
+      await this.reply('没有可添加的群号，请检查群号是否正确', e.isGroup)
+      return false
+    }
+    let whitelist = []
+    let blacklist = []
+    for (const element of groupList) {
+      if (isWhiteList) {
+        Config.groupWhitelist = Config.groupWhitelist.filter(item => item !== element)
+        whitelist.push(element)
+      } else {
+        Config.groupBlacklist = Config.groupBlacklist.filter(item => item !== element)
+        blacklist.push(element)
+      }
+    }
+    if (!(whitelist.length || blacklist.length)) {
+      await this.reply('没有可添加的群号，请检查群号是否正确或重复添加', e.isGroup)
+      this.finish('saveList')
+      return false
+    } else {
+      if (isWhiteList) {
+        Config.groupWhitelist = Config.groupWhitelist
+            .filter(group => group.trim() !== '')
+            .concat(whitelist)
+      } else {
+        Config.groupBlacklist = Config.groupBlacklist
+            .filter(group => group.trim() !== '')
+            .concat(blacklist)
+      }
+    }
+    await this.reply(`群聊${isWhiteList ? '白' : '黑'}名单已更新，可通过\n'#chatgpt查看群聊${isWhiteList ? '白' : '黑'}名单'查看最新名单\n#chatgpt移除群聊${isWhiteList ? '白' : '黑'}名单'管理名单`, e.isGroup)
+    this.finish('saveList')
+  }
+
+  async checkGroupList (e) {
+    isWhiteList = e.msg.includes('白')
+    const list = isWhiteList ? Config.groupWhitelist : Config.groupBlacklist
+    const listType = isWhiteList ? '白名单' : '黑名单'
+    const replyMsg = list.length ? `当前群聊${listType}为：${list.join('，')}` : `当前没有设置任何${listType}`
+    this.reply(replyMsg, e.isGroup)
+    return false
+  }
+
+  async delGroupList (e) {
+    isWhiteList = e.msg.includes('白')
+    const listType = isWhiteList ? '白名单' : '黑名单'
+    let replyMsg = ''
+    if (Config.groupWhitelist.length && Config.groupBlacklist.length) {
+      replyMsg = `当前群聊(白|黑)名单为空，请先添加${listType}吧~`
+    } else if ((isWhiteList && !Config.groupWhitelist.length) || (!isWhiteList && !Config.groupBlacklist.length)) {
+      replyMsg = `当前群聊${listType}为空，请先添加吧~`
+    }
+    if (replyMsg) {
+      await this.reply(replyMsg, e.isGroup)
+      return false
+    }
+    this.setContext('confirmDelGroup')
+    await this.reply(`请发送需要删除的群聊${listType}，群号间使用,隔开。输入‘全部删除’清空${listType}。`, e.isGroup)
+    return false
+  }
+
+  async confirmDelGroup (e) {
+    if (!this.e.msg) return
+    const isAllDeleted = this.e.msg.trim() === '全部删除'
+    const groupNumRegex = /^[1-9]\d{8,9}$/
+    const groupNums = this.e.msg.match(/\d+/g)
+    const validGroups = Array.isArray(groupNums) ? groupNums.filter(groupNum => groupNumRegex.test(groupNum)) : []
+    if (isAllDeleted) {
+      Config.groupWhitelist = isWhiteList ? [] : Config.groupWhitelist
+      Config.groupBlacklist = !isWhiteList ? [] : Config.groupBlacklist
+    } else {
+      if (!validGroups.length) {
+        await this.reply('没有可删除的群号，请检查输入的群号是否正确', e.isGroup)
+        return false
+      } else {
+        for (const element of validGroups) {
+          if (isWhiteList) {
+            Config.groupWhitelist = Config.groupWhitelist.filter(item => item !== element)
+          } else {
+            Config.groupBlacklist = Config.groupBlacklist.filter(item => item !== element)
+          }
+        }
+      }
+    }
+    const groupType = isWhiteList ? '白' : '黑'
+    await this.reply(`群聊${groupType}名单已更新，可通过'#chatgpt查看群聊${groupType}名单'命令查看最新名单`)
+    this.finish('confirmDelGroup')
+  }
+
+  async enablePrivateChat (e) {
+    Config.enablePrivateChat = !!e.msg.match(/(允许|打开|同意)/)
+    await this.reply('设置成功', e.isGroup)
+    return false
+  }
   async enableGroupContext (e) {
-    const re = /#(关闭|打开)/
-    const match = e.msg.match(re)
-    //logger.info(match)
+    const reg = /(关闭|打开)/
+    const match = e.msg.match(reg)
     if (match) {
       const action = match[1]
       if (action === '关闭') {
         Config.enableGroupContext = false // 关闭
-        await this.reply('已关闭群聊上下文功能', true) 
+        await this.reply('已关闭群聊上下文功能', true)
       } else {
         Config.enableGroupContext = true // 打开
-        await this.reply('已打开群聊上下文功能', true) 
+        await this.reply('已打开群聊上下文功能', true)
       }
     }
     return false
+  }
+
+  async setDefaultReplySetting (e) {
+    const reg = /^#chatgpt(打开|关闭|设置)?全局((图片模式|语音模式|(语音角色|角色语音|角色).*)|回复帮助)/
+    const matchCommand = e.msg.match(reg)
+    const settingType = matchCommand[2]
+    let replyMsg = ''
+    switch (settingType) {
+      case '图片模式':
+        if (matchCommand[1] === '打开') {
+          Config.defaultUsePicture = true
+          Config.defaultUseTTS = false
+          replyMsg = 'ChatGPT将默认以图片回复'
+        } else if (matchCommand[1] === '关闭') {
+          Config.defaultUsePicture = false
+          if (Config.defaultUseTTS) {
+            replyMsg = 'ChatGPT将默认以语音回复'
+          } else {
+            replyMsg = 'ChatGPT将默认以文本回复'
+          }
+        } else if (matchCommand[1] === '设置') {
+          replyMsg = '请使用“#chatgpt打开全局图片模式”或“#chatgpt关闭全局图片模式”命令来设置回复模式'
+        } break
+      case '语音模式':
+        if (!Config.ttsSpace) {
+          replyMsg = '您没有配置VITS API，请前往锅巴面板进行配置'
+          break
+        }
+        if (matchCommand[1] === '打开') {
+          Config.defaultUseTTS = true
+          Config.defaultUsePicture = false
+          replyMsg = 'ChatGPT将默认以语音回复'
+        } else if (matchCommand[1] === '关闭') {
+          Config.defaultUseTTS = false
+          if (Config.defaultUsePicture) {
+            replyMsg = 'ChatGPT将默认以图片回复'
+          } else {
+            replyMsg = 'ChatGPT将默认以文本回复'
+          }
+        } else if (matchCommand[1] === '设置') {
+          replyMsg = '请使用“#chatgpt打开全局语音模式”或“#chatgpt关闭全局语音模式”命令来设置回复模式'
+        } break
+      case '回复帮助':
+        replyMsg = '可使用以下命令配置全局回复:\n#chatgpt(打开/关闭)全局(语音/图片)模式\n#chatgpt设置全局(语音角色|角色语音|角色)+角色名称(留空则为随机)'
+        break
+      default:
+        if (!Config.ttsSpace) {
+          replyMsg = '您没有配置VITS API，请前往锅巴面板进行配置'
+          break
+        }
+        if (settingType.match(/(语音角色|角色语音|角色)/)) {
+          const speaker = matchCommand[2].replace(/(语音角色|角色语音|角色)/, '').trim() || ''
+          if (!speaker.length) {
+            replyMsg = 'ChatGpt将随机挑选角色回复'
+            Config.defaultTTSRole = ''
+          } else {
+            const ttsRole = convertSpeaker(speaker)
+            if (speakers.includes(ttsRole)) {
+              Config.defaultTTSRole = ttsRole
+              replyMsg = `ChatGPT默认语音角色已被设置为“${ttsRole}”`
+            } else {
+              replyMsg = `抱歉，我还不认识“${ttsRole}”这个语音角色`
+            }
+          }
+        } else {
+          replyMsg = "无法识别的设置类型\n请使用'#chatgpt全局回复帮助'查看正确命令"
+        }
+    }
+    await this.reply(replyMsg, true)
   }
 
   async turnOnConfirm (e) {

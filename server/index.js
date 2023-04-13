@@ -11,6 +11,7 @@ import schedule from 'node-schedule'
 import { Config } from '../utils/config.js'
 import { randomString, getPublicIP } from '../utils/common.js'
 
+
 const __dirname = path.resolve()
 const server = fastify({
   logger: Config.debug
@@ -323,6 +324,7 @@ export async function createServer() {
     if(request.method == 'GET')
     Statistics.WebAccess.count += 1
     done()
+
   })
   //定时任务
   var rule = new schedule.RecurrenceRule();
