@@ -1,6 +1,5 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import { Config } from '../utils/config.js'
-import { BingAIClient } from '@waylaidwanderer/chatgpt-api'
 import { exec } from 'child_process'
 import { checkPnpm, formatDuration, parseDuration, getPublicIP } from '../utils/common.js'
 import SydneyAIClient from '../utils/SydneyAIClient.js'

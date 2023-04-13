@@ -6,7 +6,7 @@ import fs from 'fs'
 import { emojiRegex, googleRequestUrl } from '../utils/emoj/index.js'
 import fetch from 'node-fetch'
 import { mkdirs } from '../utils/common.js'
-import uploadRecord from "../utils/uploadRecord.js";
+import uploadRecord from '../utils/uploadRecord.js'
 
 let useSilk = false
 try {
