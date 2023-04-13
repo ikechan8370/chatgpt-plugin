@@ -262,7 +262,19 @@ export async function createServer() {
         redisConfig: redisConfig
       })
     } else {
-      reply.send({})
+      let userSetting = await redis.get(`CHATGPT:USER:${user.user}`)
+      if (!userSetting) {
+        userSetting = {
+          usePicture: Config.defaultUsePicture,
+          useTTS: Config.defaultUseTTS,
+          ttsRole: Config.defaultTTSRole
+        }
+      } else {
+        userSetting = JSON.parse(userSetting)
+      }
+      reply.send({
+        userSetting: userSetting
+      })
     }
   })
 
@@ -272,7 +284,7 @@ export async function createServer() {
     const user = usertoken.find(user => user.token === token)
     if (!user) {
       reply.send({err: '未登录'})
-    } else {
+    } else if(user.autho === 'admin') {
       const body = request.body || {}
       const chatdata = body.chatConfig || {}
       for (let [keyPath, value] of Object.entries(chatdata)) {
@@ -285,6 +297,10 @@ export async function createServer() {
       }
       if (redisConfig.turnConfirm != null) {
         await redis.set('CHATGPT:CONFIRM', redisConfig.turnConfirm ? 'on' : 'off')
+      }
+    } else {
+      if (body.userSetting){
+        await redis.set(`CHATGPT:USER:${user.user}`, JSON.stringify(body.userSetting))
       }
     }
   })
