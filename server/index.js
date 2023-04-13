@@ -11,12 +11,13 @@ import schedule from 'node-schedule'
 import { Config } from '../utils/config.js'
 import { randomString, getPublicIP } from '../utils/common.js'
 
+
 const __dirname = path.resolve()
 const server = fastify({
   logger: Config.debug
 })
 
-let usertoken = ''
+let usertoken = []
 let Statistics = {
   SystemAccess: {
     count: 0,
@@ -52,6 +53,30 @@ async function getLoad() {
   }
 }
 
+async function getUserData(qq) {
+  const dir = 'resources/ChatGPTCache/user'
+  const filename = `${qq}.json`
+  const filepath = path.join(dir, filename)
+  try {
+    let data = fs.readFileSync(filepath, 'utf8')
+    return JSON.parse(data)
+  } catch (error) {
+    return {
+      user: qq,
+      passwd: '',
+      chat: []
+    }
+  }
+}
+
+async function setUserData(qq, data) {
+  const dir = 'resources/ChatGPTCache/user'
+  const filename = `${qq}.json`
+  const filepath = path.join(dir, filename)
+  fs.mkdirSync(dir, { recursive: true })
+  fs.writeFileSync(filepath, JSON.stringify(data))
+}
+
 export async function createServer() {
   await server.register(cors, {
     origin: '*',
@@ -74,8 +99,30 @@ export async function createServer() {
   })
   await server.get('/admin/*', (request, reply) => {
     const token = request.cookies.token || 'unknown'
-    if (token != usertoken) {
-        reply.redirect(301, '/auth/login')
+    const user = usertoken.find(user => user.token === token)
+    if (!user) {
+      reply.redirect(301, '/auth/login')
+    }
+    const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
+    reply.type('text/html').send(stream)
+  })
+  await server.get('/admin/dashboard', (request, reply) => {
+    const token = request.cookies.token || 'unknown'
+    const user = usertoken.find(user => user.token === token)
+    if (!user) {
+      reply.redirect(301, '/auth/login')
+    }
+    if (user.autho === 'admin') {
+      reply.redirect(301, '/admin/settings')
+    }
+    const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
+    reply.type('text/html').send(stream)
+  })
+  await server.get('/admin/settings', (request, reply) => {
+    const token = request.cookies.token || 'unknown'
+    const user = usertoken.find(user => user.token === token)
+    if (!user || user.autho != 'admin') {
+      reply.redirect(301, '/admin/')
     }
     const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
     reply.type('text/html').send(stream)
@@ -84,12 +131,20 @@ export async function createServer() {
   server.post('/login', async (request, reply) => {
     const body = request.body || {}
     if (body.qq && body.passwd) {
+      const token = randomString(32)
       if (body.qq == Bot.uin && await redis.get('CHATGPT:ADMIN_PASSWD') == body.passwd) {
-        usertoken = randomString(32)
-        reply.setCookie('token', usertoken, {path: '/'})
-        reply.send({login:true})
+        usertoken.push({user: body.qq, token: token, autho: 'admin'})
+        reply.setCookie('token', token, {path: '/'})
+        reply.send({login:true, autho: 'admin'})
       } else {
-        reply.send({login:false,err:'用户名密码错误'})
+        const user = await getUserData(body.qq)
+        if (user.passwd != '' && user.passwd === body.passwd) {
+          usertoken.push({user: body.qq, token: token, autho: 'user'})
+          reply.setCookie('token', token, {path: '/'})
+          reply.send({login: true, autho: 'user'})
+        } else {
+          reply.send({login:false,err:`用户名密码错误,如果忘记密码请私聊机器人输入 ${body.qq == Bot.uin ? '#修改管理密码' : '#修改用户密码'} 进行修改`})
+        }
       }
     } else {
       reply.send({login:false,err:'未输入用户名或密码'})
@@ -129,7 +184,7 @@ export async function createServer() {
       const ip = await getPublicIP()
       try {
         fs.mkdirSync(dir, { recursive: true });
-        fs.writeFileSync(filepath, JSON.stringify({
+        const data = {
           user: body.content.senderName,
           bot: Config.chatViewBotName || (body.bing ? 'Bing' : 'ChatGPT'),
           userImg: body.userImg || '',
@@ -141,13 +196,25 @@ export async function createServer() {
           quote: body.content.quote,
           images: body.content.images || [],
           suggest: body.content.suggest || [],
+          model: body.bing ? 'Bing' : 'ChatGPT',
           time: new Date()
-        }))
+        }
+        fs.writeFileSync(filepath, JSON.stringify(data))
+        const user = await getUserData(body.qq)
+        user.chat.push({
+          user: data.user,
+          bot: data.bot,
+          group: data.group,
+          herf: data.herf,
+          model: data.model,
+          time: data.time,
+        })
+        await setUserData(body.qq, user)
         Statistics.CacheFile.count += 1
         reply.send({ file: body.entry, cacheUrl: `http://${ip}:${Config.serverPort || 3321}/page/${body.entry}` })
       } catch (err) {
-        console.error(err)
-        reply.send({ file: body.entry, cacheUrl: `http://${ip}:${Config.serverPort || 3321}/page/${body.entry}`, error: '生成失败' })
+        server.log.error(`用户生成缓存${body.entry}时发生错误： ${err}`)
+        reply.send({ file: body.entry, cacheUrl: `http://${ip}:${Config.serverPort || 3321}/page/${body.entry}`, error: body.entry + '生成失败' })
       }
     }
   })
@@ -157,11 +224,39 @@ export async function createServer() {
     reply.send(Statistics)
   })
 
+  // 获取用户数据
+  server.post('/userData', async (request, reply) => {
+    const token = request.cookies.token || 'unknown'
+    let user = usertoken.find(user => user.token === token)
+    if (!user) user = {user: ''}
+    const userData = await getUserData(user.user)
+    reply.send(userData.chat)
+  })
+
+  //清除缓存数据
+  server.post('/cleanCache', async (request, reply) => {
+    const token = request.cookies.token || 'unknown'
+    let user = usertoken.find(user => user.token === token)
+    if (!user) user = {user: ''}
+    const userData = await getUserData(user.user)
+    const dir = 'resources/ChatGPTCache/page'
+    userData.chat.forEach(function (item, index) {
+      const filename = item.herf.substring(item.herf.lastIndexOf("/") + 1) + '.json'
+      const filepath = path.join(dir, filename)
+      fs.unlinkSync(filepath)
+    })
+    userData.chat = []
+    await setUserData(user.user, userData)
+    reply.send({state: true})
+  })
+
+  // 获取系统参数
   server.post('/sysconfig', async (request, reply) => {
     const token = request.cookies.token || 'unknown'
-    if (token != usertoken) {
+    const user = usertoken.find(user => user.token === token)
+    if (!user) {
       reply.send({err: '未登录'})
-    } else {
+    } else if(user.autho === 'admin') {
       let redisConfig = {}
       if (await redis.exists('CHATGPT:BING_TOKENS') != 0) {
         let bingTokens = await redis.get('CHATGPT:BING_TOKENS')
@@ -179,14 +274,31 @@ export async function createServer() {
         chatConfig: Config,
         redisConfig: redisConfig
       })
+    } else {
+      let userSetting = await redis.get(`CHATGPT:USER:${user.user}`)
+      if (!userSetting) {
+        userSetting = {
+          usePicture: Config.defaultUsePicture,
+          useTTS: Config.defaultUseTTS,
+          ttsRole: Config.defaultTTSRole
+        }
+      } else {
+        userSetting = JSON.parse(userSetting)
+      }
+      reply.send({
+        userSetting: userSetting
+      })
     }
   })
+
+  // 设置系统参数
   server.post('/saveconfig', async (request, reply) => {
     const token = request.cookies.token || 'unknown'
-    if (token != usertoken) {
+    const user = usertoken.find(user => user.token === token)
+    const body = request.body || {}
+    if (!user) {
       reply.send({err: '未登录'})
-    } else {
-      const body = request.body || {}
+    } else if(user.autho === 'admin') {
       const chatdata = body.chatConfig || {}
       for (let [keyPath, value] of Object.entries(chatdata)) {
         if (keyPath === 'blockWords' || keyPath === 'promptBlockWords' || keyPath === 'initiativeChatGroups') { value = value.toString().split(/[,，;；\|]/) }
@@ -199,6 +311,10 @@ export async function createServer() {
       if (redisConfig.turnConfirm != null) {
         await redis.set('CHATGPT:CONFIRM', redisConfig.turnConfirm ? 'on' : 'off')
       }
+    } else {
+      if (body.userSetting){
+        await redis.set(`CHATGPT:USER:${user.user}`, JSON.stringify(body.userSetting))
+      }
     }
   })
 
@@ -208,6 +324,7 @@ export async function createServer() {
     if(request.method == 'GET')
     Statistics.WebAccess.count += 1
     done()
+
   })
   //定时任务
   var rule = new schedule.RecurrenceRule();
@@ -231,8 +348,9 @@ export async function createServer() {
     host: '::'
   }, (error) => {
     if (error) {
-      console.error(error)
+      server.log.error(`服务启动失败： ${error}`)
+    } else {
+      server.log.info(`server listening on ${server.server.address().port}`)
     }
-    server.log.info(`server listening on ${server.server.address().port}`)
   })
 }
