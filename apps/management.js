@@ -158,6 +158,10 @@ export class ChatgptManagement extends plugin {
           reg: '^#chatgpt系统(设置|配置|管理)',
           fnc: 'adminPage',
           permission: 'master'
+        },
+        {
+          reg: '^#chatgpt用户(设置|配置|管理)',
+          fnc: 'userPage',
         }
       ]
     })
@@ -789,6 +793,11 @@ export class ChatgptManagement extends plugin {
   async adminPage (e) {
     const viewHost = Config.serverHost ? `http://${Config.serverHost}/` : `http://${await getPublicIP()}:${Config.serverPort || 3321}/`
     await this.reply(`请登录${viewHost + 'admin/settings'}进行系统配置`, true)
+  }
+
+  async userPage (e) {
+    const viewHost = Config.serverHost ? `http://${Config.serverHost}/` : `http://${await getPublicIP()}:${Config.serverPort || 3321}/`
+    await this.reply(`请登录${viewHost + 'admin/dashboard'}进行系统配置`, true)
   }
   
 }
