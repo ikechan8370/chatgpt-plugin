@@ -118,15 +118,16 @@ export async function createServer() {
   server.post('/login', async (request, reply) => {
     const body = request.body || {}
     if (body.qq && body.passwd) {
+      const token = randomString(32)
       if (body.qq == Bot.uin && await redis.get('CHATGPT:ADMIN_PASSWD') == body.passwd) {
-        usertoken.push({user: body.qq, token: randomString(32), autho: 'admin'})
-        reply.setCookie('token', usertoken.token, {path: '/'})
+        usertoken.push({user: body.qq, token: token, autho: 'admin'})
+        reply.setCookie('token', token, {path: '/'})
         reply.send({login:true})
       } else {
         const user = await getUserData(body.qq)
         if (user.passwd != '' && user.passwd === body.passwd) {
-          usertoken.push({user: body.qq, token: randomString(32), autho: 'user'})
-          reply.setCookie('token', usertoken.token, {path: '/'})
+          usertoken.push({user: body.qq, token: token, autho: 'user'})
+          reply.setCookie('token', token, {path: '/'})
           reply.send({login:true})
         } else {
           reply.send({login:false,err:`用户名密码错误,如果忘记密码请私聊机器人输入 ${body.qq == Bot.uin ? '#修改管理密码' : '#修改用户密码'} 进行修改`})
