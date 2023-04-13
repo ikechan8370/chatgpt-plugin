@@ -1239,7 +1239,7 @@ export class chatgpt extends plugin {
               const hours = now.getHours()
               now.setHours(hours + 6)
               bingTokens[badBingToken].State = '受限'
-              bingTokens[index].DisactivationTime = now
+              bingTokens[badBingToken].DisactivationTime = now
               await redis.set('CHATGPT:BING_TOKENS', JSON.stringify(bingTokens))
               // 不减次数
             } else if (message && message.indexOf('UnauthorizedRequest') > -1) {
