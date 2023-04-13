@@ -214,8 +214,10 @@ export async function createServer() {
   // 获取用户数据
   server.post('/userData', async (request, reply) => {
     const token = request.cookies.token || 'unknown'
-    const user = usertoken.find(user => user.token === token)
-    reply.send(user.chat)
+    let user = usertoken.find(user => user.token === token)
+    if (!user) user = {user: ''}
+    const userData = await getUserData(user.user)
+    reply.send(userData.chat)
   })
 
   // 获取系统参数
