@@ -1023,7 +1023,8 @@ export class chatgpt extends plugin {
           entry: cacheData.file,
           userImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${e.sender.user_id}`,
           botImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${Bot.uin}`,
-          cacheHost: Config.serverHost
+          cacheHost: Config.serverHost,
+          qq: e.sender.user_id
         })
       }
       const viewHost = Config.viewHost ? `${Config.viewHost}/` : `http://127.0.0.1:${Config.serverPort || 3321}/`

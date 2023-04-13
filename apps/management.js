@@ -4,6 +4,10 @@ import { exec } from 'child_process'
 import { checkPnpm, formatDuration, parseDuration, getPublicIP } from '../utils/common.js'
 import SydneyAIClient from '../utils/SydneyAIClient.js'
 import { convertSpeaker, speakers } from '../utils/tts.js'
+import md5 from 'md5'
+import path from 'path'
+import fs from 'fs'
+
 let isWhiteList = true
 export class ChatgptManagement extends plugin {
   constructor (e) {
@@ -174,9 +178,17 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
+          reg: '^#(设置|修改)用户密码',
+          fnc: 'setUserPassword',
+        },
+        {
           reg: '^#chatgpt系统(设置|配置|管理)',
           fnc: 'adminPage',
           permission: 'master'
+        },
+        {
+          reg: '^#chatgpt用户(设置|配置|管理)',
+          fnc: 'userPage',
         }
       ]
     })
@@ -441,6 +453,7 @@ export class ChatgptManagement extends plugin {
       `【${index}】 Token：${item.Token.substring(0, 5 / 2) + '...' + item.Token.substring(item.Token.length - 5 / 2, item.Token.length)}`
     )).join('\n') : '无必应Token记录'
     await this.reply(`请发送要删除的token编号\n${tokens}`, true)
+    if (tokens.length == 0) this.finish('saveBingToken')
     return false
   }
 
@@ -916,22 +929,77 @@ export class ChatgptManagement extends plugin {
   }
 
   async setAdminPassword (e) {
+    if (e.isGroup) {
+      await this.reply('请私聊发生命令', true)
+      return true
+    }
     this.setContext('saveAdminPassword')
     await this.reply('请发送系统管理密码', true)
+    return false
+  }
+  async setUserPassword (e) {
+    if (e.isGroup) {
+      await this.reply('请私聊发生命令', true)
+      return true
+    }
+    this.setContext('saveUserPassword')
+    await this.reply('请发送系统用户密码', true)
     return false
   }
   
   async saveAdminPassword (e) {
     if (!this.e.msg) return
-    let passwd = this.e.msg
-    await redis.set('CHATGPT:ADMIN_PASSWD', passwd)
+    const passwd = this.e.msg
+    await redis.set('CHATGPT:ADMIN_PASSWD', md5(passwd))
     await this.reply('设置成功', true)
     this.finish('saveAdminPassword')
+  }
+  async saveUserPassword (e) {
+    if (!this.e.msg) return
+    const passwd = this.e.msg
+    const dir = 'resources/ChatGPTCache/user'
+    const filename = `${this.e.user_id}.json`
+    const filepath = path.join(dir, filename)
+    fs.mkdirSync(dir, { recursive: true })
+    if (fs.existsSync(filepath)) {
+      fs.readFile(filepath, 'utf8', (err, data) => {
+        if (err) {
+          console.error(err)
+          return
+        }
+        const config = JSON.parse(data)
+        config.passwd = md5(passwd)
+        fs.writeFile(filepath, JSON.stringify(config), 'utf8', (err) => {
+          if (err) {
+            console.error(err)
+            return
+          }
+        })
+      })
+    } else {
+      fs.writeFile(filepath, JSON.stringify({
+        user: this.e.user_id,
+        passwd: md5(passwd),
+        chat: []
+      }), 'utf8', (err) => {
+        if (err) {
+          console.error(err)
+          return
+        }
+      })
+    }
+    await this.reply('设置完成', true)
+    this.finish('saveUserPassword')
   }
 
   async adminPage (e) {
     const viewHost = Config.serverHost ? `http://${Config.serverHost}/` : `http://${await getPublicIP()}:${Config.serverPort || 3321}/`
     await this.reply(`请登录${viewHost + 'admin/settings'}进行系统配置`, true)
+  }
+
+  async userPage (e) {
+    const viewHost = Config.serverHost ? `http://${Config.serverHost}/` : `http://${await getPublicIP()}:${Config.serverPort || 3321}/`
+    await this.reply(`请登录${viewHost + 'admin/dashboard'}进行系统配置`, true)
   }
   
 }
