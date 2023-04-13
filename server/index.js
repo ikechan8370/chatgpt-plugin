@@ -105,6 +105,18 @@ export async function createServer() {
     const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
     reply.type('text/html').send(stream)
   })
+  await server.get('/admin/dashboard', (request, reply) => {
+    const token = request.cookies.token || 'unknown'
+    const user = usertoken.find(user => user.token === token)
+    if (!user) {
+      reply.redirect(301, '/auth/login')
+    }
+    if (user.autho === 'admin') {
+      reply.redirect(301, '/admin/settings')
+    }
+    const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
+    reply.type('text/html').send(stream)
+  })
   await server.get('/admin/settings', (request, reply) => {
     const token = request.cookies.token || 'unknown'
     const user = usertoken.find(user => user.token === token)
