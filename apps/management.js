@@ -4,6 +4,8 @@ import { exec } from 'child_process'
 import { checkPnpm, formatDuration, parseDuration, getPublicIP } from '../utils/common.js'
 import SydneyAIClient from '../utils/SydneyAIClient.js'
 import md5 from 'md5'
+import path from 'path'
+import fs from 'fs'
 
 export class ChatgptManagement extends plugin {
   constructor (e) {
@@ -245,6 +247,7 @@ export class ChatgptManagement extends plugin {
       `【${index}】 Token：${item.Token.substring(0, 5 / 2) + '...' + item.Token.substring(item.Token.length - 5 / 2, item.Token.length)}`
     )).join('\n') : '无必应Token记录'
     await this.reply(`请发送要删除的token编号\n${tokens}`, true)
+    if (tokens.length == 0) this.finish('saveBingToken')
     return false
   }
 
