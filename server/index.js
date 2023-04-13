@@ -282,10 +282,10 @@ export async function createServer() {
   server.post('/saveconfig', async (request, reply) => {
     const token = request.cookies.token || 'unknown'
     const user = usertoken.find(user => user.token === token)
+    const body = request.body || {}
     if (!user) {
       reply.send({err: '未登录'})
     } else if(user.autho === 'admin') {
-      const body = request.body || {}
       const chatdata = body.chatConfig || {}
       for (let [keyPath, value] of Object.entries(chatdata)) {
         if (keyPath === 'blockWords' || keyPath === 'promptBlockWords' || keyPath === 'initiativeChatGroups') { value = value.toString().split(/[,，;；\|]/) }
