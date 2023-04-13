@@ -227,7 +227,7 @@ export async function createServer() {
     if (!user) user = {user: ''}
     const userData = await getUserData(user.user)
     const dir = 'resources/ChatGPTCache/page'
-    userData.forEach(function (item, index) {
+    userData.chat.forEach(function (item, index) {
       const filename = item.herf.substring(item.herf.lastIndexOf("/") + 1) + '.json'
       const filepath = path.join(dir, filename)
       fs.unlink(filepath)
