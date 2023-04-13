@@ -200,8 +200,8 @@ export async function createServer() {
         Statistics.CacheFile.count += 1
         reply.send({ file: body.entry, cacheUrl: `http://${ip}:${Config.serverPort || 3321}/page/${body.entry}` })
       } catch (err) {
-        console.error(err)
-        reply.send({ file: body.entry, cacheUrl: `http://${ip}:${Config.serverPort || 3321}/page/${body.entry}`, error: '生成失败' })
+        server.log.error(`用户生成缓存${body.entry}时发生错误： ${err}`)
+        reply.send({ file: body.entry, cacheUrl: `http://${ip}:${Config.serverPort || 3321}/page/${body.entry}`, error: body.entry + '生成失败' })
       }
     }
   })
@@ -334,8 +334,9 @@ export async function createServer() {
     host: '::'
   }, (error) => {
     if (error) {
-      console.error(error)
+      server.log.error(`服务启动失败： ${error}`)
+    } else {
+      server.log.info(`server listening on ${server.server.address().port}`)
     }
-    server.log.info(`server listening on ${server.server.address().port}`)
   })
 }
