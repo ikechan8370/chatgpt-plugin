@@ -972,7 +972,7 @@ export class chatgpt extends plugin {
     return true
   }
 
-  async chatgpt4(e) {
+  async chatgpt4 (e) {
     if (!Config.allowOtherMode) {
       return false
     }
@@ -991,7 +991,7 @@ export class chatgpt extends plugin {
     return true
   }
 
-  async chatglm(e) {
+  async chatglm (e) {
     if (!Config.allowOtherMode) {
       return false
     }
