@@ -73,6 +73,11 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
+          reg: '^#chatgpt切换API4$',
+          fnc: 'useReversedAPIBasedSolutionApi4',
+          permission: 'master'
+        },
+        {
           reg: '^#chatgpt切换(必应|Bing)$',
           fnc: 'useBingSolution',
           permission: 'master'
@@ -574,6 +579,16 @@ export class ChatgptManagement extends plugin {
       await this.reply('已切换到基于第三方Reversed Conversastion API(API3)的解决方案')
     } else {
       await this.reply('当前已经是API3模式了')
+    }
+  }
+
+  async useReversedAPIBasedSolutionApi4 (e) {
+    let use = await redis.get('CHATGPT:USE')
+    if (use !== 'api4') {
+      await redis.set('CHATGPT:USE', 'api4')
+      await this.reply('已切换到基于第三方Reversed Conversastion API(API4)的解决方案')
+    } else {
+      await this.reply('当前已经是API4模式了')
     }
   }
 
