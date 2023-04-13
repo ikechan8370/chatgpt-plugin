@@ -834,16 +834,6 @@ export class chatgpt extends plugin {
         if (quote.imageLink) imgUrls.push(quote.imageLink)
       }
       if (useTTS) {
-        // 先把文字回复发出去，避免过久等待合成语音
-        if (Config.alsoSendText) {
-          await this.reply(await convertFaces(response, Config.enableRobotAt, e), e.isGroup)
-          if (quotemessage.length > 0) {
-            this.reply(await makeForwardMsg(this.e, quotemessage.map(msg => `${msg.text} - ${msg.url}`)))
-          }
-          if (Config.enableSuggestedResponses && chatMessage.suggestedResponses) {
-            this.reply(`建议的回复：\n${chatMessage.suggestedResponses}`)
-          }
-        }
         // 处理tts输入文本
         let ttsResponse, ttsRegex
         const regex = /^\/(.*)\/([gimuy]*)$/
@@ -856,6 +846,19 @@ export class chatgpt extends plugin {
           ttsRegex = ''
         }
         ttsResponse = response.replace(ttsRegex, '')
+        // 先把文字回复发出去，避免过久等待合成语音
+        if (Config.alsoSendText || ttsResponse.length > Config.ttsAutoFallbackThreshold) {
+          if(ttsResponse.length > Config.ttsAutoFallbackThreshold){
+            await this.reply('回复的内容过长，已转为文本模式')
+          }
+          await this.reply(await convertFaces(response, Config.enableRobotAt, e), e.isGroup)
+          if (quotemessage.length > 0) {
+            this.reply(await makeForwardMsg(this.e, quotemessage.map(msg => `${msg.text} - ${msg.url}`)))
+          }
+          if (Config.enableSuggestedResponses && chatMessage.suggestedResponses) {
+            this.reply(`建议的回复：\n${chatMessage.suggestedResponses}`)
+          }
+        }
         if (Config.ttsSpace && ttsResponse.length <= Config.ttsAutoFallbackThreshold) {
           try {
             let wav = await generateAudio(ttsResponse, speaker, '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）')
@@ -873,8 +876,8 @@ export class chatgpt extends plugin {
           } catch (err) {
             await this.reply('合成语音发生错误~')
           }
-        } else {
-          await this.reply('你没有配置转语音API或者文字太长了哦')
+        } else if(!Config.ttsSpace){
+          await this.reply('你没有配置转语音API哦')
         }
       } else if (userSetting.usePicture || (Config.autoUsePicture && response.length > Config.autoUsePictureThreshold)) {
         // todo use next api of chatgpt to complete incomplete respoonse
