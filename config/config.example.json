@@ -71,5 +71,6 @@
   "enforceMaster": false,
   "enablePrivateChat": false,
   "groupWhitelist": [],
-  "groupBlacklist": []
+  "groupBlacklist": [],
+  "ttsRegex": "/匹配规则/匹配模式"
 }

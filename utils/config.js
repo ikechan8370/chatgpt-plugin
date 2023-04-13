@@ -90,6 +90,7 @@ const defaultConfig = {
   enablePrivateChat: false,
   groupWhitelist: [],
   groupBlacklist: [],
+  ttsRegex: '/匹配规则/匹配模式',
   version: 'v2.5.1'
 }
 const _path = process.cwd()

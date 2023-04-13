@@ -844,8 +844,18 @@ export class chatgpt extends plugin {
             this.reply(`建议的回复：\n${chatMessage.suggestedResponses}`)
           }
         }
-        // 过滤‘括号’的内容不读，减少违和感
-        let ttsResponse = response.replace(/[(（\[{<【《「『【〖【【【“‘'"@][^()（）\]}>】》」』】〗】】”’'@]*[)）\]}>】》」』】〗】】”’'@]/g, '')
+        // 处理tts输入文本
+        let ttsResponse, ttsRegex
+        const regex = /^\/(.*)\/([gimuy]*)$/
+        const match = Config.ttsRegex.match(regex)
+        if (match) {
+          const pattern = match[1]
+          const flags = match[2]
+          ttsRegex = new RegExp(pattern, flags) // 返回新的正则表达式对象
+        } else {
+          ttsRegex = ''
+        }
+        ttsResponse = response.replace(ttsRegex, '')
         if (Config.ttsSpace && ttsResponse.length <= Config.ttsAutoFallbackThreshold) {
           try {
             let wav = await generateAudio(ttsResponse, speaker, '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）')
