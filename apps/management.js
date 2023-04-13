@@ -3,6 +3,7 @@ import { Config } from '../utils/config.js'
 import { exec } from 'child_process'
 import { checkPnpm, formatDuration, parseDuration, getPublicIP } from '../utils/common.js'
 import SydneyAIClient from '../utils/SydneyAIClient.js'
+import md5 from 'md5'
 
 export class ChatgptManagement extends plugin {
   constructor (e) {
@@ -146,6 +147,10 @@ export class ChatgptManagement extends plugin {
           reg: '^#(设置|修改)管理密码',
           fnc: 'setAdminPassword',
           permission: 'master'
+        },
+        {
+          reg: '^#(设置|修改)用户密码',
+          fnc: 'setUserPassword',
         },
         {
           reg: '^#chatgpt系统(设置|配置|管理)',
@@ -719,13 +724,55 @@ export class ChatgptManagement extends plugin {
     await this.reply('请发送系统管理密码', true)
     return false
   }
+  async setUserPassword (e) {
+    this.setContext('saveUserPassword')
+    await this.reply('请发送系统用户密码', true)
+    return false
+  }
   
   async saveAdminPassword (e) {
     if (!this.e.msg) return
-    let passwd = this.e.msg
-    await redis.set('CHATGPT:ADMIN_PASSWD', passwd)
+    const passwd = this.e.msg
+    await redis.set('CHATGPT:ADMIN_PASSWD', md5(passwd))
     await this.reply('设置成功', true)
     this.finish('saveAdminPassword')
+  }
+  async saveUserPassword (e) {
+    if (!this.e.msg) return
+    const passwd = this.e.msg
+    const dir = 'resources/ChatGPTCache/user'
+    const filename = `${this.e.user_id}.json`
+    const filepath = path.join(dir, filename)
+    fs.mkdirSync(dir, { recursive: true })
+    if (fs.existsSync(filepath)) {
+      fs.readFile(filepath, 'utf8', (err, data) => {
+        if (err) {
+          console.error(err)
+          return
+        }
+        const config = JSON.parse(data)
+        config.passwd = md5(passwd)
+        fs.writeFile(filepath, JSON.stringify(config), 'utf8', (err) => {
+          if (err) {
+            console.error(err)
+            return
+          }
+        })
+      })
+    } else {
+      fs.writeFile(filepath, JSON.stringify({
+        user: this.e.user_id,
+        passwd: md5(passwd),
+        chat: []
+      }), 'utf8', (err) => {
+        if (err) {
+          console.error(err)
+          return
+        }
+      })
+    }
+    await this.reply('设置完成', true)
+    this.finish('saveUserPassword')
   }
 
   async adminPage (e) {

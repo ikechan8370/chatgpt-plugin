@@ -16,7 +16,7 @@ const server = fastify({
   logger: Config.debug
 })
 
-let usertoken = ''
+let usertoken = []
 let Statistics = {
   SystemAccess: {
     count: 0,
@@ -52,6 +52,30 @@ async function getLoad() {
   }
 }
 
+async function getUserData(qq) {
+  const dir = 'resources/ChatGPTCache/user'
+  const filename = `${qq}.json`
+  const filepath = path.join(dir, filename)
+  let data = await fs.readFile(filepath, 'utf8')
+  try {
+    data = JSON.parse(data)
+  } catch (error) {
+    data = {
+      user: qq,
+      passwd: '',
+      chat: []
+    }
+  }
+  return data
+}
+async function setUserData(qq, data) {
+  const dir = 'resources/ChatGPTCache/user'
+  const filename = `${qq}.json`
+  const filepath = path.join(dir, filename)
+  fs.mkdirSync(dir, { recursive: true })
+  fs.writeFileSync(filepath, JSON.stringify(data))
+}
+
 export async function createServer() {
   await server.register(cors, {
     origin: '*',
@@ -74,8 +98,18 @@ export async function createServer() {
   })
   await server.get('/admin/*', (request, reply) => {
     const token = request.cookies.token || 'unknown'
-    if (token != usertoken) {
-        reply.redirect(301, '/auth/login')
+    const user = usertoken.find(user => user.token === token)
+    if (!user) {
+      reply.redirect(301, '/auth/login')
+    }
+    const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
+    reply.type('text/html').send(stream)
+  })
+  await server.get('/admin/settings', (request, reply) => {
+    const token = request.cookies.token || 'unknown'
+    const user = usertoken.find(user => user.token === token)
+    if (!user || user.autho != 'admin') {
+      reply.redirect(301, '/admin/')
     }
     const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
     reply.type('text/html').send(stream)
@@ -85,11 +119,18 @@ export async function createServer() {
     const body = request.body || {}
     if (body.qq && body.passwd) {
       if (body.qq == Bot.uin && await redis.get('CHATGPT:ADMIN_PASSWD') == body.passwd) {
-        usertoken = randomString(32)
-        reply.setCookie('token', usertoken, {path: '/'})
+        usertoken.push({user: body.qq, token: randomString(32), autho: 'admin'})
+        reply.setCookie('token', usertoken.token, {path: '/'})
         reply.send({login:true})
       } else {
-        reply.send({login:false,err:'用户名密码错误'})
+        const user = await getUserData(body.qq)
+        if (user.passwd != '' && user.passwd === body.passwd) {
+          usertoken.push({user: body.qq, token: randomString(32), autho: 'user'})
+          reply.setCookie('token', usertoken.token, {path: '/'})
+          reply.send({login:true})
+        } else {
+          reply.send({login:false,err:`用户名密码错误,如果忘记密码请私聊机器人输入 ${body.qq == Bot.uin ? '#修改管理密码' : '#修改用户密码'} 进行修改`})
+        }
       }
     } else {
       reply.send({login:false,err:'未输入用户名或密码'})
@@ -129,7 +170,7 @@ export async function createServer() {
       const ip = await getPublicIP()
       try {
         fs.mkdirSync(dir, { recursive: true });
-        fs.writeFileSync(filepath, JSON.stringify({
+        const data = {
           user: body.content.senderName,
           bot: Config.chatViewBotName || (body.bing ? 'Bing' : 'ChatGPT'),
           userImg: body.userImg || '',
@@ -141,8 +182,20 @@ export async function createServer() {
           quote: body.content.quote,
           images: body.content.images || [],
           suggest: body.content.suggest || [],
+          model: body.bing ? 'Bing' : 'ChatGPT',
           time: new Date()
-        }))
+        }
+        fs.writeFileSync(filepath, JSON.stringify(data))
+        const user = await getUserData(body.qq)
+        user.chat.push({
+          user: data.user,
+          bot: data.bot,
+          group: data.group,
+          herf: data.herf,
+          model: data.model,
+          time: data.time,
+        })
+        await setUserData(body.qq, user)
         Statistics.CacheFile.count += 1
         reply.send({ file: body.entry, cacheUrl: `http://${ip}:${Config.serverPort || 3321}/page/${body.entry}` })
       } catch (err) {
@@ -157,11 +210,20 @@ export async function createServer() {
     reply.send(Statistics)
   })
 
+  // 获取用户数据
+  server.post('/userData', async (request, reply) => {
+    const token = request.cookies.token || 'unknown'
+    const user = usertoken.find(user => user.token === token)
+    reply.send(user.chat)
+  })
+
+  // 获取系统参数
   server.post('/sysconfig', async (request, reply) => {
     const token = request.cookies.token || 'unknown'
-    if (token != usertoken) {
+    const user = usertoken.find(user => user.token === token)
+    if (!user) {
       reply.send({err: '未登录'})
-    } else {
+    } else if(user.autho === 'admin') {
       let redisConfig = {}
       if (await redis.exists('CHATGPT:BING_TOKENS') != 0) {
         let bingTokens = await redis.get('CHATGPT:BING_TOKENS')
@@ -179,11 +241,16 @@ export async function createServer() {
         chatConfig: Config,
         redisConfig: redisConfig
       })
+    } else {
+      reply.send({})
     }
   })
+
+  // 设置系统参数
   server.post('/saveconfig', async (request, reply) => {
     const token = request.cookies.token || 'unknown'
-    if (token != usertoken) {
+    const user = usertoken.find(user => user.token === token)
+    if (!user) {
       reply.send({err: '未登录'})
     } else {
       const body = request.body || {}
