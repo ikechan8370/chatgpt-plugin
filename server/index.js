@@ -56,19 +56,19 @@ async function getUserData(qq) {
   const dir = 'resources/ChatGPTCache/user'
   const filename = `${qq}.json`
   const filepath = path.join(dir, filename)
-  let data = {
-    user: qq,
-    passwd: '',
-    chat: []
-  }
+  let data = fs.readFileSync(filepath, 'utf8')
   try {
-    data = fs.readFileSync(filepath, 'utf8')
     data = JSON.parse(data)
   } catch (error) {
-    console.warn(error)
+    data = {
+      user: qq,
+      passwd: '',
+      chat: []
+    }
   }
   return data
 }
+
 async function setUserData(qq, data) {
   const dir = 'resources/ChatGPTCache/user'
   const filename = `${qq}.json`
