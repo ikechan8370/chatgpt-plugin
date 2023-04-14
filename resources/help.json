@@ -209,8 +209,7 @@
                 "#chatgpt查看必应token",
                 "#chatgpt迁移必应token",
                 "#chatgpt设置APIKey"
-            ],
-            "tip": "管理员功能"
+            ]
         },
         {
             "icon": "fas fa-credit-card",
@@ -242,6 +241,15 @@
                 "#修改管理密码"
             ],
             "tip": "管理员功能"
+        },
+        {
+            "icon": "fas fa-key",
+            "title": "用户面板",
+            "text": "用户管理面板",
+            "list": [
+                "#chatgpt用户管理",
+                "#修改用户密码"
+            ]
         }
     ]
 }

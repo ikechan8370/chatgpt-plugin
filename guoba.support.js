@@ -50,7 +50,6 @@ export function supportGuoba () {
           bottomHelpMessage: '设置后名单内的群禁止使用本插件。用英文逗号隔开',
           component: 'Input'
         },
-        {},
         {
           field: 'imgOcr',
           label: '图片识别',
@@ -579,7 +578,13 @@ export function supportGuoba () {
           label: 'Bot命名',
           bottomHelpMessage: '新渲染模式强制修改Bot命名',
           component: 'Input'
-        }
+        },
+        {
+          field: 'groupAdminPage',
+          label: '允许群获取后台地址',
+          bottomHelpMessage: '是否允许群获取后台地址，关闭后将只能私聊获取',
+          component: 'Switch'
+        },
       ],
       // 获取配置数据方法（用于前端填充显示数据）
       getConfigData () {
