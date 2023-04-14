@@ -239,7 +239,7 @@ export class dalle extends plugin {
       this.reply('请提供绘图prompt')
       return false
     }
-    
+
     let bingToken = ''
     if (await redis.exists('CHATGPT:BING_TOKENS') != 0) {
       let bingTokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
@@ -251,7 +251,6 @@ export class dalle extends plugin {
         })
         bingToken = minElement.Token
       } else if (restricted.length > 0) {
-        allThrottled = true
         const minElement = restricted.reduce((min, current) => {
           return current.Usage < min.Usage ? current : min
         })

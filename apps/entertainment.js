@@ -221,8 +221,8 @@ export class Entertainment extends plugin {
           return false
         } else {
           Config.initiativeChatGroups = Config.initiativeChatGroups
-              .filter(group => group.trim() !== '')
-              .concat(validGroups)
+            .filter(group => group.trim() !== '')
+            .concat(validGroups)
         }
         if (typeof paramArray[2] === 'undefined' && typeof paramArray[3] === 'undefined') {
           replyMsg = `已更新打招呼设置：\n${!e.isGroup ? '群号：' + Config.initiativeChatGroups.join(', ') + '\n' : ''}间隔时间：${Config.helloInterval}小时\n触发概率：${Config.helloProbability}%`
