@@ -50,7 +50,6 @@ export function supportGuoba () {
           bottomHelpMessage: '设置后名单内的群禁止使用本插件。用英文逗号隔开',
           component: 'Input'
         },
-        {},
         {
           field: 'imgOcr',
           label: '图片识别',
