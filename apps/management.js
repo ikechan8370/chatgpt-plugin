@@ -929,7 +929,7 @@ export class ChatgptManagement extends plugin {
   }
 
   async setAdminPassword (e) {
-    if (e.isGroup) {
+    if (e.isGroup || e.isPrivate) {
       await this.reply('请私聊发生命令', true)
       return true
     }
@@ -938,7 +938,7 @@ export class ChatgptManagement extends plugin {
     return false
   }
   async setUserPassword (e) {
-    if (e.isGroup) {
+    if (e.isGroup || e.isPrivate) {
       await this.reply('请私聊发生命令', true)
       return true
     }
@@ -993,11 +993,19 @@ export class ChatgptManagement extends plugin {
   }
 
   async adminPage (e) {
+    if (!Config.groupAdminPage && (e.isGroup || e.isPrivate)) {
+      await this.reply('请私聊发生命令', true)
+      return true
+    }
     const viewHost = Config.serverHost ? `http://${Config.serverHost}/` : `http://${await getPublicIP()}:${Config.serverPort || 3321}/`
     await this.reply(`请登录${viewHost + 'admin/settings'}进行系统配置`, true)
   }
 
   async userPage (e) {
+    if (!Config.groupAdminPage && (e.isGroup || e.isPrivate)) {
+      await this.reply('请私聊发生命令', true)
+      return true
+    }
     const viewHost = Config.serverHost ? `http://${Config.serverHost}/` : `http://${await getPublicIP()}:${Config.serverPort || 3321}/`
     await this.reply(`请登录${viewHost + 'admin/dashboard'}进行系统配置`, true)
   }
