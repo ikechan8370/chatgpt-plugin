@@ -930,7 +930,7 @@ export class ChatgptManagement extends plugin {
 
   async setAdminPassword (e) {
     if (e.isGroup || e.isPrivate) {
-      await this.reply('请私聊发生命令', true)
+      await this.reply('请私聊发送命令', true)
       return true
     }
     this.setContext('saveAdminPassword')
@@ -939,7 +939,7 @@ export class ChatgptManagement extends plugin {
   }
   async setUserPassword (e) {
     if (e.isGroup || e.isPrivate) {
-      await this.reply('请私聊发生命令', true)
+      await this.reply('请私聊发送命令', true)
       return true
     }
     this.setContext('saveUserPassword')
@@ -994,7 +994,7 @@ export class ChatgptManagement extends plugin {
 
   async adminPage (e) {
     if (!Config.groupAdminPage && (e.isGroup || e.isPrivate)) {
-      await this.reply('请私聊发生命令', true)
+      await this.reply('请私聊发送命令', true)
       return true
     }
     const viewHost = Config.serverHost ? `http://${Config.serverHost}/` : `http://${await getPublicIP()}:${Config.serverPort || 3321}/`
@@ -1003,7 +1003,7 @@ export class ChatgptManagement extends plugin {
 
   async userPage (e) {
     if (!Config.groupAdminPage && (e.isGroup || e.isPrivate)) {
-      await this.reply('请私聊发生命令', true)
+      await this.reply('请私聊发送命令', true)
       return true
     }
     const viewHost = Config.serverHost ? `http://${Config.serverHost}/` : `http://${await getPublicIP()}:${Config.serverPort || 3321}/`
