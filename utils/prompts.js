@@ -47,4 +47,3 @@ export function deleteOnePrompt (name) {
   let filePath = `${_path}/plugins/chatgpt-plugin/prompts/${name}.txt`
   fs.unlinkSync(filePath)
 }
-

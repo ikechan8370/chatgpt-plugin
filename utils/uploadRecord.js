@@ -175,43 +175,6 @@ function uuid () {
   let hex = crypto.randomBytes(16).toString('hex')
   return hex.substr(0, 8) + '-' + hex.substr(8, 4) + '-' + hex.substr(12, 4) + '-' + hex.substr(16, 4) + '-' + hex.substr(20)
 }
-
-/** 计算流的md5 */
-function md5Stream (readable) {
-  return new Promise((resolve, reject) => {
-    readable.on('error', reject)
-    readable.pipe(crypto.createHash('md5')
-      .on('error', reject)
-      .on('data', resolve))
-  })
-}
-
-/** 计算文件的md5和sha */
-function fileHash (filepath) {
-  const readable = fs.createReadStream(filepath)
-  const sha = new Promise((resolve, reject) => {
-    readable.on('error', reject)
-    readable.pipe(crypto.createHash('sha1')
-      .on('error', reject)
-      .on('data', resolve))
-  })
-  return Promise.all([md5Stream(readable), sha])
-}
-
-/** 群号转uin */
-function code2uin (code) {
-  let left = Math.floor(code / 1000000)
-  if (left >= 0 && left <= 10) { left += 202 } else if (left >= 11 && left <= 19) { left += 469 } else if (left >= 20 && left <= 66) { left += 2080 } else if (left >= 67 && left <= 156) { left += 1943 } else if (left >= 157 && left <= 209) { left += 1990 } else if (left >= 210 && left <= 309) { left += 3890 } else if (left >= 310 && left <= 335) { left += 3490 } else if (left >= 336 && left <= 386) { left += 2265 } else if (left >= 387 && left <= 499) { left += 3490 }
-  return left * 1000000 + code % 1000000
-}
-
-/** uin转群号 */
-function uin2code (uin) {
-  let left = Math.floor(uin / 1000000)
-  if (left >= 202 && left <= 212) { left -= 202 } else if (left >= 480 && left <= 488) { left -= 469 } else if (left >= 2100 && left <= 2146) { left -= 2080 } else if (left >= 2010 && left <= 2099) { left -= 1943 } else if (left >= 2147 && left <= 2199) { left -= 1990 } else if (left >= 2600 && left <= 2651) { left -= 2265 } else if (left >= 3800 && left <= 3989) { left -= 3490 } else if (left >= 4100 && left <= 4199) { left -= 3890 }
-  return left * 1000000 + uin % 1000000
-}
-
 function int32ip2str (ip) {
   if (typeof ip === 'string') { return ip }
   ip = ip & 0xffffffff
@@ -222,60 +185,12 @@ function int32ip2str (ip) {
     (ip & 0xff000000) >> 24 & 0xff
   ].join('.')
 }
-
-/** 解析彩色群名片 */
-function parseFunString (buf) {
-  if (buf[0] === 0xA) {
-    let res = ''
-    try {
-      let arr = core.pb.decode(buf)[1]
-      if (!Array.isArray(arr)) { arr = [arr] }
-      for (let v of arr) {
-        if (v[2]) { res += String(v[2]) }
-      }
-    } catch { }
-    return res
-  } else {
-    return String(buf)
-  }
-}
-
-/** xml转义 */
-function escapeXml (str) {
-  return str.replace(/[&"><]/g, function (s) {
-    if (s === '&') { return '&amp;' }
-    if (s === '<') { return '&lt;' }
-    if (s === '>') { return '&gt;' }
-    if (s === '"') { return '&quot;' }
-    return ''
-  })
-}
-
-/** 用于下载限量 */
-class DownloadTransform extends stream.Transform {
-  constructor () {
-    super(...arguments)
-    this._size = 0
-  }
-
-  _transform (data, encoding, callback) {
-    this._size += data.length
-    let error = null
-    if (this._size <= MAX_UPLOAD_SIZE) { this.push(data) } else { error = new Error('downloading over 30MB is refused') }
-    callback(error)
-  }
-}
 const IS_WIN = os.platform() === 'win32'
 /** 系统临时目录，用于临时存放下载的图片等内容 */
 const TMP_DIR = os.tmpdir()
-/** 最大上传和下载大小，以图片上传限制为准：30MB */
-const MAX_UPLOAD_SIZE = 31457280
-
 /** no operation */
 const NOOP = () => { }
-
-/** promisified pipeline */
-const pipeline = (0, util.promisify)(stream.pipeline)
+(0, util.promisify)(stream.pipeline)
 /** md5 hash */
 const md5 = (data) => (0, crypto.createHash)('md5').update(data).digest()
 
