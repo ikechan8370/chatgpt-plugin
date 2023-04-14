@@ -320,7 +320,7 @@ export class help extends plugin {
   }
 
   async newHelp (e) {
-    let use = e.msg.replace(/^#帮助-/, '').toUpperCase()
-    await renderUrl(e, `http://127.0.0.1:${Config.serverPort || 3321}/help/` + use, { Viewport: { width: 800, height: 600 } })
+    let use = e.msg.replace(/^#帮助-/, '').toUpperCase().trim()
+    await renderUrl(e, `http://127.0.0.1:${Config.serverPort || 3321}/help/` + use, {Viewport: {width: 800, height: 600}})
   }
 }

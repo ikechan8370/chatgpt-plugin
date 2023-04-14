@@ -834,8 +834,23 @@ export class chatgpt extends plugin {
         if (quote.imageLink) imgUrls.push(quote.imageLink)
       }
       if (useTTS) {
+        // 处理tts输入文本
+        let ttsResponse, ttsRegex
+        const regex = /^\/(.*)\/([gimuy]*)$/
+        const match = Config.ttsRegex.match(regex)
+        if (match) {
+          const pattern = match[1]
+          const flags = match[2]
+          ttsRegex = new RegExp(pattern, flags) // 返回新的正则表达式对象
+        } else {
+          ttsRegex = ''
+        }
+        ttsResponse = response.replace(ttsRegex, '')
         // 先把文字回复发出去，避免过久等待合成语音
-        if (Config.alsoSendText) {
+        if (Config.alsoSendText || ttsResponse.length > Config.ttsAutoFallbackThreshold) {
+          if(ttsResponse.length > Config.ttsAutoFallbackThreshold){
+            await this.reply('回复的内容过长，已转为文本模式')
+          }
           await this.reply(await convertFaces(response, Config.enableRobotAt, e), e.isGroup)
           if (quotemessage.length > 0) {
             this.reply(await makeForwardMsg(this.e, quotemessage.map(msg => `${msg.text} - ${msg.url}`)))
@@ -844,8 +859,6 @@ export class chatgpt extends plugin {
             this.reply(`建议的回复：\n${chatMessage.suggestedResponses}`)
           }
         }
-        // 过滤‘括号’的内容不读，减少违和感
-        let ttsResponse = response.replace(/[(（\[{<【《「『【〖【【【“‘'"@][^()（）\]}>】》」』】〗】】”’'@]*[)）\]}>】》」』】〗】】”’'@]/g, '')
         if (Config.ttsSpace && ttsResponse.length <= Config.ttsAutoFallbackThreshold) {
           try {
             let wav = await generateAudio(ttsResponse, speaker, '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）')
@@ -863,8 +876,8 @@ export class chatgpt extends plugin {
           } catch (err) {
             await this.reply('合成语音发生错误~')
           }
-        } else {
-          await this.reply('你没有配置转语音API或者文字太长了哦')
+        } else if(!Config.ttsSpace){
+          await this.reply('你没有配置转语音API哦')
         }
       } else if (userSetting.usePicture || (Config.autoUsePicture && response.length > Config.autoUsePictureThreshold)) {
         // todo use next api of chatgpt to complete incomplete respoonse
@@ -905,7 +918,7 @@ export class chatgpt extends plugin {
           await this.reply(`出现错误：${err}`, true, { recallMsg: e.isGroup ? 10 : 0 })
         } else {
           // 这里是否还需要上传到缓存服务器呐？多半是代理服务器的问题，本地也修不了，应该不用吧。
-          await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', `通信异常,错误信息如下 ${err?.message || err?.data?.message || (typeof (err) === 'object' ? JSON.stringify(err) : err) || '未能确认错误类型！'}`, prompt)
+          await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', `通信异常,错误信息如下 ${err?.message || err?.data?.message || (typeof(err) === 'object' ? JSON.stringify(err) : err) || '未能确认错误类型！'}`, prompt)
         }
       }
     }
@@ -1013,7 +1026,8 @@ export class chatgpt extends plugin {
           entry: cacheData.file,
           userImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${e.sender.user_id}`,
           botImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${Bot.uin}`,
-          cacheHost: Config.serverHost
+          cacheHost: Config.serverHost,
+          qq: e.sender.user_id
         })
       }
       const viewHost = Config.viewHost ? `${Config.viewHost}/` : `http://127.0.0.1:${Config.serverPort || 3321}/`
@@ -1021,7 +1035,7 @@ export class chatgpt extends plugin {
       if (cacheres.ok) {
         cacheData = Object.assign({}, cacheData, await cacheres.json())
       }
-      if (cacheData.error) { await this.reply(`出现错误：${cacheData.error}`, true) } else { await e.reply(await renderUrl(e, viewHost + `page/${cacheData.file}?qr=${Config.showQRCode ? 'true' : 'false'}`, { retType: Config.quoteReply ? 'base64' : '', Viewport: { width: Config.chatViewWidth, height: parseInt(Config.chatViewWidth * 0.56) } }), e.isGroup && Config.quoteReply) }
+      if (cacheData.error || cacheres.status != 200) { await this.reply(`出现错误：${cacheData.error || 'server error ' + cacheres.status}`, true) } else { await e.reply(await renderUrl(e, viewHost + `page/${cacheData.file}?qr=${Config.showQRCode ? 'true' : 'false'}`, { retType: Config.quoteReply ? 'base64' : '', Viewport: { width: Config.chatViewWidth, height: parseInt(Config.chatViewWidth * 0.56) } }), e.isGroup && Config.quoteReply) }
     } else {
       if (Config.cacheEntry) cacheData.file = randomString()
       const cacheresOption = {
@@ -1124,7 +1138,11 @@ export class chatgpt extends plugin {
           try {
             let opt = _.cloneDeep(conversation) || {}
             opt.toneStyle = Config.toneStyle
-            opt.context = Config.sydneyContext
+            // 如果当前没有开启对话或者当前是Sydney模式、Custom模式，则本次对话携带拓展资料
+            let c = await redis.get(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
+            if (!c || Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom') {
+              opt.context = Config.sydneyContext
+            }
             // 重新拿存储的token，因为可能之前有过期的被删了
             let abtrs = await getAvailableBingToken(conversation, throttledTokens)
             if (Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom') {
@@ -1218,17 +1236,22 @@ export class chatgpt extends plugin {
             const message = error?.message || error?.data?.message || error || '出错了'
             if (message && message.indexOf('限流') > -1) {
               throttledTokens.push(bingToken)
+              let bingTokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
+              const badBingToken = bingTokens.findIndex(element => element.Token === bingToken)
+              const now = new Date()
+              const hours = now.getHours()
+              now.setHours(hours + 6)
+              bingTokens[badBingToken].State = '受限'
+              bingTokens[badBingToken].DisactivationTime = now
+              await redis.set('CHATGPT:BING_TOKENS', JSON.stringify(bingTokens))
               // 不减次数
             } else if (message && message.indexOf('UnauthorizedRequest') > -1) {
               // token过期了
-              logger.warn(`token${bingToken}过期了，将自动移除`)
-              let savedBingToken = await redis.get('CHATGPT:BING_TOKEN')
-              savedBingToken = savedBingToken.split('|')
-              let tokenId = savedBingToken.indexOf(bingToken)
-              savedBingToken.splice(tokenId, 1)
-              savedBingToken = savedBingToken.filter(function (element) { return element !== '' })
-              await redis.set('CHATGPT:BING_TOKEN', savedBingToken.join('|'))
-              logger.mark(`token${bingToken}已移除`)
+              let bingTokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
+              const badBingToken = bingTokens.findIndex(element => element.Token === bingToken)
+              bingTokens[badBingToken].State = '过期'
+              await redis.set('CHATGPT:BING_TOKENS', JSON.stringify(bingTokens))
+              logger.warn(`token${bingToken}已过期`)
             } else {
               retry--
               errorMessage = message === 'Timed out waiting for response. Try enabling debug mode to see more information.' ? (reply ? `${reply}\n不行了，我的大脑过载了，处理不过来了!` : '必应的小脑瓜不好使了，不知道怎么回答！') : message
@@ -1483,34 +1506,49 @@ export class chatgpt extends plugin {
 
 async function getAvailableBingToken (conversation, throttled = []) {
   let allThrottled = false
-  let bingToken = await redis.get('CHATGPT:BING_TOKEN')
-  if (!bingToken) {
+  if (!await redis.get('CHATGPT:BING_TOKENS')) {
     throw new Error('未绑定Bing Cookie，请使用#chatgpt设置必应token命令绑定Bing Cookie')
   }
-  const bingTokens = bingToken.split('|')
-  // 负载均衡
-  if (Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom') {
-    // sydney下不需要保证同一token
-    let notThrottled = bingTokens.filter(t => throttled.indexOf(t) === -1)
-    if (notThrottled.length > 0) {
-      bingToken = notThrottled[0]
-    } else {
-      // 全都被限流了，随便找一个算了
-      allThrottled = true
-      const select = Math.floor(Math.random() * bingTokens.length)
-      bingToken = bingTokens[select]
+
+  let bingToken = ''
+  let bingTokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
+  const normal = bingTokens.filter(element => element.State === '正常')
+  const restricted = bingTokens.filter(element => element.State === '受限')
+
+  // 判断受限的token是否已经可以解除
+  for (const restrictedToken of restricted) {
+    const now = new Date()
+    const tk = new Date(restrictedToken.DisactivationTime)
+    if (tk <= now) {
+      const index = bingTokens.findIndex(element => element.Token === restrictedToken.Token)
+      bingTokens[index].Usage = 0
+      bingTokens[index].State = '正常'
     }
-    // const select = Math.floor(Math.random() * bingTokens.length)
-    // bingToken = bingTokens[select]
+  }
+  if (normal.length > 0) {
+    const minElement = normal.reduce((min, current) => {
+      return current.Usage < min.Usage ? current : min
+    })
+    bingToken = minElement.Token
+  } else if (restricted.length > 0) {
+    allThrottled = true
+    const minElement = restricted.reduce((min, current) => {
+      return current.Usage < min.Usage ? current : min
+    })
+    bingToken = minElement.Token
   } else {
+    throw new Error('全部Token均已失效，暂时无法使用')
+  }
+  if (Config.toneStyle != 'Sydney' && Config.toneStyle != 'Custom') {
     // bing 下，需要保证同一对话使用同一账号的token
-    if (!conversation.bingToken) {
-      const select = Math.floor(Math.random() * bingTokens.length)
-      bingToken = bingTokens[select]
-    } else if (bingTokens.indexOf(conversation.bingToken) > -1) {
+    if (bingTokens.findIndex(element => element.Token === conversation.bingToken) > -1) {
       bingToken = conversation.bingToken
     }
   }
+  // 记录使用情况
+  const index = bingTokens.findIndex(element => element.Token === bingToken)
+  bingTokens[index].Usage += 1
+  await redis.set('CHATGPT:BING_TOKENS', JSON.stringify(bingTokens))
   return {
     bingToken,
     allThrottled

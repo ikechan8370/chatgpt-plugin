@@ -1,7 +1,7 @@
 import { Config } from './config.js'
 import fetch from 'node-fetch'
 import _ from 'lodash'
-import {wrapTextByLanguage} from "./common.js";
+import { wrapTextByLanguage } from './common.js'
 let proxy
 if (Config.proxy) {
   try {

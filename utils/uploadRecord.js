@@ -1,4 +1,4 @@
-import Contactable, { core } from 'oicq'
+// import Contactable, { core } from 'oicq'
 import querystring from 'querystring'
 import fetch from 'node-fetch'
 import fs from 'fs'
@@ -7,6 +7,14 @@ import util from 'util'
 import stream from 'stream'
 import crypto from 'crypto'
 import child_process from 'child_process'
+let module
+try {
+  module = await import('oicq')
+} catch (err) {
+  module = await import('icqq')
+}
+const { core } = module
+const Contactable = module.default
 // import { pcm2slk } from 'node-silk'
 let errors = {}
 let pcm2slk

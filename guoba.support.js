@@ -84,6 +84,12 @@ export function supportGuoba () {
           }
         },
         {
+          field: 'ttsRegex',
+          label: '语音过滤正则表达式',
+          bottomHelpMessage: '语音模式下，配置此项以过滤不想被读出来的内容。表达式测试地址：https://www.runoob.com/regexp/regexp-syntax.html',
+          component: 'Input'
+        },
+        {
           field: 'ttsAutoFallbackThreshold',
           label: '语音转文字阈值',
           helpMessage: '语音模式下，字数超过这个阈值就降级为文字',
