@@ -1229,6 +1229,13 @@ export class chatgpt extends plugin {
                 })
               }
             }
+            // 如果token曾经有异常，则清除异常
+            let Tokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
+            const TokenIndex = Tokens.findIndex(element => element.Token === abtrs.bingToken)
+            if (Tokens[TokenIndex].exception) {
+              delete Tokens[TokenIndex].exception
+              await redis.set('CHATGPT:BING_TOKENS', JSON.stringify(Tokens))
+            }
             errorMessage = ''
             break
           } catch (error) {
@@ -1249,7 +1256,17 @@ export class chatgpt extends plugin {
               // token过期了
               let bingTokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
               const badBingToken = bingTokens.findIndex(element => element.Token === bingToken)
-              bingTokens[badBingToken].State = '过期'
+              // 可能是微软抽风，给三次机会
+              if (bingTokens[badBingToken].exception) {
+                if (bingTokens[badBingToken].exception <= 3) {
+                  bingTokens[badBingToken].exception += 1
+                } else {
+                  bingTokens[badBingToken].exception = 0
+                  bingTokens[badBingToken].State = '过期'
+                }
+              } else {
+                bingTokens[badBingToken].exception = 1
+              }
               await redis.set('CHATGPT:BING_TOKENS', JSON.stringify(bingTokens))
               logger.warn(`token${bingToken}已过期`)
             } else {
