@@ -710,7 +710,7 @@ export class chatgpt extends plugin {
           num: 0
         }
       }
-    } else if (use !== 'poe' && use === 'claude') {
+    } else if (use !== 'poe' && use !== 'claude') {
       switch (use) {
         case 'api': {
           key = `CHATGPT:CONVERSATIONS:${e.sender.user_id}`
