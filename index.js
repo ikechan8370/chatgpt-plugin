@@ -30,7 +30,6 @@ for (let i in files) {
 
 // 启动服务器
 await createServer()
-
 logger.info('**************************************')
 logger.info('chatgpt-plugin加载成功')
 logger.info(`当前版本${Config.version}`)

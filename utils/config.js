@@ -92,7 +92,11 @@ const defaultConfig = {
   groupWhitelist: [],
   groupBlacklist: [],
   ttsRegex: '/匹配规则/匹配模式',
-  version: 'v2.5.2'
+  slackUserToken: '',
+  slackBotUserToken: '',
+  slackChannelId: '',
+  slackSigningSecret: '',
+  version: 'v2.5.3'
 }
 const _path = process.cwd()
 let config = {}

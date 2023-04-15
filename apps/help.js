@@ -138,8 +138,8 @@ let helpData = [
       },
       {
         icon: 'switch',
-        title: '#chatgpt切换浏览器/API/API3/Bing/ChatGLM',
-        desc: '切换使用的后端为浏览器或OpenAI API/反代官网API/Bing/自建ChatGLM'
+        title: '#chatgpt切换浏览器/API/API3/Bing/ChatGLM/Claude/Poe',
+        desc: '切换使用的后端为浏览器或OpenAI API/反代官网API/Bing/自建ChatGLM/Slack Claude/Poe'
       },
       {
         icon: 'confirm',
