@@ -999,7 +999,7 @@ export class ChatgptManagement extends plugin {
   }
 
   async adminPage (e) {
-    if (!Config.groupAdminPage && (e.isGroup || e.isPrivate)) {
+    if (!Config.groupAdminPage && (e.isGroup || !e.isPrivate)) {
       await this.reply('请私聊发送命令', true)
       return true
     }
@@ -1008,7 +1008,7 @@ export class ChatgptManagement extends plugin {
   }
 
   async userPage (e) {
-    if (!Config.groupAdminPage && (e.isGroup || e.isPrivate)) {
+    if (!Config.groupAdminPage && (e.isGroup || !e.isPrivate)) {
       await this.reply('请私聊发送命令', true)
       return true
     }
