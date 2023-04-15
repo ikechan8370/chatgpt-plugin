@@ -551,8 +551,12 @@ export class chatgpt extends plugin {
         let me = mm.get(Bot.uin)
         let card = me.card
         let nickname = me.nickname
-        prompt = prompt.replace(`@${card}`, '').trim()
-        prompt = prompt.replace(`@${nickname}`, '').trim()
+        if (card) {
+          prompt = prompt.replace(`@${card}`, '').trim()
+        }
+        if (nickname) {
+          prompt = prompt.replace(`@${nickname}`, '').trim()
+        }
       }
     } else {
       let ats = e.message.filter(m => m.type === 'at')
