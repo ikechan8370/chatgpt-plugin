@@ -442,6 +442,34 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
+          label: '以下为Slack Claude方式的配置',
+          component: 'Divider'
+        },
+        {
+          field: 'slackUserToken',
+          label: 'Slack用户Token',
+          bottomHelpMessage: 'slackUserToken，在OAuth&Permissions页面获取。需要具有channels:history, chat:write, groups:history, im:history, mpim:history 这几个scope',
+          component: 'Input'
+        },
+        {
+          field: 'slackBotUserToken',
+          label: 'Slack Bot Token',
+          bottomHelpMessage: 'slackBotUserToken，在OAuth&Permissions页面获取。需要channels:history，groups:history，im:history 这几个scope',
+          component: 'Input'
+        },
+        {
+          field: 'slackChannelId',
+          label: 'Slack私聊频道号',
+          bottomHelpMessage: '在Slack中与Claude机器人私聊的频道号。如果页面URL为https://app.slack.com/client/TXXXXXXXX/DXXXXXXXXX/，则频道号就是DXXXXXXXXX',
+          component: 'Input'
+        },
+        {
+          field: 'slackSigningSecret',
+          label: 'Slack签名密钥',
+          bottomHelpMessage: 'Signing Secret。在Basic Information页面获取',
+          component: 'Input'
+        },
+        {
           label: '以下为ChatGLM方式的配置',
           component: 'Divider'
         },
@@ -584,7 +612,7 @@ export function supportGuoba () {
           label: '允许群获取后台地址',
           bottomHelpMessage: '是否允许群获取后台地址，关闭后将只能私聊获取',
           component: 'Switch'
-        },
+        }
       ],
       // 获取配置数据方法（用于前端填充显示数据）
       getConfigData () {

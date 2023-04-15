@@ -3,12 +3,14 @@
   "type": "module",
   "author": "ikechan8370",
   "dependencies": {
+    "@fastify/cookie": "^8.3.0",
     "@fastify/cors": "^8.2.0",
     "@fastify/static": "^6.9.0",
-    "@fastify/cookie": "^8.3.0",
+    "@slack/bolt": "^3.13.0",
     "@waylaidwanderer/chatgpt-api": "^1.33.2",
     "chatgpt": "^5.1.1",
     "delay": "^5.0.0",
+    "diff": "^5.1.0",
     "eventsource": "^2.0.2",
     "eventsource-parser": "^1.0.0",
     "fastify": "^4.13.0",
@@ -24,8 +26,8 @@
     "ws": "^8.13.0"
   },
   "optionalDependencies": {
-    "node-silk": "^0.1.0",
     "jimp": "^0.22.7",
+    "node-silk": "^0.1.0",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-recaptcha": "^3.6.8",
     "puppeteer-extra-plugin-stealth": "^2.11.2",

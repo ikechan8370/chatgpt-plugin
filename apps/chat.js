@@ -6,6 +6,7 @@ import delay from 'delay'
 import { ChatGPTAPI } from 'chatgpt'
 import { BingAIClient } from '@waylaidwanderer/chatgpt-api'
 import SydneyAIClient from '../utils/SydneyAIClient.js'
+import { PoeClient } from '../utils/poe/index.js'
 import {
   render, renderUrl,
   getMessageById,
@@ -25,6 +26,7 @@ import { convertSpeaker, generateAudio, speakers } from '../utils/tts.js'
 import ChatGLMClient from '../utils/chatglm.js'
 import { convertFaces } from '../utils/face.js'
 import uploadRecord from '../utils/uploadRecord.js'
+import {SlackClaudeClient} from "../utils/slack/slackClient.js";
 try {
   await import('keyv')
 } catch (err) {
@@ -708,7 +710,7 @@ export class chatgpt extends plugin {
           num: 0
         }
       }
-    } else {
+    } else if (use !== 'poe' && use === 'claude') {
       switch (use) {
         case 'api': {
           key = `CHATGPT:CONVERSATIONS:${e.sender.user_id}`
@@ -758,7 +760,7 @@ export class chatgpt extends plugin {
         // 字数超限直接返回
         return false
       }
-      if (use !== 'api3') {
+      if (use !== 'api3' && use !== 'poe' && use !== 'claude') {
         previousConversation.conversation = {
           conversationId: chatMessage.conversationId
         }
@@ -1330,6 +1332,33 @@ export class chatgpt extends plugin {
         })
         let sendMessageResult = await this.chatGPTApi.sendMessage(prompt, conversation)
         return sendMessageResult
+      }
+      case 'poe': {
+        const cookie = await redis.get('CHATGPT:POE_TOKEN')
+        if (!cookie) {
+          throw new Error('未绑定Poe Cookie，请使用#chatgpt设置Poe token命令绑定cookie')
+        }
+        let client = new PoeClient({
+          quora_cookie: cookie
+        })
+        await client.setCredentials()
+        await client.getChatId()
+        let ai = 'a2' // todo
+        await client.sendMsg(ai, prompt)
+        const response = await client.getResponse(ai)
+        return {
+          text: response.data
+        }
+      }
+      case 'claude': {
+        let client = new SlackClaudeClient({
+          slackUserToken: Config.slackUserToken,
+          slackChannelId: Config.slackChannelId
+        })
+        let text = await client.sendMessage(prompt)
+        return {
+          text
+        }
       }
       default: {
         let completionParams = {}

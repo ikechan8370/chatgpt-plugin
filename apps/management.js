@@ -33,6 +33,11 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
+          reg: '#chatgpt(设置|绑定)(Poe|POE)(token|Token)',
+          fnc: 'setPoeCookie',
+          permission: 'master'
+        },
+        {
           reg: '#chatgpt(设置|绑定|添加)(必应|Bing |bing )(token|Token)',
           fnc: 'setBingAccessToken',
           permission: 'master'
@@ -75,6 +80,16 @@ export class ChatgptManagement extends plugin {
         {
           reg: '^#chatgpt切换(必应|Bing)$',
           fnc: 'useBingSolution',
+          permission: 'master'
+        },
+        {
+          reg: '^#chatgpt切换(Poe|poe)$',
+          fnc: 'useClaudeBasedSolution',
+          permission: 'master'
+        },
+        {
+          reg: '^#chatgpt切换(Claude|claude|slack)$',
+          fnc: 'useSlackClaudeBasedSolution',
           permission: 'master'
         },
         {
@@ -404,6 +419,25 @@ export class ChatgptManagement extends plugin {
     return false
   }
 
+  async setPoeCookie () {
+    this.setContext('savePoeToken')
+    await this.reply('请发送Poe Cookie', true)
+    return false
+  }
+
+  async savePoeToken (e) {
+    if (!this.e.msg) return
+    let token = this.e.msg
+    if (!token.startsWith('p-b=')) {
+      await this.reply('Poe cookie格式错误', true)
+      this.finish('savePoeToken')
+      return
+    }
+    await redis.set('CHATGPT:POE_TOKEN', token)
+    await this.reply('Poe cookie设置成功', true)
+    this.finish('savePoeToken')
+  }
+
   async setBingAccessToken (e) {
     this.setContext('saveBingToken')
     await this.reply('请发送Bing Cookie Token.("_U" cookie from bing.com)', true)
@@ -587,19 +621,29 @@ export class ChatgptManagement extends plugin {
     let use = await redis.get('CHATGPT:USE')
     if (use !== 'bing') {
       await redis.set('CHATGPT:USE', 'bing')
-      // 结束所有人的对话
-      const keys = await redis.keys('CHATGPT:CONVERSATIONS:*')
-      if (keys.length) {
-        const response = await redis.del(keys)
-        if (Config.debug) {
-          console.log('Deleted keys:', response)
-        }
-      } else {
-        console.log('No keys matched the pattern')
-      }
       await this.reply('已切换到基于微软新必应的解决方案，如果已经对话过务必执行`#结束对话`避免引起404错误')
     } else {
       await this.reply('当前已经是必应Bing模式了')
+    }
+  }
+
+  async useClaudeBasedSolution (e) {
+    let use = await redis.get('CHATGPT:USE')
+    if (use !== 'poe') {
+      await redis.set('CHATGPT:USE', 'poe')
+      await this.reply('已切换到基于Quora\'s POE的解决方案')
+    } else {
+      await this.reply('当前已经是POE模式了')
+    }
+  }
+
+  async useSlackClaudeBasedSolution () {
+    let use = await redis.get('CHATGPT:USE')
+    if (use !== 'claude') {
+      await redis.set('CHATGPT:USE', 'claude')
+      await this.reply('已切换到基于slack claude机器人的解决方案')
+    } else {
+      await this.reply('当前已经是claude模式了')
     }
   }
 
