@@ -11,7 +11,6 @@ import schedule from 'node-schedule'
 import { Config } from '../utils/config.js'
 import { randomString, getPublicIP } from '../utils/common.js'
 
-
 const __dirname = path.resolve()
 const server = fastify({
   logger: Config.debug
@@ -37,13 +36,13 @@ let Statistics = {
   }
 }
 
-async function getLoad() {
+async function getLoad () {
   // 获取当前操作系统平台
-  const platform = os.platform();
+  const platform = os.platform()
   // 判断平台是Linux还是Windows
   if (platform === 'linux') {
     // 如果是Linux，使用os.loadavg()方法获取负载平均值
-    const loadAvg = os.loadavg();
+    const loadAvg = os.loadavg()
     return loadAvg[0] * 100
   } else if (platform === 'win32') {
     // 如果是Windows不获取性能
@@ -53,7 +52,7 @@ async function getLoad() {
   }
 }
 
-async function getUserData(qq) {
+async function getUserData (qq) {
   const dir = 'resources/ChatGPTCache/user'
   const filename = `${qq}.json`
   const filepath = path.join(dir, filename)
@@ -69,7 +68,7 @@ async function getUserData(qq) {
   }
 }
 
-async function setUserData(qq, data) {
+async function setUserData (qq, data) {
   const dir = 'resources/ChatGPTCache/user'
   const filename = `${qq}.json`
   const filepath = path.join(dir, filename)
@@ -77,12 +76,12 @@ async function setUserData(qq, data) {
   fs.writeFileSync(filepath, JSON.stringify(data))
 }
 
-export async function createServer() {
+export async function createServer () {
   await server.register(cors, {
-    origin: '*',
+    origin: '*'
   })
   await server.register(fstatic, {
-    root: path.join(__dirname, 'plugins/chatgpt-plugin/server/static/'),
+    root: path.join(__dirname, 'plugins/chatgpt-plugin/server/static/')
   })
   await server.register(fastifyCookie)
   await server.get('/page/*', (request, reply) => {
@@ -133,21 +132,21 @@ export async function createServer() {
     if (body.qq && body.passwd) {
       const token = randomString(32)
       if (body.qq == Bot.uin && await redis.get('CHATGPT:ADMIN_PASSWD') == body.passwd) {
-        usertoken.push({user: body.qq, token: token, autho: 'admin'})
-        reply.setCookie('token', token, {path: '/'})
-        reply.send({login:true, autho: 'admin'})
+        usertoken.push({ user: body.qq, token, autho: 'admin' })
+        reply.setCookie('token', token, { path: '/' })
+        reply.send({ login: true, autho: 'admin' })
       } else {
         const user = await getUserData(body.qq)
         if (user.passwd != '' && user.passwd === body.passwd) {
-          usertoken.push({user: body.qq, token: token, autho: 'user'})
-          reply.setCookie('token', token, {path: '/'})
-          reply.send({login: true, autho: 'user'})
+          usertoken.push({ user: body.qq, token, autho: 'user' })
+          reply.setCookie('token', token, { path: '/' })
+          reply.send({ login: true, autho: 'user' })
         } else {
-          reply.send({login:false,err:`用户名密码错误,如果忘记密码请私聊机器人输入 ${body.qq == Bot.uin ? '#修改管理密码' : '#修改用户密码'} 进行修改`})
+          reply.send({ login: false, err: `用户名密码错误,如果忘记密码请私聊机器人输入 ${body.qq == Bot.uin ? '#修改管理密码' : '#修改用户密码'} 进行修改` })
         }
       }
     } else {
-      reply.send({login:false,err:'未输入用户名或密码'})
+      reply.send({ login: false, err: '未输入用户名或密码' })
     }
   })
   // 页面数据获取
@@ -183,7 +182,7 @@ export async function createServer() {
       const regexUrl = /\b((?:https?|ftp|file):\/\/[-a-zA-Z0-9+&@#\/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#\/%=~_|])/g
       const ip = await getPublicIP()
       try {
-        fs.mkdirSync(dir, { recursive: true });
+        fs.mkdirSync(dir, { recursive: true })
         const data = {
           user: body.content.senderName,
           bot: Config.chatViewBotName || (body.bing ? 'Bing' : 'ChatGPT'),
@@ -207,7 +206,7 @@ export async function createServer() {
           group: data.group,
           herf: data.herf,
           model: data.model,
-          time: data.time,
+          time: data.time
         })
         await setUserData(body.qq, user)
         Statistics.CacheFile.count += 1
@@ -228,26 +227,26 @@ export async function createServer() {
   server.post('/userData', async (request, reply) => {
     const token = request.cookies.token || 'unknown'
     let user = usertoken.find(user => user.token === token)
-    if (!user) user = {user: ''}
+    if (!user) user = { user: '' }
     const userData = await getUserData(user.user)
     reply.send(userData.chat)
   })
 
-  //清除缓存数据
+  // 清除缓存数据
   server.post('/cleanCache', async (request, reply) => {
     const token = request.cookies.token || 'unknown'
     let user = usertoken.find(user => user.token === token)
-    if (!user) user = {user: ''}
+    if (!user) user = { user: '' }
     const userData = await getUserData(user.user)
     const dir = 'resources/ChatGPTCache/page'
     userData.chat.forEach(function (item, index) {
-      const filename = item.herf.substring(item.herf.lastIndexOf("/") + 1) + '.json'
+      const filename = item.herf.substring(item.herf.lastIndexOf('/') + 1) + '.json'
       const filepath = path.join(dir, filename)
       fs.unlinkSync(filepath)
     })
     userData.chat = []
     await setUserData(user.user, userData)
-    reply.send({state: true})
+    reply.send({ state: true })
   })
 
   // 获取系统参数
@@ -255,14 +254,12 @@ export async function createServer() {
     const token = request.cookies.token || 'unknown'
     const user = usertoken.find(user => user.token === token)
     if (!user) {
-      reply.send({err: '未登录'})
-    } else if(user.autho === 'admin') {
+      reply.send({ err: '未登录' })
+    } else if (user.autho === 'admin') {
       let redisConfig = {}
       if (await redis.exists('CHATGPT:BING_TOKENS') != 0) {
         let bingTokens = await redis.get('CHATGPT:BING_TOKENS')
-        if (bingTokens)
-        bingTokens = JSON.parse(bingTokens)
-        else bingTokens = []
+        if (bingTokens) { bingTokens = JSON.parse(bingTokens) } else bingTokens = []
         redisConfig.bingTokens = bingTokens
       } else {
         redisConfig.bingTokens = []
@@ -272,7 +269,7 @@ export async function createServer() {
       }
       reply.send({
         chatConfig: Config,
-        redisConfig: redisConfig
+        redisConfig
       })
     } else {
       let userSetting = await redis.get(`CHATGPT:USER:${user.user}`)
@@ -286,7 +283,7 @@ export async function createServer() {
         userSetting = JSON.parse(userSetting)
       }
       reply.send({
-        userSetting: userSetting
+        userSetting
       })
     }
   })
@@ -297,8 +294,8 @@ export async function createServer() {
     const user = usertoken.find(user => user.token === token)
     const body = request.body || {}
     if (!user) {
-      reply.send({err: '未登录'})
-    } else if(user.autho === 'admin') {
+      reply.send({ err: '未登录' })
+    } else if (user.autho === 'admin') {
       const chatdata = body.chatConfig || {}
       for (let [keyPath, value] of Object.entries(chatdata)) {
         if (keyPath === 'blockWords' || keyPath === 'promptBlockWords' || keyPath === 'initiativeChatGroups') { value = value.toString().split(/[,，;；\|]/) }
@@ -312,37 +309,34 @@ export async function createServer() {
         await redis.set('CHATGPT:CONFIRM', redisConfig.turnConfirm ? 'on' : 'off')
       }
     } else {
-      if (body.userSetting){
+      if (body.userSetting) {
         await redis.set(`CHATGPT:USER:${user.user}`, JSON.stringify(body.userSetting))
       }
     }
   })
 
   server.addHook('onRequest', (request, reply, done) => {
-    if(request.method == 'POST')
-    Statistics.SystemAccess.count += 1
-    if(request.method == 'GET')
-    Statistics.WebAccess.count += 1
+    if (request.method == 'POST') { Statistics.SystemAccess.count += 1 }
+    if (request.method == 'GET') { Statistics.WebAccess.count += 1 }
     done()
-
   })
-  //定时任务
-  var rule = new schedule.RecurrenceRule();
-  rule.hour = 0;
-  rule.minute = 0;
-  let job_Statistics = schedule.scheduleJob(rule, function() {
+  // 定时任务
+  let rule = new schedule.RecurrenceRule()
+  rule.hour = 0
+  rule.minute = 0
+  let job_Statistics = schedule.scheduleJob(rule, function () {
     Statistics.SystemAccess.oldCount = Statistics.SystemAccess.count
     Statistics.CacheFile.oldCount = Statistics.CacheFile.count
     Statistics.WebAccess.oldCount = Statistics.WebAccess.count
     Statistics.SystemAccess.count = 0
     Statistics.CacheFile.count = 0
     Statistics.WebAccess.count = 0
-  });
-  let job_Statistics_SystemLoad = schedule.scheduleJob('0 * * * *', async function(){
+  })
+  let job_Statistics_SystemLoad = schedule.scheduleJob('0 * * * *', async function () {
     Statistics.SystemLoad.count = await getLoad()
     Statistics.SystemLoad.oldCount = Statistics.SystemLoad.count
-  });
-  
+  })
+
   server.listen({
     port: Config.serverPort || 3321,
     host: '::'

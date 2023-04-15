@@ -33,6 +33,11 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
+          reg: '#chatgpt(设置|绑定)(Poe|POE)(token|Token)',
+          fnc: 'setPoeCookie',
+          permission: 'master'
+        },
+        {
           reg: '#chatgpt(设置|绑定|添加)(必应|Bing |bing )(token|Token)',
           fnc: 'setBingAccessToken',
           permission: 'master'
@@ -75,6 +80,16 @@ export class ChatgptManagement extends plugin {
         {
           reg: '^#chatgpt切换(必应|Bing)$',
           fnc: 'useBingSolution',
+          permission: 'master'
+        },
+        {
+          reg: '^#chatgpt切换(Poe|poe)$',
+          fnc: 'useClaudeBasedSolution',
+          permission: 'master'
+        },
+        {
+          reg: '^#chatgpt切换(Claude|claude|slack)$',
+          fnc: 'useSlackClaudeBasedSolution',
           permission: 'master'
         },
         {
@@ -179,7 +194,7 @@ export class ChatgptManagement extends plugin {
         },
         {
           reg: '^#(设置|修改)用户密码',
-          fnc: 'setUserPassword',
+          fnc: 'setUserPassword'
         },
         {
           reg: '^#chatgpt系统(设置|配置|管理)',
@@ -188,7 +203,7 @@ export class ChatgptManagement extends plugin {
         },
         {
           reg: '^#chatgpt用户(设置|配置|管理)',
-          fnc: 'userPage',
+          fnc: 'userPage'
         }
       ]
     })
@@ -228,12 +243,12 @@ export class ChatgptManagement extends plugin {
     } else {
       if (isWhiteList) {
         Config.groupWhitelist = Config.groupWhitelist
-            .filter(group => group.trim() !== '')
-            .concat(whitelist)
+          .filter(group => group.trim() !== '')
+          .concat(whitelist)
       } else {
         Config.groupBlacklist = Config.groupBlacklist
-            .filter(group => group.trim() !== '')
-            .concat(blacklist)
+          .filter(group => group.trim() !== '')
+          .concat(blacklist)
       }
     }
     await this.reply(`群聊${isWhiteList ? '白' : '黑'}名单已更新，可通过\n'#chatgpt查看群聊${isWhiteList ? '白' : '黑'}名单'查看最新名单\n#chatgpt移除群聊${isWhiteList ? '白' : '黑'}名单'管理名单`, e.isGroup)
@@ -300,6 +315,7 @@ export class ChatgptManagement extends plugin {
     await this.reply('设置成功', e.isGroup)
     return false
   }
+
   async enableGroupContext (e) {
     const reg = /(关闭|打开)/
     const match = e.msg.match(reg)
@@ -403,6 +419,25 @@ export class ChatgptManagement extends plugin {
     return false
   }
 
+  async setPoeCookie () {
+    this.setContext('savePoeToken')
+    await this.reply('请发送Poe Cookie', true)
+    return false
+  }
+
+  async savePoeToken (e) {
+    if (!this.e.msg) return
+    let token = this.e.msg
+    if (!token.startsWith('p-b=')) {
+      await this.reply('Poe cookie格式错误', true)
+      this.finish('savePoeToken')
+      return
+    }
+    await redis.set('CHATGPT:POE_TOKEN', token)
+    await this.reply('Poe cookie设置成功', true)
+    this.finish('savePoeToken')
+  }
+
   async setBingAccessToken (e) {
     this.setContext('saveBingToken')
     await this.reply('请发送Bing Cookie Token.("_U" cookie from bing.com)', true)
@@ -417,7 +452,7 @@ export class ChatgptManagement extends plugin {
         {
           Token: item,
           State: '正常',
-          Usage: 0,
+          Usage: 0
         }
       ))
     } else {
@@ -430,16 +465,18 @@ export class ChatgptManagement extends plugin {
       tokens = []
     }
     await redis.set('CHATGPT:BING_TOKENS', JSON.stringify([...token, ...tokens]))
-    await this.reply(`迁移完成`, true)
+    await this.reply('迁移完成', true)
   }
 
   async getBingAccessToken (e) {
     let tokens = await redis.get('CHATGPT:BING_TOKENS')
-    if (tokens) tokens = JSON.parse(tokens) 
+    if (tokens) tokens = JSON.parse(tokens)
     else tokens = []
-    tokens = tokens.length > 0 ? tokens.map((item, index) => (
+    tokens = tokens.length > 0
+      ? tokens.map((item, index) => (
       `【${index}】 Token：${item.Token.substring(0, 5 / 2) + '...' + item.Token.substring(item.Token.length - 5 / 2, item.Token.length)}`
-    )).join('\n') : '无必应Token记录'
+      )).join('\n')
+      : '无必应Token记录'
     await this.reply(`${tokens}`, true)
     return false
   }
@@ -447,11 +484,13 @@ export class ChatgptManagement extends plugin {
   async delBingAccessToken (e) {
     this.setContext('deleteBingToken')
     let tokens = await redis.get('CHATGPT:BING_TOKENS')
-    if (tokens) tokens = JSON.parse(tokens) 
+    if (tokens) tokens = JSON.parse(tokens)
     else tokens = []
-    tokens = tokens.length > 0 ? tokens.map((item, index) => (
+    tokens = tokens.length > 0
+      ? tokens.map((item, index) => (
       `【${index}】 Token：${item.Token.substring(0, 5 / 2) + '...' + item.Token.substring(item.Token.length - 5 / 2, item.Token.length)}`
-    )).join('\n') : '无必应Token记录'
+      )).join('\n')
+      : '无必应Token记录'
     await this.reply(`请发送要删除的token编号\n${tokens}`, true)
     if (tokens.length == 0) this.finish('saveBingToken')
     return false
@@ -495,16 +534,18 @@ export class ChatgptManagement extends plugin {
     let bingToken = []
     if (await redis.exists('CHATGPT:BING_TOKENS') != 0) {
       bingToken = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
-      if (!bingToken.some(element => element.token === token)) bingToken.push({
-        Token: token,
-        State: '正常',
-        Usage: 0,
-      })
+      if (!bingToken.some(element => element.token === token)) {
+        bingToken.push({
+          Token: token,
+          State: '正常',
+          Usage: 0
+        })
+      }
     } else {
       bingToken = [{
         Token: token,
         State: '正常',
-        Usage: 0,
+        Usage: 0
       }]
     }
     await redis.set('CHATGPT:BING_TOKENS', JSON.stringify(bingToken))
@@ -519,14 +560,13 @@ export class ChatgptManagement extends plugin {
       let bingToken = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
       if (tokenId >= 0 && tokenId < bingToken.length) {
         const removeToken = bingToken[tokenId].Token
-        bingToken.splice(tokenId,1)
+        bingToken.splice(tokenId, 1)
         await redis.set('CHATGPT:BING_TOKENS', JSON.stringify(bingToken))
         await this.reply(`Token ${removeToken.substring(0, 5 / 2) + '...' + removeToken.substring(removeToken.length - 5 / 2, removeToken.length)} 移除成功`, true)
         this.finish('deleteBingToken')
       } else {
         await this.reply('Token编号错误！', true)
         this.finish('deleteBingToken')
-        return
       }
     } else {
       await this.reply('Token记录异常', true)
@@ -581,19 +621,29 @@ export class ChatgptManagement extends plugin {
     let use = await redis.get('CHATGPT:USE')
     if (use !== 'bing') {
       await redis.set('CHATGPT:USE', 'bing')
-      // 结束所有人的对话
-      const keys = await redis.keys('CHATGPT:CONVERSATIONS:*')
-      if (keys.length) {
-        const response = await redis.del(keys)
-        if (Config.debug) {
-          console.log('Deleted keys:', response)
-        }
-      } else {
-        console.log('No keys matched the pattern')
-      }
       await this.reply('已切换到基于微软新必应的解决方案，如果已经对话过务必执行`#结束对话`避免引起404错误')
     } else {
       await this.reply('当前已经是必应Bing模式了')
+    }
+  }
+
+  async useClaudeBasedSolution (e) {
+    let use = await redis.get('CHATGPT:USE')
+    if (use !== 'poe') {
+      await redis.set('CHATGPT:USE', 'poe')
+      await this.reply('已切换到基于Quora\'s POE的解决方案')
+    } else {
+      await this.reply('当前已经是POE模式了')
+    }
+  }
+
+  async useSlackClaudeBasedSolution () {
+    let use = await redis.get('CHATGPT:USE')
+    if (use !== 'claude') {
+      await redis.set('CHATGPT:USE', 'claude')
+      await this.reply('已切换到基于slack claude机器人的解决方案')
+    } else {
+      await this.reply('当前已经是claude模式了')
     }
   }
 
@@ -929,24 +979,25 @@ export class ChatgptManagement extends plugin {
   }
 
   async setAdminPassword (e) {
-    if (e.isGroup) {
-      await this.reply('请私聊发生命令', true)
+    if (e.isGroup || !e.isPrivate) {
+      await this.reply('请私聊发送命令', true)
       return true
     }
     this.setContext('saveAdminPassword')
     await this.reply('请发送系统管理密码', true)
     return false
   }
+
   async setUserPassword (e) {
-    if (e.isGroup) {
-      await this.reply('请私聊发生命令', true)
+    if (e.isGroup || !e.isPrivate) {
+      await this.reply('请私聊发送命令', true)
       return true
     }
     this.setContext('saveUserPassword')
     await this.reply('请发送系统用户密码', true)
     return false
   }
-  
+
   async saveAdminPassword (e) {
     if (!this.e.msg) return
     const passwd = this.e.msg
@@ -954,6 +1005,7 @@ export class ChatgptManagement extends plugin {
     await this.reply('设置成功', true)
     this.finish('saveAdminPassword')
   }
+
   async saveUserPassword (e) {
     if (!this.e.msg) return
     const passwd = this.e.msg
@@ -972,7 +1024,6 @@ export class ChatgptManagement extends plugin {
         fs.writeFile(filepath, JSON.stringify(config), 'utf8', (err) => {
           if (err) {
             console.error(err)
-            return
           }
         })
       })
@@ -984,7 +1035,6 @@ export class ChatgptManagement extends plugin {
       }), 'utf8', (err) => {
         if (err) {
           console.error(err)
-          return
         }
       })
     }
@@ -993,13 +1043,20 @@ export class ChatgptManagement extends plugin {
   }
 
   async adminPage (e) {
+    if (!Config.groupAdminPage && (e.isGroup || !e.isPrivate)) {
+      await this.reply('请私聊发送命令', true)
+      return true
+    }
     const viewHost = Config.serverHost ? `http://${Config.serverHost}/` : `http://${await getPublicIP()}:${Config.serverPort || 3321}/`
     await this.reply(`请登录${viewHost + 'admin/settings'}进行系统配置`, true)
   }
 
   async userPage (e) {
+    if (!Config.groupAdminPage && (e.isGroup || !e.isPrivate)) {
+      await this.reply('请私聊发送命令', true)
+      return true
+    }
     const viewHost = Config.serverHost ? `http://${Config.serverHost}/` : `http://${await getPublicIP()}:${Config.serverPort || 3321}/`
     await this.reply(`请登录${viewHost + 'admin/dashboard'}进行系统配置`, true)
   }
-  
 }

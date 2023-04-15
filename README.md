@@ -1,12 +1,20 @@
-# 云崽qq机器人的chatgpt插件
+![chatgpt-plugin](https://user-images.githubusercontent.com/21212372/232115814-de9a0633-371f-4733-8da0-dd6e912c8a1e.png)
+<div align=center> <h1>云崽QQ机器人的ChatGPT插件</h1> </div>
+<div align=center>
+   
+   <img src ="https://img.shields.io/github/issues/ikechan8370/chatgpt-plugin?logo=github"/>
+<img src ="https://img.shields.io/github/license/ikechan8370/chatgpt-plugin"/>
+<img src ="https://img.shields.io/github/v/tag/ikechan8370/chatgpt-plugin?label=latest%20version&logo=github"/>
+<img src ="https://img.shields.io/github/languages/top/ikechan8370/chatgpt-plugin?logo=github"/>
+</div>
+
+
+
 ![26224FE397F1E74104C1C007C1A32DDE](https://user-images.githubusercontent.com/21212372/227718994-4d33da74-6886-41d5-afd0-73986b086df0.gif)
 
 
 
-![GitHub issues](https://img.shields.io/github/issues/ikechan8370/chatgpt-plugin?logo=github)
-![GitHub](https://img.shields.io/github/license/ikechan8370/chatgpt-plugin)
-![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/ikechan8370/chatgpt-plugin?label=latest%20version&logo=github)
-![GitHub top language](https://img.shields.io/github/languages/top/ikechan8370/chatgpt-plugin?logo=github)
+
 
 ### 推荐的相关文档和参考资料
 本README
@@ -27,6 +35,7 @@
 * 支持新[必应](https://www.bing.com/new)（token负载均衡，限流降级）
 * 2023-03-15 API3支持GPT-4尝鲜，需要Plus用户
 * 支持[ChatGLM](https://github.com/THUDM/ChatGLM-6B)模型。基于[自建API](https://github.com/ikechan8370/SimpleChatGLM6BAPI)
+* 2023-04-15 支持[Claude by Slack](https://www.anthropic.com/claude-in-slack )和Poe（WIP）。Cloude配置参考[这里](https://ikechan8370.com/archives/chatgpt-plugin-for-yunzaipei-zhi-slack-claude)
 
 ### 如果觉得这个插件有趣或者对你有帮助，请点一个star吧！
 

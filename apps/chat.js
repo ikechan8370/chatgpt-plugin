@@ -6,6 +6,7 @@ import delay from 'delay'
 import { ChatGPTAPI } from 'chatgpt'
 import { BingAIClient } from '@waylaidwanderer/chatgpt-api'
 import SydneyAIClient from '../utils/SydneyAIClient.js'
+import { PoeClient } from '../utils/poe/index.js'
 import {
   render, renderUrl,
   getMessageById,
@@ -25,6 +26,7 @@ import { convertSpeaker, generateAudio, speakers } from '../utils/tts.js'
 import ChatGLMClient from '../utils/chatglm.js'
 import { convertFaces } from '../utils/face.js'
 import uploadRecord from '../utils/uploadRecord.js'
+import {SlackClaudeClient} from "../utils/slack/slackClient.js";
 try {
   await import('keyv')
 } catch (err) {
@@ -57,10 +59,10 @@ try {
 const defaultPropmtPrefix = ', a large language model trained by OpenAI. You answer as concisely as possible for each response (e.g. don’t be verbose). It is very important that you answer as concisely as possible, so please remember this. If you are generating a list, do not have too many items. Keep the number of items short.'
 const newFetch = (url, options = {}) => {
   const defaultOptions = Config.proxy
-      ? {
+    ? {
         agent: proxy(Config.proxy)
       }
-      : {}
+    : {}
   const mergedOptions = {
     ...defaultOptions,
     ...options
@@ -708,7 +710,7 @@ export class chatgpt extends plugin {
           num: 0
         }
       }
-    } else {
+    } else if (use !== 'poe' && use === 'claude') {
       switch (use) {
         case 'api': {
           key = `CHATGPT:CONVERSATIONS:${e.sender.user_id}`
@@ -758,7 +760,7 @@ export class chatgpt extends plugin {
         // 字数超限直接返回
         return false
       }
-      if (use !== 'api3') {
+      if (use !== 'api3' && use !== 'poe' && use !== 'claude') {
         previousConversation.conversation = {
           conversationId: chatMessage.conversationId
         }
@@ -848,7 +850,7 @@ export class chatgpt extends plugin {
         ttsResponse = response.replace(ttsRegex, '')
         // 先把文字回复发出去，避免过久等待合成语音
         if (Config.alsoSendText || ttsResponse.length > Config.ttsAutoFallbackThreshold) {
-          if(ttsResponse.length > Config.ttsAutoFallbackThreshold){
+          if (ttsResponse.length > Config.ttsAutoFallbackThreshold) {
             await this.reply('回复的内容过长，已转为文本模式')
           }
           await this.reply(await convertFaces(response, Config.enableRobotAt, e), e.isGroup)
@@ -876,7 +878,7 @@ export class chatgpt extends plugin {
           } catch (err) {
             await this.reply('合成语音发生错误~')
           }
-        } else if(!Config.ttsSpace){
+        } else if (!Config.ttsSpace) {
           await this.reply('你没有配置转语音API哦')
         }
       } else if (userSetting.usePicture || (Config.autoUsePicture && response.length > Config.autoUsePictureThreshold)) {
@@ -918,7 +920,7 @@ export class chatgpt extends plugin {
           await this.reply(`出现错误：${err}`, true, { recallMsg: e.isGroup ? 10 : 0 })
         } else {
           // 这里是否还需要上传到缓存服务器呐？多半是代理服务器的问题，本地也修不了，应该不用吧。
-          await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', `通信异常,错误信息如下 ${err?.message || err?.data?.message || (typeof(err) === 'object' ? JSON.stringify(err) : err) || '未能确认错误类型！'}`, prompt)
+          await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', `通信异常,错误信息如下 ${err?.message || err?.data?.message || (typeof (err) === 'object' ? JSON.stringify(err) : err) || '未能确认错误类型！'}`, prompt)
         }
       }
     }
@@ -1229,6 +1231,13 @@ export class chatgpt extends plugin {
                 })
               }
             }
+            // 如果token曾经有异常，则清除异常
+            let Tokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
+            const TokenIndex = Tokens.findIndex(element => element.Token === abtrs.bingToken)
+            if (Tokens[TokenIndex].exception) {
+              delete Tokens[TokenIndex].exception
+              await redis.set('CHATGPT:BING_TOKENS', JSON.stringify(Tokens))
+            }
             errorMessage = ''
             break
           } catch (error) {
@@ -1249,7 +1258,17 @@ export class chatgpt extends plugin {
               // token过期了
               let bingTokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
               const badBingToken = bingTokens.findIndex(element => element.Token === bingToken)
-              bingTokens[badBingToken].State = '过期'
+              // 可能是微软抽风，给三次机会
+              if (bingTokens[badBingToken].exception) {
+                if (bingTokens[badBingToken].exception <= 3) {
+                  bingTokens[badBingToken].exception += 1
+                } else {
+                  bingTokens[badBingToken].exception = 0
+                  bingTokens[badBingToken].State = '过期'
+                }
+              } else {
+                bingTokens[badBingToken].exception = 1
+              }
               await redis.set('CHATGPT:BING_TOKENS', JSON.stringify(bingTokens))
               logger.warn(`token${bingToken}已过期`)
             } else {
@@ -1313,6 +1332,33 @@ export class chatgpt extends plugin {
         })
         let sendMessageResult = await this.chatGPTApi.sendMessage(prompt, conversation)
         return sendMessageResult
+      }
+      case 'poe': {
+        const cookie = await redis.get('CHATGPT:POE_TOKEN')
+        if (!cookie) {
+          throw new Error('未绑定Poe Cookie，请使用#chatgpt设置Poe token命令绑定cookie')
+        }
+        let client = new PoeClient({
+          quora_cookie: cookie
+        })
+        await client.setCredentials()
+        await client.getChatId()
+        let ai = 'a2' // todo
+        await client.sendMsg(ai, prompt)
+        const response = await client.getResponse(ai)
+        return {
+          text: response.data
+        }
+      }
+      case 'claude': {
+        let client = new SlackClaudeClient({
+          slackUserToken: Config.slackUserToken,
+          slackChannelId: Config.slackChannelId
+        })
+        let text = await client.sendMessage(prompt)
+        return {
+          text
+        }
       }
       default: {
         let completionParams = {}
@@ -1464,19 +1510,19 @@ export class chatgpt extends plugin {
         Authorization: 'Bearer ' + Config.apiKey
       }
     })
-        .then(response => response.json())
-        .then(data => {
-          if (data.error) {
-            this.reply('获取失败：' + data.error.code)
-            return false
-          } else {
-            let total_granted = data.total_granted.toFixed(2)
-            let total_used = data.total_used.toFixed(2)
-            let total_available = data.total_available.toFixed(2)
-            let expires_at = new Date(data.grants.data[0].expires_at * 1000).toLocaleDateString().replace(/\//g, '-')
-            this.reply('总额度：$' + total_granted + '\n已经使用额度：$' + total_used + '\n当前剩余额度：$' + total_available + '\n到期日期(UTC)：' + expires_at)
-          }
-        })
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          this.reply('获取失败：' + data.error.code)
+          return false
+        } else {
+          let total_granted = data.total_granted.toFixed(2)
+          let total_used = data.total_used.toFixed(2)
+          let total_available = data.total_available.toFixed(2)
+          let expires_at = new Date(data.grants.data[0].expires_at * 1000).toLocaleDateString().replace(/\//g, '-')
+          this.reply('总额度：$' + total_granted + '\n已经使用额度：$' + total_used + '\n当前剩余额度：$' + total_available + '\n到期日期(UTC)：' + expires_at)
+        }
+      })
   }
 
   /**
