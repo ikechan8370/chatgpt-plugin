@@ -521,7 +521,7 @@ export class chatgpt extends plugin {
    */
   async chatgpt (e) {
     if (!e.isMaster && e.isPrivate && !Config.enablePrivateChat) {
-      this.reply('ChatGpt私聊通道已关闭。')
+      this.reply('ChatGPT私聊通道已关闭。')
       return false
     }
     if (e.isGroup) {
@@ -912,7 +912,7 @@ export class chatgpt extends plugin {
       }
       if (err === 'Error: {"detail":"Conversation not found"}') {
         await this.destroyConversations(err)
-        await this.reply('当前对话异常，已经清除，请重试', true, { recallMsg: e.isGroup ? 10 : 0 })
+        await this.reply('当前对话异常，已经清空，请重试', true, { recallMsg: e.isGroup ? 10 : 0 })
       } else {
         if (err.length < 200) {
           await this.reply(`出现错误：${err}`, true, { recallMsg: e.isGroup ? 10 : 0 })
@@ -1184,7 +1184,7 @@ export class chatgpt extends plugin {
                   // console.log(chats)
                   opt.chats = chats
                 } catch (err) {
-                  logger.warn('获取群聊聊天记录失败，本次对话不携带聊天记录', err)
+                  logger.warn('读取群聊聊天记录失败，本次对话将不携带聊天记录', err)
                 }
               }
             } else {
@@ -1374,7 +1374,7 @@ export class chatgpt extends plugin {
           if (err.message?.indexOf('context_length_exceeded') > 0) {
             logger.warn(err)
             await redis.del(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
-            await e.reply('字数超限啦，将为您自动结束本次对话。')
+            await e.reply('字数超限啦，将自动结束本次对话。')
             return null
           } else {
             throw new Error(err)
@@ -1554,7 +1554,7 @@ async function getAvailableBingToken (conversation, throttled = []) {
     })
     bingToken = minElement.Token
   } else {
-    throw new Error('全部Token均已失效，暂时无法使用')
+    throw new Error('全部必应Token均已失效，暂时无法使用')
   }
   if (Config.toneStyle != 'Sydney' && Config.toneStyle != 'Custom') {
     // bing 下，需要保证同一对话使用同一账号的token
