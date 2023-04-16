@@ -209,8 +209,12 @@ export class chatgpt extends plugin {
    * @returns {Promise<void>}
    */
   async destroyConversations (e) {
-    let ats = e.message.filter(m => m.type === 'at')
     let use = await redis.get('CHATGPT:USE')
+    if (use === 'claude') {
+      await e.reply('由于Slack官方限制，结束Claude对话请前往网站或客户端执行/reset。', true)
+      return
+    }
+    let ats = e.message.filter(m => m.type === 'at')
     if (ats.length === 0) {
       if (use === 'api3') {
         await redis.del(`CHATGPT:QQ_CONVERSATION:${e.sender.user_id}`)
@@ -343,6 +347,10 @@ export class chatgpt extends plugin {
 
   async endAllConversations (e) {
     let use = await redis.get('CHATGPT:USE') || 'api'
+    if (use === 'claude') {
+      await e.reply('由于Slack官方限制，结束Claude对话请前往网站或客户端执行/reset。', true)
+      return
+    }
     let deleted = 0
     switch (use) {
       case 'bing': {
