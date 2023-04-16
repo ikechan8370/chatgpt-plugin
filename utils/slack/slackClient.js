@@ -81,7 +81,7 @@ export class SlackClaudeClient {
             return await this.sendMessage(prompt, e, t + 1)
           }
           let reply = formalMessages[formalMessages.length - 1]
-          if (reply.text !== `<@${Config.slackClaudeUserId}> ${prompt}`) {
+          if (!reply.text.startsWith(`<@${Config.slackClaudeUserId}>`)) {
             response = reply.text
             if (Config.debug) {
               let text = response.replace('_Typing…_', '')
@@ -124,7 +124,7 @@ export class SlackClaudeClient {
             return await this.sendMessage(prompt, e, t + 1)
           }
           let reply = formalMessages[formalMessages.length - 1]
-          if (reply.text !== `<@${Config.slackClaudeUserId}> ${prompt}`) {
+          if (!reply.text.startsWith(`<@${Config.slackClaudeUserId}>`)) {
             response = reply.text
             if (Config.debug) {
               let text = response.replace('_Typing…_', '')
