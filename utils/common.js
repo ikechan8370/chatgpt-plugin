@@ -606,3 +606,20 @@ export async function getPublicIP () {
     return '127.0.0.1'
   }
 }
+
+export async function getUserData (user) {
+  const dir = 'resources/ChatGPTCache/user'
+  const filename = `${user}.json`
+  const filepath = path.join(dir, filename)
+  try {
+    let data = fs.readFileSync(filepath, 'utf8')
+    return JSON.parse(data)
+  } catch (error) {
+    return {
+      user: user,
+      passwd: '',
+      chat: [],
+      mode: '',
+    }
+  }
+}

@@ -64,7 +64,7 @@ async function getUserData (qq) {
       user: qq,
       passwd: '',
       chat: [],
-      mode: '默认',
+      mode: '',
     }
   }
 }
