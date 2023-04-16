@@ -1,5 +1,6 @@
 import { Config } from '../config.js'
 import slack from '@slack/bolt'
+import delay from "delay";
 let proxy
 if (Config.proxy) {
   try {
@@ -44,7 +45,7 @@ export class SlackClaudeClient {
         limit: 1,
         oldest: ts
       })
-      if (replies.messages.length > 0) {
+      if (replies.messages.length > 0 && replies.messages[0].bot_profile) {
         response = replies.messages[0].text
         if (Config.debug) {
           let text = response.replace('_Typing…_', '')
@@ -53,6 +54,7 @@ export class SlackClaudeClient {
           }
         }
       }
+      await delay(500)
     }
     return response
   }
