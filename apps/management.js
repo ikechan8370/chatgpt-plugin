@@ -748,7 +748,9 @@ export class ChatgptManagement extends plugin {
       api: 'API',
       bing: '必应',
       api3: 'API3',
-      chatglm: 'ChatGLM-6B'
+      chatglm: 'ChatGLM-6B',
+      claude: 'Claude',
+      poe: 'Poe'
     }
     let modeText = modeMap[mode || 'api']
     let message = `    API模式和浏览器模式如何选择？
@@ -763,8 +765,12 @@ export class ChatgptManagement extends plugin {
     必应（Bing）将调用微软新必应接口进行对话。需要在必应网页能够正常使用新必应且设置有效的Bing 登录Cookie方可使用。#chatgpt设置必应token
     
     自建ChatGLM模式会调用自建的ChatGLM-6B服务器API进行对话，需要自建。参考https://github.com/ikechan8370/SimpleChatGLM6BAPI
+    
+    Claude模式会调用Slack中的Claude机器人进行对话，与其他模式不同的是全局共享一个对话。配置参考https://ikechan8370.com/archives/chatgpt-plugin-for-yunzaipei-zhi-slack-claude
+    
+    Poe模式会调用Poe中的Claude-instant进行对话。需要提供cookie：#chatgpt设置PoeToken
 
-    您可以使用‘#chatgpt切换浏览器/API/API3/Bing/ChatGLM’来切换到指定模式。
+    您可以使用‘#chatgpt切换浏览器/API/API3/Bing/ChatGLM/Claude/Poe’来切换到指定模式。
 
     当前为${modeText}模式。
 `
