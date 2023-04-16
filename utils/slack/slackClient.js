@@ -49,7 +49,7 @@ export class SlackClaudeClient {
       await this.app.client.conversations.invite({
         token: this.config.slackUserToken,
         channel: channel.id,
-        users: 'U053NDP2YRF'
+        users: Config.slackClaudeUserId
       })
       await delay(1000)
     } else {
