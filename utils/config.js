@@ -97,7 +97,7 @@ const defaultConfig = {
   // slackChannelId: '',
   slackSigningSecret: '',
   slackClaudeUserId: '',
-  version: 'v2.5.3'
+  version: 'v2.5.4'
 }
 const _path = process.cwd()
 let config = {}
