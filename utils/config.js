@@ -94,9 +94,10 @@ const defaultConfig = {
   ttsRegex: '/匹配规则/匹配模式',
   slackUserToken: '',
   slackBotUserToken: '',
-  slackChannelId: '',
+  // slackChannelId: '',
   slackSigningSecret: '',
-  version: 'v2.5.3'
+  slackClaudeUserId: '',
+  version: 'v2.5.4'
 }
 const _path = process.cwd()
 let config = {}

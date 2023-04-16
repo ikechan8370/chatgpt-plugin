@@ -458,9 +458,9 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
-          field: 'slackChannelId',
-          label: 'Slack私聊频道号',
-          bottomHelpMessage: '在Slack中与Claude机器人私聊的频道号。如果页面URL为https://app.slack.com/client/TXXXXXXXX/DXXXXXXXXX/，则频道号就是DXXXXXXXXX',
+          field: 'slackClaudeUserId',
+          label: 'Slack成员id',
+          bottomHelpMessage: '在Slack中点击Claude头像查看详情，其中的成员ID复制过来',
           component: 'Input'
         },
         {
