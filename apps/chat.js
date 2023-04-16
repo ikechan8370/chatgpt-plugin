@@ -211,6 +211,11 @@ export class chatgpt extends plugin {
   async destroyConversations (e) {
     let use = await redis.get('CHATGPT:USE')
     if (use === 'claude') {
+      // let client = new SlackClaudeClient({
+      //   slackUserToken: Config.slackUserToken,
+      //   slackChannelId: Config.slackChannelId
+      // })
+      // await client.endConversation()
       await e.reply('由于Slack官方限制，结束Claude对话请前往网站或客户端执行/reset。', true)
       return
     }
@@ -559,11 +564,26 @@ export class chatgpt extends plugin {
         let me = mm.get(Bot.uin)
         let card = me.card
         let nickname = me.nickname
-        if (card) {
-          prompt = prompt.replace(`@${card}`, '').trim()
-        }
-        if (nickname) {
+        if (nickname && card) {
+          if (nickname.startsWith(card)) {
+            // 例如nickname是"滚筒洗衣机"，card是"滚筒"
+            prompt = prompt.replace(`@${nickname}`, '').trim()
+          } else if (card.startsWith(nickname)) {
+            // 例如nickname是"十二"，card是"十二｜本月已发送1000条消息"
+            prompt = prompt.replace(`@${card}`, '').trim()
+          } else {
+            // 互不包含，分别替换
+            if (nickname) {
+              prompt = prompt.replace(`@${nickname}`, '').trim()
+            }
+            if (card) {
+              prompt = prompt.replace(`@${card}`, '').trim()
+            }
+          }
+        } else if (nickname) {
           prompt = prompt.replace(`@${nickname}`, '').trim()
+        } else if (card) {
+          prompt = prompt.replace(`@${card}`, '').trim()
         }
       }
     } else {
