@@ -63,7 +63,8 @@ async function getUserData (qq) {
     return {
       user: qq,
       passwd: '',
-      chat: []
+      chat: [],
+      mode: '默认',
     }
   }
 }
@@ -229,7 +230,10 @@ export async function createServer () {
     let user = usertoken.find(user => user.token === token)
     if (!user) user = { user: '' }
     const userData = await getUserData(user.user)
-    reply.send(userData.chat)
+    reply.send({
+      chat: userData.chat,
+      mode: userData.mode
+    })
   })
 
   // 清除缓存数据
@@ -311,6 +315,11 @@ export async function createServer () {
     } else {
       if (body.userSetting) {
         await redis.set(`CHATGPT:USER:${user.user}`, JSON.stringify(body.userSetting))
+      }
+      if (body.userConfig) {
+        let temp_userData = await getUserData(user.user)
+        temp_userData.mode = body.userConfig.mode
+        await setUserData(user.user, temp_userData)
       }
     }
   })

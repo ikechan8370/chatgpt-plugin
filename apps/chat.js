@@ -607,7 +607,18 @@ export class chatgpt extends plugin {
       logger.info('chatgpt闭嘴中，不予理会')
       return false
     }
-    const use = await redis.get('CHATGPT:USE') || 'api'
+    //获取用户配置
+    const dir = 'resources/ChatGPTCache/user'
+    const filename = `${e.user_id}.json`
+    const filepath = path.join(dir, filename)
+    let userMode
+    try {
+      let userData = fs.readFileSync(filepath, 'utf8')
+      userMode = JSON.parse(userData).mode
+    } catch (error) {
+      userMode = ''
+    }
+    const use = userMode || await redis.get('CHATGPT:USE') || 'api'
     await this.abstractChat(e, prompt, use)
   }
 
