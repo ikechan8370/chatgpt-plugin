@@ -1,5 +1,6 @@
 import { Config } from '../config.js'
 import slack from '@slack/bolt'
+import delay from 'delay'
 let proxy
 if (Config.proxy) {
   try {
@@ -37,6 +38,7 @@ export class SlackClaudeClient {
     })
     let ts = sendResponse.ts
     let response = '_Typing…_'
+    let tryTimes = 0
     while (response.trim().endsWith('_Typing…_')) {
       let replies = await this.app.client.conversations.history({
         token: this.config.slackUserToken,
@@ -44,7 +46,7 @@ export class SlackClaudeClient {
         limit: 1,
         oldest: ts
       })
-      if (replies.messages.length > 0) {
+      if (replies.messages.length > 0 && replies.messages[0].bot_profile) {
         response = replies.messages[0].text
         if (Config.debug) {
           let text = response.replace('_Typing…_', '')
@@ -52,6 +54,13 @@ export class SlackClaudeClient {
             logger.info(response.replace('_Typing…_', ''))
           }
         }
+      }
+      await delay(500)
+      tryTimes++
+      if (tryTimes > 10 && response === '_Typing…_') {
+        // 过了5秒还没任何回复，就重新发一下试试
+        logger.warn('claude没有响应，重试中')
+        return await this.sendMessage(prompt)
       }
     }
     return response
