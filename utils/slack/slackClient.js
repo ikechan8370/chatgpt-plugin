@@ -56,8 +56,10 @@ export class SlackClaudeClient {
         }
       }
       await delay(500)
+      tryTimes++
       if (tryTimes > 10 && response === '_Typing…_') {
         // 过了5秒还没任何回复，就重新发一下试试
+        logger.warn('claude没有响应，重试中')
         return await this.sendMessage(prompt)
       }
     }
