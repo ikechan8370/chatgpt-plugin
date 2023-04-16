@@ -571,6 +571,8 @@ export class chatgpt extends plugin {
           } else if (card.startsWith(nickname)) {
             // 例如nickname是"十二"，card是"十二｜本月已发送1000条消息"
             prompt = prompt.replace(`@${card}`, '').trim()
+            // 如果是好友，显示的还是昵称
+            prompt = prompt.replace(`@${nickname}`, '').trim()
           } else {
             // 互不包含，分别替换
             if (nickname) {
