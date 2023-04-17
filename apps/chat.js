@@ -358,12 +358,19 @@ export class chatgpt extends plugin {
 
   async endAllConversations (e) {
     let use = await redis.get('CHATGPT:USE') || 'api'
-    if (use === 'claude') {
-      await e.reply('claude暂不支持结束全部对话！', true)
-      return
-    }
     let deleted = 0
     switch (use) {
+      case 'claude': {
+        let cs = await redis.keys('CHATGPT:SLACK_CONVERSATION:*')
+        for (let i = 0; i < cs.length; i++) {
+          await redis.del(cs[i])
+          if (Config.debug) {
+            logger.info('delete slack conversation of qq: ' + cs[i])
+          }
+          deleted++
+        }
+        break
+      }
       case 'bing': {
         let cs = await redis.keys('CHATGPT:CONVERSATIONS_BING:*')
         for (let i = 0; i < cs.length; i++) {
