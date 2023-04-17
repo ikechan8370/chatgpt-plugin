@@ -27,6 +27,7 @@ import ChatGLMClient from '../utils/chatglm.js'
 import { convertFaces } from '../utils/face.js'
 import uploadRecord from '../utils/uploadRecord.js'
 import {SlackClaudeClient} from "../utils/slack/slackClient.js";
+import {getPromptByName} from "../utils/prompts.js";
 try {
   await import('keyv')
 } catch (err) {
@@ -174,6 +175,10 @@ export class chatgpt extends plugin {
           reg: '^#chatgpt删除对话',
           fnc: 'deleteConversation',
           permission: 'master'
+        },
+        {
+          reg: '^#claude开启新对话',
+          fnc: 'newClaudeConversation'
         }
       ]
     })
@@ -1390,6 +1395,14 @@ export class chatgpt extends plugin {
           slackUserToken: Config.slackUserToken,
           slackChannelId: Config.slackChannelId
         })
+        let conversationId = await redis.get(`CHATGPT:SLACK_CONVERSATION:${e.sender.user_id}`)
+        if (!conversationId) {
+          // 如果是新对话
+          if (Config.slackClaudeEnableGlobalPreset && Config.slackClaudeGlobalPreset) {
+            // 先发送设定
+            await client.sendMessage(Config.slackClaudeGlobalPreset, e)
+          }
+        }
         let text = await client.sendMessage(prompt, e)
         return {
           text
@@ -1445,6 +1458,39 @@ export class chatgpt extends plugin {
           }
         }
         return msg
+      }
+    }
+  }
+
+  async newClaudeConversation (e) {
+    let presetName = e.msg.replace(/^#claude开启新对话/, '').trim()
+    let client = new SlackClaudeClient({
+      slackUserToken: Config.slackUserToken,
+      slackChannelId: Config.slackChannelId
+    })
+    let response
+    if (!presetName || presetName === '空' || presetName === '无设定') {
+      let conversationId = await redis.get(`CHATGPT:SLACK_CONVERSATION:${e.sender.user_id}`)
+      if (conversationId) {
+        // 如果有对话进行中，先删除
+        logger.info('开启Claude新对话，但旧对话未结束，自动结束上一次对话')
+        await redis.del(`CHATGPT:SLACK_CONVERSATION:${e.sender.user_id}`)
+      }
+      response = await client.sendMessage('', e)
+      await e.reply(response, true)
+    } else {
+      let preset = getPromptByName(presetName)
+      if (!preset) {
+        await e.reply('没有这个设定', true)
+      } else {
+        let conversationId = await redis.get(`CHATGPT:SLACK_CONVERSATION:${e.sender.user_id}`)
+        if (conversationId) {
+          // 如果有对话进行中，先删除
+          logger.info('开启Claude新对话，但旧对话未结束，自动结束上一次对话')
+          await redis.del(`CHATGPT:SLACK_CONVERSATION:${e.sender.user_id}`)
+        }
+        response = await client.sendMessage(preset.content, e)
+        await e.reply(response, true)
       }
     }
   }

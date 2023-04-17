@@ -470,6 +470,18 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
+          field: 'slackClaudeEnableGlobalPreset',
+          label: 'Claude使用全局设定',
+          bottomHelpMessage: '开启后，所有人每次发起新对话时，会先发送设定过去再开始对话，达到类似Bing自设定的效果。',
+          component: 'Switch'
+        },
+        {
+          field: 'slackClaudeGlobalPreset',
+          label: 'Slack全局设定',
+          bottomHelpMessage: '若启用全局设定，每个人都会默认使用这里的设定。',
+          component: 'Input'
+        },
+        {
           label: '以下为ChatGLM方式的配置',
           component: 'Divider'
         },
