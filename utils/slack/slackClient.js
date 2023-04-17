@@ -1,6 +1,7 @@
 import { Config } from '../config.js'
 import slack from '@slack/bolt'
 import delay from 'delay'
+import {limitString} from "../common.js";
 let proxy
 if (Config.proxy) {
   try {
@@ -32,6 +33,10 @@ export class SlackClaudeClient {
   async sendMessage (prompt, e, t = 0) {
     if (t > 10) {
       return 'claude 未响应'
+    }
+    if (prompt.length > 3990) {
+      logger.warn('消息长度大于slack限制，长度剪切至3990')
+      prompt = limitString(prompt, 3990, false)
     }
     let qq = e.sender.user_id
     let channels = await this.app.client.conversations.list({

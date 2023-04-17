@@ -1514,6 +1514,7 @@ export class chatgpt extends plugin {
           logger.info('开启Claude新对话，但旧对话未结束，自动结束上一次对话')
           await redis.del(`CHATGPT:SLACK_CONVERSATION:${e.sender.user_id}`)
         }
+        logger.info('send preset: ' + preset.content)
         response = await client.sendMessage(preset.content, e)
         await e.reply(response, true)
       }
