@@ -298,8 +298,8 @@ let helpData = [
 export class help extends plugin {
   constructor (e) {
     super({
-      name: 'ChatGPT-Plugin帮助',
-      dsc: 'ChatGPT-Plugin帮助',
+      name: 'ChatGPT-Plugin 帮助',
+      dsc: 'ChatGPT-Plugin 帮助面板',
       event: 'message',
       priority: 500,
       rule: [
