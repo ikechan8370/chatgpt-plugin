@@ -422,11 +422,15 @@ export async function isCN () {
   }
 }
 
-export function limitString (str, maxLength) {
+export function limitString (str, maxLength, addDots = true) {
   if (str.length <= maxLength) {
     return str
   } else {
-    return str.slice(0, maxLength) + '...'
+    if (addDots) {
+      return str.slice(0, maxLength) + '...'
+    } else {
+      return str.slice(0, maxLength)
+    }
   }
 }
 
