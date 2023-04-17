@@ -216,7 +216,8 @@ export class chatgpt extends plugin {
       //   slackChannelId: Config.slackChannelId
       // })
       // await client.endConversation()
-      await e.reply('由于Slack官方限制，结束Claude对话请前往网站或客户端执行/reset。', true)
+      await redis.del(`CHATGPT:SLACK_CONVERSATION:${e.sender.user_id}`)
+      await e.reply('claude对话已结束')
       return
     }
     let ats = e.message.filter(m => m.type === 'at')
@@ -353,7 +354,7 @@ export class chatgpt extends plugin {
   async endAllConversations (e) {
     let use = await redis.get('CHATGPT:USE') || 'api'
     if (use === 'claude') {
-      await e.reply('由于Slack官方限制，结束Claude对话请前往网站或客户端执行/reset。', true)
+      await e.reply('claude暂不支持结束全部对话！', true)
       return
     }
     let deleted = 0
@@ -1389,7 +1390,7 @@ export class chatgpt extends plugin {
           slackUserToken: Config.slackUserToken,
           slackChannelId: Config.slackChannelId
         })
-        let text = await client.sendMessage(prompt)
+        let text = await client.sendMessage(prompt, e)
         return {
           text
         }
