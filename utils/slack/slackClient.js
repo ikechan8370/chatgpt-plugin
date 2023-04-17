@@ -75,7 +75,7 @@ export class SlackClaudeClient {
         })
         await await redis.set(`CHATGPT:SLACK_CONVERSATION:${qq}`, `${ts}`)
         if (replies.messages.length > 0) {
-          let formalMessages = replies.messages.filter(m => m.text.indexOf('Acceptable Use Policy') === -1)
+          let formalMessages = replies.messages.filter(m => m.text.indexOf('anthropic.com') === -1)
           if (!formalMessages[formalMessages.length - 1].bot_profile) {
             // 问题的下一句不是bot回复的，这属于意料之外的问题，可能是多人同时问问题导致 再问一次吧
             return await this.sendMessage(prompt, e, t + 1)
@@ -118,7 +118,7 @@ export class SlackClaudeClient {
           ts: conversationId
         })
         if (replies.messages.length > 0) {
-          let formalMessages = replies.messages.filter(m => m.text.indexOf('Acceptable Use Policy') === -1)
+          let formalMessages = replies.messages.filter(m => m.text.indexOf('anthropic.com') === -1)
           if (!formalMessages[formalMessages.length - 1].bot_profile) {
             // 问题的下一句不是bot回复的，这属于意料之外的问题，可能是多人同时问问题导致 再问一次吧
             return await this.sendMessage(prompt, e, t + 1)
