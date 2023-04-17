@@ -36,7 +36,7 @@ let Statistics = {
   }
 }
 
-async function getLoad () {
+async function getLoad() {
   // 获取当前操作系统平台
   const platform = os.platform()
   // 判断平台是Linux还是Windows
@@ -52,7 +52,7 @@ async function getLoad () {
   }
 }
 
-async function setUserData (qq, data) {
+async function setUserData(qq, data) {
   const dir = 'resources/ChatGPTCache/user'
   const filename = `${qq}.json`
   const filepath = path.join(dir, filename)
@@ -60,7 +60,7 @@ async function setUserData (qq, data) {
   fs.writeFileSync(filepath, JSON.stringify(data))
 }
 
-export async function createServer () {
+export async function createServer() {
   await server.register(cors, {
     origin: '*'
   })
@@ -165,11 +165,35 @@ export async function createServer () {
       const filepath = path.join(dir, filename)
       const regexUrl = /\b((?:https?|ftp|file):\/\/[-a-zA-Z0-9+&@#\/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#\/%=~_|])/g
       const ip = await getPublicIP()
+      let botName = ''
+      switch (body.model) {
+        case 'bing':
+          botName = 'Bing'
+          break
+        case 'api':
+          botName = 'ChatGPT'
+          break
+        case 'api3':
+          botName = 'ChatGPT'
+          break
+        case 'browser':
+          botName = 'ChatGPT'
+          break
+        case 'chatglm':
+          botName = 'ChatGLM'
+          break
+        case 'claude':
+          botName = 'Claude'
+          break
+        default:
+          botName = body.model
+          break
+      }
       try {
         fs.mkdirSync(dir, { recursive: true })
         const data = {
           user: body.content.senderName,
-          bot: Config.chatViewBotName || (body.bing ? 'Bing' : 'ChatGPT'),
+          bot: Config.chatViewBotName || botName,
           userImg: body.userImg || '',
           botImg: body.botImg || '',
           question: body.content.prompt,
