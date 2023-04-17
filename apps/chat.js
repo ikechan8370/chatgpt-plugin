@@ -547,12 +547,10 @@ export class chatgpt extends plugin {
       // logger.info('groupWhitelist:', Config.groupWhitelist, 'groupBlacklist', Config.groupBlacklist)
       const whitelist = groupWhitelist.filter(group => group.trim())
       if (whitelist.length > 0 && !whitelist.includes(e.group_id.toString())) {
-        logger.info('whitelist', whitelist)
         return false
       }
       const blacklist = groupBlacklist.filter(group => group.trim())
       if (blacklist.length > 0 && blacklist.includes(e.group_id.toString())) {
-        logger.info('blacklist', blacklist)
         return false
       }
     }
