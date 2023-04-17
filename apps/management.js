@@ -208,7 +208,6 @@ export class ChatgptManagement extends plugin {
         {
           reg: '^#chatgpt(对话|管理|娱乐|绘图|人物设定|聊天记录)?指令表(帮助)?',
           fnc: 'commandHelp',
-          permission: 'master'
         }
       ]
     })
@@ -251,7 +250,7 @@ export class ChatgptManagement extends plugin {
 
     const generatePrompt = (plugin, command) => {
       const category = getCategory(e, plugin)
-      const commandsStr = command.length ? `正则指令:\n${command.join('\n')}\n\n` : '正则指令: 无\n\n'
+      const commandsStr = command.length ? `正则指令:\n${command.join('\n')}\n` : '正则指令: 无\n'
       const description = `功能介绍：${plugin.dsc}\n`
       return `${category}${plugin.name}\n${description}${commandsStr}`
     }
@@ -282,8 +281,8 @@ export class ChatgptManagement extends plugin {
     let groupBlacklist = !Array.isArray(blacklist)
         ? blacklist
         : String(blacklist).split(/[,，]/)
-    groupWhitelist = Array.from(new Set(groupWhitelist)).filter(value => /^[1-9]\d{8,9}/.test(value))
-    groupBlacklist = Array.from(new Set(groupBlacklist)).filter(value => /^[1-9]\d{8,9}/.test(value))
+    groupWhitelist = Array.from(new Set(groupWhitelist)).filter(value => /^[1-9]\d{8,9}$/.test(value))
+    groupBlacklist = Array.from(new Set(groupBlacklist)).filter(value => /^[1-9]\d{8,9}$/.test(value))
     return [groupWhitelist, groupBlacklist]
   }
 
@@ -300,7 +299,7 @@ export class ChatgptManagement extends plugin {
     const listType = isWhiteList ? '白名单' : '黑名单'
     const inputMatch = this.e.msg.match(/\d+/g)
     let [groupWhitelist, groupBlacklist] = await this.processList(Config.groupWhitelist, Config.groupBlacklist)
-    let inputList = Array.isArray(inputMatch) ? this.e.msg.match(/\d+/g).filter(value => /^[1-9]\d{8,9}/.test(value)) : []
+    let inputList = Array.isArray(inputMatch) ? this.e.msg.match(/\d+/g).filter(value => /^[1-9]\d{8,9}$/.test(value)) : []
     if (!inputList.length) {
       await this.reply('无效输入，请在检查群号是否正确后重新输入', e.isGroup)
       return false
