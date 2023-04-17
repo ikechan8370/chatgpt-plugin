@@ -215,7 +215,7 @@ export class dalle extends plugin {
     }
     try {
       let images = (await editImage(imgUrl, position.split(',').map(p => parseInt(p, 10)), prompt, num, size))
-        .map(image => segment.image(`base64://${image}`))
+          .map(image => segment.image(`base64://${image}`))
       if (images.length > 1) {
         this.reply(await makeForwardMsg(e, images, prompt))
       } else {
