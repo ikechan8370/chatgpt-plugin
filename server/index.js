@@ -180,6 +180,8 @@ export async function createServer () {
           images: body.content.images || [],
           suggest: body.content.suggest || [],
           model: body.bing ? 'Bing' : 'ChatGPT',
+          mood: body.content.quote || 'blandness',
+          live2d: Config.live2d,
           time: new Date()
         }
         fs.writeFileSync(filepath, JSON.stringify(data))

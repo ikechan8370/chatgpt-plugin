@@ -87,6 +87,7 @@ const defaultConfig = {
   viewHost: '',
   chatViewWidth: 1280,
   chatViewBotName: '',
+  live2d: true,
   groupAdminPage: false,
   enablePrivateChat: false,
   groupWhitelist: [],
