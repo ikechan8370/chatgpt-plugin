@@ -609,7 +609,7 @@ export class chatgpt extends plugin {
       return false
     }
     //获取用户配置
-    const userData = getUserData(e.user_id)
+    const userData = await getUserData(e.user_id)
     const use = userData.mode || await redis.get('CHATGPT:USE') || 'api'
     await this.abstractChat(e, prompt, use)
   }
@@ -922,11 +922,11 @@ export class chatgpt extends plugin {
       } else if (userSetting.usePicture || (Config.autoUsePicture && response.length > Config.autoUsePictureThreshold)) {
         // todo use next api of chatgpt to complete incomplete respoonse
         try {
-          await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', response, prompt, quotemessage, mood, chatMessage.suggestedResponses, imgUrls)
+          await this.renderImage(e, use, response, prompt, quotemessage, mood, chatMessage.suggestedResponses, imgUrls)
         } catch (err) {
           logger.warn('error happened while uploading content to the cache server. QR Code will not be showed in this picture.')
           logger.error(err)
-          await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', response, prompt)
+          await this.renderImage(e, use, response, prompt)
         }
         if (Config.enableSuggestedResponses && chatMessage.suggestedResponses) {
           this.reply(`建议的回复：\n${chatMessage.suggestedResponses}`)
@@ -958,7 +958,7 @@ export class chatgpt extends plugin {
           await this.reply(`出现错误：${err}`, true, { recallMsg: e.isGroup ? 10 : 0 })
         } else {
           // 这里是否还需要上传到缓存服务器呐？多半是代理服务器的问题，本地也修不了，应该不用吧。
-          await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', `通信异常,错误信息如下 ${err?.message || err?.data?.message || (typeof (err) === 'object' ? JSON.stringify(err) : err) || '未能确认错误类型！'}`, prompt)
+          await this.renderImage(e, use, `通信异常,错误信息如下 \n \`\`\`${err?.message || err?.data?.message || (typeof (err) === 'object' ? JSON.stringify(err) : err) || '未能确认错误类型！'}\`\`\``, prompt)
         }
       }
     }
@@ -1040,9 +1040,9 @@ export class chatgpt extends plugin {
     return true
   }
 
-  async renderImage (e, template, content, prompt, quote = [], mood = '', suggest = '', imgUrls = []) {
+  async renderImage (e, use, content, prompt, quote = [], mood = '', suggest = '', imgUrls = []) {
     let cacheData = { file: '', cacheUrl: Config.cacheUrl }
-    const use = await redis.get('CHATGPT:USE')
+    const template = use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index'
     if (Config.preview) {
       cacheData.file = randomString()
       const cacheresOption = {

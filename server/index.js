@@ -9,7 +9,7 @@ import os from 'os'
 import schedule from 'node-schedule'
 
 import { Config } from '../utils/config.js'
-import { randomString, getPublicIP } from '../utils/common.js'
+import { randomString, getPublicIP, getUserData } from '../utils/common.js'
 
 const __dirname = path.resolve()
 const server = fastify({
@@ -49,23 +49,6 @@ async function getLoad () {
     return 0
   } else {
     return 0
-  }
-}
-
-async function getUserData (qq) {
-  const dir = 'resources/ChatGPTCache/user'
-  const filename = `${qq}.json`
-  const filepath = path.join(dir, filename)
-  try {
-    let data = fs.readFileSync(filepath, 'utf8')
-    return JSON.parse(data)
-  } catch (error) {
-    return {
-      user: qq,
-      passwd: '',
-      chat: [],
-      mode: '',
-    }
   }
 }
 
