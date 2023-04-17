@@ -1089,6 +1089,7 @@ export class chatgpt extends plugin {
             suggest: suggest ? suggest.split('\n').filter(Boolean) : [],
             images: imgUrls
           },
+          model: use,
           bing: use === 'bing',
           entry: cacheData.file,
           userImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${e.sender.user_id}`,
@@ -1120,6 +1121,7 @@ export class chatgpt extends plugin {
             quote
           },
           model: use,
+          bing: use === 'bing',
           entry: Config.cacheEntry ? cacheData.file : ''
         })
       }
