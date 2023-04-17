@@ -610,7 +610,7 @@ export class chatgpt extends plugin {
     }
     //获取用户配置
     const userData = await getUserData(e.user_id)
-    const use = userData.mode || await redis.get('CHATGPT:USE') || 'api'
+    const use = (userData.mode === 'default' ? null : userData.mode) || await redis.get('CHATGPT:USE') || 'api'
     await this.abstractChat(e, prompt, use)
   }
 
@@ -1092,7 +1092,7 @@ export class chatgpt extends plugin {
             mood,
             quote
           },
-          bing: use === 'bing',
+          model: use,
           entry: Config.cacheEntry ? cacheData.file : ''
         })
       }

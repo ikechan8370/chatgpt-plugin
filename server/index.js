@@ -179,8 +179,8 @@ export async function createServer () {
           quote: body.content.quote,
           images: body.content.images || [],
           suggest: body.content.suggest || [],
-          model: body.bing ? 'Bing' : 'ChatGPT',
-          mood: body.content.quote || 'blandness',
+          model: body.model,
+          mood: body.content.mood || 'blandness',
           live2d: Config.live2d,
           time: new Date()
         }
