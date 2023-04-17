@@ -7,8 +7,8 @@ import { deleteOnePrompt, getPromptByName, readPrompts, saveOnePrompt } from '..
 export class help extends plugin {
   constructor (e) {
     super({
-      name: 'ChatGPT-Plugin 设定管理',
-      dsc: 'ChatGPT-Plugin 设定管理',
+      name: 'ChatGPT-Plugin 人物设定',
+      dsc: '让你的聊天更加有趣！本插件支持丰富的人物设定拓展，可以在线浏览并导入喜欢的设定和上传自己的设定。让你的聊天更加生动有趣！',
       event: 'message',
       priority: 500,
       rule: [
@@ -138,8 +138,12 @@ export class help extends plugin {
           content: Config.sydney
         }
       } else {
-        await e.reply('没有这个设定', true)
-        return
+        await this.importPrompt(`#chatgpt导入设定${promptName}`)
+        prompt = getPromptByName(promptName)
+        if (!prompt) {
+          await e.reply('没有这个设定', true)
+          return
+        }
       }
     }
     let use = await redis.get('CHATGPT:USE') || 'api'
@@ -150,7 +154,8 @@ export class help extends plugin {
     }
     const keyMap = {
       api: 'promptPrefixOverride',
-      Custom: 'sydney'
+      Custom: 'sydney',
+      claude: 'slackClaudeGlobalPreset'
     }
 
     if (keyMap[use]) {
@@ -158,10 +163,7 @@ export class help extends plugin {
       await redis.set(`CHATGPT:PROMPT_USE_${use}`, promptName)
       await e.reply(`你当前正在使用${use}模式，已将该模式设定应用为"${promptName}"。更该设定后建议结束对话以使设定更好生效`, true)
     } else {
-      await e.reply(`你当前正在使用${use}模式，该模式不支持设定`, true)
-    }
-    if (use === 'Custom') {
-      Config.sydneyBrainWashName = promptName
+      await e.reply(`你当前正在使用${use}模式，该模式不支持设定。支持设定的模式有：API、自定义、Claude`, true)
     }
   }
 
@@ -439,6 +441,10 @@ export class help extends plugin {
     if (response.status === 200) {
       let r = await response.json()
       if (r.code === 200) {
+        if (!r.data) {
+          await e.reply('没有这个设定', true)
+          return true
+        }
         const { prompt, title } = r.data
         saveOnePrompt(title, prompt)
         e.reply(`导入成功。您现在可以使用 #chatgpt使用设定${title} 来体验这个设定了。`)

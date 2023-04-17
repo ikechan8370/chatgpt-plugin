@@ -98,7 +98,9 @@ const defaultConfig = {
   // slackChannelId: '',
   slackSigningSecret: '',
   slackClaudeUserId: '',
-  version: 'v2.5.4'
+  slackClaudeEnableGlobalPreset: true,
+  slackClaudeGlobalPreset: '',
+  version: 'v2.5.5'
 }
 const _path = process.cwd()
 let config = {}

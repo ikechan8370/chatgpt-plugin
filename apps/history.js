@@ -15,13 +15,13 @@ async function getKeyv () {
 export class history extends plugin {
   constructor (e) {
     super({
-      name: 'ChatGPT-Plugin聊天记录',
-      dsc: 'ChatGPT-Plugin聊天记录提取',
+      name: 'ChatGPT-Plugin 聊天记录',
+      dsc: '让你的聊天更加便捷！本插件支持以图片的形式导出本次对话的聊天记录，方便随时分享精彩瞬间！',
       event: 'message',
       priority: 500,
       rule: [
         {
-          reg: '^#(chatgpt|ChatGPT)(导出)?聊天记录',
+          reg: '^#(chatgpt|ChatGPT)(导出)?聊天记录$',
           fnc: 'history'
         }
       ]
@@ -65,12 +65,12 @@ export class history extends plugin {
           let parentMessageId = previousConversation.parentMessageId
           let tmp = {}
           const previousCachedMessages = getMessagesForConversation(conversation.messages, parentMessageId)
-            .map((message) => {
-              return {
-                text: message.message,
-                author: message.role === 'User' ? 'user' : 'bot'
-              }
-            })
+              .map((message) => {
+                return {
+                  text: message.message,
+                  author: message.role === 'User' ? 'user' : 'bot'
+                }
+              })
           previousCachedMessages.forEach(m => {
             if (m.author === 'user') {
               tmp.prompt = m.text
