@@ -207,7 +207,7 @@ export class ChatgptManagement extends plugin {
         },
         {
           reg: '^#chatgpt(对话|管理|娱乐|绘图|人物设定|聊天记录)?指令表(帮助)?',
-          fnc: 'commandHelp',
+          fnc: 'commandHelp'
         }
       ]
     })
@@ -265,7 +265,7 @@ export class ChatgptManagement extends plugin {
     }
 
     await this.reply(prompts.join('\n'))
-    return false
+    return true
   }
 
   /**
