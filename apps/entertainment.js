@@ -18,8 +18,8 @@ try {
 export class Entertainment extends plugin {
   constructor (e) {
     super({
-      name: 'ChatGPT-Plugin娱乐小功能',
-      dsc: 'ChatGPT-Plugin娱乐小功能',
+      name: 'ChatGPT-Plugin 娱乐小功能',
+      dsc: '让你的聊天更有趣！现已支持主动打招呼和表情合成小功能！',
       event: 'message',
       priority: 500,
       rule: [
@@ -221,8 +221,8 @@ export class Entertainment extends plugin {
           return false
         } else {
           Config.initiativeChatGroups = Config.initiativeChatGroups
-            .filter(group => group.trim() !== '')
-            .concat(validGroups)
+              .filter(group => group.trim() !== '')
+              .concat(validGroups)
         }
         if (typeof paramArray[2] === 'undefined' && typeof paramArray[3] === 'undefined') {
           replyMsg = `已更新打招呼设置：\n${!e.isGroup ? '群号：' + Config.initiativeChatGroups.join(', ') + '\n' : ''}间隔时间：${Config.helloInterval}小时\n触发概率：${Config.helloProbability}%`

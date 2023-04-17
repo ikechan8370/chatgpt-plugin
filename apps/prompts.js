@@ -7,8 +7,8 @@ import { deleteOnePrompt, getPromptByName, readPrompts, saveOnePrompt } from '..
 export class help extends plugin {
   constructor (e) {
     super({
-      name: 'ChatGPT-Plugin 设定管理',
-      dsc: 'ChatGPT-Plugin 设定管理',
+      name: 'ChatGPT-Plugin 人物设定',
+      dsc: '让你的聊天更加有趣！本插件支持丰富的人物设定拓展，可以在线浏览并导入喜欢的设定和上传自己的设定。让你的聊天更加生动有趣！',
       event: 'message',
       priority: 500,
       rule: [
