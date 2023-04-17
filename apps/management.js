@@ -7,13 +7,13 @@ import { convertSpeaker, speakers } from '../utils/tts.js'
 import md5 from 'md5'
 import path from 'path'
 import fs from 'fs'
-
+import loader from '../../../lib/plugins/loader.js'
 let isWhiteList = true
 export class ChatgptManagement extends plugin {
   constructor (e) {
     super({
-      name: 'ChatGPT-Plugin管理',
-      dsc: 'ChatGPT-Plugin管理',
+      name: 'ChatGPT-Plugin 管理',
+      dsc: '插件的管理项配置，让你轻松掌控各个功能的开闭和管理。包含各种实用的配置选项，让你的聊天更加便捷和高效！',
       event: 'message',
       priority: 500,
       rule: [
@@ -204,9 +204,87 @@ export class ChatgptManagement extends plugin {
         {
           reg: '^#chatgpt用户(设置|配置|管理)',
           fnc: 'userPage'
+        },
+        {
+          reg: '^#chatgpt(对话|管理|娱乐|绘图|人物设定|聊天记录)?指令表(帮助)?',
+          fnc: 'commandHelp',
+          permission: 'master'
         }
       ]
     })
+  }
+
+  async commandHelp (e) {
+    if (!this.e.isMaster) { return this.reply('你没有权限') }
+    if (e.msg.trim() === '#chatgpt指令表帮助') {
+      await this.reply('#chatgpt指令表: 查看本插件的所有指令\n' +
+          '#chatgpt(对话|管理|娱乐|绘图|人物设定|聊天记录)指令表: 查看对应功能分类的指令表')
+      return false
+    }
+    const categories = {
+      对话: '对话',
+      管理: '管理',
+      娱乐: '娱乐',
+      绘图: '绘图',
+      人物设定: '人物设定',
+      聊天记录: '聊天记录'
+    }
+
+    function getCategory (e, plugin) {
+      for (const key in categories) {
+        if (e.msg.includes(key) && plugin.name.includes(categories[key])) {
+          return '功能名称: '
+        }
+      }
+      return ''
+    }
+    const commandSet = []
+    const plugins = await Promise.all(loader.priority.map(p => new p.class()))
+
+    for (const plugin of plugins) {
+      const name = plugin.name
+      const rule = plugin.rule
+      if (/^chatgpt/i.test(name) && rule) {
+        commandSet.push({ name, dsc: plugin.dsc, rule })
+      }
+    }
+
+    const generatePrompt = (plugin, command) => {
+      const category = getCategory(e, plugin)
+      const commandsStr = command.length ? `正则指令:\n${command.join('\n')}\n\n` : '正则指令: 无\n\n'
+      const description = `功能介绍：${plugin.dsc}\n`
+      return `${category}${plugin.name}\n${description}${commandsStr}`
+    }
+
+    const prompts = []
+    for (const plugin of commandSet) {
+      const commands = plugin.rule.map(v => v.reg.includes('[#*0-9]') ? '表情合成功能只需要发送两个emoji表情即可' : v.reg)
+      const category = getCategory(e, plugin)
+      if (category || (!e.msg.includes('对话') && !e.msg.includes('管理') && !e.msg.includes('娱乐') && !e.msg.includes('绘图') && !e.msg.includes('人物设定') && !e.msg.includes('聊天记录'))) {
+        prompts.push(generatePrompt(plugin, commands))
+      }
+    }
+
+    await this.reply(prompts.join('\n'))
+    return false
+  }
+
+  /**
+   * 对原始黑白名单进行去重和去除无效群号处理
+   * @param whitelist
+   * @param blacklist
+   * @returns {Promise<any[][]>}
+   */
+  async processList (whitelist, blacklist) {
+    let groupWhitelist = Array.isArray(whitelist)
+        ? whitelist
+        : String(whitelist).split(/[,，]/)
+    let groupBlacklist = !Array.isArray(blacklist)
+        ? blacklist
+        : String(blacklist).split(/[,，]/)
+    groupWhitelist = Array.from(new Set(groupWhitelist)).filter(value => /^[1-9]\d{8,9}/.test(value))
+    groupBlacklist = Array.from(new Set(groupBlacklist)).filter(value => /^[1-9]\d{8,9}/.test(value))
+    return [groupWhitelist, groupBlacklist]
   }
 
   async setList (e) {
@@ -219,39 +297,45 @@ export class ChatgptManagement extends plugin {
 
   async saveList (e) {
     if (!this.e.msg) return
-    const groupNums = this.e.msg.match(/\d+/g)
-    const groupList = Array.isArray(groupNums) ? this.e.msg.match(/\d+/g).filter(value => /^[1-9]\d{8,9}/.test(value)) : []
-    if (!groupList.length) {
-      await this.reply('没有可添加的群号，请检查群号是否正确', e.isGroup)
+    const listType = isWhiteList ? '白名单' : '黑名单'
+    const inputMatch = this.e.msg.match(/\d+/g)
+    let [groupWhitelist, groupBlacklist] = await this.processList(Config.groupWhitelist, Config.groupBlacklist)
+    let inputList = Array.isArray(inputMatch) ? this.e.msg.match(/\d+/g).filter(value => /^[1-9]\d{8,9}/.test(value)) : []
+    if (!inputList.length) {
+      await this.reply('无效输入，请在检查群号是否正确后重新输入', e.isGroup)
       return false
     }
+    inputList = Array.from(new Set(inputList))
     let whitelist = []
     let blacklist = []
-    for (const element of groupList) {
-      if (isWhiteList) {
-        Config.groupWhitelist = Config.groupWhitelist.filter(item => item !== element)
+    for (const element of inputList) {
+      if (listType === '白名单') {
+        groupWhitelist = groupWhitelist.filter(item => item !== element)
         whitelist.push(element)
       } else {
-        Config.groupBlacklist = Config.groupBlacklist.filter(item => item !== element)
+        groupBlacklist = groupBlacklist.filter(item => item !== element)
         blacklist.push(element)
       }
     }
     if (!(whitelist.length || blacklist.length)) {
-      await this.reply('没有可添加的群号，请检查群号是否正确或重复添加', e.isGroup)
-      this.finish('saveList')
+      await this.reply('无效输入，请在检查群号是否正确或重复添加后重新输入', e.isGroup)
       return false
     } else {
-      if (isWhiteList) {
-        Config.groupWhitelist = Config.groupWhitelist
-          .filter(group => group.trim() !== '')
-          .concat(whitelist)
+      if (listType === '白名单') {
+        Config.groupWhitelist = groupWhitelist
+            .filter(group => group !== '')
+            .concat(whitelist)
       } else {
-        Config.groupBlacklist = Config.groupBlacklist
-          .filter(group => group.trim() !== '')
-          .concat(blacklist)
+        Config.groupBlacklist = groupBlacklist
+            .filter(group => group !== '')
+            .concat(blacklist)
       }
     }
-    await this.reply(`群聊${isWhiteList ? '白' : '黑'}名单已更新，可通过\n'#chatgpt查看群聊${isWhiteList ? '白' : '黑'}名单'查看最新名单\n#chatgpt移除群聊${isWhiteList ? '白' : '黑'}名单'管理名单`, e.isGroup)
+    let replyMsg = `群聊${listType}已更新，可通过\n'#chatgpt查看群聊${listType}'查看最新名单\n'#chatgpt移除群聊${listType}'管理名单`
+    if (e.isPrivate) {
+      replyMsg += `\n当前群聊${listType}为：${listType === '白名单' ? Config.groupWhitelist : Config.groupBlacklist}`
+    }
+    await this.reply(replyMsg, e.isGroup)
     this.finish('saveList')
   }
 
@@ -259,8 +343,8 @@ export class ChatgptManagement extends plugin {
     isWhiteList = e.msg.includes('白')
     const list = isWhiteList ? Config.groupWhitelist : Config.groupBlacklist
     const listType = isWhiteList ? '白名单' : '黑名单'
-    const replyMsg = list.length ? `当前群聊${listType}为：${list.join('，')}` : `当前没有设置任何${listType}`
-    this.reply(replyMsg, e.isGroup)
+    const replyMsg = list.length ? `当前群聊${listType}为：${list}` : `当前没有设置任何群聊${listType}`
+    await this.reply(replyMsg, e.isGroup)
     return false
   }
 
@@ -268,9 +352,9 @@ export class ChatgptManagement extends plugin {
     isWhiteList = e.msg.includes('白')
     const listType = isWhiteList ? '白名单' : '黑名单'
     let replyMsg = ''
-    if (Config.groupWhitelist.length && Config.groupBlacklist.length) {
+    if (Config.groupWhitelist.length === 0 && Config.groupBlacklist.length === 0) {
       replyMsg = `当前群聊(白|黑)名单为空，请先添加${listType}吧~`
-    } else if ((isWhiteList && !Config.groupWhitelist.length) || (!isWhiteList && !Config.groupBlacklist.length)) {
+    } else if ((listType === '白名单' && !Config.groupWhitelist.length) || (listType === '黑名单' && !Config.groupBlacklist.length)) {
       replyMsg = `当前群聊${listType}为空，请先添加吧~`
     }
     if (replyMsg) {
@@ -286,27 +370,32 @@ export class ChatgptManagement extends plugin {
     if (!this.e.msg) return
     const isAllDeleted = this.e.msg.trim() === '全部删除'
     const groupNumRegex = /^[1-9]\d{8,9}$/
-    const groupNums = this.e.msg.match(/\d+/g)
-    const validGroups = Array.isArray(groupNums) ? groupNums.filter(groupNum => groupNumRegex.test(groupNum)) : []
+    const inputMatch = this.e.msg.match(/\d+/g)
+    const validGroups = Array.isArray(inputMatch) ? inputMatch.filter(groupNum => groupNumRegex.test(groupNum)) : []
+    let [groupWhitelist, groupBlacklist] = await this.processList(Config.groupWhitelist, Config.groupBlacklist)
     if (isAllDeleted) {
-      Config.groupWhitelist = isWhiteList ? [] : Config.groupWhitelist
-      Config.groupBlacklist = !isWhiteList ? [] : Config.groupBlacklist
+      Config.groupWhitelist = isWhiteList ? [] : groupWhitelist
+      Config.groupBlacklist = !isWhiteList ? [] : groupBlacklist
     } else {
       if (!validGroups.length) {
-        await this.reply('没有可删除的群号，请检查输入的群号是否正确', e.isGroup)
+        await this.reply('无效输入，请在检查群号是否正确后重新输入', e.isGroup)
         return false
       } else {
         for (const element of validGroups) {
           if (isWhiteList) {
-            Config.groupWhitelist = Config.groupWhitelist.filter(item => item !== element)
+            Config.groupWhitelist = groupWhitelist.filter(item => item !== element)
           } else {
-            Config.groupBlacklist = Config.groupBlacklist.filter(item => item !== element)
+            Config.groupBlacklist = groupBlacklist.filter(item => item !== element)
           }
         }
       }
     }
-    const groupType = isWhiteList ? '白' : '黑'
-    await this.reply(`群聊${groupType}名单已更新，可通过'#chatgpt查看群聊${groupType}名单'命令查看最新名单`)
+    const listType = isWhiteList ? '白名单' : '黑名单'
+    let replyMsg = `群聊${listType}已更新，可通过'#chatgpt查看群聊${listType}'命令查看最新名单`
+    if (e.isPrivate) {
+      replyMsg += `\n当前群聊${listType}为：${listType === '白名单' ? Config.groupWhitelist : Config.groupBlacklist}`
+    }
+    await this.reply(replyMsg, e.isGroup)
     this.finish('confirmDelGroup')
   }
 
@@ -449,11 +538,11 @@ export class ChatgptManagement extends plugin {
     if (token) {
       token = token.split('|')
       token = token.map((item, index) => (
-        {
-          Token: item,
-          State: '正常',
-          Usage: 0
-        }
+          {
+            Token: item,
+            State: '正常',
+            Usage: 0
+          }
       ))
     } else {
       token = []
@@ -473,10 +562,10 @@ export class ChatgptManagement extends plugin {
     if (tokens) tokens = JSON.parse(tokens)
     else tokens = []
     tokens = tokens.length > 0
-      ? tokens.map((item, index) => (
-      `【${index}】 Token：${item.Token.substring(0, 5 / 2) + '...' + item.Token.substring(item.Token.length - 5 / 2, item.Token.length)}`
-      )).join('\n')
-      : '无必应Token记录'
+        ? tokens.map((item, index) => (
+            `【${index}】 Token：${item.Token.substring(0, 5 / 2) + '...' + item.Token.substring(item.Token.length - 5 / 2, item.Token.length)}`
+        )).join('\n')
+        : '无必应Token记录'
     await this.reply(`${tokens}`, true)
     return false
   }
@@ -487,10 +576,10 @@ export class ChatgptManagement extends plugin {
     if (tokens) tokens = JSON.parse(tokens)
     else tokens = []
     tokens = tokens.length > 0
-      ? tokens.map((item, index) => (
-      `【${index}】 Token：${item.Token.substring(0, 5 / 2) + '...' + item.Token.substring(item.Token.length - 5 / 2, item.Token.length)}`
-      )).join('\n')
-      : '无必应Token记录'
+        ? tokens.map((item, index) => (
+            `【${index}】 Token：${item.Token.substring(0, 5 / 2) + '...' + item.Token.substring(item.Token.length - 5 / 2, item.Token.length)}`
+        )).join('\n')
+        : '无必应Token记录'
     await this.reply(`请发送要删除的token编号\n${tokens}`, true)
     if (tokens.length == 0) this.finish('saveBingToken')
     return false
