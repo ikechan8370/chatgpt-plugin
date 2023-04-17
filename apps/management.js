@@ -207,7 +207,7 @@ export class ChatgptManagement extends plugin {
         },
         {
           reg: '^#chatgpt(对话|管理|娱乐|绘图|人物设定|聊天记录)?指令表(帮助)?',
-          fnc: 'commandHelp',
+          fnc: 'commandHelp'
         }
       ]
     })
@@ -276,11 +276,11 @@ export class ChatgptManagement extends plugin {
    */
   async processList (whitelist, blacklist) {
     let groupWhitelist = Array.isArray(whitelist)
-        ? whitelist
-        : String(whitelist).split(/[,，]/)
+      ? whitelist
+      : String(whitelist).split(/[,，]/)
     let groupBlacklist = !Array.isArray(blacklist)
-        ? blacklist
-        : String(blacklist).split(/[,，]/)
+      ? blacklist
+      : String(blacklist).split(/[,，]/)
     groupWhitelist = Array.from(new Set(groupWhitelist)).filter(value => /^[1-9]\d{8,9}$/.test(value))
     groupBlacklist = Array.from(new Set(groupBlacklist)).filter(value => /^[1-9]\d{8,9}$/.test(value))
     return [groupWhitelist, groupBlacklist]
@@ -322,12 +322,12 @@ export class ChatgptManagement extends plugin {
     } else {
       if (listType === '白名单') {
         Config.groupWhitelist = groupWhitelist
-            .filter(group => group !== '')
-            .concat(whitelist)
+          .filter(group => group !== '')
+          .concat(whitelist)
       } else {
         Config.groupBlacklist = groupBlacklist
-            .filter(group => group !== '')
-            .concat(blacklist)
+          .filter(group => group !== '')
+          .concat(blacklist)
       }
     }
     let replyMsg = `群聊${listType}已更新，可通过\n'#chatgpt查看群聊${listType}'查看最新名单\n'#chatgpt移除群聊${listType}'管理名单`
@@ -537,11 +537,11 @@ export class ChatgptManagement extends plugin {
     if (token) {
       token = token.split('|')
       token = token.map((item, index) => (
-          {
-            Token: item,
-            State: '正常',
-            Usage: 0
-          }
+        {
+          Token: item,
+          State: '正常',
+          Usage: 0
+        }
       ))
     } else {
       token = []
@@ -561,10 +561,10 @@ export class ChatgptManagement extends plugin {
     if (tokens) tokens = JSON.parse(tokens)
     else tokens = []
     tokens = tokens.length > 0
-        ? tokens.map((item, index) => (
+      ? tokens.map((item, index) => (
             `【${index}】 Token：${item.Token.substring(0, 5 / 2) + '...' + item.Token.substring(item.Token.length - 5 / 2, item.Token.length)}`
-        )).join('\n')
-        : '无必应Token记录'
+      )).join('\n')
+      : '无必应Token记录'
     await this.reply(`${tokens}`, true)
     return false
   }
@@ -575,10 +575,10 @@ export class ChatgptManagement extends plugin {
     if (tokens) tokens = JSON.parse(tokens)
     else tokens = []
     tokens = tokens.length > 0
-        ? tokens.map((item, index) => (
+      ? tokens.map((item, index) => (
             `【${index}】 Token：${item.Token.substring(0, 5 / 2) + '...' + item.Token.substring(item.Token.length - 5 / 2, item.Token.length)}`
-        )).join('\n')
-        : '无必应Token记录'
+      )).join('\n')
+      : '无必应Token记录'
     await this.reply(`请发送要删除的token编号\n${tokens}`, true)
     if (tokens.length == 0) this.finish('saveBingToken')
     return false
