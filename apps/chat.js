@@ -1159,6 +1159,8 @@ export class chatgpt extends plugin {
     if (Config.debug) {
       logger.mark(`using ${use} mode`)
     }
+    const userData = await getUserData(e.user_id)
+    const useCast = userData.cast
     switch (use) {
       case 'browser': {
         return await this.chatgptBrowserBased(prompt, conversation)
@@ -1213,7 +1215,7 @@ export class chatgpt extends plugin {
             // 如果当前没有开启对话或者当前是Sydney模式、Custom模式，则本次对话携带拓展资料
             let c = await redis.get(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
             if (!c || Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom') {
-              opt.context = Config.sydneyContext
+              opt.context = useCast.bing_resource || Config.sydneyContext
             }
             // 重新拿存储的token，因为可能之前有过期的被删了
             let abtrs = await getAvailableBingToken(conversation, throttledTokens)
@@ -1428,9 +1430,9 @@ export class chatgpt extends plugin {
         let conversationId = await redis.get(`CHATGPT:SLACK_CONVERSATION:${e.sender.user_id}`)
         if (!conversationId) {
           // 如果是新对话
-          if (Config.slackClaudeEnableGlobalPreset && Config.slackClaudeGlobalPreset) {
+          if (Config.slackClaudeEnableGlobalPreset && (useCast.slack || Config.slackClaudeGlobalPreset)) {
             // 先发送设定
-            await client.sendMessage(Config.slackClaudeGlobalPreset, e)
+            await client.sendMessage(useCast.slack || Config.slackClaudeGlobalPreset, e)
           }
         }
         let text = await client.sendMessage(prompt, e)
@@ -1444,7 +1446,7 @@ export class chatgpt extends plugin {
           completionParams.model = Config.model
         }
         const currentDate = new Date().toISOString().split('T')[0]
-        let promptPrefix = `You are ${Config.assistantLabel} ${Config.promptPrefixOverride || defaultPropmtPrefix}
+        let promptPrefix = `You are ${Config.assistantLabel} ${useCast.api || Config.promptPrefixOverride || defaultPropmtPrefix}
         Knowledge cutoff: 2021-09. Current date: ${currentDate}`
         let opts = {
           apiBaseUrl: Config.openAiBaseUrl,

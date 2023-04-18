@@ -327,7 +327,12 @@ export async function createServer() {
       }
       if (body.userConfig) {
         let temp_userData = await getUserData(user.user)
-        temp_userData.mode = body.userConfig.mode
+        if (body.userConfig.mode) {
+          temp_userData.mode = body.userConfig.mode
+        }
+        if (body.userConfig.cast) {
+          temp_userData.cast = body.userConfig.cast
+        }
         await setUserData(user.user, temp_userData)
       }
     }
