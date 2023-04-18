@@ -1690,7 +1690,7 @@ async function getAvailableBingToken (conversation, throttled = []) {
       return current.Usage < min.Usage ? current : min
     })
     bingToken = minElement.Token
-  } else if (restricted.length > 0) {
+  } else if (restricted.length > 0 && restricted.some(x => throttled.includes(x.Token))) {
     allThrottled = true
     const minElement = restricted.reduce((min, current) => {
       return current.Usage < min.Usage ? current : min
