@@ -71,6 +71,8 @@ export class SlackClaudeClient {
       let ts = sendResponse.ts
       let response = '_Typing…_'
       let tryTimes = 0
+      // 发完先等3喵
+      await delay(3000)
       while (response.trim().endsWith('_Typing…_')) {
         let replies = await this.app.client.conversations.replies({
           token: this.config.slackUserToken,
@@ -96,7 +98,7 @@ export class SlackClaudeClient {
             }
           }
         }
-        await delay(500)
+        await delay(2000)
         tryTimes++
         if (tryTimes > 10 && response === '_Typing…_') {
           // 过了5秒还没任何回复，就重新发一下试试
@@ -115,6 +117,8 @@ export class SlackClaudeClient {
       })
       let response = '_Typing…_'
       let tryTimes = 0
+      // 发完先等3喵
+      await delay(3000)
       while (response.trim().endsWith('_Typing…_')) {
         let replies = await this.app.client.conversations.replies({
           token: this.config.slackUserToken,
@@ -139,7 +143,7 @@ export class SlackClaudeClient {
             }
           }
         }
-        await delay(500)
+        await delay(2000)
         tryTimes++
         if (tryTimes > 10 && response === '_Typing…_') {
           // 过了5秒还没任何回复，就重新发一下试试
