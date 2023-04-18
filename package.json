@@ -14,7 +14,6 @@
     "eventsource": "^2.0.2",
     "eventsource-parser": "^1.0.0",
     "fastify": "^4.13.0",
-    "fastify-cookie": "^5.7.0",
     "https-proxy-agent": "5.0.1",
     "keyv": "^4.5.2",
     "keyv-file": "^0.2.0",

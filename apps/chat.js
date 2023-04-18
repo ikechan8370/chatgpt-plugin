@@ -15,6 +15,7 @@ import {
   randomString,
   completeJSON,
   isImage,
+  getUserData,
   getDefaultReplySetting, isCN, getMasterQQ
 } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
@@ -623,7 +624,9 @@ export class chatgpt extends plugin {
       logger.info('chatgpt闭嘴中，不予理会')
       return false
     }
-    const use = await redis.get('CHATGPT:USE') || 'api'
+    //获取用户配置
+    const userData = await getUserData(e.user_id)
+    const use = (userData.mode === 'default' ? null : userData.mode) || await redis.get('CHATGPT:USE') || 'api'
     // 自动化插件本月已发送xx条消息更新太快，由于延迟和缓存问题导致不同客户端不一样，at文本和获取的card不一致。因此单独处理一下
     prompt = prompt.replace(/^｜本月已发送\d+条消息/, '')
     await this.abstractChat(e, prompt, use)
@@ -937,11 +940,11 @@ export class chatgpt extends plugin {
       } else if (userSetting.usePicture || (Config.autoUsePicture && response.length > Config.autoUsePictureThreshold)) {
         // todo use next api of chatgpt to complete incomplete respoonse
         try {
-          await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', response, prompt, quotemessage, mood, chatMessage.suggestedResponses, imgUrls)
+          await this.renderImage(e, use, response, prompt, quotemessage, mood, chatMessage.suggestedResponses, imgUrls)
         } catch (err) {
           logger.warn('error happened while uploading content to the cache server. QR Code will not be showed in this picture.')
           logger.error(err)
-          await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', response, prompt)
+          await this.renderImage(e, use, response, prompt)
         }
         if (Config.enableSuggestedResponses && chatMessage.suggestedResponses) {
           this.reply(`建议的回复：\n${chatMessage.suggestedResponses}`)
@@ -973,7 +976,7 @@ export class chatgpt extends plugin {
           await this.reply(`出现错误：${err}`, true, { recallMsg: e.isGroup ? 10 : 0 })
         } else {
           // 这里是否还需要上传到缓存服务器呐？多半是代理服务器的问题，本地也修不了，应该不用吧。
-          await this.renderImage(e, use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index', `通信异常,错误信息如下 ${err?.message || err?.data?.message || (typeof (err) === 'object' ? JSON.stringify(err) : err) || '未能确认错误类型！'}`, prompt)
+          await this.renderImage(e, use, `通信异常,错误信息如下 \n \`\`\`${err?.message || err?.data?.message || (typeof (err) === 'object' ? JSON.stringify(err) : err) || '未能确认错误类型！'}\`\`\``, prompt)
         }
       }
     }
@@ -1067,9 +1070,9 @@ export class chatgpt extends plugin {
     return true
   }
 
-  async renderImage (e, template, content, prompt, quote = [], mood = '', suggest = '', imgUrls = []) {
+  async renderImage (e, use, content, prompt, quote = [], mood = '', suggest = '', imgUrls = []) {
     let cacheData = { file: '', cacheUrl: Config.cacheUrl }
-    const use = await redis.get('CHATGPT:USE')
+    const template = use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index'
     if (Config.preview) {
       cacheData.file = randomString()
       const cacheresOption = {
@@ -1089,6 +1092,7 @@ export class chatgpt extends plugin {
             suggest: suggest ? suggest.split('\n').filter(Boolean) : [],
             images: imgUrls
           },
+          model: use,
           bing: use === 'bing',
           entry: cacheData.file,
           userImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${e.sender.user_id}`,
@@ -1119,6 +1123,7 @@ export class chatgpt extends plugin {
             mood,
             quote
           },
+          model: use,
           bing: use === 'bing',
           entry: Config.cacheEntry ? cacheData.file : ''
         })
@@ -1154,6 +1159,8 @@ export class chatgpt extends plugin {
     if (Config.debug) {
       logger.mark(`using ${use} mode`)
     }
+    const userData = await getUserData(e.user_id)
+    const useCast = userData.cast || {}
     switch (use) {
       case 'browser': {
         return await this.chatgptBrowserBased(prompt, conversation)
@@ -1208,7 +1215,7 @@ export class chatgpt extends plugin {
             // 如果当前没有开启对话或者当前是Sydney模式、Custom模式，则本次对话携带拓展资料
             let c = await redis.get(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
             if (!c || Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom') {
-              opt.context = Config.sydneyContext
+              opt.context = useCast?.bing_resource || Config.sydneyContext
             }
             // 重新拿存储的token，因为可能之前有过期的被删了
             let abtrs = await getAvailableBingToken(conversation, throttledTokens)
@@ -1423,9 +1430,9 @@ export class chatgpt extends plugin {
         let conversationId = await redis.get(`CHATGPT:SLACK_CONVERSATION:${e.sender.user_id}`)
         if (!conversationId) {
           // 如果是新对话
-          if (Config.slackClaudeEnableGlobalPreset && Config.slackClaudeGlobalPreset) {
+          if (Config.slackClaudeEnableGlobalPreset && (useCast?.slack || Config.slackClaudeGlobalPreset)) {
             // 先发送设定
-            await client.sendMessage(Config.slackClaudeGlobalPreset, e)
+            await client.sendMessage(useCast?.slack || Config.slackClaudeGlobalPreset, e)
           }
         }
         let text = await client.sendMessage(prompt, e)
@@ -1439,7 +1446,7 @@ export class chatgpt extends plugin {
           completionParams.model = Config.model
         }
         const currentDate = new Date().toISOString().split('T')[0]
-        let promptPrefix = `You are ${Config.assistantLabel} ${Config.promptPrefixOverride || defaultPropmtPrefix}
+        let promptPrefix = `You are ${Config.assistantLabel} ${useCast?.api || Config.promptPrefixOverride || defaultPropmtPrefix}
         Knowledge cutoff: 2021-09. Current date: ${currentDate}`
         let opts = {
           apiBaseUrl: Config.openAiBaseUrl,
@@ -1683,7 +1690,7 @@ async function getAvailableBingToken (conversation, throttled = []) {
       return current.Usage < min.Usage ? current : min
     })
     bingToken = minElement.Token
-  } else if (restricted.length > 0) {
+  } else if (restricted.length > 0 && restricted.some(x => throttled.includes(x.Token))) {
     allThrottled = true
     const minElement = restricted.reduce((min, current) => {
       return current.Usage < min.Usage ? current : min

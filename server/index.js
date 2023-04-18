@@ -9,7 +9,7 @@ import os from 'os'
 import schedule from 'node-schedule'
 
 import { Config } from '../utils/config.js'
-import { randomString, getPublicIP } from '../utils/common.js'
+import { randomString, getPublicIP, getUserData } from '../utils/common.js'
 
 const __dirname = path.resolve()
 const server = fastify({
@@ -36,7 +36,7 @@ let Statistics = {
   }
 }
 
-async function getLoad () {
+async function getLoad() {
   // 获取当前操作系统平台
   const platform = os.platform()
   // 判断平台是Linux还是Windows
@@ -52,23 +52,7 @@ async function getLoad () {
   }
 }
 
-async function getUserData (qq) {
-  const dir = 'resources/ChatGPTCache/user'
-  const filename = `${qq}.json`
-  const filepath = path.join(dir, filename)
-  try {
-    let data = fs.readFileSync(filepath, 'utf8')
-    return JSON.parse(data)
-  } catch (error) {
-    return {
-      user: qq,
-      passwd: '',
-      chat: []
-    }
-  }
-}
-
-async function setUserData (qq, data) {
+async function setUserData(qq, data) {
   const dir = 'resources/ChatGPTCache/user'
   const filename = `${qq}.json`
   const filepath = path.join(dir, filename)
@@ -76,7 +60,7 @@ async function setUserData (qq, data) {
   fs.writeFileSync(filepath, JSON.stringify(data))
 }
 
-export async function createServer () {
+export async function createServer() {
   await server.register(cors, {
     origin: '*'
   })
@@ -181,11 +165,35 @@ export async function createServer () {
       const filepath = path.join(dir, filename)
       const regexUrl = /\b((?:https?|ftp|file):\/\/[-a-zA-Z0-9+&@#\/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#\/%=~_|])/g
       const ip = await getPublicIP()
+      let botName = ''
+      switch (body.model) {
+        case 'bing':
+          botName = 'Bing'
+          break
+        case 'api':
+          botName = 'ChatGPT'
+          break
+        case 'api3':
+          botName = 'ChatGPT'
+          break
+        case 'browser':
+          botName = 'ChatGPT'
+          break
+        case 'chatglm':
+          botName = 'ChatGLM'
+          break
+        case 'claude':
+          botName = 'Claude'
+          break
+        default:
+          botName = body.model
+          break
+      }
       try {
         fs.mkdirSync(dir, { recursive: true })
         const data = {
           user: body.content.senderName,
-          bot: Config.chatViewBotName || (body.bing ? 'Bing' : 'ChatGPT'),
+          bot: Config.chatViewBotName || botName,
           userImg: body.userImg || '',
           botImg: body.botImg || '',
           question: body.content.prompt,
@@ -195,7 +203,9 @@ export async function createServer () {
           quote: body.content.quote,
           images: body.content.images || [],
           suggest: body.content.suggest || [],
-          model: body.bing ? 'Bing' : 'ChatGPT',
+          model: body.model,
+          mood: body.content.mood || 'blandness',
+          live2d: Config.live2d,
           time: new Date()
         }
         fs.writeFileSync(filepath, JSON.stringify(data))
@@ -229,7 +239,16 @@ export async function createServer () {
     let user = usertoken.find(user => user.token === token)
     if (!user) user = { user: '' }
     const userData = await getUserData(user.user)
-    reply.send(userData.chat)
+    reply.send({
+      chat: userData.chat || [],
+      mode: userData.mode || '',
+      cast: userData.cast || {
+        api: '', //API设定
+        bing: '', //必应设定
+        bing_resource: '', //必应扩展资料
+        slack: '', //Slack设定
+      }
+    })
   })
 
   // 清除缓存数据
@@ -311,6 +330,16 @@ export async function createServer () {
     } else {
       if (body.userSetting) {
         await redis.set(`CHATGPT:USER:${user.user}`, JSON.stringify(body.userSetting))
+      }
+      if (body.userConfig) {
+        let temp_userData = await getUserData(user.user)
+        if (body.userConfig.mode) {
+          temp_userData.mode = body.userConfig.mode
+        }
+        if (body.userConfig.cast) {
+          temp_userData.cast = body.userConfig.cast
+        }
+        await setUserData(user.user, temp_userData)
       }
     }
   })

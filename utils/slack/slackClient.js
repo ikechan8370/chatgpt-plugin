@@ -1,7 +1,7 @@
 import { Config } from '../config.js'
 import slack from '@slack/bolt'
 import delay from 'delay'
-import {limitString} from "../common.js";
+import { limitString } from '../common.js'
 let proxy
 if (Config.proxy) {
   try {
@@ -71,16 +71,20 @@ export class SlackClaudeClient {
       let ts = sendResponse.ts
       let response = '_Typing…_'
       let tryTimes = 0
+      // 发完先等3喵
+      await delay(3000)
       while (response.trim().endsWith('_Typing…_')) {
         let replies = await this.app.client.conversations.replies({
           token: this.config.slackUserToken,
           channel: channel.id,
           limit: 1000,
-          ts: ts
+          ts
         })
         await await redis.set(`CHATGPT:SLACK_CONVERSATION:${qq}`, `${ts}`)
         if (replies.messages.length > 0) {
-          let formalMessages = replies.messages.filter(m => m.text.indexOf('anthropic.com') === -1)
+          let formalMessages = replies.messages
+            .filter(m => m.metadata?.event_type !== 'claude_moderation')
+            .filter(m => !m.text.startsWith('_'))
           if (!formalMessages[formalMessages.length - 1].bot_profile) {
             // 问题的下一句不是bot回复的，这属于意料之外的问题，可能是多人同时问问题导致 再问一次吧
             return await this.sendMessage(prompt, e, t + 1)
@@ -96,7 +100,7 @@ export class SlackClaudeClient {
             }
           }
         }
-        await delay(500)
+        await delay(2000)
         tryTimes++
         if (tryTimes > 10 && response === '_Typing…_') {
           // 过了5秒还没任何回复，就重新发一下试试
@@ -115,6 +119,8 @@ export class SlackClaudeClient {
       })
       let response = '_Typing…_'
       let tryTimes = 0
+      // 发完先等3喵
+      await delay(3000)
       while (response.trim().endsWith('_Typing…_')) {
         let replies = await this.app.client.conversations.replies({
           token: this.config.slackUserToken,
@@ -123,7 +129,9 @@ export class SlackClaudeClient {
           ts: conversationId
         })
         if (replies.messages.length > 0) {
-          let formalMessages = replies.messages.filter(m => m.text.indexOf('anthropic.com') === -1)
+          let formalMessages = replies.messages
+            .filter(m => m.metadata?.event_type !== 'claude_moderation')
+            .filter(m => !m.text.startsWith('_'))
           if (!formalMessages[formalMessages.length - 1].bot_profile) {
             // 问题的下一句不是bot回复的，这属于意料之外的问题，可能是多人同时问问题导致 再问一次吧
             return await this.sendMessage(prompt, e, t + 1)
@@ -139,7 +147,7 @@ export class SlackClaudeClient {
             }
           }
         }
-        await delay(500)
+        await delay(2000)
         tryTimes++
         if (tryTimes > 10 && response === '_Typing…_') {
           // 过了5秒还没任何回复，就重新发一下试试
