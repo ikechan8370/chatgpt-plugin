@@ -1160,7 +1160,7 @@ export class chatgpt extends plugin {
       logger.mark(`using ${use} mode`)
     }
     const userData = await getUserData(e.user_id)
-    const useCast = userData.cast
+    const useCast = userData.cast || {}
     switch (use) {
       case 'browser': {
         return await this.chatgptBrowserBased(prompt, conversation)
@@ -1215,7 +1215,7 @@ export class chatgpt extends plugin {
             // 如果当前没有开启对话或者当前是Sydney模式、Custom模式，则本次对话携带拓展资料
             let c = await redis.get(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
             if (!c || Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom') {
-              opt.context = useCast.bing_resource || Config.sydneyContext
+              opt.context = useCast?.bing_resource || Config.sydneyContext
             }
             // 重新拿存储的token，因为可能之前有过期的被删了
             let abtrs = await getAvailableBingToken(conversation, throttledTokens)
