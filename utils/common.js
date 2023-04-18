@@ -5,7 +5,8 @@ import lodash from 'lodash'
 import fs from 'node:fs'
 import path from 'node:path'
 import buffer from 'buffer'
-import puppeteer from '../../../lib/puppeteer/puppeteer.js'
+import yaml from 'yaml'
+// import puppeteer from '../../../lib/puppeteer/puppeteer.js'
 import { Config } from './config.js'
 // export function markdownToText (markdown) {
 //  return remark()
@@ -13,6 +14,24 @@ import { Config } from './config.js'
 //    .processSync(markdown ?? '')
 //    .toString()
 // }
+
+let puppeteer
+try {
+  const Puppeteer = (await import('../../../renderers/puppeteer/lib/puppeteer.js')).default
+  let puppeteerCfg = {}
+  let configFile = `./renderers/puppeteer/config.yaml`
+  if (fs.existsSync(configFile)) {
+    try {
+      puppeteerCfg = yaml.parse(fs.readFileSync(configFile, 'utf8'))
+    } catch (e) {
+      puppeteerCfg = {}
+    }
+  }
+  puppeteer = new Puppeteer(puppeteerCfg)
+} catch (e) {
+  logger.warn('未能加载puppeteer，尝试降级到Yunzai的puppeteer尝试')
+  puppeteer = (await import('../../../lib/puppeteer/puppeteer.js')).default
+}
 
 let localIP = ''
 export function escapeHtml (str) {

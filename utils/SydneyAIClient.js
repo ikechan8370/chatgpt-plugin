@@ -293,7 +293,7 @@ export default class SydneyAIClient {
       }
     }
     const userData = await getUserData(master)
-    const useCast = userData.cast
+    const useCast = userData.cast || {}
     const namePlaceholder = '[name]'
     const defaultBotName = 'Sydney'
     const groupContextTip = Config.groupContextTip
