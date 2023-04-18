@@ -241,7 +241,8 @@ export async function createServer() {
     const userData = await getUserData(user.user)
     reply.send({
       chat: userData.chat,
-      mode: userData.mode
+      mode: userData.mode,
+      cast: userData.cast
     })
   })
 
