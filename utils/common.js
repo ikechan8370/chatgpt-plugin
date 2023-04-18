@@ -316,6 +316,7 @@ export async function renderUrl (e, url, renderCfg = {}) {
       width: 1280,
       height: 720
     })
+    await page.waitForTimeout(renderCfg.wait || 1000)
     let buff = base64 = await page.screenshot({ fullPage: true })
     base64 = segment.image(buff)
     await page.close().catch((err) => logger.error(err))
@@ -608,5 +609,28 @@ export async function getPublicIP () {
     return localIP
   } catch (err) {
     return '127.0.0.1'
+  }
+}
+
+export async function getUserData (user) {
+  const dir = 'resources/ChatGPTCache/user'
+  const filename = `${user}.json`
+  const filepath = path.join(dir, filename)
+  try {
+    let data = fs.readFileSync(filepath, 'utf8')
+    return JSON.parse(data)
+  } catch (error) {
+    return {
+      user: user,
+      passwd: '',
+      chat: [],
+      mode: '',
+      cast: {
+        api: '', //API设定
+        bing: '', //必应设定
+        bing_resource: '', //必应扩展资料
+        slack: '', //Slack设定
+      }
+    }
   }
 }
