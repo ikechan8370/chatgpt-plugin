@@ -240,8 +240,14 @@ export async function createServer() {
     if (!user) user = { user: '' }
     const userData = await getUserData(user.user)
     reply.send({
-      chat: userData.chat,
-      mode: userData.mode
+      chat: userData.chat || [],
+      mode: userData.mode || '',
+      cast: userData.cast || {
+        api: '', //API设定
+        bing: '', //必应设定
+        bing_resource: '', //必应扩展资料
+        slack: '', //Slack设定
+      }
     })
   })
 
