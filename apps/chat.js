@@ -1430,9 +1430,9 @@ export class chatgpt extends plugin {
         let conversationId = await redis.get(`CHATGPT:SLACK_CONVERSATION:${e.sender.user_id}`)
         if (!conversationId) {
           // 如果是新对话
-          if (Config.slackClaudeEnableGlobalPreset && (useCast.slack || Config.slackClaudeGlobalPreset)) {
+          if (Config.slackClaudeEnableGlobalPreset && (useCast?.slack || Config.slackClaudeGlobalPreset)) {
             // 先发送设定
-            await client.sendMessage(useCast.slack || Config.slackClaudeGlobalPreset, e)
+            await client.sendMessage(useCast?.slack || Config.slackClaudeGlobalPreset, e)
           }
         }
         let text = await client.sendMessage(prompt, e)
@@ -1446,7 +1446,7 @@ export class chatgpt extends plugin {
           completionParams.model = Config.model
         }
         const currentDate = new Date().toISOString().split('T')[0]
-        let promptPrefix = `You are ${Config.assistantLabel} ${useCast.api || Config.promptPrefixOverride || defaultPropmtPrefix}
+        let promptPrefix = `You are ${Config.assistantLabel} ${useCast?.api || Config.promptPrefixOverride || defaultPropmtPrefix}
         Knowledge cutoff: 2021-09. Current date: ${currentDate}`
         let opts = {
           apiBaseUrl: Config.openAiBaseUrl,
