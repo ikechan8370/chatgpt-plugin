@@ -7,7 +7,7 @@ import util from 'util'
 import stream from 'stream'
 import crypto from 'crypto'
 import child_process from 'child_process'
-import Config from './config.js'
+import { Config } from './config.js'
 let module
 try {
   module = await import('oicq')
