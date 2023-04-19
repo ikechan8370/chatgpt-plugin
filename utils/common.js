@@ -6,7 +6,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import buffer from 'buffer'
 import yaml from 'yaml'
-// import puppeteer from '../../../lib/puppeteer/puppeteer.js'
+import puppeteer from '../../../lib/puppeteer/puppeteer.js'
 import { Config } from './config.js'
 // export function markdownToText (markdown) {
 //  return remark()
@@ -15,7 +15,7 @@ import { Config } from './config.js'
 //    .toString()
 // }
 
-let puppeteer
+let _puppeteer
 try {
   const Puppeteer = (await import('../../../renderers/puppeteer/lib/puppeteer.js')).default
   let puppeteerCfg = {}
@@ -27,10 +27,10 @@ try {
       puppeteerCfg = {}
     }
   }
-  puppeteer = new Puppeteer(puppeteerCfg)
+  _puppeteer = new Puppeteer(puppeteerCfg)
 } catch (e) {
   logger.warn('未能加载puppeteer，尝试降级到Yunzai的puppeteer尝试')
-  puppeteer = (await import('../../../lib/puppeteer/puppeteer.js')).default
+  _puppeteer = puppeteer
 }
 
 let localIP = ''
@@ -326,8 +326,8 @@ export async function render (e, pluginKey, htmlPath, data = {}, renderCfg = {})
 }
 
 export async function renderUrl (e, url, renderCfg = {}) {
-  await puppeteer.browserInit()
-  const page = await puppeteer.browser.newPage()
+  await _puppeteer.browserInit()
+  const page = await _puppeteer.browser.newPage()
   let base64
   try {
     await page.goto(url, { timeout: 120000 })
@@ -342,10 +342,10 @@ export async function renderUrl (e, url, renderCfg = {}) {
   } catch (error) {
     logger.error(`${url}图片生成失败:${error}`)
     /** 关闭浏览器 */
-    if (puppeteer.browser) {
-      await puppeteer.browser.close().catch((err) => logger.error(err))
+    if (_puppeteer.browser) {
+      await _puppeteer.browser.close().catch((err) => logger.error(err))
     }
-    puppeteer.browser = false
+    _puppeteer.browser = false
   }
 
   if (renderCfg.retType === 'base64') {

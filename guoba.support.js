@@ -580,12 +580,12 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
-          label: '以下为预览版配置',
+          label: '以下为后台与渲染相关配置',
           component: 'Divider'
         },
         {
-          field: 'preview',
-          label: '预览版本',
+          field: 'oldview',
+          label: '旧版本渲染',
           bottomHelpMessage: '开启预览版本',
           component: 'Switch'
         },
@@ -624,7 +624,19 @@ export function supportGuoba () {
           label: '允许群获取后台地址',
           bottomHelpMessage: '是否允许群获取后台地址，关闭后将只能私聊获取',
           component: 'Switch'
-        }
+        },
+        {
+          field: 'live2d',
+          label: 'Live2D显示',
+          bottomHelpMessage: '开启Live2D显示',
+          component: 'Switch'
+        },
+        {
+          field: 'live2dModel',
+          label: 'Live2D模型',
+          bottomHelpMessage: '选择Live2D使用的模型',
+          component: 'Input'
+        },
       ],
       // 获取配置数据方法（用于前端填充显示数据）
       getConfigData () {
