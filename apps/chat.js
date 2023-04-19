@@ -1074,7 +1074,7 @@ export class chatgpt extends plugin {
   async renderImage (e, use, content, prompt, quote = [], mood = '', suggest = '', imgUrls = []) {
     let cacheData = { file: '', cacheUrl: Config.cacheUrl }
     const template = use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index'
-    if (Config.preview) {
+    if (!Config.oldview) {
       cacheData.file = randomString()
       const cacheresOption = {
         method: 'POST',
