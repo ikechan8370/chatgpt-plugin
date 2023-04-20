@@ -2,7 +2,7 @@ import { Config } from '../config.js'
 
 let nodejieba
 try {
-  nodejieba = await import('nodejieba').default
+  nodejieba = (await import('nodejieba')).default
 } catch (err) {
   logger.info('未安装nodejieba，娱乐功能-词云统计不可用')
 }

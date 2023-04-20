@@ -60,13 +60,14 @@ export class Entertainment extends plugin {
       let lock = await redis.get('CHATGPT:WORDCLOUD:ALL')
       if (lock) {
         await e.reply('别着急，上次统计还没完呢')
-        return
+        return true
       }
       await e.reply('在统计啦，请稍等...')
       await redis.set('CHATGPT:WORDCLOUD:ALL', '1', { EX: 600 })
       try {
         await makeWordcloud(e, e.group_id)
       } catch (err) {
+        logger.error(err)
         await e.reply(err)
       }
       await redis.del('CHATGPT:WORDCLOUD:ALL')
