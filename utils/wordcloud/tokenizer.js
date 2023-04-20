@@ -27,13 +27,24 @@ export class Tokenizer {
       }
       return 0
     }
-    while (isTimestampInDateRange(chats[0]?.time, date)) {
+    // Step 2: Set the hours, minutes, seconds, and milliseconds to 0
+    date.setHours(0, 0, 0, 0)
+
+    // Step 3: Calculate the timestamp representing the start of the specified date
+    const startOfSpecifiedDate = date.getTime()
+
+    // Step 4: Get the end of the specified date by adding 24 hours (in milliseconds)
+    const endOfSpecifiedDate = startOfSpecifiedDate + (24 * 60 * 60 * 1000)
+    while (isTimestampInDateRange(chats[0]?.time, startOfSpecifiedDate, endOfSpecifiedDate) && isTimestampInDateRange(chats[chats.length - 1]?.time, startOfSpecifiedDate, endOfSpecifiedDate)) {
       let chatHistory = await group.getChatHistory(seq, 20)
       chats.push(...chatHistory)
       chats.sort(compareByTime)
       seq = chats[0].seq
+      if (Config.debug) {
+        logger.info(`拉取到${chatHistory.length}条聊天记录，当前已累计获取${chats.length}条聊天记录，继续拉...`)
+      }
     }
-    chats = chats.filter(chat => isTimestampInDateRange(chat.time, date))
+    chats = chats.filter(chat => isTimestampInDateRange(chat.time, startOfSpecifiedDate, endOfSpecifiedDate))
     return chats
   }
 
@@ -42,10 +53,10 @@ export class Tokenizer {
       throw new Error('未安装nodejieba，娱乐功能-词云统计不可用')
     }
     let chats = await this.getTodayHistory(groupId)
-    logger.mark(`获取到今日内${chats.length}条聊天记录，准备分词中`)
+    logger.mark(`聊天记录拉去完成，获取到今日内${chats.length}条聊天记录，准备分词中`)
     let chatContent = chats
       .map(c => c.raw_message
-        .replaceAll('[图片]', '')
+        .duoreplaceAll('[图片]', '')
         .replaceAll('[表情]', '')
         .replaceAll('[动画表情]', '')
         .replaceAll('[语音]', '')
@@ -83,23 +94,11 @@ export class Tokenizer {
   }
 }
 
-function isTimestampInDateRange (timestamp, date = null) {
+function isTimestampInDateRange (timestamp, startOfSpecifiedDate, endOfSpecifiedDate) {
   if (!timestamp) {
     return false
   }
   timestamp = timestamp * 1000
-  if (!date) {
-    date = new Date()
-  }
-
-  // Step 2: Set the hours, minutes, seconds, and milliseconds to 0
-  date.setHours(0, 0, 0, 0)
-
-  // Step 3: Calculate the timestamp representing the start of the specified date
-  const startOfSpecifiedDate = date.getTime()
-
-  // Step 4: Get the end of the specified date by adding 24 hours (in milliseconds)
-  const endOfSpecifiedDate = startOfSpecifiedDate + (24 * 60 * 60 * 1000)
 
   // Step 5: Compare the given timestamp with the start and end of the specified date
   return timestamp >= startOfSpecifiedDate && timestamp < endOfSpecifiedDate
