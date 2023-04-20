@@ -37,9 +37,15 @@ export class Tokenizer {
     const endOfSpecifiedDate = startOfSpecifiedDate + (24 * 60 * 60 * 1000)
     while (isTimestampInDateRange(chats[0]?.time, startOfSpecifiedDate, endOfSpecifiedDate) && isTimestampInDateRange(chats[chats.length - 1]?.time, startOfSpecifiedDate, endOfSpecifiedDate)) {
       let chatHistory = await group.getChatHistory(seq, 20)
+      if (chatHistory.length === 1) {
+        if (chats[0].seq === chatHistory[0].seq) {
+          // 昨天没有聊天记录 比如新建的群 新进群的机器人 会卡在某一条
+          break
+        }
+      }
       chats.push(...chatHistory)
       chats.sort(compareByTime)
-      seq = chats[0].seq
+      seq = chatHistory[0].seq
       if (Config.debug) {
         logger.info(`拉取到${chatHistory.length}条聊天记录，当前已累计获取${chats.length}条聊天记录，继续拉...`)
       }
@@ -56,7 +62,7 @@ export class Tokenizer {
     logger.mark(`聊天记录拉去完成，获取到今日内${chats.length}条聊天记录，准备分词中`)
     let chatContent = chats
       .map(c => c.raw_message
-        .duoreplaceAll('[图片]', '')
+        .replaceAll('[图片]', '')
         .replaceAll('[表情]', '')
         .replaceAll('[动画表情]', '')
         .replaceAll('[语音]', '')
