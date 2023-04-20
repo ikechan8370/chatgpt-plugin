@@ -11,7 +11,7 @@ export class dalle extends plugin {
       name: 'ChatGPT-Plugin Dalle 绘图',
       dsc: 'ChatGPT-Plugin基于OpenAI Dalle的绘图插件',
       event: 'message',
-      priority: 500,
+      priority: 600,
       rule: [
         {
           reg: '^#(chatgpt|ChatGPT|dalle|Dalle)(绘图|画图)',

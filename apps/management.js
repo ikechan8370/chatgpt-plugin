@@ -265,7 +265,7 @@ export class ChatgptManagement extends plugin {
     }
 
     await this.reply(prompts.join('\n'))
-    return false
+    return true
   }
 
   /**

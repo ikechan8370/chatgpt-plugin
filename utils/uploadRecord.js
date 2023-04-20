@@ -7,6 +7,7 @@ import util from 'util'
 import stream from 'stream'
 import crypto from 'crypto'
 import child_process from 'child_process'
+import { Config } from './config.js'
 let module
 try {
   module = await import('oicq')
@@ -21,6 +22,7 @@ let pcm2slk
 try {
   pcm2slk = (await import('node-silk')).pcm2slk
 } catch (e) {
+  Config.debug && logger.error(e)
   logger.warn('未安装node-silk，如ffmpeg不支持amr编码请安装node-silk以支持语音模式')
 }
 

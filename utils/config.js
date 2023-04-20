@@ -101,7 +101,7 @@ const defaultConfig = {
   slackClaudeUserId: '',
   slackClaudeEnableGlobalPreset: true,
   slackClaudeGlobalPreset: '',
-  version: 'v2.5.5'
+  version: 'v2.5.6'
 }
 const _path = process.cwd()
 let config = {}
