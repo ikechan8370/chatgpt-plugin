@@ -75,14 +75,24 @@ pnpm i
 > 4.2更新：必应站起来了，必应天下第一。建议都用必应，别用API/API3了。浏览器模式除非极其特殊的需求否则强烈建议不使用，已经不维护了。
 
 3. 修改配置
-**本插件配置项比较多，强烈建议使用[锅巴面板](https://github.com/guoba-yunzai/Guoba-Plugin)修改**
+**本插件配置项比较多，强烈建议使用后台面板或[锅巴面板](https://github.com/guoba-yunzai/Guoba-Plugin)修改**
 
    复制`plugins/chatgpt-plugin/config/config.example.json`并将其改名为`config.json`\
    编辑`plugins/chatgpt-plugin/config/config.json`文件，修改必要配置项 \
    **请勿直接修改config.example.json**
+
+4. 后台面板使用
+初次使用请先私聊机器人 `#设置管理密码` 进登录密码设置
+私聊 `#chatgpt系统管理` 后机器人会回复系统管理页面网址，在此网址输入机器人QQ号和刚刚设置的管理密码点击登录即可进入后台管理系统
+如果忘记密码，再次私聊输入 `#设置管理密码` 后可重新设置密码
+
+用户同样可私聊机器人 `#设置用户密码` 进行账号注册和密码设置
+用户设置密码后，所有聊天信息将记录在用户缓存数据下，同时用户可通过私聊机器人 `#chatgpt用户配置` 登录后台用户配置面板，查看自己的聊天数据和自定义机器人对自己的回复参数
    
-4. 重启Yunzai-Bot
-如通过锅巴面板升级可以热加载，无需重启。
+如果后台面板访问出现 time out 请检查机器人启动时是否有报错，服务器端口是否开放，可尝试ping一下服务器ip看能否直接ping通。
+
+5. 重启Yunzai-Bot
+如通过后台面板或锅巴面板升级可以热加载，无需重启。
 
 ---
 
@@ -212,7 +222,7 @@ pnpm i
 
 ## TODO
 
-* 预设分群组和个人
+* 预设分群组和个人（已初步实现个人，在用户面板设置）
 
 ## 其他
 
@@ -247,6 +257,10 @@ pnpm i
 5. vit API能本地搭建吗？
 
    能。克隆下来安装依赖直接运行即可。
+
+6. 系统后台无法进入怎么办？
+
+   多数情况下是由于服务器未开放3321端口导致，请根据服务器系统和服务器供应商配置，开放3321端口后再试。
    
 ## 交流群
 
@@ -267,6 +281,7 @@ pnpm i
 
 图片以及Bing模式支持 @HalcyonAlcedo
 * https://github.com/HalcyonAlcedo/ChatGPT-Plugin-PageCache
+* https://github.com/HalcyonAlcedo/cache-web
 
 语音vits模型来自于
 * https://huggingface.co/spaces/sayashi/vits-uma-genshin-honkai
