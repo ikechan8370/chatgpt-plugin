@@ -57,20 +57,21 @@ export class Entertainment extends plugin {
 
   async wordcloud (e) {
     if (e.isGroup) {
-      let lock = await redis.get('CHATGPT:WORDCLOUD:ALL')
+      let groupId = e.group_id
+      let lock = await redis.get(`CHATGPT:WORDCLOUD:${groupId}`)
       if (lock) {
         await e.reply('别着急，上次统计还没完呢')
         return true
       }
       await e.reply('在统计啦，请稍等...')
-      await redis.set('CHATGPT:WORDCLOUD:ALL', '1', { EX: 600 })
+      await redis.set(`CHATGPT:WORDCLOUD:${groupId}`, '1', { EX: 600 })
       try {
         await makeWordcloud(e, e.group_id)
       } catch (err) {
         logger.error(err)
         await e.reply(err)
       }
-      await redis.del('CHATGPT:WORDCLOUD:ALL')
+      await redis.del(`CHATGPT:WORDCLOUD:${groupId}`)
     } else {
       await e.reply('请在群里发送此命令')
     }
