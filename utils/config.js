@@ -81,13 +81,14 @@ const defaultConfig = {
   maxNumUserMessagesInConversation: 20,
   sydneyApologyIgnored: true,
   enforceMaster: false,
-  preview: false,
+  oldview: false,
   serverPort: 3321,
   serverHost: '',
   viewHost: '',
   chatViewWidth: 1280,
   chatViewBotName: '',
   live2d: true,
+  live2dModel: 'default',
   groupAdminPage: false,
   enablePrivateChat: false,
   groupWhitelist: [],
@@ -100,7 +101,8 @@ const defaultConfig = {
   slackClaudeUserId: '',
   slackClaudeEnableGlobalPreset: true,
   slackClaudeGlobalPreset: '',
-  version: 'v2.5.5'
+  slackClaudeSpecifiedChannel: '',
+  version: 'v2.5.6'
 }
 const _path = process.cwd()
 let config = {}

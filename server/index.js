@@ -80,7 +80,7 @@ export async function createServer() {
     const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
     reply.type('text/html').send(stream)
   })
-  await server.get('/admin/*', (request, reply) => {
+  await server.get('/admin*', (request, reply) => {
     const token = request.cookies.token || 'unknown'
     const user = usertoken.find(user => user.token === token)
     if (!user) {
@@ -206,6 +206,7 @@ export async function createServer() {
           model: body.model,
           mood: body.content.mood || 'blandness',
           live2d: Config.live2d,
+          live2dModel: Config.live2dModel,
           time: new Date()
         }
         fs.writeFileSync(filepath, JSON.stringify(data))

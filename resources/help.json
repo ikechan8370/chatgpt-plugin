@@ -115,6 +115,93 @@
             "tip": "管理员功能"
         }
     ],
+    "设定": [
+        {
+            "icon": "fas fa-paint-brush",
+            "title": "查看设定列表",
+            "text": "查看所有设定列表，以转发消息形式",
+            "list": [
+                "#chatgpt设定列表"
+            ],
+            "tip": "管理员功能"
+        },
+        {
+            "icon": "fas fa-paint-brush",
+            "title": "查看设定",
+            "text": "查看指定名字的设定内容。其中API默认和Sydney默认为锅巴面板配置的设定",
+            "list": [
+                "#chatgpt查看设定<设定名>"
+            ],
+            "tip": "管理员功能"
+        },
+        {
+            "icon": "fas fa-toggle-on",
+            "title": "添加设定",
+            "text": "添加一个设定，分此输入设定名称和设定内容。如果名字已存在，则会覆盖（相当于修改）",
+            "list": [
+                "#chatgpt添加设定"
+            ],
+            "tip": "管理员功能"
+        },
+        {
+            "icon": "fas fa-toggle-on",
+            "title": "使用设定",
+            "text": "使用某个设定。",
+            "list": [
+                "#chatgpt使用设定<设定名>"
+            ],
+            "tip": "管理员功能"
+        },
+        {
+            "icon": "fas fa-toggle-on",
+            "title": "上传设定",
+            "text": "上传设定",
+            "list": [
+                "#chatgpt上传设定",
+                "#chatgpt分享设定",
+                "#chatgpt共享设定"
+            ],
+            "tip": "管理员功能"
+        },
+        {
+            "icon": "fas fa-toggle-on",
+            "title": "删除共享设定",
+            "text": "从远端删除，只能删除自己上传的设定，根据机器人主人qq号判断。",
+            "list": [
+                "#chatgpt删除共享设定<设定名>",
+                "#chatgpt取消共享设定<设定名>",
+                "#chatgpt撤销共享设定<设定名>"
+            ],
+            "tip": "管理员功能"
+        },
+        {
+            "icon": "fas fa-toggle-on",
+            "title": "搜索设定",
+            "text": "搜索公开的设定。默认返回前十条，使用页码X可以翻页，使用关键词可以检索。页码从1开始。",
+            "list": [
+                "#chatgpt(在线)浏览设定(+关键词)(页码X)"
+            ],
+            "tip": "管理员功能"
+        },
+        {
+            "icon": "fas fa-toggle-on",
+            "title": "预览设定详情",
+            "text": "根据设定名称预览云端设定的详情信息。",
+            "list": [
+                "#chatgpt预览设定详情<设定名>"
+            ],
+            "tip": "管理员功能"
+        },
+        {
+            "icon": "fas fa-toggle-on",
+            "title": "导入设定",
+            "text": "导入其他人分享的设定。注意：相同名字的设定，会覆盖本地已有的设定",
+            "list": [
+                "#chatgpt导入设定"
+            ],
+            "tip": "管理员功能"
+        }
+    ],
     "插件管理": [
         {
             "icon": "fas fa-list",

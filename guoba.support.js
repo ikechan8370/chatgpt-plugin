@@ -470,6 +470,12 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
+          field: 'slackClaudeSpecifiedChannel',
+          label: 'Slack指定频道',
+          bottomHelpMessage: '为空时，将为每个qq号建立私有频道。若填写了，对话将发生在本频道。和其他人公用workspace时建议用这个',
+          component: 'Input'
+        },
+        {
           field: 'slackClaudeEnableGlobalPreset',
           label: 'Claude使用全局设定',
           bottomHelpMessage: '开启后，所有人每次发起新对话时，会先发送设定过去再开始对话，达到类似Bing自设定的效果。',
@@ -580,12 +586,12 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
-          label: '以下为预览版配置',
+          label: '以下为后台与渲染相关配置',
           component: 'Divider'
         },
         {
-          field: 'preview',
-          label: '预览版本',
+          field: 'oldview',
+          label: '旧版本渲染',
           bottomHelpMessage: '开启预览版本',
           component: 'Switch'
         },
@@ -624,7 +630,19 @@ export function supportGuoba () {
           label: '允许群获取后台地址',
           bottomHelpMessage: '是否允许群获取后台地址，关闭后将只能私聊获取',
           component: 'Switch'
-        }
+        },
+        {
+          field: 'live2d',
+          label: 'Live2D显示',
+          bottomHelpMessage: '开启Live2D显示',
+          component: 'Switch'
+        },
+        {
+          field: 'live2dModel',
+          label: 'Live2D模型',
+          bottomHelpMessage: '选择Live2D使用的模型',
+          component: 'Input'
+        },
       ],
       // 获取配置数据方法（用于前端填充显示数据）
       getConfigData () {

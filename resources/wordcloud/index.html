@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>WordCloud</title>
+    <script src="{{pluResPath}}/wordcloud/js2wordcloud.min.js"></script>
+</head>
+<body>
+    <div id="wordcloud2" style="width: 640px;height: 350px"></div>
+    <script>
+      let list = JSON.parse('{{@ list}}')
+      var wc = new Js2WordCloud(document.getElementById('wordcloud2'))
+      wc.setOption({
+        tooltip: {
+          show: true
+        },
+        list: list,
+        color: 'random-light',
+        fontFamily: 'Microsoft YaHei'
+      })
+
+    </script>
+    <div class="logo">Created By Yunzai-Bot and ChatGPT-Plugin {{version}}</div>
+</body>
+
+</html>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        user-select: none;
+    }
+    body {
+        font-family: sans-serif;
+        font-size: 16px;
+        width: 640px;
+        color: #1e1f20;
+        transform: scale(1.5);
+        transform-origin: 0 0;
+    }
+    .logo {
+        font-size: 14px;
+        font-family: "tttgbnumber";
+        text-align: center;
+        color: #7994a7;
+    }
+</style>
