@@ -38,27 +38,32 @@ export class SlackClaudeClient {
       logger.warn('消息长度大于slack限制，长度剪切至3990')
       prompt = limitString(prompt, 3990, false)
     }
+    let channel
     let qq = e.sender.user_id
-    let channels = await this.app.client.conversations.list({
-      token: this.config.slackUserToken,
-      types: 'public_channel,private_channel'
-    })
-    let channel = channels.channels.filter(c => c.name === '' + qq)
-    if (!channel || channel.length === 0) {
-      let createChannelResponse = await this.app.client.conversations.create({
-        token: this.config.slackUserToken,
-        name: qq + '',
-        is_private: true
-      })
-      channel = createChannelResponse.channel
-      await this.app.client.conversations.invite({
-        token: this.config.slackUserToken,
-        channel: channel.id,
-        users: Config.slackClaudeUserId
-      })
-      await delay(1000)
+    if (Config.slackClaudeSpecifiedChannel) {
+      channel = { id: Config.slackClaudeSpecifiedChannel }
     } else {
-      channel = channel[0]
+      let channels = await this.app.client.conversations.list({
+        token: this.config.slackUserToken,
+        types: 'public_channel,private_channel'
+      })
+      channel = channels.channels.filter(c => c.name === '' + qq)
+      if (!channel || channel.length === 0) {
+        let createChannelResponse = await this.app.client.conversations.create({
+          token: this.config.slackUserToken,
+          name: qq + '',
+          is_private: true
+        })
+        channel = createChannelResponse.channel
+        await this.app.client.conversations.invite({
+          token: this.config.slackUserToken,
+          channel: channel.id,
+          users: Config.slackClaudeUserId
+        })
+        await delay(1000)
+      } else {
+        channel = channel[0]
+      }
     }
     let conversationId = await redis.get(`CHATGPT:SLACK_CONVERSATION:${qq}`)
     if (!conversationId) {
