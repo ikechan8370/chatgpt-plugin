@@ -470,6 +470,12 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
+          field: 'slackClaudeSpecifiedChannel',
+          label: 'Slack指定频道',
+          bottomHelpMessage: '为空时，将为每个qq号建立私有频道。若填写了，对话将发生在本频道。和其他人公用workspace时建议用这个',
+          component: 'Input'
+        },
+        {
           field: 'slackClaudeEnableGlobalPreset',
           label: 'Claude使用全局设定',
           bottomHelpMessage: '开启后，所有人每次发起新对话时，会先发送设定过去再开始对话，达到类似Bing自设定的效果。',
