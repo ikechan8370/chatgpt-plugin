@@ -1,5 +1,11 @@
-import nodejieba from 'nodejieba'
 import { Config } from '../config.js'
+
+let nodejieba
+try {
+  nodejieba = await import('nodejieba').default
+} catch (err) {
+  logger.info('未安装nodejieba，娱乐功能-词云统计不可用')
+}
 
 export class Tokenizer {
   async getTodayHistory (groupId, date = new Date()) {
@@ -32,6 +38,9 @@ export class Tokenizer {
   }
 
   async getTodayKeywordTopK (groupId, topK = 100) {
+    if (!nodejieba) {
+      throw new Error('未安装nodejieba，娱乐功能-词云统计不可用')
+    }
     let chats = await this.getTodayHistory(groupId)
     let chatContent = chats
       .map(c => c.raw_message

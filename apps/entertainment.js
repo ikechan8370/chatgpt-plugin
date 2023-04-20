@@ -64,7 +64,11 @@ export class Entertainment extends plugin {
       }
       await e.reply('在统计啦，请稍等...')
       await redis.set('CHATGPT:WORDCLOUD:ALL', '1', { EX: 600 })
-      await makeWordcloud(e, e.group_id)
+      try {
+        await makeWordcloud(e, e.group_id)
+      } catch (err) {
+        await e.reply(err)
+      }
       await redis.del('CHATGPT:WORDCLOUD:ALL')
     } else {
       await e.reply('请在群里发送此命令')
