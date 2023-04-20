@@ -42,6 +42,7 @@ export class Tokenizer {
       throw new Error('未安装nodejieba，娱乐功能-词云统计不可用')
     }
     let chats = await this.getTodayHistory(groupId)
+    logger.mark(`获取到今日内${chats.length}条聊天记录，准备分词中`)
     let chatContent = chats
       .map(c => c.raw_message
         .replaceAll('[图片]', '')
@@ -77,6 +78,7 @@ export class Tokenizer {
       }
       return 0
     }
+    logger.mark('分词统计完成，绘制词云中...')
     return list.sort(compareByFrequency).slice(0, topK)
   }
 }
