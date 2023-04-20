@@ -18,7 +18,6 @@
     "keyv": "^4.5.2",
     "keyv-file": "^0.2.0",
     "node-fetch": "^3.3.1",
-    "nodejieba": "^2.6.0",
     "openai": "^3.2.1",
     "random": "^4.1.0",
     "undici": "^5.21.0",
@@ -31,6 +30,7 @@
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-recaptcha": "^3.6.8",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
-    "sharp": "^0.31.3"
+    "sharp": "^0.31.3",
+    "nodejieba": "^2.6.0"
   }
 }
