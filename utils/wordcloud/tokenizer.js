@@ -2,7 +2,7 @@ import { Config } from '../config.js'
 
 let nodejieba
 try {
-  nodejieba = (await import('nodejieba')).default
+  nodejieba = (await import('@node-rs/jieba')).default
 } catch (err) {
   logger.info('未安装nodejieba，娱乐功能-词云统计不可用')
 }
@@ -60,6 +60,7 @@ export class Tokenizer {
     }
     let chats = await this.getTodayHistory(groupId)
     logger.mark(`聊天记录拉去完成，获取到今日内${chats.length}条聊天记录，准备分词中`)
+    nodejieba.load()
     let chatContent = chats
       .map(c => c.raw_message
         .replaceAll('[图片]', '')
@@ -69,7 +70,7 @@ export class Tokenizer {
       )
       .map(c => nodejieba.extract(c, 10))
       .reduce((acc, curr) => acc.concat(curr), [])
-      .map(c => c.word)
+      .map(c => c.keyword)
     if (Config.debug) {
       logger.info(chatContent)
     }
