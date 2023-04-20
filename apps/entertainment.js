@@ -7,6 +7,7 @@ import { emojiRegex, googleRequestUrl } from '../utils/emoj/index.js'
 import fetch from 'node-fetch'
 import { mkdirs } from '../utils/common.js'
 import uploadRecord from '../utils/uploadRecord.js'
+import { makeWordcloud } from '../utils/wordcloud/wordcloud.js'
 
 let useSilk = false
 try {
@@ -36,6 +37,10 @@ export class Entertainment extends plugin {
         {
           reg: `^(${emojiRegex()}){2}$`,
           fnc: 'combineEmoj'
+        },
+        {
+          reg: '^#?(今日词云|群友在聊什么)$',
+          fnc: 'wordcloud'
         }
       ]
     })
@@ -48,6 +53,22 @@ export class Entertainment extends plugin {
         fnc: this.sendRandomMessage.bind(this)
       }
     ]
+  }
+
+  async wordcloud (e) {
+    if (e.isGroup) {
+      let lock = await redis.get('CHATGPT:WORDCLOUD:ALL')
+      if (lock) {
+        await e.reply('别着急，上次统计还没完呢')
+        return
+      }
+      await e.reply('在统计啦，请稍等...')
+      await redis.set('CHATGPT:WORDCLOUD:ALL', '1', { EX: 600 })
+      await makeWordcloud(e, e.group_id)
+      await redis.del('CHATGPT:WORDCLOUD:ALL')
+    } else {
+      await e.reply('请在群里发送此命令')
+    }
   }
 
   async combineEmoj (e) {
@@ -221,8 +242,8 @@ export class Entertainment extends plugin {
           return false
         } else {
           Config.initiativeChatGroups = Config.initiativeChatGroups
-              .filter(group => group.trim() !== '')
-              .concat(validGroups)
+            .filter(group => group.trim() !== '')
+            .concat(validGroups)
         }
         if (typeof paramArray[2] === 'undefined' && typeof paramArray[3] === 'undefined') {
           replyMsg = `已更新打招呼设置：\n${!e.isGroup ? '群号：' + Config.initiativeChatGroups.join(', ') + '\n' : ''}间隔时间：${Config.helloInterval}小时\n触发概率：${Config.helloProbability}%`
