@@ -1316,7 +1316,7 @@ export class chatgpt extends plugin {
           } catch (error) {
             logger.error(error)
             const message = error?.message || error?.data?.message || error || '出错了'
-            if (message && message.indexOf('限流') > -1) {
+            if (message && typeof message === 'string' && message.indexOf('限流') > -1) {
               throttledTokens.push(bingToken)
               let bingTokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
               const badBingToken = bingTokens.findIndex(element => element.Token === bingToken)
@@ -1327,7 +1327,7 @@ export class chatgpt extends plugin {
               bingTokens[badBingToken].DisactivationTime = now
               await redis.set('CHATGPT:BING_TOKENS', JSON.stringify(bingTokens))
               // 不减次数
-            } else if (message && message.indexOf('UnauthorizedRequest') > -1) {
+            } else if (message && typeof message === 'string' && message.indexOf('UnauthorizedRequest') > -1) {
               // token过期了
               let bingTokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
               const badBingToken = bingTokens.findIndex(element => element.Token === bingToken)
