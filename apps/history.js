@@ -91,7 +91,7 @@ export class history extends plugin {
       await e.reply('无聊天记录', e.isGroup)
       return true
     }
-    await e.reply(await render(e, 'chatgpt-plugin', 'content/History/index', {
+    await render(e, 'chatgpt-plugin', 'content/History/index', {
       version: Config.version,
       user: {
         qq: queryUser,
@@ -102,7 +102,7 @@ export class history extends plugin {
         name: Bot.nickname
       },
       chat
-    }, {}))
+    }, {})
   }
 }
 
