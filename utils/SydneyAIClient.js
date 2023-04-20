@@ -98,7 +98,9 @@ export default class SydneyAIClient {
         'x-ms-useragent': 'azsdk-js-api-client-factory/1.0.0-beta.1 core-rest-pipeline/1.10.0 OS/Win32',
         cookie: this.opts.cookies || `_U=${this.opts.userToken}`,
         Referer: 'https://www.bing.com/search?q=Bing+AI&showconv=1&FORM=hpcodx',
-        'Referrer-Policy': 'origin-when-cross-origin'
+        'Referrer-Policy': 'origin-when-cross-origin',
+        // Workaround for request being blocked due to geolocation
+        'x-forwarded-for': '1.1.1.1'
       }
     }
     if (this.opts.proxy) {
