@@ -920,7 +920,12 @@ export class chatgpt extends plugin {
             let wav = await generateAudio(ttsResponse, speaker, '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）')
               try {
                 let sendable = await uploadRecord(wav)
-                await e.reply(sendable)
+                if (sendable) {
+                  await e.reply(sendable)
+                } else {
+                  //如果合成失败，尝试使用ffmpeg合成
+                  await e.reply(segment.record(wav))
+                }
               } catch (err) {
                 logger.error(err)
                 await e.reply(segment.record(wav))
