@@ -832,7 +832,7 @@ export class ChatgptManagement extends plugin {
     return true
   }
 
-  async versionChatGPTPlugin () {
+  async versionChatGPTPlugin (e) {
     await renderUrl(e, `http://127.0.0.1:${Config.serverPort || 3321}/version`, { Viewport: { width: 800, height: 600 } })
   }
 
