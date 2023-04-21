@@ -102,6 +102,7 @@ const defaultConfig = {
   slackClaudeEnableGlobalPreset: true,
   slackClaudeGlobalPreset: '',
   slackClaudeSpecifiedChannel: '',
+  cloudTranscode: '',
   version: 'v2.5.6'
 }
 const _path = process.cwd()

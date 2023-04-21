@@ -27,7 +27,31 @@ try {
 }
 
 async function uploadRecord (recordUrl) {
-  const result = await getPttBuffer(recordUrl, Bot.config.ffmpeg_path)
+  let result
+  if (pcm2slk) {
+    result = await getPttBuffer(recordUrl, Bot.config.ffmpeg_path)
+  } else if (Config.cloudTranscode) {
+    const resultOption = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({recordUrl: recordUrl})
+    }
+    const resultres = await fetch(`${Config.cloudTranscode}/audio`, resultOption)
+    if (!resultres.ok) {
+      return false
+    }
+    result = await resultres.json()
+    if (result.error) {
+      logger.error('云转码API报错：' + result.error)
+      return false
+    }
+    result.buffer = Buffer.from(result.buffer.data)
+  } else {
+    return false
+  }
+
   if (!result.buffer) {
     return false
   }

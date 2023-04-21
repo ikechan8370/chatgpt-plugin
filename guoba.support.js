@@ -520,6 +520,12 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
+          field: 'cloudTranscode',
+          label: '云转码API地址',
+          bottomHelpMessage: '目前只支持node-silk语音转码，如果本地无法安装node-silk可填写http://alcedogroup.com:3031',
+          component: 'Input'
+        },
+        {
           field: 'noiseScale',
           label: 'noiseScale',
           bottomHelpMessage: '控制情感变化程度',
