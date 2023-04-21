@@ -1,7 +1,7 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import { Config } from '../utils/config.js'
 import { exec } from 'child_process'
-import { checkPnpm, formatDuration, parseDuration, getPublicIP } from '../utils/common.js'
+import { checkPnpm, formatDuration, parseDuration, getPublicIP, renderUrl } from '../utils/common.js'
 import SydneyAIClient from '../utils/SydneyAIClient.js'
 import { convertSpeaker, speakers } from '../utils/tts.js'
 import md5 from 'md5'
