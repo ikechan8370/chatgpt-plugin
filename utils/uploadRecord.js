@@ -22,8 +22,12 @@ let pcm2slk
 try {
   pcm2slk = (await import('node-silk')).pcm2slk
 } catch (e) {
-  Config.debug && logger.error(e)
-  logger.warn('未安装node-silk，如ffmpeg不支持amr编码请安装node-silk以支持语音模式')
+  if (Config.cloudTranscode) {
+    logger.warn('未安装node-silk，将尝试使用云转码服务进行合成')
+  } else {
+    Config.debug && logger.error(e)
+    logger.warn('未安装node-silk，如ffmpeg不支持amr编码请安装node-silk以支持语音模式')
+  }
 }
 
 async function uploadRecord (recordUrl) {
