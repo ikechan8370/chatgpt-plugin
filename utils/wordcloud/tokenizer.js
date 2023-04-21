@@ -4,7 +4,7 @@ let nodejieba
 try {
   nodejieba = (await import('@node-rs/jieba')).default
 } catch (err) {
-  logger.info('未安装nodejieba，娱乐功能-词云统计不可用')
+  logger.info('未安装@node-rs/jieba，娱乐功能-词云统计不可用')
 }
 
 export class Tokenizer {
@@ -56,11 +56,15 @@ export class Tokenizer {
 
   async getTodayKeywordTopK (groupId, topK = 100) {
     if (!nodejieba) {
-      throw new Error('未安装nodejieba，娱乐功能-词云统计不可用')
+      throw new Error('未安装node-rs/jieba，娱乐功能-词云统计不可用')
     }
     let chats = await this.getTodayHistory(groupId)
     logger.mark(`聊天记录拉去完成，获取到今日内${chats.length}条聊天记录，准备分词中`)
-    nodejieba.load()
+    try {
+      nodejieba.load()
+    } catch (err) {
+      // ignore already load error
+    }
     let chatContent = chats
       .map(c => c.raw_message
         .replaceAll('[图片]', '')
