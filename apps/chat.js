@@ -44,13 +44,6 @@ if (Config.proxy) {
     console.warn('未安装https-proxy-agent，请在插件目录下执行pnpm add https-proxy-agent')
   }
 }
-let useSilk = false
-try {
-  await import('node-silk')
-  useSilk = true
-} catch (e) {
-  useSilk = false
-}
 /**
  * 每个对话保留的时长。单个对话内ai是保留上下文的。超时后销毁对话，再次对话创建新的对话。
  * 单位：秒
@@ -73,6 +66,8 @@ const newFetch = (url, options = {}) => {
 
   return fetch(url, mergedOptions)
 }
+// 后台地址
+const viewHost = Config.viewHost ? `${Config.viewHost}/` : `http://127.0.0.1:${Config.serverPort || 3321}/`
 export class chatgpt extends plugin {
   constructor () {
     let toggleMode = Config.toggleMode
@@ -893,6 +888,8 @@ export class chatgpt extends plugin {
         if (quote.imageLink) imgUrls.push(quote.imageLink)
       }
       if (useTTS) {
+        // 缓存数据
+        this.cacheContent(e, use, response, prompt, quotemessage, mood, chatMessage.suggestedResponses, imgUrls)
         // 处理tts输入文本
         let ttsResponse, ttsRegex
         const regex = /^\/(.*)\/([gimuy]*)$/
@@ -921,17 +918,18 @@ export class chatgpt extends plugin {
         if (Config.ttsSpace && ttsResponse.length <= Config.ttsAutoFallbackThreshold) {
           try {
             let wav = await generateAudio(ttsResponse, speaker, '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）')
-            if (useSilk) {
               try {
                 let sendable = await uploadRecord(wav)
-                await e.reply(sendable)
+                if (sendable) {
+                  await e.reply(sendable)
+                } else {
+                  //如果合成失败，尝试使用ffmpeg合成
+                  await e.reply(segment.record(wav))
+                }
               } catch (err) {
                 logger.error(err)
                 await e.reply(segment.record(wav))
               }
-            } else {
-              await e.reply(segment.record(wav))
-            }
           } catch (err) {
             await this.reply('合成语音发生错误~')
           }
@@ -951,6 +949,7 @@ export class chatgpt extends plugin {
           this.reply(`建议的回复：\n${chatMessage.suggestedResponses}`)
         }
       } else {
+        this.cacheContent(e, use, response, prompt, quotemessage, mood, chatMessage.suggestedResponses, imgUrls)
         await this.reply(await convertFaces(response, Config.enableRobotAt, e), e.isGroup)
         if (quotemessage.length > 0) {
           this.reply(await makeForwardMsg(this.e, quotemessage.map(msg => `${msg.text} - ${msg.url}`)))
@@ -1071,43 +1070,50 @@ export class chatgpt extends plugin {
     return true
   }
 
+  async cacheContent (e, use, content, prompt, quote = [], mood = '', suggest = '', imgUrls = []) {
+    let cacheData = { file: '', cacheUrl: Config.cacheUrl, status: '' }
+    cacheData.file = randomString()
+    const cacheresOption = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        content: {
+          content: new Buffer.from(content).toString('base64'),
+          prompt: new Buffer.from(prompt).toString('base64'),
+          senderName: e.sender.nickname,
+          style: Config.toneStyle,
+          mood,
+          quote,
+          group: e.isGroup ? e.group.name : '',
+          suggest: suggest ? suggest.split('\n').filter(Boolean) : [],
+          images: imgUrls
+        },
+        model: use,
+        bing: use === 'bing',
+        entry: cacheData.file,
+        userImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${e.sender.user_id}`,
+        botImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${Bot.uin}`,
+        cacheHost: Config.serverHost,
+        qq: e.sender.user_id
+      })
+    }
+    const cacheres = await fetch(viewHost + 'cache', cacheresOption)
+    if (cacheres.ok) {
+      cacheData = Object.assign({}, cacheData, await cacheres.json())
+    } else {
+      cacheData.error = '渲染服务器出错！'
+    }
+    cacheData.status = cacheres.status
+    return cacheData
+  }
+
   async renderImage (e, use, content, prompt, quote = [], mood = '', suggest = '', imgUrls = []) {
-    let cacheData = { file: '', cacheUrl: Config.cacheUrl }
+    let cacheData = await this.cacheContent(e, use, content, prompt, quote, mood, suggest, imgUrls)
     const template = use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index'
     if (!Config.oldview) {
-      cacheData.file = randomString()
-      const cacheresOption = {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          content: {
-            content: new Buffer.from(content).toString('base64'),
-            prompt: new Buffer.from(prompt).toString('base64'),
-            senderName: e.sender.nickname,
-            style: Config.toneStyle,
-            mood,
-            quote,
-            group: e.isGroup ? e.group.name : '',
-            suggest: suggest ? suggest.split('\n').filter(Boolean) : [],
-            images: imgUrls
-          },
-          model: use,
-          bing: use === 'bing',
-          entry: cacheData.file,
-          userImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${e.sender.user_id}`,
-          botImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${Bot.uin}`,
-          cacheHost: Config.serverHost,
-          qq: e.sender.user_id
-        })
-      }
-      const viewHost = Config.viewHost ? `${Config.viewHost}/` : `http://127.0.0.1:${Config.serverPort || 3321}/`
-      const cacheres = await fetch(viewHost + 'cache', cacheresOption)
-      if (cacheres.ok) {
-        cacheData = Object.assign({}, cacheData, await cacheres.json())
-      }
-      if (cacheData.error || cacheres.status != 200) { await this.reply(`出现错误：${cacheData.error || 'server error ' + cacheres.status}`, true) } else { await e.reply(await renderUrl(e, viewHost + `page/${cacheData.file}?qr=${Config.showQRCode ? 'true' : 'false'}`, { retType: Config.quoteReply ? 'base64' : '', Viewport: { width: Config.chatViewWidth, height: parseInt(Config.chatViewWidth * 0.56) } }), e.isGroup && Config.quoteReply) }
+      if (cacheData.error || cacheData.status != 200) { await this.reply(`出现错误：${cacheData.error || 'server error ' + cacheData.status}`, true) } else { await e.reply(await renderUrl(e, viewHost + `page/${cacheData.file}?qr=${Config.showQRCode ? 'true' : 'false'}`, { retType: Config.quoteReply ? 'base64' : '', Viewport: { width: Config.chatViewWidth, height: parseInt(Config.chatViewWidth * 0.56) } }), e.isGroup && Config.quoteReply) }
     } else {
       if (Config.cacheEntry) cacheData.file = randomString()
       const cacheresOption = {
