@@ -111,7 +111,7 @@ export class ChatgptManagement extends plugin {
           fnc: 'updateChatGPTPlugin'
         },
         {
-          reg: '^#chatgpt版本(信息)$',
+          reg: '^#chatgpt版本(信息)',
           fnc: 'versionChatGPTPlugin'
         },
         {
