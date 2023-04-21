@@ -111,6 +111,10 @@ export class ChatgptManagement extends plugin {
           fnc: 'updateChatGPTPlugin'
         },
         {
+          reg: '^#chatgpt版本(信息)$',
+          fnc: 'versionChatGPTPlugin'
+        },
+        {
           reg: '^#chatgpt(本群)?(群\\d+)?闭嘴',
           fnc: 'shutUp',
           permission: 'master'
@@ -826,6 +830,10 @@ export class ChatgptManagement extends plugin {
       }, 1000)
     })
     return true
+  }
+
+  async versionChatGPTPlugin () {
+    await renderUrl(e, `http://127.0.0.1:${Config.serverPort || 3321}/version`, { Viewport: { width: 800, height: 600 } })
   }
 
   async modeHelp () {
