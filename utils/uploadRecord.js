@@ -35,27 +35,56 @@ async function uploadRecord (recordUrl) {
   if (pcm2slk) {
     result = await getPttBuffer(recordUrl, Bot.config.ffmpeg_path)
   } else if (Config.cloudTranscode) {
-    const resultOption = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({recordUrl: recordUrl})
-    }
-    const resultres = await fetch(`${Config.cloudTranscode}/audio`, resultOption)
-    if (!resultres.ok) {
+    try {
+      if (Config.cloudMode === 'buffer' || Config.cloudMode === 'file') {
+        let response = await fetch(recordUrl, {
+          method: 'GET',
+          headers: {
+            'User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 12; MI 9 Build/SKQ1.211230.001)'
+          },
+        })
+        if (Config.cloudMode === 'file') {
+          const file = await response.blob()
+          const formData = new FormData()
+          formData.append('file', file)
+          const resultres = await fetch(`${Config.cloudTranscode}/audio`, {
+            method: 'POST',
+            body: formData
+          })
+          result = await resultres.json()
+        } else {
+          const buf = Buffer.from(await response.arrayBuffer())
+          const resultres = await fetch(`${Config.cloudTranscode}/audio`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({recordBuffer: buf})
+          })
+          result = await resultres.json()
+        }
+      } else {
+        const resultres = await fetch(`${Config.cloudTranscode}/audio`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({recordUrl: recordUrl})
+        })
+        result = await resultres.json()
+      }
+      if (result.error) {
+        logger.error('云转码API报错：' + result.error)
+        return false
+      }
+      result.buffer = Buffer.from(result.buffer.data)
+    } catch (err) {
+      logger.error('云转码API报错：' + err)
       return false
     }
-    result = await resultres.json()
-    if (result.error) {
-      logger.error('云转码API报错：' + result.error)
-      return false
-    }
-    result.buffer = Buffer.from(result.buffer.data)
   } else {
     return false
   }
-
   if (!result.buffer) {
     return false
   }

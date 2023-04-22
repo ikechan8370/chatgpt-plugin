@@ -103,6 +103,7 @@ const defaultConfig = {
   slackClaudeGlobalPreset: '',
   slackClaudeSpecifiedChannel: '',
   cloudTranscode: '',
+  cloudMode: 'url',
   version: 'v2.5.6'
 }
 const _path = process.cwd()
