@@ -626,8 +626,8 @@ export class chatgpt extends plugin {
             await this.reply(`抱歉，没有"${speaker}"这个角色，目前voicevox模式下支持的角色有${VoiceVoxTTS.supportConfigurations.map(item => item.name).join('、')}`)
             break
         }
-        if (style && !chosen[0].styles.includes(style)) {
-            await this.reply(`抱歉，"${speaker}"这个角色没有"${style}"这个风格，目前支持的风格有${chosen[0].styles.join('、')}`)
+        if (style && !chosen[0].styles.find(item => item.name === style)) {
+            await this.reply(`抱歉，"${speaker}"这个角色没有"${style}"这个风格，目前支持的风格有${chosen[0].styles.map(item => item.name).join('、')}`)
             break
         }
         let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
