@@ -554,6 +554,7 @@ export class chatgpt extends plugin {
       }
       case '3': {
         Config.ttsMode = 'voicevox'
+        break
       }
       default: {
         await e.reply('请使用#chatgpt语音换源+数字进行换源。1为vits-uma-genshin-honkai，2为微软Azure，3为voicevox')
