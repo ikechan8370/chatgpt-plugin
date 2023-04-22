@@ -1,4 +1,5 @@
 import { Config } from '../config.js'
+import fs from 'fs'
 
 let nodejieba
 try {
@@ -65,16 +66,34 @@ export class Tokenizer {
     } catch (err) {
       // ignore already load error
     }
+    const _path = process.cwd()
+    let stopWordsPath = `${_path}/plugins/chatgpt-plugin/utils/wordcloud/cn_stopwords.txt`
+    const data = fs.readFileSync(stopWordsPath)
+    const stopWords = String(data)?.split('\n') || []
     let chatContent = chats
       .map(c => c.raw_message
         .replaceAll('[图片]', '')
         .replaceAll('[表情]', '')
         .replaceAll('[动画表情]', '')
         .replaceAll('[语音]', '')
+        .replaceAll(/@\S+\s?/g, '')
+        .trim()
       )
-      .map(c => nodejieba.extract(c, 10))
+      .map(c => {
+        let length = c.length
+        let threshold = 10
+        if (length < 100 && length > 50) {
+          threshold = 6
+        } else if (length <= 50 && length > 25) {
+          threshold = 3
+        } else if (length <= 25) {
+          threshold = 2
+        }
+        return nodejieba.extract(c, threshold)
+      })
       .reduce((acc, curr) => acc.concat(curr), [])
       .map(c => c.keyword)
+      .filter(c => stopWords.indexOf(c) < 0)
     if (Config.debug) {
       logger.info(chatContent)
     }
@@ -101,7 +120,7 @@ export class Tokenizer {
       return 0
     }
     logger.mark('分词统计完成，绘制词云中...')
-    return list.sort(compareByFrequency).slice(0, topK)
+    return list.filter(s => s[1] > 2).sort(compareByFrequency).slice(0, topK)
   }
 }
 
