@@ -693,7 +693,7 @@ export class chatgpt extends plugin {
     if (Config.ttsMode === 'vits-uma-genshin-honkai') {
       speaker = convertSpeaker(userSetting.ttsRole || Config.defaultTTSRole)
     } else if (Config.ttsMode === 'azure') {
-      speaker = userSetting.ttsRoleAzure || Config.defaultTTSRole
+      speaker = userSetting.ttsRoleAzure || Config.azureTTSSpeaker
     }
     // 每个回答可以指定
     let trySplit = prompt.split('回答：')

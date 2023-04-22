@@ -362,7 +362,8 @@ export function getDefaultReplySetting () {
   return {
     usePicture: Config.defaultUsePicture,
     useTTS: Config.defaultUseTTS,
-    ttsRole: Config.defaultTTSRole
+    ttsRole: Config.defaultTTSRole,
+    ttsRoleAzure: Config.azureTTSSpeaker
   }
 }
 
