@@ -88,6 +88,10 @@ export function supportGuoba () {
               {
                 label: '微软Azure',
                 value: 'azure'
+              },
+              {
+                label: 'VoiceVox',
+                value: 'voicevox'
               }
             ]
           }
