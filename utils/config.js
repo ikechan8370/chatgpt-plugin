@@ -104,7 +104,7 @@ const defaultConfig = {
   slackClaudeSpecifiedChannel: '',
   cloudTranscode: 'https://silk.201666.xyz',
   cloudMode: 'url',
-  version: 'v2.5.6'
+  version: 'v2.5.7'
 }
 const _path = process.cwd()
 let config = {}
