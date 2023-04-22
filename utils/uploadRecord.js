@@ -108,7 +108,7 @@ async function uploadRecord (recordUrl) {
   if (!result.buffer) {
     return false
   }
-  let buf = result.buffer
+  let buf = Buffer.from(result.buffer)
   const hash = md5(buf)
   const codec = String(buf.slice(0, 7)).includes('SILK') ? 1 : 0
   const body = core.pb.encode({

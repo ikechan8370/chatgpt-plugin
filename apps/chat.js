@@ -8,6 +8,7 @@ import { BingAIClient } from '@waylaidwanderer/chatgpt-api'
 import SydneyAIClient from '../utils/SydneyAIClient.js'
 import { PoeClient } from '../utils/poe/index.js'
 import AzureTTS from '../utils/tts/microsoft-azure.js'
+import VoiceVoxTTS from '../utils/tts/voicevox.js'
 import {
   render, renderUrl,
   getMessageById,
@@ -535,8 +536,11 @@ export class chatgpt extends plugin {
         Config.ttsMode = 'azure'
         break
       }
+      case '3': {
+        Config.ttsMode = 'voicevox'
+      }
       default: {
-        await e.reply('请使用#chatgpt语音换源+数字进行换源。1为vits-uma-genshin-honkai，2为微软Azure')
+        await e.reply('请使用#chatgpt语音换源+数字进行换源。1为vits-uma-genshin-honkai，2为微软Azure，3为voicevox')
         return
       }
     }
@@ -550,6 +554,10 @@ export class chatgpt extends plugin {
     }
     if (Config.ttsMode === 'azure' && !Config.azureTTSKey) {
       await this.reply('您没有配置azure 密钥，请前往后台管理或锅巴面板进行配置')
+      return
+    }
+    if (Config.ttsMode === 'voicevox' && !Config.voicevoxSpace) {
+      await this.reply('您没有配置voicevox API，请前往后台管理或锅巴面板进行配置')
       return
     }
     const regex = /^#chatgpt设置(语音角色|角色语音|角色)/
@@ -587,6 +595,34 @@ export class chatgpt extends plugin {
           // Config.azureTTSSpeaker = chosen[0].code
           await this.reply(`您的默认语音角色已被设置为”${speaker}-${chosen[0].gender}-${chosen[0].languageDetail}“`)
         }
+        break
+      }
+      case 'voicevox': {
+        let regex = /^(.*?)-(.*)$/
+        let match = regex.exec(speaker)
+        let style = null
+        if (match) {
+            speaker = match[1]
+            style = match[2]
+        }
+        let chosen = VoiceVoxTTS.supportConfigurations.filter(s => s.name === speaker)
+        if (chosen.length === 0) {
+            await this.reply(`抱歉，没有"${speaker}"这个角色，目前voicevox模式下支持的角色有${VoiceVoxTTS.supportConfigurations.map(item => item.name).join('、')}`)
+            break
+        }
+        if (style && !chosen[0].styles.includes(style)) {
+            await this.reply(`抱歉，"${speaker}"这个角色没有"${style}"这个风格，目前支持的风格有${chosen[0].styles.join('、')}`)
+            break
+        }
+        let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
+        if (!userSetting) {
+          userSetting = getDefaultReplySetting()
+        } else {
+          userSetting = JSON.parse(userSetting)
+        }
+        userSetting.ttsRoleVoiceVox = chosen[0].name + (style ? `-${style}` : '')
+        await redis.set(`CHATGPT:USER:${e.sender.user_id}`, JSON.stringify(userSetting))
+        await this.reply(`您的默认语音角色已被设置为”${userSetting.ttsRoleVoiceVox}“`)
         break
       }
     }
@@ -694,6 +730,8 @@ export class chatgpt extends plugin {
       speaker = convertSpeaker(userSetting.ttsRole || Config.defaultTTSRole)
     } else if (Config.ttsMode === 'azure') {
       speaker = userSetting.ttsRoleAzure || Config.azureTTSSpeaker
+    } else if (Config.ttsMode === 'voicevox') {
+      speaker = userSetting.ttsRoleVoiceVox || Config.voicevoxTTSSpeaker
     }
     // 每个回答可以指定
     let trySplit = prompt.split('回答：')
@@ -982,6 +1020,10 @@ export class chatgpt extends plugin {
           wav = await AzureTTS.generateAudio(ttsResponse, {
             speaker: speaker
           })
+        } else if (Config.ttsMode === 'voicevox' && Config.voicevoxSpace) {
+            wav = await VoiceVoxTTS.generateAudio(ttsResponse, {
+                speaker: speaker
+            })
         } else {
           await this.reply('你没有配置转语音API哦')
         }
