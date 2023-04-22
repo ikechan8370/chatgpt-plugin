@@ -526,6 +526,18 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
+          field: 'cloudMode',
+          label: '云转码API发送数据模式',
+          bottomHelpMessage: '默认发送数据链接，如果你部署的是本地服务，请改为数据',
+          component: 'Select',
+          componentProps: {
+            options: [
+              { label: '链接', value: 'url' },
+              { label: '数据', value: 'buffer' }
+            ]
+          }
+        },
+        {
           field: 'noiseScale',
           label: 'noiseScale',
           bottomHelpMessage: '控制情感变化程度',
