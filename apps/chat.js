@@ -29,7 +29,7 @@ import { convertFaces } from '../utils/face.js'
 import uploadRecord from '../utils/uploadRecord.js'
 import { SlackClaudeClient } from '../utils/slack/slackClient.js'
 import { ChatgptManagement } from './management.js'
-import {getPromptByName} from "../utils/prompts.js";
+import { getPromptByName } from '../utils/prompts.js'
 try {
   await import('keyv')
 } catch (err) {
@@ -620,7 +620,7 @@ export class chatgpt extends plugin {
       logger.info('chatgpt闭嘴中，不予理会')
       return false
     }
-    //获取用户配置
+    // 获取用户配置
     const userData = await getUserData(e.user_id)
     const use = (userData.mode === 'default' ? null : userData.mode) || await redis.get('CHATGPT:USE') || 'api'
     // 自动化插件本月已发送xx条消息更新太快，由于延迟和缓存问题导致不同客户端不一样，at文本和获取的card不一致。因此单独处理一下
@@ -918,19 +918,20 @@ export class chatgpt extends plugin {
         if (Config.ttsSpace && ttsResponse.length <= Config.ttsAutoFallbackThreshold) {
           try {
             let wav = await generateAudio(ttsResponse, speaker, '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）')
-              try {
-                let sendable = await uploadRecord(wav)
-                if (sendable) {
-                  await e.reply(sendable)
-                } else {
-                  //如果合成失败，尝试使用ffmpeg合成
-                  await e.reply(segment.record(wav))
-                }
-              } catch (err) {
-                logger.error(err)
+            try {
+              let sendable = await uploadRecord(wav)
+              if (sendable) {
+                await e.reply(sendable)
+              } else {
+                // 如果合成失败，尝试使用ffmpeg合成
                 await e.reply(segment.record(wav))
               }
+            } catch (err) {
+              logger.error(err)
+              await e.reply(segment.record(wav))
+            }
           } catch (err) {
+            logger.error(err)
             await this.reply('合成语音发生错误~')
           }
         } else if (!Config.ttsSpace) {
