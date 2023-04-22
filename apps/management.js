@@ -1,7 +1,7 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import { Config } from '../utils/config.js'
 import { exec } from 'child_process'
-import { checkPnpm, formatDuration, parseDuration, getPublicIP } from '../utils/common.js'
+import { checkPnpm, formatDuration, parseDuration, getPublicIP, renderUrl } from '../utils/common.js'
 import SydneyAIClient from '../utils/SydneyAIClient.js'
 import { convertSpeaker, speakers } from '../utils/tts.js'
 import md5 from 'md5'
@@ -109,6 +109,10 @@ export class ChatgptManagement extends plugin {
         {
           reg: '^#chatgpt(强制)?更新$',
           fnc: 'updateChatGPTPlugin'
+        },
+        {
+          reg: '^#chatgpt版本(信息)',
+          fnc: 'versionChatGPTPlugin'
         },
         {
           reg: '^#chatgpt(本群)?(群\\d+)?闭嘴',
@@ -826,6 +830,10 @@ export class ChatgptManagement extends plugin {
       }, 1000)
     })
     return true
+  }
+
+  async versionChatGPTPlugin (e) {
+    await renderUrl(e, `http://127.0.0.1:${Config.serverPort || 3321}/version`, { Viewport: { width: 800, height: 600 } })
   }
 
   async modeHelp () {

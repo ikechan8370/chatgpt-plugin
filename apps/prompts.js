@@ -138,7 +138,8 @@ export class help extends plugin {
           content: Config.sydney
         }
       } else {
-        await this.importPrompt(`#chatgpt导入设定${promptName}`)
+        e.msg = `#chatgpt导入设定${promptName}`
+        await this.importPrompt(e)
         prompt = getPromptByName(promptName)
         if (!prompt) {
           await e.reply('没有这个设定', true)

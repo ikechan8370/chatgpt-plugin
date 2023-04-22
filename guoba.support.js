@@ -1,6 +1,6 @@
 import { Config } from './utils/config.js'
 import { speakers } from './utils/tts.js'
-
+import AzureTTS from './utils/tts/microsoft-azure.js'
 // 支持锅巴
 export function supportGuoba () {
   return {
@@ -74,12 +74,44 @@ export function supportGuoba () {
           component: 'Switch'
         },
         {
+          field: 'ttsMode',
+          label: '语音模式源',
+          bottomHelpMessage: '语音模式下使用何种语音源进行文本->音频转换',
+          component: 'Select',
+          componentProps: {
+            options: [
+              {
+                label: 'vits-uma-genshin-honkai',
+                value: 'vits-uma-genshin-honkai'
+              },
+              {
+                label: '微软Azure',
+                value: 'azure'
+              }
+            ]
+          }
+        },
+        {
           field: 'defaultTTSRole',
-          label: '语音模式默认角色',
-          bottomHelpMessage: '语音模式下，未指定角色时使用的角色。若留空，将使用随机角色回复。若用户通过指令指定了角色，将忽略本设定',
+          label: '语音模式默认角色（vits-uma-genshin-honkai）',
+          bottomHelpMessage: 'vits-uma-genshin-honkai语音模式下，未指定角色时使用的角色。若留空，将使用随机角色回复。若用户通过指令指定了角色，将忽略本设定',
           component: 'Select',
           componentProps: {
             options: speakers.concat('随机').map(s => { return { label: s, value: s } })
+          }
+        },
+        {
+          field: 'azureTTSSpeaker',
+          label: '语音模式默认角色（微软Azure）',
+          bottomHelpMessage: '微软Azure语音模式下，未指定角色时使用的角色。若用户通过指令指定了角色，将忽略本设定',
+          component: 'Select',
+          componentProps: {
+            options: AzureTTS.supportConfigurations.map(item => {
+              return {
+                label: `${item.name}-${item.gender}-${item.languageDetail}`,
+                value: item.code
+              }
+            })
           }
         },
         {
@@ -509,8 +541,19 @@ export function supportGuoba () {
         },
         {
           field: 'ttsSpace',
-          label: '语音转换API地址',
+          label: 'vits-uma-genshin-honkai语音转换API地址',
           bottomHelpMessage: '前往duplicate空间https://huggingface.co/spaces/ikechan8370/vits-uma-genshin-honkai后查看api地址',
+          component: 'Input'
+        },
+        {
+          field: 'azureTTSKey',
+          label: 'Azure语音服务密钥',
+          component: 'Input'
+        },
+        {
+          field: 'azureTTSRegion',
+          label: 'Azure语音服务区域',
+          bottomHelpMessage: '例如japaneast',
           component: 'Input'
         },
         {
@@ -518,6 +561,25 @@ export function supportGuoba () {
           label: '语音转换huggingface反代',
           bottomHelpMessage: '没有就空着',
           component: 'Input'
+        },
+        {
+          field: 'cloudTranscode',
+          label: '云转码API地址',
+          bottomHelpMessage: '目前只支持node-silk语音转码，可在本地node-silk无法使用时尝试使用云端资源转码',
+          component: 'Input'
+        },
+        {
+          field: 'cloudMode',
+          label: '云转码API发送数据模式',
+          bottomHelpMessage: '默认发送数据链接，如果你部署的是本地服务，请改为文件',
+          component: 'Select',
+          componentProps: {
+            options: [
+              { label: '文件', value: 'file' },
+              { label: '链接', value: 'url' },
+              { label: '数据', value: 'buffer' }
+            ]
+          }
         },
         {
           field: 'noiseScale',

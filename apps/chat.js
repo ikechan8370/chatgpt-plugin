@@ -7,6 +7,7 @@ import { ChatGPTAPI } from 'chatgpt'
 import { BingAIClient } from '@waylaidwanderer/chatgpt-api'
 import SydneyAIClient from '../utils/SydneyAIClient.js'
 import { PoeClient } from '../utils/poe/index.js'
+import AzureTTS from '../utils/tts/microsoft-azure.js'
 import {
   render, renderUrl,
   getMessageById,
@@ -29,7 +30,7 @@ import { convertFaces } from '../utils/face.js'
 import uploadRecord from '../utils/uploadRecord.js'
 import { SlackClaudeClient } from '../utils/slack/slackClient.js'
 import { ChatgptManagement } from './management.js'
-import {getPromptByName} from "../utils/prompts.js";
+import { getPromptByName } from '../utils/prompts.js'
 try {
   await import('keyv')
 } catch (err) {
@@ -43,13 +44,6 @@ if (Config.proxy) {
   } catch (e) {
     console.warn('未安装https-proxy-agent，请在插件目录下执行pnpm add https-proxy-agent')
   }
-}
-let useSilk = false
-try {
-  await import('node-silk')
-  useSilk = true
-} catch (e) {
-  useSilk = false
 }
 /**
  * 每个对话保留的时长。单个对话内ai是保留上下文的。超时后销毁对话，再次对话创建新的对话。
@@ -73,6 +67,8 @@ const newFetch = (url, options = {}) => {
 
   return fetch(url, mergedOptions)
 }
+// 后台地址
+const viewHost = Config.viewHost ? `${Config.viewHost}/` : `http://127.0.0.1:${Config.serverPort || 3321}/`
 export class chatgpt extends plugin {
   constructor () {
     let toggleMode = Config.toggleMode
@@ -145,6 +141,10 @@ export class chatgpt extends plugin {
         {
           reg: '^#chatgpt语音模式$',
           fnc: 'switch2Audio'
+        },
+        {
+          reg: '^#chatgpt语音换源',
+          fnc: 'switchTTSSource'
         },
         {
           reg: '^#chatgpt设置(语音角色|角色语音|角色)',
@@ -524,26 +524,71 @@ export class chatgpt extends plugin {
     await this.reply('ChatGPT回复已转换为语音模式')
   }
 
+  async switchTTSSource (e) {
+    let target = e.msg.replace(/^#chatgpt语音换源/, '')
+    switch (target.trim()) {
+      case '1': {
+        Config.ttsMode = 'vits-uma-genshin-honkai'
+        break
+      }
+      case '2': {
+        Config.ttsMode = 'azure'
+        break
+      }
+      default: {
+        await e.reply('请使用#chatgpt语音换源+数字进行换源。1为vits-uma-genshin-honkai，2为微软Azure')
+        return
+      }
+    }
+    await e.reply('语音转换源已切换为' + Config.ttsMode)
+  }
+
   async setDefaultRole (e) {
-    if (!Config.ttsSpace) {
-      await this.reply('您没有配置VITS API，请前往锅巴面板进行配置')
+    if (Config.ttsMode === 'vits-uma-genshin-honkai' && !Config.ttsSpace) {
+      await this.reply('您没有配置vits-uma-genshin-honkai API，请前往后台管理或锅巴面板进行配置')
       return
     }
-    let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
-    if (!userSetting) {
-      userSetting = getDefaultReplySetting()
-    } else {
-      userSetting = JSON.parse(userSetting)
+    if (Config.ttsMode === 'azure' && !Config.azureTTSKey) {
+      await this.reply('您没有配置azure 密钥，请前往后台管理或锅巴面板进行配置')
+      return
     }
     const regex = /^#chatgpt设置(语音角色|角色语音|角色)/
-    // let speaker = _.trimStart(e.msg, regex) || '随机'
     let speaker = e.msg.replace(regex, '').trim() || '随机'
-    userSetting.ttsRole = convertSpeaker(speaker)
-    if (speakers.indexOf(userSetting.ttsRole) >= 0) {
-      await redis.set(`CHATGPT:USER:${e.sender.user_id}`, JSON.stringify(userSetting))
-      await this.reply(`您的默认语音角色已被设置为”${userSetting.ttsRole}“`)
-    } else {
-      await this.reply(`”抱歉，${userSetting.ttsRole}“我还不认识呢`)
+    switch (Config.ttsMode) {
+      case 'vits-uma-genshin-honkai': {
+        let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
+        if (!userSetting) {
+          userSetting = getDefaultReplySetting()
+        } else {
+          userSetting = JSON.parse(userSetting)
+        }
+        userSetting.ttsRole = convertSpeaker(speaker)
+        if (speakers.indexOf(userSetting.ttsRole) >= 0) {
+          await redis.set(`CHATGPT:USER:${e.sender.user_id}`, JSON.stringify(userSetting))
+          await this.reply(`您的默认语音角色已被设置为”${userSetting.ttsRole}“`)
+        } else {
+          await this.reply(`抱歉，"${userSetting.ttsRole}"我还不认识呢`)
+        }
+        break
+      }
+      case 'azure': {
+        let chosen = AzureTTS.supportConfigurations.filter(s => s.name === speaker)
+        if (chosen.length === 0) {
+          await this.reply(`抱歉，没有"${speaker}"这个角色，目前azure模式下支持的角色有${AzureTTS.supportConfigurations.map(item => item.name).join('、')}`)
+        } else {
+          let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
+          if (!userSetting) {
+            userSetting = getDefaultReplySetting()
+          } else {
+            userSetting = JSON.parse(userSetting)
+          }
+          userSetting.ttsRoleAzure = chosen[0].code
+          await redis.set(`CHATGPT:USER:${e.sender.user_id}`, JSON.stringify(userSetting))
+          // Config.azureTTSSpeaker = chosen[0].code
+          await this.reply(`您的默认语音角色已被设置为”${speaker}-${chosen[0].gender}-${chosen[0].languageDetail}“`)
+        }
+        break
+      }
     }
   }
 
@@ -625,7 +670,7 @@ export class chatgpt extends plugin {
       logger.info('chatgpt闭嘴中，不予理会')
       return false
     }
-    //获取用户配置
+    // 获取用户配置
     const userData = await getUserData(e.user_id)
     const use = (userData.mode === 'default' ? null : userData.mode) || await redis.get('CHATGPT:USE') || 'api'
     // 自动化插件本月已发送xx条消息更新太快，由于延迟和缓存问题导致不同客户端不一样，at文本和获取的card不一致。因此单独处理一下
@@ -644,7 +689,12 @@ export class chatgpt extends plugin {
       userSetting = getDefaultReplySetting()
     }
     let useTTS = !!userSetting.useTTS
-    let speaker = convertSpeaker(userSetting.ttsRole || Config.defaultTTSRole)
+    let speaker
+    if (Config.ttsMode === 'vits-uma-genshin-honkai') {
+      speaker = convertSpeaker(userSetting.ttsRole || Config.defaultTTSRole)
+    } else if (Config.ttsMode === 'azure') {
+      speaker = userSetting.ttsRoleAzure || Config.azureTTSSpeaker
+    }
     // 每个回答可以指定
     let trySplit = prompt.split('回答：')
     if (trySplit.length > 1 && speakers.indexOf(convertSpeaker(trySplit[0])) > -1) {
@@ -893,6 +943,8 @@ export class chatgpt extends plugin {
         if (quote.imageLink) imgUrls.push(quote.imageLink)
       }
       if (useTTS) {
+        // 缓存数据
+        this.cacheContent(e, use, response, prompt, quotemessage, mood, chatMessage.suggestedResponses, imgUrls)
         // 处理tts输入文本
         let ttsResponse, ttsRegex
         const regex = /^\/(.*)\/([gimuy]*)$/
@@ -907,7 +959,7 @@ export class chatgpt extends plugin {
         ttsResponse = response.replace(ttsRegex, '')
         // 先把文字回复发出去，避免过久等待合成语音
         if (Config.alsoSendText || ttsResponse.length > Config.ttsAutoFallbackThreshold) {
-          if (ttsResponse.length > Config.ttsAutoFallbackThreshold) {
+          if (Config.ttsMode === 'vits-uma-genshin-honkai' && ttsResponse.length > Config.ttsAutoFallbackThreshold) {
             await this.reply('回复的内容过长，已转为文本模式')
           }
           await this.reply(await convertFaces(response, Config.enableRobotAt, e), e.isGroup)
@@ -918,25 +970,37 @@ export class chatgpt extends plugin {
             this.reply(`建议的回复：\n${chatMessage.suggestedResponses}`)
           }
         }
-        if (Config.ttsSpace && ttsResponse.length <= Config.ttsAutoFallbackThreshold) {
+        let wav
+        if (Config.ttsMode === 'vits-uma-genshin-honkai' && Config.ttsSpace) {
           try {
-            let wav = await generateAudio(ttsResponse, speaker, '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）')
-            if (useSilk) {
-              try {
-                let sendable = await uploadRecord(wav)
-                await e.reply(sendable)
-              } catch (err) {
-                logger.error(err)
-                await e.reply(segment.record(wav))
-              }
+            wav = await generateAudio(ttsResponse, speaker, '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）')
+          } catch (err) {
+            logger.error(err)
+            await this.reply('合成语音发生错误~')
+          }
+        } else if (Config.ttsMode === 'azure' && Config.azureTTSKey) {
+          wav = await AzureTTS.generateAudio(ttsResponse, {
+            speaker: speaker
+          })
+        } else {
+          await this.reply('你没有配置转语音API哦')
+        }
+        try {
+          try {
+            let sendable = await uploadRecord(wav)
+            if (sendable) {
+              await e.reply(sendable)
             } else {
+              // 如果合成失败，尝试使用ffmpeg合成
               await e.reply(segment.record(wav))
             }
           } catch (err) {
-            await this.reply('合成语音发生错误~')
+            logger.error(err)
+            await e.reply(segment.record(wav))
           }
-        } else if (!Config.ttsSpace) {
-          await this.reply('你没有配置转语音API哦')
+        } catch (err) {
+          logger.error(err)
+          await this.reply('合成语音发生错误~')
         }
       } else if (userSetting.usePicture || (Config.autoUsePicture && response.length > Config.autoUsePictureThreshold)) {
         // todo use next api of chatgpt to complete incomplete respoonse
@@ -951,6 +1015,7 @@ export class chatgpt extends plugin {
           this.reply(`建议的回复：\n${chatMessage.suggestedResponses}`)
         }
       } else {
+        this.cacheContent(e, use, response, prompt, quotemessage, mood, chatMessage.suggestedResponses, imgUrls)
         await this.reply(await convertFaces(response, Config.enableRobotAt, e), e.isGroup)
         if (quotemessage.length > 0) {
           this.reply(await makeForwardMsg(this.e, quotemessage.map(msg => `${msg.text} - ${msg.url}`)))
@@ -1071,43 +1136,50 @@ export class chatgpt extends plugin {
     return true
   }
 
+  async cacheContent (e, use, content, prompt, quote = [], mood = '', suggest = '', imgUrls = []) {
+    let cacheData = { file: '', cacheUrl: Config.cacheUrl, status: '' }
+    cacheData.file = randomString()
+    const cacheresOption = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        content: {
+          content: new Buffer.from(content).toString('base64'),
+          prompt: new Buffer.from(prompt).toString('base64'),
+          senderName: e.sender.nickname,
+          style: Config.toneStyle,
+          mood,
+          quote,
+          group: e.isGroup ? e.group.name : '',
+          suggest: suggest ? suggest.split('\n').filter(Boolean) : [],
+          images: imgUrls
+        },
+        model: use,
+        bing: use === 'bing',
+        entry: cacheData.file,
+        userImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${e.sender.user_id}`,
+        botImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${Bot.uin}`,
+        cacheHost: Config.serverHost,
+        qq: e.sender.user_id
+      })
+    }
+    const cacheres = await fetch(viewHost + 'cache', cacheresOption)
+    if (cacheres.ok) {
+      cacheData = Object.assign({}, cacheData, await cacheres.json())
+    } else {
+      cacheData.error = '渲染服务器出错！'
+    }
+    cacheData.status = cacheres.status
+    return cacheData
+  }
+
   async renderImage (e, use, content, prompt, quote = [], mood = '', suggest = '', imgUrls = []) {
-    let cacheData = { file: '', cacheUrl: Config.cacheUrl }
+    let cacheData = await this.cacheContent(e, use, content, prompt, quote, mood, suggest, imgUrls)
     const template = use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index'
     if (!Config.oldview) {
-      cacheData.file = randomString()
-      const cacheresOption = {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          content: {
-            content: new Buffer.from(content).toString('base64'),
-            prompt: new Buffer.from(prompt).toString('base64'),
-            senderName: e.sender.nickname,
-            style: Config.toneStyle,
-            mood,
-            quote,
-            group: e.isGroup ? e.group.name : '',
-            suggest: suggest ? suggest.split('\n').filter(Boolean) : [],
-            images: imgUrls
-          },
-          model: use,
-          bing: use === 'bing',
-          entry: cacheData.file,
-          userImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${e.sender.user_id}`,
-          botImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${Bot.uin}`,
-          cacheHost: Config.serverHost,
-          qq: e.sender.user_id
-        })
-      }
-      const viewHost = Config.viewHost ? `${Config.viewHost}/` : `http://127.0.0.1:${Config.serverPort || 3321}/`
-      const cacheres = await fetch(viewHost + 'cache', cacheresOption)
-      if (cacheres.ok) {
-        cacheData = Object.assign({}, cacheData, await cacheres.json())
-      }
-      if (cacheData.error || cacheres.status != 200) { await this.reply(`出现错误：${cacheData.error || 'server error ' + cacheres.status}`, true) } else { await e.reply(await renderUrl(e, viewHost + `page/${cacheData.file}?qr=${Config.showQRCode ? 'true' : 'false'}`, { retType: Config.quoteReply ? 'base64' : '', Viewport: { width: Config.chatViewWidth, height: parseInt(Config.chatViewWidth * 0.56) } }), e.isGroup && Config.quoteReply) }
+      if (cacheData.error || cacheData.status != 200) { await this.reply(`出现错误：${cacheData.error || 'server error ' + cacheData.status}`, true) } else { await e.reply(await renderUrl(e, viewHost + `page/${cacheData.file}?qr=${Config.showQRCode ? 'true' : 'false'}`, { retType: Config.quoteReply ? 'base64' : '', Viewport: { width: Config.chatViewWidth, height: parseInt(Config.chatViewWidth * 0.56) } }), e.isGroup && Config.quoteReply) }
     } else {
       if (Config.cacheEntry) cacheData.file = randomString()
       const cacheresOption = {

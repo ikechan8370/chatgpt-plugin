@@ -76,6 +76,10 @@ export async function createServer() {
     const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
     reply.type('text/html').send(stream)
   })
+  await server.get('/version', (request, reply) => {
+    const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
+    reply.type('text/html').send(stream)
+  })
   await server.get('/auth/*', (request, reply) => {
     const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
     reply.type('text/html').send(stream)
