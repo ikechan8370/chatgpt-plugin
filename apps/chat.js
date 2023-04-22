@@ -510,9 +510,25 @@ export class chatgpt extends plugin {
   }
 
   async switch2Audio (e) {
-    if (!Config.ttsSpace) {
-      await this.reply('您没有配置VITS API，请前往锅巴面板进行配置')
-      return
+    switch (Config.ttsMode){
+      case 'vits-uma-genshin-honkai':
+        if(!Config.ttsSpace){
+          await this.reply('您没有配置VITS API，请前往锅巴面板进行配置')
+          return
+        }
+        break
+      case 'azure':
+        if(!Config.azureKey){
+            await this.reply('您没有配置Azure Key，请前往锅巴面板进行配置')
+            return
+        }
+        break
+      case 'voicevox':
+        if(!Config.voicevoxSpace){
+            await this.reply('您没有配置VoiceVox API，请前往锅巴面板进行配置')
+            return
+        }
+        break
     }
     let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
     if (!userSetting) {
