@@ -36,22 +36,33 @@ async function uploadRecord (recordUrl) {
     result = await getPttBuffer(recordUrl, Bot.config.ffmpeg_path)
   } else if (Config.cloudTranscode) {
     try {
-      if (Config.cloudMode === 'buffer') {
+      if (Config.cloudMode === 'buffer' || Config.cloudMode === 'file') {
         let response = await fetch(recordUrl, {
-          method: 'GET', // post请求
+          method: 'GET',
           headers: {
             'User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 12; MI 9 Build/SKQ1.211230.001)'
           },
         })
-        const buf = Buffer.from(await response.arrayBuffer())
-        const resultres = await fetch(`${Config.cloudTranscode}/audio`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({recordBuffer: buf})
-        })
-        result = await resultres.json()
+        if (Config.cloudMode === 'file') {
+          const file = await response.blob()
+          const formData = new FormData()
+          formData.append('file', file)
+          const resultres = await fetch(`${Config.cloudTranscode}/audio`, {
+            method: 'POST',
+            body: formData
+          })
+          result = await resultres.json()
+        } else {
+          const buf = Buffer.from(await response.arrayBuffer())
+          const resultres = await fetch(`${Config.cloudTranscode}/audio`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({recordBuffer: buf})
+          })
+          result = await resultres.json()
+        }
       } else {
         const resultres = await fetch(`${Config.cloudTranscode}/audio`, {
           method: 'POST',
