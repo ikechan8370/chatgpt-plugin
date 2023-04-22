@@ -26,8 +26,7 @@ const newFetch = (url, options = {}) => {
 
 async function generateAudio(text, options = {}) {
     let host = Config.voicevoxSpace
-    logger.info(`用户配置speaker:${options.speaker}`)
-    let speaker = options.speaker?.speaker || '护士机器子T'
+    let speaker = options.speaker || '随机'
     if (speaker === '随机') {
         speaker = supportConfigurations[Math.floor(Math.random() * supportConfigurations.length)].name
     }
