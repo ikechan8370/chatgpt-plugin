@@ -1,6 +1,6 @@
 // import Contactable, { core } from 'oicq'
 import querystring from 'querystring'
-import fetch from 'node-fetch'
+import fetch, { File } from 'node-fetch'
 import fs from 'fs'
 import os from 'os'
 import util from 'util'
@@ -41,17 +41,25 @@ async function uploadRecord (recordUrl) {
           method: 'GET',
           headers: {
             'User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 12; MI 9 Build/SKQ1.211230.001)'
-          },
+          }
         })
         if (Config.cloudMode === 'file') {
-          const file = await response.blob()
+          const blob = await response.blob()
+          const arrayBuffer = await blob.arrayBuffer()
+          const buffer = Buffer.from(arrayBuffer)
           const formData = new FormData()
-          formData.append('file', file)
+          formData.append('file', new File([buffer], 'audio.wav'))
           const resultres = await fetch(`${Config.cloudTranscode}/audio`, {
             method: 'POST',
             body: formData
           })
-          result = await resultres.json()
+          let t = await resultres.text()
+          try {
+            result = JSON.parse(t)
+          } catch (e) {
+            logger.error(t)
+            throw e
+          }
         } else {
           const buf = Buffer.from(await response.arrayBuffer())
           const resultres = await fetch(`${Config.cloudTranscode}/audio`, {
@@ -59,9 +67,15 @@ async function uploadRecord (recordUrl) {
             headers: {
               'Content-Type': 'application/json'
             },
-            body: JSON.stringify({recordBuffer: buf})
+            body: JSON.stringify({ recordBuffer: buf })
           })
-          result = await resultres.json()
+          let t = await resultres.text()
+          try {
+            result = JSON.parse(t)
+          } catch (e) {
+            logger.error(t)
+            throw e
+          }
         }
       } else {
         const resultres = await fetch(`${Config.cloudTranscode}/audio`, {
@@ -69,9 +83,15 @@ async function uploadRecord (recordUrl) {
           headers: {
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify({recordUrl: recordUrl})
+          body: JSON.stringify({ recordUrl })
         })
-        result = await resultres.json()
+        let t = await resultres.text()
+        try {
+          result = JSON.parse(t)
+        } catch (e) {
+          logger.error(t)
+          throw e
+        }
       }
       if (result.error) {
         logger.error('云转码API报错：' + result.error)
