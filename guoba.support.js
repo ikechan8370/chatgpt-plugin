@@ -522,7 +522,7 @@ export function supportGuoba () {
         {
           field: 'cloudTranscode',
           label: '云转码API地址',
-          bottomHelpMessage: '目前只支持node-silk语音转码，如果本地无法安装node-silk可填写http://alcedogroup.com:3031',
+          bottomHelpMessage: '目前只支持node-silk语音转码，可在本地node-silk无法使用时尝试使用云端资源转码',
           component: 'Input'
         },
         {
