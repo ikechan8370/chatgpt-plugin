@@ -1,6 +1,6 @@
 // import Contactable, { core } from 'oicq'
 import querystring from 'querystring'
-import fetch, { File } from 'node-fetch'
+import fetch, { File, fileFromSync, FormData } from 'node-fetch'
 import fs from 'fs'
 import os from 'os'
 import util from 'util'
@@ -12,70 +12,65 @@ let module
 try {
   module = await import('oicq')
 } catch (err) {
-  module = await import('icqq')
+  try {
+    module = await import('icqq')
+  } catch (err1) {
+    // 可能是go-cqhttp之类的
+  }
 }
-const { core } = module
-const Contactable = module.default
-// import { pcm2slk } from 'node-silk'
-let errors = {}
-let pcm2slk
-try {
-  pcm2slk = (await import('node-silk')).pcm2slk
-} catch (e) {
-  if (Config.cloudTranscode) {
-    logger.warn('未安装node-silk，将尝试使用云转码服务进行合成')
-  } else {
-    Config.debug && logger.error(e)
-    logger.warn('未安装node-silk，如ffmpeg不支持amr编码请安装node-silk以支持语音模式')
+let pcm2slk, core, Contactable
+if (module) {
+  core = module.core
+  Contactable = module.default
+  try {
+    pcm2slk = (await import('node-silk')).pcm2slk
+  } catch (e) {
+    if (Config.cloudTranscode) {
+      logger.warn('未安装node-silk，将尝试使用云转码服务进行合成')
+    } else {
+      Config.debug && logger.error(e)
+      logger.warn('未安装node-silk，如ffmpeg不支持amr编码请安装node-silk以支持语音模式')
+    }
   }
 }
 
-async function uploadRecord (recordUrl) {
+// import { pcm2slk } from 'node-silk'
+let errors = {}
+
+async function uploadRecord (recordUrl, forceFile) {
   let result
   if (pcm2slk) {
     result = await getPttBuffer(recordUrl, Bot.config.ffmpeg_path)
   } else if (Config.cloudTranscode) {
     try {
-      if (Config.cloudMode === 'buffer' || Config.cloudMode === 'file') {
-        let response = await fetch(recordUrl, {
-          method: 'GET',
-          headers: {
-            'User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 12; MI 9 Build/SKQ1.211230.001)'
-          }
-        })
-        if (Config.cloudMode === 'file') {
+      if (forceFile || Config.cloudMode === 'file') {
+        const formData = new FormData()
+        let buffer
+        if (!recordUrl.startsWith('http')) {
+          // 本地文件
+          formData.append('file', fileFromSync(recordUrl))
+        } else {
+          let response = await fetch(recordUrl, {
+            method: 'GET',
+            headers: {
+              'User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 12; MI 9 Build/SKQ1.211230.001)'
+            }
+          })
           const blob = await response.blob()
           const arrayBuffer = await blob.arrayBuffer()
-          const buffer = Buffer.from(arrayBuffer)
-          const formData = new FormData()
+          buffer = Buffer.from(arrayBuffer)
           formData.append('file', new File([buffer], 'audio.wav'))
-          const resultres = await fetch(`${Config.cloudTranscode}/audio`, {
-            method: 'POST',
-            body: formData
-          })
-          let t = await resultres.text()
-          try {
-            result = JSON.parse(t)
-          } catch (e) {
-            logger.error(t)
-            throw e
-          }
-        } else {
-          const buf = Buffer.from(await response.arrayBuffer())
-          const resultres = await fetch(`${Config.cloudTranscode}/audio`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ recordBuffer: buf })
-          })
-          let t = await resultres.text()
-          try {
-            result = JSON.parse(t)
-          } catch (e) {
-            logger.error(t)
-            throw e
-          }
+        }
+        const resultres = await fetch(`${Config.cloudTranscode}/audio`, {
+          method: 'POST',
+          body: formData
+        })
+        let t = await resultres.text()
+        try {
+          result = JSON.parse(t)
+        } catch (e) {
+          logger.error(t)
+          throw e
         }
       } else {
         const resultres = await fetch(`${Config.cloudTranscode}/audio`, {

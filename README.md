@@ -191,7 +191,7 @@ pnpm i
 
 #### 设置相关
 
-> #chat切换浏览器/API/API2/API3/Bing
+> #chatgpt切换浏览器/API/API2/API3/Bing
 >
 > #chatgpt设置[必应]Token
 >

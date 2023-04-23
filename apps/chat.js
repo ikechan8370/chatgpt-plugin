@@ -9,6 +9,7 @@ import SydneyAIClient from '../utils/SydneyAIClient.js'
 import { PoeClient } from '../utils/poe/index.js'
 import AzureTTS from '../utils/tts/microsoft-azure.js'
 import VoiceVoxTTS from '../utils/tts/voicevox.js'
+import fs from 'fs'
 import {
   render, renderUrl,
   getMessageById,
@@ -119,11 +120,11 @@ export class chatgpt extends plugin {
           permission: 'master'
         },
         {
-          reg: '^#(chatgpt)?结束对话([sS]*)',
+          reg: '^#(chatgpt)?(结束|新开|摧毁|毁灭|完结)对话([sS]*)',
           fnc: 'destroyConversations'
         },
         {
-          reg: '^#(chatgpt)?结束全部对话$',
+          reg: '^#(chatgpt)?(结束|新开|摧毁|毁灭|完结)全部对话$',
           fnc: 'endAllConversations',
           permission: 'master'
         },
@@ -1046,7 +1047,7 @@ export class chatgpt extends plugin {
         }
         try {
           try {
-            let sendable = await uploadRecord(wav)
+            let sendable = await uploadRecord(wav, Config.ttsMode === 'azure')
             if (sendable) {
               await e.reply(sendable)
             } else {
@@ -1060,6 +1061,14 @@ export class chatgpt extends plugin {
         } catch (err) {
           logger.error(err)
           await this.reply('合成语音发生错误~')
+        }
+        if (Config.ttsMode === 'azure' && Config.azureTTSKey) {
+          // 清理文件
+          try {
+            fs.unlinkSync(wav)
+          } catch (err) {
+            logger.warn(err)
+          }
         }
       } else if (userSetting.usePicture || (Config.autoUsePicture && response.length > Config.autoUsePictureThreshold)) {
         // todo use next api of chatgpt to complete incomplete respoonse
