@@ -571,12 +571,12 @@ export function supportGuoba () {
         {
           field: 'cloudMode',
           label: '云转码API发送数据模式',
-          bottomHelpMessage: '默认发送数据链接，如果你部署的是本地服务，请改为文件',
+          bottomHelpMessage: '默认发送数据链接，如果你部署的是本地vits服务或使用的是微软azure，请改为文件',
           component: 'Select',
           componentProps: {
             options: [
               { label: '文件', value: 'file' },
-              { label: '链接', value: 'url' },
+              { label: '链接', value: 'url' }
               // { label: '数据', value: 'buffer' }
             ]
           }
