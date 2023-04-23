@@ -104,6 +104,10 @@ const defaultConfig = {
   slackClaudeSpecifiedChannel: '',
   cloudTranscode: 'https://silk.201666.xyz',
   cloudMode: 'url',
+  ttsMode: 'vits-uma-genshin-honkai', // or azure
+  azureTTSKey: '',
+  azureTTSRegion: '',
+  azureTTSSpeaker: 'zh-CN-XiaochenNeural',
   version: 'v2.5.7'
 }
 const _path = process.cwd()
