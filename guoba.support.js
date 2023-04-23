@@ -577,7 +577,7 @@ export function supportGuoba () {
             options: [
               { label: '文件', value: 'file' },
               { label: '链接', value: 'url' },
-              { label: '数据', value: 'buffer' }
+              // { label: '数据', value: 'buffer' }
             ]
           }
         },

@@ -1,6 +1,6 @@
 // import Contactable, { core } from 'oicq'
 import querystring from 'querystring'
-import fetch, { File } from 'node-fetch'
+import fetch, { File, FormData } from 'node-fetch'
 import fs from 'fs'
 import os from 'os'
 import util from 'util'
@@ -37,37 +37,27 @@ async function uploadRecord (recordUrl) {
   } else if (Config.cloudTranscode) {
     try {
       if (Config.cloudMode === 'buffer' || Config.cloudMode === 'file') {
-        let response = await fetch(recordUrl, {
-          method: 'GET',
-          headers: {
-            'User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 12; MI 9 Build/SKQ1.211230.001)'
-          }
-        })
-        if (Config.cloudMode === 'file') {
+        let buffer
+        if (!recordUrl.startsWith('http')) {
+          // 本地文件
+          buffer = fs.readFileSync(recordUrl)
+        } else {
+          let response = await fetch(recordUrl, {
+            method: 'GET',
+            headers: {
+              'User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 12; MI 9 Build/SKQ1.211230.001)'
+            }
+          })
           const blob = await response.blob()
           const arrayBuffer = await blob.arrayBuffer()
-          const buffer = Buffer.from(arrayBuffer)
+          buffer = Buffer.from(arrayBuffer)
+        }
+        if (Config.cloudMode === 'file') {
           const formData = new FormData()
           formData.append('file', new File([buffer], 'audio.wav'))
           const resultres = await fetch(`${Config.cloudTranscode}/audio`, {
             method: 'POST',
             body: formData
-          })
-          let t = await resultres.text()
-          try {
-            result = JSON.parse(t)
-          } catch (e) {
-            logger.error(t)
-            throw e
-          }
-        } else {
-          const buf = Buffer.from(await response.arrayBuffer())
-          const resultres = await fetch(`${Config.cloudTranscode}/audio`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ recordBuffer: buf })
           })
           let t = await resultres.text()
           try {
