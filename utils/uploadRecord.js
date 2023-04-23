@@ -12,31 +12,38 @@ let module
 try {
   module = await import('oicq')
 } catch (err) {
-  module = await import('icqq')
+  try {
+    module = await import('icqq')
+  } catch (err1) {
+    // 可能是go-cqhttp之类的
+  }
 }
-const { core } = module
-const Contactable = module.default
-// import { pcm2slk } from 'node-silk'
-let errors = {}
-let pcm2slk
-try {
-  pcm2slk = (await import('node-silk')).pcm2slk
-} catch (e) {
-  if (Config.cloudTranscode) {
-    logger.warn('未安装node-silk，将尝试使用云转码服务进行合成')
-  } else {
-    Config.debug && logger.error(e)
-    logger.warn('未安装node-silk，如ffmpeg不支持amr编码请安装node-silk以支持语音模式')
+let pcm2slk, core, Contactable
+if (module) {
+  core = module.core
+  Contactable = module.default
+  try {
+    pcm2slk = (await import('node-silk')).pcm2slk
+  } catch (e) {
+    if (Config.cloudTranscode) {
+      logger.warn('未安装node-silk，将尝试使用云转码服务进行合成')
+    } else {
+      Config.debug && logger.error(e)
+      logger.warn('未安装node-silk，如ffmpeg不支持amr编码请安装node-silk以支持语音模式')
+    }
   }
 }
 
-async function uploadRecord (recordUrl) {
+// import { pcm2slk } from 'node-silk'
+let errors = {}
+
+async function uploadRecord (recordUrl, forceFile) {
   let result
   if (pcm2slk) {
     result = await getPttBuffer(recordUrl, Bot.config.ffmpeg_path)
   } else if (Config.cloudTranscode) {
     try {
-      if (Config.cloudMode === 'file') {
+      if (forceFile || Config.cloudMode === 'file') {
         const formData = new FormData()
         let buffer
         if (!recordUrl.startsWith('http')) {

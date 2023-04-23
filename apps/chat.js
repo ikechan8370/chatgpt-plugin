@@ -8,6 +8,7 @@ import { BingAIClient } from '@waylaidwanderer/chatgpt-api'
 import SydneyAIClient from '../utils/SydneyAIClient.js'
 import { PoeClient } from '../utils/poe/index.js'
 import AzureTTS from '../utils/tts/microsoft-azure.js'
+import fs from 'fs'
 import {
   render, renderUrl,
   getMessageById,
@@ -987,7 +988,7 @@ export class chatgpt extends plugin {
         }
         try {
           try {
-            let sendable = await uploadRecord(wav)
+            let sendable = await uploadRecord(wav, Config.ttsMode === 'azure')
             if (sendable) {
               await e.reply(sendable)
             } else {
@@ -1001,6 +1002,14 @@ export class chatgpt extends plugin {
         } catch (err) {
           logger.error(err)
           await this.reply('合成语音发生错误~')
+        }
+        if (Config.ttsMode === 'azure' && Config.azureTTSKey) {
+          // 清理文件
+          try {
+            fs.unlinkSync(wav)
+          } catch (err) {
+            logger.warn(err)
+          }
         }
       } else if (userSetting.usePicture || (Config.autoUsePicture && response.length > Config.autoUsePictureThreshold)) {
         // todo use next api of chatgpt to complete incomplete respoonse
