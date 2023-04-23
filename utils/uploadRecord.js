@@ -1,6 +1,6 @@
 // import Contactable, { core } from 'oicq'
 import querystring from 'querystring'
-import fetch, { File, FormData } from 'node-fetch'
+import fetch, { File, fileFromSync, FormData } from 'node-fetch'
 import fs from 'fs'
 import os from 'os'
 import util from 'util'
@@ -36,11 +36,12 @@ async function uploadRecord (recordUrl) {
     result = await getPttBuffer(recordUrl, Bot.config.ffmpeg_path)
   } else if (Config.cloudTranscode) {
     try {
-      if (Config.cloudMode === 'buffer' || Config.cloudMode === 'file') {
+      if (Config.cloudMode === 'file') {
+        const formData = new FormData()
         let buffer
         if (!recordUrl.startsWith('http')) {
           // 本地文件
-          buffer = fs.readFileSync(recordUrl)
+          formData.append('file', fileFromSync(recordUrl))
         } else {
           let response = await fetch(recordUrl, {
             method: 'GET',
@@ -51,21 +52,18 @@ async function uploadRecord (recordUrl) {
           const blob = await response.blob()
           const arrayBuffer = await blob.arrayBuffer()
           buffer = Buffer.from(arrayBuffer)
-        }
-        if (Config.cloudMode === 'file') {
-          const formData = new FormData()
           formData.append('file', new File([buffer], 'audio.wav'))
-          const resultres = await fetch(`${Config.cloudTranscode}/audio`, {
-            method: 'POST',
-            body: formData
-          })
-          let t = await resultres.text()
-          try {
-            result = JSON.parse(t)
-          } catch (e) {
-            logger.error(t)
-            throw e
-          }
+        }
+        const resultres = await fetch(`${Config.cloudTranscode}/audio`, {
+          method: 'POST',
+          body: formData
+        })
+        let t = await resultres.text()
+        try {
+          result = JSON.parse(t)
+        } catch (e) {
+          logger.error(t)
+          throw e
         }
       } else {
         const resultres = await fetch(`${Config.cloudTranscode}/audio`, {
