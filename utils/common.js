@@ -328,7 +328,7 @@ export async function render (e, pluginKey, htmlPath, data = {}, renderCfg = {})
 export async function renderUrl (e, url, renderCfg = {}) {
   // 云渲染
   if (Config.cloudRender) {
-    url = url.replace('127.0.0.1', await getPublicIP())
+    url = url.replace(`127.0.0.1:${Config.serverPort || 3321}`, Config.serverHost || `${await getPublicIP()}:${Config.serverPort || 3321}`)
     const resultres = await fetch(`${Config.cloudTranscode}/screenshot`, {
       method: 'POST',
       headers: {
