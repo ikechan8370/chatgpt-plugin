@@ -598,7 +598,7 @@ export class chatgpt extends plugin {
    */
   async chatgpt (e) {
     if (!e.isMaster && e.isPrivate && !Config.enablePrivateChat) {
-      await this.reply('ChatGpt私聊通道已关闭。')
+      // await this.reply('ChatGpt私聊通道已关闭。')
       return false
     }
     if (e.isGroup) {
