@@ -348,7 +348,7 @@ export async function renderUrl (e, url, renderCfg = {}) {
     if (resultres.ok) {
       const webData = await resultres.json()
       if(!webData.error) {
-        const base64 = webData.base64
+        const base64 = segment.image(webData.base64)
         if (renderCfg.retType === 'base64') {
           return base64
         }
