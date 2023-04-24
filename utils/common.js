@@ -329,7 +329,7 @@ export async function renderUrl (e, url, renderCfg = {}) {
   // 云渲染
   if (Config.cloudRender) {
     url = url.replace('127.0.0.1', await getPublicIP())
-    const resultres = await fetch(`${Config.cloudTranscode}/audio`, {
+    const resultres = await fetch(`${Config.cloudTranscode}/screenshot`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
