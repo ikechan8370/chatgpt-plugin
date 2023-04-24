@@ -119,11 +119,11 @@ export class chatgpt extends plugin {
           permission: 'master'
         },
         {
-          reg: '^#(chatgpt)?结束对话([sS]*)',
+          reg: '^#(chatgpt)?(结束|新开|摧毁|毁灭|完结)对话([sS]*)',
           fnc: 'destroyConversations'
         },
         {
-          reg: '^#(chatgpt)?结束全部对话$',
+          reg: '^#(chatgpt)?(结束|新开|摧毁|毁灭|完结)全部对话$',
           fnc: 'endAllConversations',
           permission: 'master'
         },
