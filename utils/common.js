@@ -335,20 +335,21 @@ export async function renderUrl (e, url, renderCfg = {}) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        "url": url,
-        "option": {
-          "width": renderCfg.Viewport.width || 1280,
-          "height": renderCfg.Viewport.height || 720,
-          "timeout": 120000,
-          "selector:": Config.live2d ? "#live2d-widget" : "body",
-          "wait": renderCfg.wait || 1000
-        }
+        url: url,
+        option: {
+          width: renderCfg.Viewport.width || 1280,
+          height: renderCfg.Viewport.height || 720,
+          timeout: 120000,
+          selector: Config.live2d ? "#live2d-widget" : "body",
+          wait: renderCfg.wait || 1000
+        },
+        type: 'image'
       })
     })
     if (resultres.ok) {
-      const webData = await resultres.json()
-      if(!webData.error) {
-        const base64 = segment.image(webData.base64)
+      const buff = Buffer.from(await resultres.arrayBuffer())
+      if(buff) {
+        const base64 = segment.image(buff)
         if (renderCfg.retType === 'base64') {
           return base64
         }
