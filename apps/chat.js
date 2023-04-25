@@ -1577,9 +1577,11 @@ export class chatgpt extends plugin {
           // 如果是新对话
           if (Config.slackClaudeEnableGlobalPreset && (useCast?.slack || Config.slackClaudeGlobalPreset)) {
             // 先发送设定
-            let prompt = (useCast?.slack || Config.slackClaudeGlobalPreset) + await AzureTTS.getEmotionPrompt()
+            let prompt = (useCast?.slack || Config.slackClaudeGlobalPreset)
             logger.info('claudeFirst:', prompt)
             await client.sendMessage(prompt, e)
+            // 处理可能由情绪参数导致的设定超限问题
+            await client.sendMessage(await AzureTTS.getEmotionPrompt(), e)
           }
         }
         let text = await client.sendMessage(prompt, e)
@@ -1672,7 +1674,8 @@ export class chatgpt extends plugin {
           await redis.del(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`)
         }
         logger.info('send preset: ' + preset.content)
-        response = await client.sendMessage(preset.content + await AzureTTS.getEmotionPrompt(), e)
+        response = await client.sendMessage(preset.content, e) +
+                  await client.sendMessage(await AzureTTS.getEmotionPrompt(), e)
         await e.reply(response, true)
       }
     }
