@@ -4,6 +4,7 @@ import fs from 'fs'
 let nodejieba
 try {
   nodejieba = (await import('@node-rs/jieba')).default
+  nodejieba.load()
 } catch (err) {
   logger.info('未安装@node-rs/jieba，娱乐功能-词云统计不可用')
 }
@@ -61,23 +62,17 @@ export class Tokenizer {
     }
     let chats = await this.getTodayHistory(groupId)
     logger.mark(`聊天记录拉去完成，获取到今日内${chats.length}条聊天记录，准备分词中`)
-    try {
-      nodejieba.load()
-    } catch (err) {
-      // ignore already load error
-    }
+   
     const _path = process.cwd()
     let stopWordsPath = `${_path}/plugins/chatgpt-plugin/utils/wordcloud/cn_stopwords.txt`
     const data = fs.readFileSync(stopWordsPath)
     const stopWords = String(data)?.split('\n') || []
     let chatContent = chats
-      .map(c => c.raw_message
-        .replaceAll('[图片]', '')
-        .replaceAll('[表情]', '')
-        .replaceAll('[动画表情]', '')
-        .replaceAll('[语音]', '')
-        .replaceAll(/@\S+\s?/g, '')
-        .trim()
+      .map(c => c.message
+           //只统计文本内容
+           .filter(item => item.type == 'text')
+           .map(textItem => `${textItem.text}`)
+           .join("").trim()
       )
       .map(c => {
         let length = c.length
