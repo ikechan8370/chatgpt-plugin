@@ -101,6 +101,21 @@ export function supportGuoba () {
           }
         },
         {
+          field: 'autoJapanese',
+          label: '使用vits语音时，将机器人的文字回复翻译成日文后获取语音。需要填写下方配置。配置文档：http://api.fanyi.baidu.com/doc/21',
+          component: 'Switch'
+        },
+        {
+          field: 'baiduTranslateAppId',
+          label: '百度翻译应用ID',
+          component: 'Input'
+        },
+        {
+          field: 'baiduTranslateSecret',
+          label: '百度翻译密钥',
+          component: 'Input'
+        },
+        {
           field: 'azureTTSSpeaker',
           label: '语音模式默认角色（微软Azure）',
           bottomHelpMessage: '微软Azure语音模式下，未指定角色时使用的角色。若用户通过指令指定了角色，将忽略本设定',
@@ -557,6 +572,18 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
+          field: 'azureTTSEmotion',
+          label: 'Azure情绪多样化',
+          bottomHelpMessage: '打开结束对话以更新情绪配置。支持使用不同的说话风格回复，各个角色支持说话风格详情：https://speech.microsoft.com/portal/voicegallery',
+          component: 'Switch'
+        },
+        {
+          field: 'enhanceAzureTTSEmotion',
+          label: 'Azure情绪纠正',
+          bottomHelpMessage: '注意：bing模式开启此项后有概率增大触发抱歉的机率，且不要单独开启此项。当机器人未使用或使用了不支持的说话风格时，将在对话中提醒机器人。',
+          component: 'Switch'
+        },
+        {
           field: 'huggingFaceReverseProxy',
           label: '语音转换huggingface反代',
           bottomHelpMessage: '没有就空着',
@@ -704,7 +731,7 @@ export function supportGuoba () {
           label: 'Live2D模型',
           bottomHelpMessage: '选择Live2D使用的模型',
           component: 'Input'
-        },
+        }
       ],
       // 获取配置数据方法（用于前端填充显示数据）
       getConfigData () {

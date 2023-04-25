@@ -8,7 +8,8 @@ import fetch from 'node-fetch'
 import { mkdirs } from '../utils/common.js'
 import uploadRecord from '../utils/uploadRecord.js'
 import { makeWordcloud } from '../utils/wordcloud/wordcloud.js'
-
+import baiduTranslate, { transMap } from '../utils/baiduTranslate.js'
+import _ from 'lodash'
 let useSilk = false
 try {
   await import('node-silk')
@@ -20,7 +21,7 @@ export class Entertainment extends plugin {
   constructor (e) {
     super({
       name: 'ChatGPT-Plugin 娱乐小功能',
-      dsc: '让你的聊天更有趣！现已支持主动打招呼和表情合成小功能！',
+      dsc: '让你的聊天更有趣！现已支持主动打招呼、表情合成与群聊词云统计小功能！',
       event: 'message',
       priority: 500,
       rule: [
@@ -41,6 +42,10 @@ export class Entertainment extends plugin {
         {
           reg: '^#?(今日词云|群友在聊什么)$',
           fnc: 'wordcloud'
+        },
+        {
+          reg: '^#(?:寄批踢)?翻',
+          fnc: 'translate'
         }
       ]
     })
@@ -53,6 +58,30 @@ export class Entertainment extends plugin {
         fnc: this.sendRandomMessage.bind(this)
       }
     ]
+  }
+
+  async translate (e) {
+    const regExp = /(#(?:寄批踢)?翻(.))(.*)/
+    const msg = e.msg.trim()
+    const match = msg.match(regExp)
+    if (!(match[2] in transMap)) {
+      e.reply('输入格式有误或暂不支持该语言，' +
+          '\n当前支持：中、日、文(文言文)、英、俄、韩。', e.isGroup
+      )
+      return
+    }
+    if (_.isEmpty(Config.baiduTranslateAppId) || _.isEmpty(Config.baiduTranslateSecret)) {
+      this.reply('请检查翻译配置是否正确。')
+      return
+    }
+    const PendingText = match[3]
+    const translate = new baiduTranslate({
+      appid: Config.baiduTranslateAppId,
+      secret: Config.baiduTranslateSecret
+    })
+    const result = await translate(PendingText, match[2])
+    console.log(result, PendingText, match[2])
+    this.reply(result, e.isGroup)
   }
 
   async wordcloud (e) {

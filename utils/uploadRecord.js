@@ -8,6 +8,7 @@ import stream from 'stream'
 import crypto from 'crypto'
 import child_process from 'child_process'
 import { Config } from './config.js'
+import path from 'path'
 let module
 try {
   module = await import('oicq')
@@ -224,13 +225,20 @@ async function getPttBuffer (file, ffmpeg = 'ffmpeg') {
 }
 
 async function audioTrans (file, ffmpeg = 'ffmpeg') {
+  const tmpfile = path.join(TMP_DIR, uuid())
+  const cmd = IS_WIN
+    ? `${ffmpeg} -i "${file}" -f s16le -ac 1 -ar 24000 "${tmpfile}"`
+    : `exec ${ffmpeg} -i "${file}" -f s16le -ac 1 -ar 24000 "${tmpfile}"`
   return new Promise((resolve, reject) => {
-    const tmpfile = TMP_DIR + '/' + (0, uuid)();
-    (0, child_process.exec)(`${ffmpeg} -i "${file}" -f s16le -ac 1 -ar 24000 "${tmpfile}"`, async (error, stdout, stderr) => {
+    const options = IS_WIN ? { windowsHide: true, stdio: 'ignore' } : {} // 隐藏windows下调用ffmpeg的cmd弹窗
+    child_process.exec(cmd, options, async (error, stdout, stderr) => {
       try {
         resolve(pcm2slk(fs.readFileSync(tmpfile)))
-      } catch {
-        reject(new core.ApiRejection(ErrorCode.FFmpegPttTransError, '音频转码到pcm失败，请确认你的ffmpeg可以处理此转换'))
+      } catch (e) {
+        reject(new core.ApiRejection(
+          ErrorCode.FFmpegPttTransError,
+          '音频转码到pcm失败，请确认你的ffmpeg可以处理此转换'
+        ))
       } finally {
         fs.unlink(tmpfile, NOOP)
       }

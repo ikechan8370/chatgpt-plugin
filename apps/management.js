@@ -212,11 +212,27 @@ export class ChatgptManagement extends plugin {
         {
           reg: '^#chatgpt(对话|管理|娱乐|绘图|人物设定|聊天记录)?指令表(帮助)?',
           fnc: 'commandHelp'
+        },
+        {
+          reg: '^#语音切换',
+          fnc: 'ttsSwitch',
+          permission: 'master'
         }
       ]
     })
   }
 
+  async ttsSwitch (e) {
+    let regExp = /#语音切换(.*)/
+    let match = e.msg.match(regExp)
+    if (match[1] === 'vits' || match[1] === 'azure') {
+      Config.ttsMode = match[1] === 'vits' ? 'vits-uma-genshin-honkai' : 'azure'
+      await this.reply(`语音回复已切换至${Config.ttsMode}模式`)
+    } else {
+      await this.reply('暂不支持此模式，当前支持vits，azure。')
+    }
+    return 0
+  }
   async commandHelp (e) {
     if (!this.e.isMaster) { return this.reply('你没有权限') }
     if (e.msg.trim() === '#chatgpt指令表帮助') {

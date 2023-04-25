@@ -108,6 +108,11 @@ const defaultConfig = {
   azureTTSKey: '',
   azureTTSRegion: '',
   azureTTSSpeaker: 'zh-CN-XiaochenNeural',
+  baiduTranslateAppId: '',
+  baiduTranslateSecret: '',
+  azureTTSEmotion: false,
+  enhanceAzureTTSEmotion: false,
+  autoJapanese: false,
   version: 'v2.5.7'
 }
 const _path = process.cwd()
