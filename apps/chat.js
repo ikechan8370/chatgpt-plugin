@@ -33,6 +33,7 @@ import { SlackClaudeClient } from '../utils/slack/slackClient.js'
 import { ChatgptManagement } from './management.js'
 import { getPromptByName } from '../utils/prompts.js'
 import baiduTranslate from '../utils/baiduTranslate.js'
+import emojiStrip from 'emoji-strip'
 try {
   await import('keyv')
 } catch (err) {
@@ -365,10 +366,10 @@ export class chatgpt extends plugin {
   async endAllConversations (e) {
     let use = await redis.get('CHATGPT:USE') || 'api'
     let deleted = 0
-    await redis.del(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`)
     switch (use) {
       case 'claude': {
         let cs = await redis.keys('CHATGPT:SLACK_CONVERSATION:*')
+        let we = await redis.keys('CHATGPT:WRONG_EMOTION:*')
         for (let i = 0; i < cs.length; i++) {
           await redis.del(cs[i])
           if (Config.debug) {
@@ -376,16 +377,23 @@ export class chatgpt extends plugin {
           }
           deleted++
         }
+        for (const element of we) {
+          await redis.del(element)
+        }
         break
       }
       case 'bing': {
         let cs = await redis.keys('CHATGPT:CONVERSATIONS_BING:*')
+        let we = await redis.keys('CHATGPT:WRONG_EMOTION:*')
         for (let i = 0; i < cs.length; i++) {
           await redis.del(cs[i])
           if (Config.debug) {
             logger.info('delete bing conversation of qq: ' + cs[i])
           }
           deleted++
+        }
+        for (const element of we) {
+          await redis.del(element)
         }
         break
       }
@@ -524,6 +532,7 @@ export class chatgpt extends plugin {
       userSetting = JSON.parse(userSetting)
     }
     userSetting.useTTS = true
+    userSetting.usePicture = false
     await redis.set(`CHATGPT:USER:${e.sender.user_id}`, JSON.stringify(userSetting))
     await this.reply('ChatGPT回复已转换为语音模式')
   }
@@ -794,13 +803,23 @@ export class chatgpt extends plugin {
       }
     }
     const emotionFlag = await redis.get(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`)
-    switch (emotionFlag && Config.enhanceAzureTTSEmotion) {
-      case '1':
-        prompt += '(上一次回复没有添加情绪，请确保接下来的对话正确使用情绪和情绪格式，回复时忽略此内容。)'
-        break
-      case '2':
-        prompt += '(不要使用给出情绪范围的词和错误的情绪格式，请确保接下来的对话正确选择情绪，回复时忽略此内容。)'
-        break
+    let userReplySetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
+    userReplySetting = !userReplySetting
+      ? getDefaultReplySetting()
+      : JSON.parse(userReplySetting)
+    // 图片模式就不管了，降低抱歉概率
+    if (Config.ttsMode === 'azure' && Config.enhanceAzureTTSEmotion && userReplySetting.useTTS === true) {
+      switch (emotionFlag) {
+        case '1':
+          prompt += '(上一次回复没有添加情绪，请确保接下来的对话正确使用情绪和情绪格式，回复时忽略此内容。)'
+          break
+        case '2':
+          prompt += '(不要使用给出情绪范围的词和错误的情绪格式，请确保接下来的对话正确选择情绪，回复时忽略此内容。)'
+          break
+        case '3':
+          prompt += '(不要给出多个情绪[]项，请确保接下来的对话给且只给出一个正确情绪项，回复时忽略此内容。)'
+          break
+      }
     }
     logger.info(`chatgpt prompt: ${prompt}`)
     let previousConversation
@@ -912,37 +931,55 @@ export class chatgpt extends plugin {
         await e.reply('没有任何回复', true)
         return
       }
-      let emotionReg = /\[['`’‘]?(\w+)[`’‘']?[,，、]\s*([\d.]+)\]/
-      const emotionMatch = response.match(emotionReg)
-      let emotion, emotionDegree, ttsArr
-      if (emotionMatch) {
-        const [startIndex, endIndex] = [emotionMatch.index, emotionMatch.index + emotionMatch[0].length - 1]
-        if (response.length / 2 < endIndex) {
-          ttsArr = [response.substring(startIndex, response.length), response.substring(0, startIndex)]
-        } else {
-          ttsArr = [response.substring(0, endIndex + 1), response.substring(endIndex + 1, response.length)]
-        }
-        const match = ttsArr[0].match(emotionReg)
-        if (match) {
-          [emotion, emotionDegree] = [match[1], match[2]]
-          const configuration = AzureTTS.supportConfigurations.find(config => config.code === Config.azureTTSSpeaker)
-          const supportedEmotions = configuration.emotion && Object.keys(configuration.emotion)
-          if (supportedEmotions && supportedEmotions.includes(emotion)) {
-            // logger.info(`角色 ${Config.azureTTSSpeaker} 支持 ${emotion} 情绪.`)
-            await redis.set(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`, '0')
+      let emotion, emotionDegree
+      if (Config.ttsMode === 'azure' && (use === 'claude' || use === 'bing')) {
+        const emotionReg = /\[\s*['`’‘]?(\w+)[`’‘']?\s*[,，、]\s*([\d.]+)\s*\]/
+        const emotionTimes = response.match(/\[\s*['`’‘]?(\w+)[`’‘']?\s*[,，、]\s*([\d.]+)\s*\]/g)
+        const emotionMatch = response.match(emotionReg)
+        if (emotionMatch) {
+          const [startIndex, endIndex] = [
+            emotionMatch.index,
+            emotionMatch.index + emotionMatch[0].length - 1
+          ]
+          const ttsArr =
+              response.length / 2 < endIndex
+                ? [response.substring(startIndex), response.substring(0, startIndex)]
+                : [
+                    response.substring(0, endIndex + 1),
+                    response.substring(endIndex + 1)
+                  ]
+          const match = ttsArr[0].match(emotionReg)
+          response = ttsArr[1].replace(/\n/, '').trim()
+          if (match) {
+            [emotion, emotionDegree] = [match[1], match[2]]
+            const configuration = AzureTTS.supportConfigurations.find(
+              (config) => config.code === Config.azureTTSSpeaker
+            )
+            const supportedEmotions =
+                configuration.emotion && Object.keys(configuration.emotion)
+            if (supportedEmotions && supportedEmotions.includes(emotion)) {
+              // logger.warn(`角色 ${Config.azureTTSSpeaker} 支持 ${emotion} 情绪.`)
+              await redis.set(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`, '0')
+            } else {
+              // logger.warn(`角色 ${Config.azureTTSSpeaker} 不支持 ${emotion} 情绪.`)
+              await redis.set(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`, '2')
+            }
+            logger.info(`情绪: ${emotion}, 程度: ${emotionDegree}`)
+            if (emotionTimes.length > 1) {
+              // logger.warn('回复包含多个情绪项')
+              // 处理包含多个情绪项的情况，后续可以考虑实现单次回复多情绪的配置
+              response = response.replace(/\[\s*['`’‘]?(\w+)[`’‘']?\s*[,，、]\s*([\d.]+)\s*\]/g, '').trim()
+              await redis.set(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`, '3')
+            }
           } else {
-            // logger.info(`角色 ${Config.azureTTSSpeaker} 不支持 ${emotion} 情绪.`)
+            // 使用了正则匹配外的奇奇怪怪的符号
+            // logger.warn('情绪格式错误')
             await redis.set(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`, '2')
           }
-          logger.info(`情绪: ${emotion}, 程度: ${emotionDegree}`)
         } else {
-          // logger.info('情绪格式错误')
-          await redis.set(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`, '2')
+          // logger.warn('回复不包含情绪')
+          await redis.set(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`, '1')
         }
-        response = ttsArr[1].replace(/\n/, '')
-      } else {
-        // logger.info('回复不包含情绪')
-        await redis.set(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`, '1')
       }
       if (Config.sydneyMood) {
         let response = completeJSON(response)
@@ -1000,7 +1037,9 @@ export class chatgpt extends plugin {
         } else {
           ttsRegex = ''
         }
+
         ttsResponse = response.replace(ttsRegex, '')
+        ttsResponse = emojiStrip(ttsResponse)
         // 解决多行文本时，只会读第一行的问题
         ttsResponse = ttsResponse.replace(/\n/g, '，').replace(/[-:；;]/g, '，')
         if (Config.ttsMode === 'vits-uma-genshin-honkai' && Config.autoJapanese) {

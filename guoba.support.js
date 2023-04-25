@@ -574,13 +574,13 @@ export function supportGuoba () {
         {
           field: 'azureTTSEmotion',
           label: 'Azure情绪多样化',
-          bottomHelpMessage: '打开结束对话以更新情绪配置。支持使用不同的说话风格回复，各个角色支持说话风格详情：https://speech.microsoft.com/portal/voicegallery',
+          bottomHelpMessage: '打开后结束对话以更新情绪配置。支持使用不同的说话风格回复，各个角色支持说话风格详情：https://speech.microsoft.com/portal/voicegallery',
           component: 'Switch'
         },
         {
           field: 'enhanceAzureTTSEmotion',
           label: 'Azure情绪纠正',
-          bottomHelpMessage: '注意：bing模式开启此项后有概率增大触发抱歉的机率，且不要单独开启此项。当机器人未使用或使用了不支持的说话风格时，将在对话中提醒机器人。',
+          bottomHelpMessage: '当机器人未使用或使用了不支持的说话风格时，将在对话中提醒机器人。注意：bing模式开启此项后有概率增大触发抱歉的机率，且不要单独开启此项。',
           component: 'Switch'
         },
         {
