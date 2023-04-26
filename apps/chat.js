@@ -32,7 +32,7 @@ import uploadRecord from '../utils/uploadRecord.js'
 import { SlackClaudeClient } from '../utils/slack/slackClient.js'
 import { ChatgptManagement } from './management.js'
 import { getPromptByName } from '../utils/prompts.js'
-import baiduTranslate from '../utils/baiduTranslate.js'
+import Translate from '../utils/baiduTranslate.js'
 import emojiStrip from 'emoji-strip'
 try {
   await import('keyv')
@@ -1040,21 +1040,8 @@ export class chatgpt extends plugin {
 
         ttsResponse = response.replace(ttsRegex, '')
         ttsResponse = emojiStrip(ttsResponse)
-        // 解决多行文本时，只会读第一行的问题
-        ttsResponse = ttsResponse.replace(/\n/g, '，').replace(/[-:；;]/g, '，')
-        if (Config.ttsMode === 'vits-uma-genshin-honkai' && Config.autoJapanese) {
-          if (_.isEmpty(Config.baiduTranslateAppId) || _.isEmpty(Config.baiduTranslateSecret)) {
-            await this.reply('请检查翻译配置是否正确。')
-            return false
-          }
-          const translate = new baiduTranslate({
-            appid: Config.baiduTranslateAppId,
-            secret: Config.baiduTranslateSecret
-          })
-          await translate(ttsResponse, '日').then((res) => {
-            ttsResponse = res
-          })
-        }
+        // 处理多行只会读第一行的问题
+        ttsResponse = ttsResponse.replace(/[-:；;\n]/g, '，')
         // 先把文字回复发出去，避免过久等待合成语音
         if (Config.alsoSendText || ttsResponse.length > Config.ttsAutoFallbackThreshold) {
           if (Config.ttsMode === 'vits-uma-genshin-honkai' && ttsResponse.length > Config.ttsAutoFallbackThreshold) {
@@ -1070,6 +1057,22 @@ export class chatgpt extends plugin {
         }
         let wav
         if (Config.ttsMode === 'vits-uma-genshin-honkai' && Config.ttsSpace) {
+          if (Config.autoJapanese && (_.isEmpty(Config.baiduTranslateAppId) || _.isEmpty(Config.baiduTranslateSecret))) {
+            await this.reply('请检查翻译配置是否正确。')
+            return false
+          }
+          if (Config.autoJapanese) {
+            try {
+              const translate = new Translate({
+                appid: Config.baiduTranslateAppId,
+                secret: Config.baiduTranslateSecret
+              })
+              ttsResponse = await translate(ttsResponse, '日')
+            } catch (err) {
+              logger.error(err)
+              await this.reply(err.message + '\n将使用原始文本合成语音...')
+            }
+          }
           try {
             wav = await generateAudio(ttsResponse, speaker, '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）')
           } catch (err) {

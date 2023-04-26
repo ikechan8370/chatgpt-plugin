@@ -227,7 +227,7 @@ export class ChatgptManagement extends plugin {
     let match = e.msg.match(regExp)
     if (match[1] === 'vits' || match[1] === 'azure') {
       Config.ttsMode = match[1] === 'vits' ? 'vits-uma-genshin-honkai' : 'azure'
-      await this.reply(`语音回复已切换至${Config.ttsMode}模式`)
+      await this.reply(`语音回复已切换至${Config.ttsMode}模式，建议重新开始以获得更好的对话效果！`)
     } else {
       await this.reply('暂不支持此模式，当前支持vits，azure。')
     }
