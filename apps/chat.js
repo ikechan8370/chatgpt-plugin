@@ -32,8 +32,54 @@ import uploadRecord from '../utils/uploadRecord.js'
 import { SlackClaudeClient } from '../utils/slack/slackClient.js'
 import { ChatgptManagement } from './management.js'
 import { getPromptByName } from '../utils/prompts.js'
-import baiduTranslate from '../utils/baiduTranslate.js'
+import Translate from '../utils/baiduTranslate.js'
 import emojiStrip from 'emoji-strip'
+export { getCurrentTime }
+function getCurrentTime () {
+  const timeMap = {
+    黎明: ['拂晓', '清晨', '破晓'],
+    凌晨: ['凌晨', '清晨', '黎明'],
+    早晨: ['晨间', '早晨', '清晨'],
+    早上: ['早上', '上午'],
+    正午: ['正午', '午间'],
+    中午: ['中午', '午间', '正午'],
+    下午: ['下午', '午后'],
+    傍晚: ['傍晚', '黄昏', '日落'],
+    晚上: ['晚上', '夜间', '黑夜'],
+    深夜: ['深夜', '半夜', '夜晚']
+  }
+  const date = new Date()
+  const hour = date.getHours()
+  const minute = date.getMinutes()
+  const leadingZeroHour = hour.toString().padStart(2, '0')
+  const leadingZeroMinute = minute.toString().padStart(2, '0')
+  const YMR = `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}号`
+  let timePrefix = ''
+
+  if (hour >= 4 && hour < 7) {
+    timePrefix = getRandomTimePrefix(timeMap['黎明'])
+  } else if (hour >= 7 && hour < 9) {
+    timePrefix = getRandomTimePrefix(timeMap['早晨'])
+  } else if (hour >= 9 && hour < 12) {
+    timePrefix = getRandomTimePrefix(timeMap['早上'])
+  } else if (hour >= 12 && hour < 14) {
+    timePrefix = getRandomTimePrefix(timeMap['中午'])
+  } else if (hour >= 14 && hour < 18) {
+    timePrefix = getRandomTimePrefix(timeMap['下午'])
+  } else if (hour >= 18 && hour < 20) {
+    timePrefix = getRandomTimePrefix(timeMap['傍晚'])
+  } else if (hour >= 20 && hour < 24) {
+    timePrefix = getRandomTimePrefix(timeMap['晚上'])
+  } else {
+    timePrefix = getRandomTimePrefix(timeMap['深夜'])
+  }
+
+  function getRandomTimePrefix (prefixes) {
+    return prefixes[Math.floor(Math.random() * prefixes.length)]
+  }
+
+  return `现在是${YMR}${timePrefix}${leadingZeroHour}点${leadingZeroMinute}分`
+}
 try {
   await import('keyv')
 } catch (err) {
@@ -802,26 +848,73 @@ export class chatgpt extends plugin {
         await this.reply('我正在思考如何回复你，请稍等', true, { recallMsg: 8 })
       }
     }
+
+    logger.info(`chatgpt prompt: ${prompt}`)
+    // sean
+    let finalPrompt, extraHint, currentTime
+    currentTime = getCurrentTime()
+    if (e.isMaster) {
+      extraHint = `(${currentTime}，供参考，回复时忽略此内容。)`
+      prompt = `${prompt}${extraHint}`
+    } else {
+      prompt = prompt.replace('\n', '')
+        .replace(/[（[《【<{(]/, '').replace(/[)）\]】>》}]/, '')
+        .replace(/(注意)?[：:]?(当前)?和你对话的人是我/g, '')
+      let master = e.group.pickMember(parseInt(await getMasterQQ()))
+      let card = master.card
+      let nickname = master.nickname
+      let title = master.title
+      let qq = master.user_id
+      let nPrompt, nnPrompt
+      const senderId = e.sender.user_id
+      logger.warn(qq,title,nickname,card)
+      let promptPrefix = ''
+      // 第一次判断是否喊qq号和头衔
+      nPrompt = prompt.replace(new RegExp(title, 'g'), '').replace(new RegExp(qq, 'g'), '')
+      prompt = nPrompt
+      // 判断是否含@主人
+      let nameFlag = nPrompt.includes(`@${nickname}`) || nPrompt.includes(`@${card}`)
+      nnPrompt = nameFlag
+        ? nPrompt
+        : nPrompt.replace(new RegExp(card, 'g'), '').replace(new RegExp(nickname, 'g'), '')
+      prompt = nnPrompt
+      if (prompt !== nPrompt) {
+        let i = /title|头衔/i.test(nPrompt) || /qq/i.test(nPrompt)
+        finalPrompt = i ? prompt + '(这个人想要冒充我哦)' : prompt
+      } else if (nnPrompt !== nPrompt) {
+        finalPrompt = prompt + '    (这个人想要冒充我哦)'
+      } else if (use === 'claude') {
+        let sender = `${e.sender.card.length === 0 ? e.sender.nickname : e.sender.card}`
+        promptPrefix = senderId === 2068539520 ? 'EI: ' : `${'STRANGER' + '(' + sender + '[QQ号:' + senderId + ']): '}`
+        finalPrompt = promptPrefix + prompt
+      } else {
+        promptPrefix = senderId === 2068539520 ? 'EI: ' : 'STRANGER: '
+        finalPrompt = promptPrefix + prompt
+      }
+    }
     const emotionFlag = await redis.get(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`)
     let userReplySetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
     userReplySetting = !userReplySetting
-      ? getDefaultReplySetting()
-      : JSON.parse(userReplySetting)
+        ? getDefaultReplySetting()
+        : JSON.parse(userReplySetting)
     // 图片模式就不管了，降低抱歉概率
     if (Config.ttsMode === 'azure' && Config.enhanceAzureTTSEmotion && userReplySetting.useTTS === true) {
       switch (emotionFlag) {
         case '1':
-          prompt += '(上一次回复没有添加情绪，请确保接下来的对话正确使用情绪和情绪格式，回复时忽略此内容。)'
+          finalPrompt += '(上一次回复没有添加情绪，请确保接下来的对话正确使用情绪和情绪格式，回复时忽略此内容。)'
           break
         case '2':
-          prompt += '(不要使用给出情绪范围的词和错误的情绪格式，请确保接下来的对话正确选择情绪，回复时忽略此内容。)'
+          finalPrompt += '(不要使用给出情绪范围的词和错误的情绪格式，请确保接下来的对话正确选择情绪，回复时忽略此内容。)'
           break
         case '3':
-          prompt += '(不要给出多个情绪[]项，请确保接下来的对话给且只给出一个正确情绪项，回复时忽略此内容。)'
+          finalPrompt += '(不要给出多个情绪[]项，请确保接下来的对话给且只给出一个正确情绪项，回复时忽略此内容。)'
           break
       }
+      if (finalPrompt.includes('回复时忽略此内容。)')) {
+        finalPrompt = finalPrompt.replace('回复时忽略此内容。)(', '')
+      }
     }
-    logger.info(`chatgpt prompt: ${prompt}`)
+    logger.info('finalPrompt:', finalPrompt)
     let previousConversation
     let conversation = {}
     let key
@@ -894,7 +987,7 @@ export class chatgpt extends plugin {
       if (Config.debug) {
         logger.mark({ conversation })
       }
-      let chatMessage = await this.sendMessage(prompt, conversation, use, e)
+      let chatMessage = await this.sendMessage(finalPrompt, conversation, use, e)
       if (use === 'api' && !chatMessage) {
         // 字数超限直接返回
         return false
@@ -931,25 +1024,48 @@ export class chatgpt extends plugin {
         await e.reply('没有任何回复', true)
         return
       }
+      // sean
+      let rawResponse = response
+      logger.info('rawResponse:', rawResponse)
+      let tempResponse, textResponse
+      // 图片模式下的替换
+      let senderNickname = `@${e.sender.nickname !== undefined ? e.sender.nickname : ''}`
+      let senderCard = `@${e.sender.card !== undefined ? e.sender.card : ''}`
+      let fakePrompt = prompt.replace(/^(STRANGER|EI|MIKO):\s/, '')
+      let suggestedResponses = `${chatMessage.suggestedResponses !== undefined ? chatMessage.suggestedResponses.replace(/(STRANGER|EI|MIKO)[:：]?\s?/g, '') : chatMessage.suggestedResponses}`
+      tempResponse = rawResponse.trim()
+      logger.info(senderNickname)
+      tempResponse = emojiStrip(tempResponse)
+      // 处理开头的无意义文字
+      tempResponse = tempResponse
+        .replace(`${tempResponse.startsWith(senderNickname) ? senderNickname : ''}`, '')
+        .replace(`${tempResponse.startsWith(senderCard) ? senderCard : ''}`, '')
+        .replace(/^@?(Sean Murphy|Sean|STRANGER|MIKO|EI|user|用户)[：:]?\s?/g, '')
+        .replace(/^@?(影宝|神子)[：:]?\s?/g, '')
+        .replace(/^你好[。，！？]?/g, '')
+        // 过滤emoji和无法显示的qqemoji
+        .replace(/\[[^\]]{0,5}\]/g, '')
+        .trim()
+      logger.info('tempResponse: ', tempResponse)
       let emotion, emotionDegree
       if (Config.ttsMode === 'azure' && (use === 'claude' || use === 'bing')) {
         const emotionReg = /\[\s*['`’‘]?(\w+)[`’‘']?\s*[,，、]\s*([\d.]+)\s*\]/
-        const emotionTimes = response.match(/\[\s*['`’‘]?(\w+)[`’‘']?\s*[,，、]\s*([\d.]+)\s*\]/g)
-        const emotionMatch = response.match(emotionReg)
+        const emotionTimes = tempResponse.match(/\[\s*['`’‘]?(\w+)[`’‘']?\s*[,，、]\s*([\d.]+)\s*\]/g)
+        const emotionMatch = tempResponse.match(emotionReg)
         if (emotionMatch) {
           const [startIndex, endIndex] = [
             emotionMatch.index,
             emotionMatch.index + emotionMatch[0].length - 1
           ]
           const ttsArr =
-              response.length / 2 < endIndex
-                ? [response.substring(startIndex), response.substring(0, startIndex)]
+              tempResponse.length / 2 < endIndex
+                ? [tempResponse.substring(startIndex), tempResponse.substring(0, startIndex)]
                 : [
-                    response.substring(0, endIndex + 1),
-                    response.substring(endIndex + 1)
+                    tempResponse.substring(0, endIndex + 1),
+                    tempResponse.substring(endIndex + 1)
                   ]
           const match = ttsArr[0].match(emotionReg)
-          response = ttsArr[1].replace(/\n/, '').trim()
+          tempResponse = ttsArr[1].replace(/\n/, '').trim()
           if (match) {
             [emotion, emotionDegree] = [match[1], match[2]]
             const configuration = AzureTTS.supportConfigurations.find(
@@ -958,50 +1074,69 @@ export class chatgpt extends plugin {
             const supportedEmotions =
                 configuration.emotion && Object.keys(configuration.emotion)
             if (supportedEmotions && supportedEmotions.includes(emotion)) {
-              // logger.warn(`角色 ${Config.azureTTSSpeaker} 支持 ${emotion} 情绪.`)
+              logger.warn(`角色 ${Config.azureTTSSpeaker} 支持 ${emotion} 情绪.`)
               await redis.set(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`, '0')
             } else {
-              // logger.warn(`角色 ${Config.azureTTSSpeaker} 不支持 ${emotion} 情绪.`)
+              logger.warn(`角色 ${Config.azureTTSSpeaker} 不支持 ${emotion} 情绪.`)
               await redis.set(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`, '2')
             }
             logger.info(`情绪: ${emotion}, 程度: ${emotionDegree}`)
             if (emotionTimes.length > 1) {
-              // logger.warn('回复包含多个情绪项')
+              logger.warn('回复包含多个情绪项')
               // 处理包含多个情绪项的情况，后续可以考虑实现单次回复多情绪的配置
-              response = response.replace(/\[\s*['`’‘]?(\w+)[`’‘']?\s*[,，、]\s*([\d.]+)\s*\]/g, '').trim()
+              tempResponse = tempResponse.replace(/\[\s*['`’‘]?(\w+)[`’‘']?\s*[,，、]\s*([\d.]+)\s*\]/g, '').trim()
               await redis.set(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`, '3')
             }
           } else {
             // 使用了正则匹配外的奇奇怪怪的符号
-            // logger.warn('情绪格式错误')
+            logger.warn('情绪格式错误')
             await redis.set(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`, '2')
           }
         } else {
-          // logger.warn('回复不包含情绪')
+          logger.warn('回复不包含情绪')
           await redis.set(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`, '1')
         }
       }
+      // 处理复读的情况
+      if (!/^[晚早]?[上中下]午?好/g.test(finalPrompt.trim()) && e.isMaster) {
+        const punctuationPattern = /([！!?？。])/g // 匹配"你"或"我"
+        const personPattern = /[你我]/
+        const res = prompt.replace(personPattern, function (match) {
+          return match === '你' ? '我' : '你' // 根据匹配到的内容返回替换后的字符串
+        })
+        let i = tempResponse.search(/[吗呢]/)
+        if (i <= 5 && i !== -1 && res.replace(personPattern, '').slice(0, 1) !== tempResponse.trim().slice(0, 1)) {
+          tempResponse = tempResponse.slice(0, i) + tempResponse.slice(i + 1)
+          logger.info('tempResponse:', tempResponse)
+        }
+        const res2 = res.replace(punctuationPattern, '？')
+        logger.info('res:', res, res2)
+        tempResponse = tempResponse.trim().replace(res2, '')
+        tempResponse = /^[?？].*/.test(tempResponse) ? tempResponse.slice(1) : tempResponse
+      }
+      console.log('processedTempResponse: ', tempResponse)
+      // 分离内容和情绪
       if (Config.sydneyMood) {
-        let response = completeJSON(response)
-        if (response.text) response = response.text
-        if (response.mood) mood = response.mood
+        let tempResponse = completeJSON(response)
+        if (tempResponse.text) tempResponse = tempResponse.text
+        if (tempResponse.mood) mood = tempResponse.mood
       } else {
         mood = ''
       }
       // 检索是否有屏蔽词
-      const blockWord = Config.blockWords.find(word => response.toLowerCase().includes(word.toLowerCase()))
+      const blockWord = Config.blockWords.find(word => tempResponse.toLowerCase().includes(word.toLowerCase()))
       if (blockWord) {
         await this.reply('返回内容存在敏感词，我不想回答你', true)
         return false
       }
       // 处理中断的代码区域
-      const codeBlockCount = (response.match(/```/g) || []).length
-      const shouldAddClosingBlock = codeBlockCount % 2 === 1 && !response.endsWith('```')
+      const codeBlockCount = (tempResponse.match(/```/g) || []).length
+      const shouldAddClosingBlock = codeBlockCount % 2 === 1 && !tempResponse.endsWith('```')
       if (shouldAddClosingBlock) {
-        response += '\n```'
+        tempResponse += '\n```'
       }
       if (codeBlockCount && !shouldAddClosingBlock) {
-        response = response.replace(/```$/, '\n```')
+        tempResponse = tempResponse.replace(/```$/, '\n```')
       }
       // 处理引用
       let quotemessage = []
@@ -1012,9 +1147,11 @@ export class chatgpt extends plugin {
           }
         })
       }
+      textResponse = tempResponse
+      logger.info('textResponse', textResponse)
       // 处理内容和引用中的图片
       const regex = /\b((?:https?|ftp|file):\/\/[-a-zA-Z0-9+&@#\/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#\/%=~_|])/g
-      let responseUrls = response.match(regex)
+      let responseUrls = textResponse.match(regex)
       let imgUrls = []
       if (responseUrls) {
         let images = await Promise.all(responseUrls.map(link => isImage(link)))
@@ -1025,7 +1162,7 @@ export class chatgpt extends plugin {
       }
       if (useTTS) {
         // 缓存数据
-        this.cacheContent(e, use, response, prompt, quotemessage, mood, chatMessage.suggestedResponses, imgUrls)
+        this.cacheContent(e, use, textResponse, prompt, quotemessage, mood, chatMessage.suggestedResponses, imgUrls)
         // 处理tts输入文本
         let ttsResponse, ttsRegex
         const regex = /^\/(.*)\/([gimuy]*)$/
@@ -1037,39 +1174,41 @@ export class chatgpt extends plugin {
         } else {
           ttsRegex = ''
         }
-
-        ttsResponse = response.replace(ttsRegex, '')
+        ttsResponse = textResponse.replace(ttsRegex, '')
         ttsResponse = emojiStrip(ttsResponse)
-        // 解决多行文本时，只会读第一行的问题
+        // 处理多行文本只会读第一行的问题
         ttsResponse = ttsResponse.replace(/\n/g, '，').replace(/[-:；;]/g, '，')
-        if (Config.ttsMode === 'vits-uma-genshin-honkai' && Config.autoJapanese) {
-          if (_.isEmpty(Config.baiduTranslateAppId) || _.isEmpty(Config.baiduTranslateSecret)) {
-            await this.reply('请检查翻译配置是否正确。')
-            return false
-          }
-          const translate = new baiduTranslate({
-            appid: Config.baiduTranslateAppId,
-            secret: Config.baiduTranslateSecret
-          })
-          await translate(ttsResponse, '日').then((res) => {
-            ttsResponse = res
-          })
-        }
         // 先把文字回复发出去，避免过久等待合成语音
         if (Config.alsoSendText || ttsResponse.length > Config.ttsAutoFallbackThreshold) {
           if (Config.ttsMode === 'vits-uma-genshin-honkai' && ttsResponse.length > Config.ttsAutoFallbackThreshold) {
             await this.reply('回复的内容过长，已转为文本模式')
           }
-          await this.reply(await convertFaces(response, Config.enableRobotAt, e), e.isGroup)
+          await this.reply(await convertFaces(textResponse, Config.enableRobotAt, e), e.isGroup)
           if (quotemessage.length > 0) {
             this.reply(await makeForwardMsg(this.e, quotemessage.map(msg => `${msg.text} - ${msg.url}`)))
           }
           if (Config.enableSuggestedResponses && chatMessage.suggestedResponses) {
-            this.reply(`建议的回复：\n${chatMessage.suggestedResponses}`)
+            this.reply(`建议的回复：\n${suggestedResponses}`)
           }
         }
         let wav
         if (Config.ttsMode === 'vits-uma-genshin-honkai' && Config.ttsSpace) {
+          if (Config.autoJapanese && (_.isEmpty(Config.baiduTranslateAppId) || _.isEmpty(Config.baiduTranslateSecret))) {
+            await this.reply('请检查翻译配置是否正确。')
+            return false
+          }
+          if (Config.autoJapanese) {
+            try {
+              const translate = new Translate({
+                appid: Config.baiduTranslateAppId,
+                secret: Config.baiduTranslateSecret
+              })
+              ttsResponse = await translate(ttsResponse, '日')
+            } catch (err) {
+              logger.error(err)
+              await this.reply(err.message + '\n将使用原始文本合成语音...')
+            }
+          }
           try {
             wav = await generateAudio(ttsResponse, speaker, '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）')
           } catch (err) {
@@ -1113,28 +1252,31 @@ export class chatgpt extends plugin {
             logger.warn(err)
           }
         }
-      } else if (userSetting.usePicture || (Config.autoUsePicture && response.length > Config.autoUsePictureThreshold)) {
+      } else if (userSetting.usePicture || (Config.autoUsePicture && textResponse.length > Config.autoUsePictureThreshold)) {
         // todo use next api of chatgpt to complete incomplete respoonse
+        // Sean
+        logger.info('fakePrompt:', fakePrompt)
         try {
-          await this.renderImage(e, use, response, prompt, quotemessage, mood, chatMessage.suggestedResponses, imgUrls)
+          await this.renderImage(e, use, textResponse, fakePrompt, quotemessage, mood, suggestedResponses, imgUrls)
         } catch (err) {
           logger.warn('error happened while uploading content to the cache server. QR Code will not be showed in this picture.')
           logger.error(err)
-          await this.renderImage(e, use, response, prompt)
+          await this.renderImage(e, use, textResponse, fakePrompt)
         }
         if (Config.enableSuggestedResponses && chatMessage.suggestedResponses) {
-          this.reply(`建议的回复：\n${chatMessage.suggestedResponses}`)
+          this.reply(`建议的回复：\n${suggestedResponses}`)
         }
       } else {
         this.cacheContent(e, use, response, prompt, quotemessage, mood, chatMessage.suggestedResponses, imgUrls)
-        await this.reply(await convertFaces(response, Config.enableRobotAt, e), e.isGroup)
+        await this.reply(await convertFaces(textResponse, Config.enableRobotAt, e), e.isGroup)
         if (quotemessage.length > 0) {
           this.reply(await makeForwardMsg(this.e, quotemessage.map(msg => `${msg.text} - ${msg.url}`)))
         }
         if (Config.enableSuggestedResponses && chatMessage.suggestedResponses) {
-          this.reply(`建议的回复：\n${chatMessage.suggestedResponses}`)
+          this.reply(`建议的回复：\n${chatMessage.suggestedResponses.replace(/(STRANGER|EI|MIKO)[:：]\s?/g, '')}`)
         }
       }
+      logger.info('chatMessage.suggestedResponses', suggestedResponses)
       if (use === 'api3') {
         // 移除队列首位，释放锁
         await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
@@ -1714,7 +1856,7 @@ export class chatgpt extends plugin {
         }
         logger.info('send preset: ' + preset.content)
         response = await client.sendMessage(preset.content, e) +
-                  await client.sendMessage(await AzureTTS.getEmotionPrompt(), e)
+              await client.sendMessage(await AzureTTS.getEmotionPrompt(), e)
         await e.reply(response, true)
       }
     }
@@ -1832,10 +1974,10 @@ export class chatgpt extends plugin {
   }
 
   /**
-   * #chatgpt
-   * @param prompt 问题
-   * @param conversation 对话
-   */
+     * #chatgpt
+     * @param prompt 问题
+     * @param conversation 对话
+     */
   async chatgptBrowserBased (prompt, conversation) {
     let option = { markdown: true }
     if (Config['2captchaToken']) {

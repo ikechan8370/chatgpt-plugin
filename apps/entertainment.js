@@ -8,7 +8,7 @@ import fetch from 'node-fetch'
 import { mkdirs } from '../utils/common.js'
 import uploadRecord from '../utils/uploadRecord.js'
 import { makeWordcloud } from '../utils/wordcloud/wordcloud.js'
-import baiduTranslate, { transMap } from '../utils/baiduTranslate.js'
+import Translate, { transMap } from '../utils/baiduTranslate.js'
 import _ from 'lodash'
 let useSilk = false
 try {
@@ -61,26 +61,31 @@ export class Entertainment extends plugin {
   }
 
   async translate (e) {
+    if (_.isEmpty(Config.baiduTranslateAppId) || _.isEmpty(Config.baiduTranslateSecret)) {
+      this.reply('请检查翻译配置是否正确。')
+      return
+    }
     const regExp = /(#(?:寄批踢)?翻(.))(.*)/
     const msg = e.msg.trim()
     const match = msg.match(regExp)
+    let result = ''
     if (!(match[2] in transMap)) {
       e.reply('输入格式有误或暂不支持该语言，' +
           '\n当前支持：中、日、文(文言文)、英、俄、韩。', e.isGroup
       )
       return
     }
-    if (_.isEmpty(Config.baiduTranslateAppId) || _.isEmpty(Config.baiduTranslateSecret)) {
-      this.reply('请检查翻译配置是否正确。')
-      return
-    }
     const PendingText = match[3]
-    const translate = new baiduTranslate({
-      appid: Config.baiduTranslateAppId,
-      secret: Config.baiduTranslateSecret
-    })
-    const result = await translate(PendingText, match[2])
-    console.log(result, PendingText, match[2])
+    try {
+      const translate = new Translate({
+        appid: Config.baiduTranslateAppId,
+        secret: Config.baiduTranslateSecret
+      })
+      result = await translate(PendingText, match[2])
+    } catch (err) {
+      logger.error(err)
+      result = err.message
+    }
     this.reply(result, e.isGroup)
   }
 
