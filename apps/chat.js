@@ -58,10 +58,10 @@ if (Config.proxy) {
 const defaultPropmtPrefix = ', a large language model trained by OpenAI. You answer as concisely as possible for each response (e.g. don’t be verbose). It is very important that you answer as concisely as possible, so please remember this. If you are generating a list, do not have too many items. Keep the number of items short.'
 const newFetch = (url, options = {}) => {
   const defaultOptions = Config.proxy
-    ? {
+      ? {
         agent: proxy(Config.proxy)
       }
-    : {}
+      : {}
   const mergedOptions = {
     ...defaultOptions,
     ...options
@@ -651,7 +651,7 @@ export class chatgpt extends plugin {
    */
   async chatgpt (e) {
     if (!e.isMaster && e.isPrivate && !Config.enablePrivateChat) {
-      await this.reply('ChatGpt私聊通道已关闭。')
+      // await this.reply('ChatGpt私聊通道已关闭。')
       return false
     }
     if (e.isGroup) {
@@ -1765,19 +1765,19 @@ export class chatgpt extends plugin {
         Authorization: 'Bearer ' + Config.apiKey
       }
     })
-      .then(response => response.json())
-      .then(data => {
-        if (data.error) {
-          this.reply('获取失败：' + data.error.code)
-          return false
-        } else {
-          let total_granted = data.total_granted.toFixed(2)
-          let total_used = data.total_used.toFixed(2)
-          let total_available = data.total_available.toFixed(2)
-          let expires_at = new Date(data.grants.data[0].expires_at * 1000).toLocaleDateString().replace(/\//g, '-')
-          this.reply('总额度：$' + total_granted + '\n已经使用额度：$' + total_used + '\n当前剩余额度：$' + total_available + '\n到期日期(UTC)：' + expires_at)
-        }
-      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.error) {
+            this.reply('获取失败：' + data.error.code)
+            return false
+          } else {
+            let total_granted = data.total_granted.toFixed(2)
+            let total_used = data.total_used.toFixed(2)
+            let total_available = data.total_available.toFixed(2)
+            let expires_at = new Date(data.grants.data[0].expires_at * 1000).toLocaleDateString().replace(/\//g, '-')
+            this.reply('总额度：$' + total_granted + '\n已经使用额度：$' + total_used + '\n当前剩余额度：$' + total_available + '\n到期日期(UTC)：' + expires_at)
+          }
+        })
   }
 
   /**

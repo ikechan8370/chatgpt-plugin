@@ -706,6 +706,12 @@ export function supportGuoba () {
           component: 'InputNumber'
         },
         {
+          field: 'cloudRender',
+          label: '云渲染',
+          bottomHelpMessage: '是否使用云资源进行图片渲染，需要开放服务器端口后才能使用，不支持旧版本渲染',
+          component: 'Switch'
+        },
+        {
           field: 'chatViewBotName',
           label: 'Bot命名',
           bottomHelpMessage: '新渲染模式强制修改Bot命名',

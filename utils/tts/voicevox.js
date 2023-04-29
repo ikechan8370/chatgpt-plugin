@@ -220,6 +220,27 @@ const supportConfigurations = [
     speaker_uuid: '7d1e7ba7-f957-40e5-a3fc-da49f769ab65',
     styles: [{ name: 'ノーマル', id: 53 }],
     version: '0.14.2'
-  }]
+  }, {
+    supported_features: { permitted_synthesis_morphing: 'ALL' },
+    name: '春歌ナナ',
+    speaker_uuid: 'ba5d2428-f7e0-4c20-ac41-9dd56e9178b4',
+    styles: [{ name: 'ノーマル', id: 54 }],
+    version: '0.14.3'
+  },
+  {
+    supported_features: { permitted_synthesis_morphing: 'ALL' },
+    name: '猫使アル',
+    speaker_uuid: '00a5c10c-d3bd-459f-83fd-43180b521a44',
+    styles: [{ name: 'ノーマル', id: 55 }, { name: 'おちつき', id: 56 }, { name: 'うきうき', id: 57 }],
+    version: '0.14.3'
+  },
+  {
+    supported_features: { permitted_synthesis_morphing: 'ALL' },
+    name: '猫使ビィ',
+    speaker_uuid: 'c20a2254-0349-4470-9fc8-e5c0f8cf3404',
+    styles: [{ name: 'ノーマル', id: 58 }, { name: 'おちつき', id: 59 }, { name: '人見知り', id: 60 }],
+    version: '0.14.3'
+  }
+]
 
 export default { generateAudio, supportConfigurations }
