@@ -103,6 +103,7 @@ const defaultConfig = {
   slackClaudeGlobalPreset: '',
   slackClaudeSpecifiedChannel: '',
   cloudTranscode: 'https://silk.201666.xyz',
+  cloudRender: false,
   cloudMode: 'url',
   ttsMode: 'vits-uma-genshin-honkai', // or azure
   azureTTSKey: '',
