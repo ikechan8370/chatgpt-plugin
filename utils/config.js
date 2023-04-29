@@ -109,7 +109,10 @@ const defaultConfig = {
   azureTTSKey: '',
   azureTTSRegion: '',
   azureTTSSpeaker: 'zh-CN-XiaochenNeural',
-  version: 'v2.5.7'
+  voicevoxSpace: '',
+  voicevoxTTSSpeaker: '护士机器子T',
+  version: 'v2.5.7',
+
 }
 const _path = process.cwd()
 let config = {}
