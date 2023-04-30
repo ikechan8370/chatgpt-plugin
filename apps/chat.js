@@ -1042,7 +1042,7 @@ export class chatgpt extends plugin {
           wav = await VoiceVoxTTS.generateAudio(ttsResponse, {
             speaker
           })
-        } else {
+        } else if(!Config.ttsSpace && !Config.azureTTSKey && !Config.voicevoxSpace){
           await this.reply('你没有配置转语音API哦')
         }
         try {
