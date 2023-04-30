@@ -1027,7 +1027,7 @@ export class chatgpt extends plugin {
           }
         }
         let wav
-        if (Config.ttsMode === 'vits-uma-genshin-honkai' && Config.ttsSpace) {
+        if (Config.ttsMode === 'vits-uma-genshin-honkai' && Config.ttsSpace && ttsResponse.length <= Config.ttsAutoFallbackThreshold) {
           try {
             wav = await generateAudio(ttsResponse, speaker, '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）')
           } catch (err) {
