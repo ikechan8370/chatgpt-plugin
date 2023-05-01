@@ -1011,7 +1011,7 @@ export class chatgpt extends plugin {
           await redis.del(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
           return false
         }
-        if(response === 'Throttled: Request is throttled.') {
+        else if(response === 'Throttled: Request is throttled.') {
           this.reply('今日对话已达上限')
           return false
         }
@@ -1108,7 +1108,7 @@ export class chatgpt extends plugin {
           await redis.del(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
           return false
         }
-        if(response === 'Throttled: Request is throttled.') {
+        else if(response === 'Throttled: Request is throttled.') {
           this.reply('今日对话已达上限')
           return false
         }
