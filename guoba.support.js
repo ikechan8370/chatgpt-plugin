@@ -1,6 +1,7 @@
 import { Config } from './utils/config.js'
 import { speakers } from './utils/tts.js'
 import AzureTTS from './utils/tts/microsoft-azure.js'
+import VoiceVoxTTS from './utils/tts/voicevox.js'
 // 支持锅巴
 export function supportGuoba () {
   return {
@@ -87,6 +88,10 @@ export function supportGuoba () {
               {
                 label: '微软Azure',
                 value: 'azure'
+              },
+              {
+                label: 'VoiceVox',
+                value: 'voicevox'
               }
             ]
           }
@@ -98,6 +103,19 @@ export function supportGuoba () {
           component: 'Select',
           componentProps: {
             options: speakers.concat('随机').map(s => { return { label: s, value: s } })
+          }
+        },
+        {
+          field: 'voicevoxTTSSpeaker',
+          label: '语音模式默认角色（VoiceVox）',
+          bottomHelpMessage: 'VoiceVox语音模式下，未指定角色时使用的角色。若留空，将使用随机角色回复。若用户通过指令指定了角色，将忽略本设定',
+          component: 'Select',
+          componentProps: {
+            options: VoiceVoxTTS.supportConfigurations.map(item => {
+              return item.styles.map(style => {
+                return `${item.name}-${style.name}`
+              }).concat(item.name)
+            }).flat().concat('随机').map(s => { return { label: s, value: s } })
           }
         },
         {
@@ -561,6 +579,12 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
+          field: 'voicevoxSpace',
+          label: 'voicevox语音转换API地址',
+          bottomHelpMessage: '可使用https://2ndelement-voicevox.hf.space, 也可github搜索voicevox-engine自建',
+          component: 'Input'
+        },
+        {
           field: 'azureTTSKey',
           label: 'Azure语音服务密钥',
           component: 'Input'
@@ -707,6 +731,12 @@ export function supportGuoba () {
           label: '图片渲染宽度',
           bottomHelpMessage: '聊天页面渲染窗口的宽度',
           component: 'InputNumber'
+        },
+        {
+          field: 'cloudRender',
+          label: '云渲染',
+          bottomHelpMessage: '是否使用云资源进行图片渲染，需要开放服务器端口后才能使用，不支持旧版本渲染',
+          component: 'Switch'
         },
         {
           field: 'chatViewBotName',
