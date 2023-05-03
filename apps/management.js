@@ -1,13 +1,15 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import { Config } from '../utils/config.js'
 import { exec } from 'child_process'
-import { checkPnpm, formatDuration, parseDuration, getPublicIP, renderUrl } from '../utils/common.js'
+import { checkPnpm, formatDuration, parseDuration, getPublicIP, renderUrl, makeForwardMsg } from '../utils/common.js'
 import SydneyAIClient from '../utils/SydneyAIClient.js'
-import { convertSpeaker, speakers } from '../utils/tts.js'
+import { convertSpeaker, speakers as vitsRoleList } from '../utils/tts.js'
 import md5 from 'md5'
 import path from 'path'
 import fs from 'fs'
 import loader from '../../../lib/plugins/loader.js'
+import { supportConfigurations as voxRoleList } from '../utils/tts/voicevox.js'
+import { supportConfigurations as azureRoleList } from '../utils/tts/microsoft-azure.js'
 let isWhiteList = true
 export class ChatgptManagement extends plugin {
   constructor (e) {
@@ -217,22 +219,54 @@ export class ChatgptManagement extends plugin {
           reg: '^#语音切换',
           fnc: 'ttsSwitch',
           permission: 'master'
+        },
+        {
+          reg: '^#chatgpt角色列表$',
+          fnc: 'getTTSRoleList'
         }
       ]
     })
   }
 
+  async getTTSRoleList (e) {
+    if (e.isGroup) return
+    let ttsMode = Config.ttsMode
+    let roleList = []
+    let chunks = []
+    switch (ttsMode) {
+      case 'vits-uma-genshin-honkai':
+        roleList = '太多了！建议手动查看~'
+        // roleList = vitsRoleList.join('、')
+        break
+      case 'voicevox':
+        roleList = voxRoleList.map(item => item.name).join('、')
+        break
+      case 'azure':
+        roleList = azureRoleList.map(item => item.name).join('、')
+        break
+    }
+    if (roleList.length > 300) {
+      chunks = roleList.match(/[^、]+(?:、[^、]+){0,30}/g)
+      roleList = await makeForwardMsg(e, chunks, `${Config.ttsMode}角色列表`)
+    }
+    await this.reply(roleList)
+  }
   async ttsSwitch (e) {
     let regExp = /#语音切换(.*)/
-    let match = e.msg.match(regExp)
-    if (match[1] === 'vits' || match[1] === 'azure') {
-      Config.ttsMode = match[1] === 'vits' ? 'vits-uma-genshin-honkai' : 'azure'
+    let ttsMode = e.msg.match(regExp)[1]
+    if (['vits', 'azure', 'voicevox'].includes(ttsMode)) {
+      if (ttsMode === 'vits') {
+        Config.ttsMode = 'vits-uma-genshin-honkai'
+      } else {
+        Config.ttsMode = ttsMode
+      }
       await this.reply(`语音回复已切换至${Config.ttsMode}模式，建议重新开始以获得更好的对话效果！`)
     } else {
-      await this.reply('暂不支持此模式，当前支持vits，azure。')
+      await this.reply('暂不支持此模式，当前支持vits，azure，voicevox。')
     }
-    return 0
+    return false
   }
+
   async commandHelp (e) {
     if (!this.e.isMaster) { return this.reply('你没有权限') }
     if (e.msg.trim() === '#chatgpt指令表帮助') {
@@ -495,7 +529,7 @@ export class ChatgptManagement extends plugin {
             Config.defaultTTSRole = ''
           } else {
             const ttsRole = convertSpeaker(speaker)
-            if (speakers.includes(ttsRole)) {
+            if (vitsRoleList.includes(ttsRole)) {
               Config.defaultTTSRole = ttsRole
               replyMsg = `ChatGPT默认语音角色已被设置为“${ttsRole}”`
             } else {

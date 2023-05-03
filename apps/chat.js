@@ -863,7 +863,7 @@ export class chatgpt extends plugin {
       ? getDefaultReplySetting()
       : JSON.parse(userReplySetting)
     // 图片模式就不管了，降低抱歉概率
-    if (Config.ttsMode === 'azure' && Config.enhanceAzureTTSEmotion && userReplySetting.useTTS === true) {
+    if (Config.ttsMode === 'azure' && Config.enhanceAzureTTSEmotion && userReplySetting.useTTS === true && await AzureTTS.getEmotionPrompt(e)) {
       switch (emotionFlag) {
         case '1':
           prompt += '(上一次回复没有添加情绪，请确保接下来的对话正确使用情绪和情绪格式，回复时忽略此内容。)'
@@ -987,7 +987,8 @@ export class chatgpt extends plugin {
         return
       }
       let emotion, emotionDegree
-      if (Config.ttsMode === 'azure' && (use === 'claude' || use === 'bing')) {
+      if (Config.ttsMode === 'azure' && (use === 'claude' || use === 'bing') && await AzureTTS.getEmotionPrompt(e)) {
+        let ttsRoleAzure = userReplySetting.ttsRoleAzure
         const emotionReg = /\[\s*['`’‘]?(\w+)[`’‘']?\s*[,，、]\s*([\d.]+)\s*\]/
         const emotionTimes = response.match(/\[\s*['`’‘]?(\w+)[`’‘']?\s*[,，、]\s*([\d.]+)\s*\]/g)
         const emotionMatch = response.match(emotionReg)
@@ -1008,31 +1009,31 @@ export class chatgpt extends plugin {
           if (match) {
             [emotion, emotionDegree] = [match[1], match[2]]
             const configuration = AzureTTS.supportConfigurations.find(
-              (config) => config.code === Config.azureTTSSpeaker
+              (config) => config.code === ttsRoleAzure
             )
             const supportedEmotions =
                 configuration.emotion && Object.keys(configuration.emotion)
             if (supportedEmotions && supportedEmotions.includes(emotion)) {
-              // logger.warn(`角色 ${Config.azureTTSSpeaker} 支持 ${emotion} 情绪.`)
+              logger.warn(`角色 ${ttsRoleAzure} 支持 ${emotion} 情绪.`)
               await redis.set(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`, '0')
             } else {
-              // logger.warn(`角色 ${Config.azureTTSSpeaker} 不支持 ${emotion} 情绪.`)
+              logger.warn(`角色 ${ttsRoleAzure} 不支持 ${emotion} 情绪.`)
               await redis.set(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`, '2')
             }
             logger.info(`情绪: ${emotion}, 程度: ${emotionDegree}`)
             if (emotionTimes.length > 1) {
-              // logger.warn('回复包含多个情绪项')
+              logger.warn('回复包含多个情绪项')
               // 处理包含多个情绪项的情况，后续可以考虑实现单次回复多情绪的配置
               response = response.replace(/\[\s*['`’‘]?(\w+)[`’‘']?\s*[,，、]\s*([\d.]+)\s*\]/g, '').trim()
               await redis.set(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`, '3')
             }
           } else {
             // 使用了正则匹配外的奇奇怪怪的符号
-            // logger.warn('情绪格式错误')
+            logger.warn('情绪格式错误')
             await redis.set(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`, '2')
           }
         } else {
-          // logger.warn('回复不包含情绪')
+          logger.warn('回复不包含情绪')
           await redis.set(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`, '1')
         }
       }
@@ -1678,10 +1679,10 @@ export class chatgpt extends plugin {
           if (Config.slackClaudeEnableGlobalPreset && (useCast?.slack || Config.slackClaudeGlobalPreset)) {
             // 先发送设定
             let prompt = (useCast?.slack || Config.slackClaudeGlobalPreset)
-            logger.info('claudeFirst:', prompt)
             await client.sendMessage(prompt, e)
             // 处理可能由情绪参数导致的设定超限问题
-            await client.sendMessage(await AzureTTS.getEmotionPrompt(), e)
+            await client.sendMessage(await AzureTTS.getEmotionPrompt(e), e)
+            logger.info('claudeFirst:', prompt)
           }
         }
         let text = await client.sendMessage(prompt, e)
@@ -1775,7 +1776,7 @@ export class chatgpt extends plugin {
         }
         logger.info('send preset: ' + preset.content)
         response = await client.sendMessage(preset.content, e) +
-                  await client.sendMessage(await AzureTTS.getEmotionPrompt(), e)
+                  await client.sendMessage(await AzureTTS.getEmotionPrompt(e), e)
         await e.reply(response, true)
       }
     }

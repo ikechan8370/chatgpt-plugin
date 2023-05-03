@@ -162,7 +162,8 @@ export class help extends plugin {
 
     if (keyMap[use]) {
       if (Config.ttsMode === 'azure') {
-        Config[keyMap[use]] = prompt.content + '\n' + await AzureTTS.getEmotionPrompt()
+        Config[keyMap[use]] = prompt.content + '\n' + await AzureTTS.getEmotionPrompt(e)
+        logger.warn(Config[keyMap[use]])
       } else {
         Config[keyMap[use]] = prompt.content
       }
