@@ -1096,8 +1096,8 @@ export class chatgpt extends plugin {
         }
         ttsResponse = response.replace(ttsRegex, '')
         ttsResponse = emojiStrip(ttsResponse)
-        // 处理多行只会读第一行的问题
-        ttsResponse = ttsResponse.replace(/[-:；;\n]/g, '，')
+        // 处理多行回复有时候只会读第一行和azure语音会读出一些标点符号的问题
+        ttsResponse = ttsResponse.replace(/[-:_；*;\n]/g, '，')
         // 先把文字回复发出去，避免过久等待合成语音
         if (Config.alsoSendText || ttsResponse.length > Config.ttsAutoFallbackThreshold) {
           if (Config.ttsMode === 'vits-uma-genshin-honkai' && ttsResponse.length > Config.ttsAutoFallbackThreshold) {
