@@ -21,7 +21,7 @@ export class Entertainment extends plugin {
   constructor (e) {
     super({
       name: 'ChatGPT-Plugin 娱乐小功能',
-      dsc: '让你的聊天更有趣！现已支持主动打招呼、表情合成与群聊词云统计小功能！',
+      dsc: '让你的聊天更有趣！现已支持主动打招呼、表情合成、群聊词云统计与文本翻译小功能！',
       event: 'message',
       priority: 500,
       rule: [

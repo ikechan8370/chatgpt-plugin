@@ -216,7 +216,7 @@ export class ChatgptManagement extends plugin {
           fnc: 'commandHelp'
         },
         {
-          reg: '^#语音切换',
+          reg: '^#语音切换.*',
           fnc: 'ttsSwitch',
           permission: 'master'
         },
@@ -260,7 +260,7 @@ export class ChatgptManagement extends plugin {
       } else {
         Config.ttsMode = ttsMode
       }
-      await this.reply(`语音回复已切换至${Config.ttsMode}模式，建议重新开始以获得更好的对话效果！`)
+      await this.reply(`语音回复已切换至${Config.ttsMode}模式${Config.ttsMode === 'azure' ? '，建议重新开始对话以获得更好的对话效果！' : ''}`)
     } else {
       await this.reply('暂不支持此模式，当前支持vits，azure，voicevox。')
     }
@@ -317,8 +317,8 @@ export class ChatgptManagement extends plugin {
         prompts.push(generatePrompt(plugin, commands))
       }
     }
-
-    await this.reply(prompts.join('\n'))
+    let msg = await makeForwardMsg(e, prompts, e.msg.slice(1))
+    await this.reply(msg)
     return true
   }
 
