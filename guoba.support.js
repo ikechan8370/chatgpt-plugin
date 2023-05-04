@@ -106,19 +106,6 @@ export function supportGuoba () {
           }
         },
         {
-          field: 'voicevoxTTSSpeaker',
-          label: 'VoiceVox默认角色',
-          bottomHelpMessage: 'VoiceVox语音模式下，未指定角色时使用的角色。若留空，将使用随机角色回复。若用户通过指令指定了角色，将忽略本设定',
-          component: 'Select',
-          componentProps: {
-            options: VoiceVoxTTS.supportConfigurations.map(item => {
-              return item.styles.map(style => {
-                return `${item.name}-${style.name}`
-              }).concat(item.name)
-            }).flat().concat('随机').map(s => { return { label: s, value: s } })
-          }
-        },
-        {
           field: 'azureTTSSpeaker',
           label: 'Azure默认角色',
           bottomHelpMessage: '微软Azure语音模式下，未指定角色时使用的角色。若用户通过指令指定了角色，将忽略本设定',
@@ -130,6 +117,19 @@ export function supportGuoba () {
                 value: item.code
               }
             })
+          }
+        },
+        {
+          field: 'voicevoxTTSSpeaker',
+          label: 'VoiceVox默认角色',
+          bottomHelpMessage: 'VoiceVox语音模式下，未指定角色时使用的角色。若留空，将使用随机角色回复。若用户通过指令指定了角色，将忽略本设定',
+          component: 'Select',
+          componentProps: {
+            options: VoiceVoxTTS.supportConfigurations.map(item => {
+              return item.styles.map(style => {
+                return `${item.name}-${style.name}`
+              }).concat(item.name)
+            }).flat().concat('随机').map(s => { return { label: s, value: s } })
           }
         },
         {
@@ -158,8 +158,9 @@ export function supportGuoba () {
         {
           field: 'autoJapanese',
           label: 'vits模式日语输出',
-          bottomHelpMessage: '使用vits语音时，将机器人的文字回复翻译成日文后获取语音，配置后支持文字翻译功能，使用"#chatgpt翻译帮助"' +
-              '查看使用方法。需要填写下方配置，配置文档：http://api.fanyi.baidu.com/doc/21',
+          bottomHelpMessage: '使用vits语音时，将机器人的文字回复翻译成日文后获取语音。' +
+              '需要填写下方的翻译配置，配置文档：http://api.fanyi.baidu.com/doc/21 ' +
+              '填写配置后另外支持通过本插件使用文字翻译功能，发送"#chatgpt翻译帮助"查看使用方法。',
           component: 'Switch'
         },
         {
