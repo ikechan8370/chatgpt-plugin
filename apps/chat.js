@@ -1083,6 +1083,20 @@ export class chatgpt extends plugin {
       if (useTTS) {
         // 缓存数据
         this.cacheContent(e, use, response, prompt, quotemessage, mood, chatMessage.suggestedResponses, imgUrls)
+        if(response.match('New topic')) {
+          this.reply('当前对话超过上限，已重置对话', false, { at: true })
+          await redis.del(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
+          return false
+        }
+        else if(response === 'Unexpected message author.') {
+          this.reply('无法回答当前话题，已重置对话', false, { at: true })
+          await redis.del(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
+          return false
+        }
+        else if(response === 'Throttled: Request is throttled.') {
+          this.reply('今日对话已达上限')
+          return false
+        }
         // 处理tts输入文本
         let ttsResponse, ttsRegex
         const regex = /^\/(.*)\/([gimuy]*)$/
@@ -1112,7 +1126,7 @@ export class chatgpt extends plugin {
           }
         }
         let wav
-        if (Config.ttsMode === 'vits-uma-genshin-honkai' && Config.ttsSpace) {
+        if (Config.ttsMode === 'vits-uma-genshin-honkai' && Config.ttsSpace && ttsResponse.length <= Config.ttsAutoFallbackThreshold) {
           if (Config.autoJapanese && (_.isEmpty(Config.baiduTranslateAppId) || _.isEmpty(Config.baiduTranslateSecret))) {
             await this.reply('请检查翻译配置是否正确。')
             return false
@@ -1148,7 +1162,7 @@ export class chatgpt extends plugin {
           wav = await VoiceVoxTTS.generateAudio(ttsResponse, {
             speaker
           })
-        } else {
+        } else if(!Config.ttsSpace && !Config.azureTTSKey && !Config.voicevoxSpace){
           await this.reply('你没有配置转语音API哦')
         }
         try {
@@ -1190,6 +1204,20 @@ export class chatgpt extends plugin {
         }
       } else {
         this.cacheContent(e, use, response, prompt, quotemessage, mood, chatMessage.suggestedResponses, imgUrls)
+        if(response.match('New topic')) {
+          this.reply('当前对话超过上限，已重置对话', false, { at: true })
+          await redis.del(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
+          return false
+        }
+        else if(response === 'Unexpected message author.') {
+          this.reply('无法回答当前话题，已重置对话', false, { at: true })
+          await redis.del(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
+          return false
+        }
+        else if(response === 'Throttled: Request is throttled.') {
+          this.reply('今日对话已达上限')
+          return false
+        }
         await this.reply(await convertFaces(response, Config.enableRobotAt, e), e.isGroup)
         if (quotemessage.length > 0) {
           this.reply(await makeForwardMsg(this.e, quotemessage.map(msg => `${msg.text} - ${msg.url}`)))
