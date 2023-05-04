@@ -8,6 +8,7 @@ import { BingAIClient } from '@waylaidwanderer/chatgpt-api'
 import SydneyAIClient from '../utils/SydneyAIClient.js'
 import { PoeClient } from '../utils/poe/index.js'
 import AzureTTS from '../utils/tts/microsoft-azure.js'
+import VoiceVoxTTS from '../utils/tts/voicevox.js'
 import fs from 'fs'
 import {
   render, renderUrl,
@@ -57,10 +58,10 @@ if (Config.proxy) {
 const defaultPropmtPrefix = ', a large language model trained by OpenAI. You answer as concisely as possible for each response (e.g. don’t be verbose). It is very important that you answer as concisely as possible, so please remember this. If you are generating a list, do not have too many items. Keep the number of items short.'
 const newFetch = (url, options = {}) => {
   const defaultOptions = Config.proxy
-    ? {
+      ? {
         agent: proxy(Config.proxy)
       }
-    : {}
+      : {}
   const mergedOptions = {
     ...defaultOptions,
     ...options
@@ -510,9 +511,25 @@ export class chatgpt extends plugin {
   }
 
   async switch2Audio (e) {
-    if (!Config.ttsSpace) {
-      await this.reply('您没有配置VITS API，请前往锅巴面板进行配置')
-      return
+    switch (Config.ttsMode) {
+      case 'vits-uma-genshin-honkai':
+        if (!Config.ttsSpace) {
+          await this.reply('您没有配置VITS API，请前往锅巴面板进行配置')
+          return
+        }
+        break
+      case 'azure':
+        if (!Config.azureKey) {
+          await this.reply('您没有配置Azure Key，请前往锅巴面板进行配置')
+          return
+        }
+        break
+      case 'voicevox':
+        if (!Config.voicevoxSpace) {
+          await this.reply('您没有配置VoiceVox API，请前往锅巴面板进行配置')
+          return
+        }
+        break
     }
     let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
     if (!userSetting) {
@@ -536,8 +553,12 @@ export class chatgpt extends plugin {
         Config.ttsMode = 'azure'
         break
       }
+      case '3': {
+        Config.ttsMode = 'voicevox'
+        break
+      }
       default: {
-        await e.reply('请使用#chatgpt语音换源+数字进行换源。1为vits-uma-genshin-honkai，2为微软Azure')
+        await e.reply('请使用#chatgpt语音换源+数字进行换源。1为vits-uma-genshin-honkai，2为微软Azure，3为voicevox')
         return
       }
     }
@@ -551,6 +572,10 @@ export class chatgpt extends plugin {
     }
     if (Config.ttsMode === 'azure' && !Config.azureTTSKey) {
       await this.reply('您没有配置azure 密钥，请前往后台管理或锅巴面板进行配置')
+      return
+    }
+    if (Config.ttsMode === 'voicevox' && !Config.voicevoxSpace) {
+      await this.reply('您没有配置voicevox API，请前往后台管理或锅巴面板进行配置')
       return
     }
     const regex = /^#chatgpt设置(语音角色|角色语音|角色)/
@@ -590,6 +615,34 @@ export class chatgpt extends plugin {
         }
         break
       }
+      case 'voicevox': {
+        let regex = /^(.*?)-(.*)$/
+        let match = regex.exec(speaker)
+        let style = null
+        if (match) {
+          speaker = match[1]
+          style = match[2]
+        }
+        let chosen = VoiceVoxTTS.supportConfigurations.filter(s => s.name === speaker)
+        if (chosen.length === 0) {
+          await this.reply(`抱歉，没有"${speaker}"这个角色，目前voicevox模式下支持的角色有${VoiceVoxTTS.supportConfigurations.map(item => item.name).join('、')}`)
+          break
+        }
+        if (style && !chosen[0].styles.find(item => item.name === style)) {
+          await this.reply(`抱歉，"${speaker}"这个角色没有"${style}"这个风格，目前支持的风格有${chosen[0].styles.map(item => item.name).join('、')}`)
+          break
+        }
+        let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
+        if (!userSetting) {
+          userSetting = getDefaultReplySetting()
+        } else {
+          userSetting = JSON.parse(userSetting)
+        }
+        userSetting.ttsRoleVoiceVox = chosen[0].name + (style ? `-${style}` : '')
+        await redis.set(`CHATGPT:USER:${e.sender.user_id}`, JSON.stringify(userSetting))
+        await this.reply(`您的默认语音角色已被设置为”${userSetting.ttsRoleVoiceVox}“`)
+        break
+      }
     }
   }
 
@@ -598,7 +651,7 @@ export class chatgpt extends plugin {
    */
   async chatgpt (e) {
     if (!e.isMaster && e.isPrivate && !Config.enablePrivateChat) {
-      await this.reply('ChatGpt私聊通道已关闭。')
+      // await this.reply('ChatGpt私聊通道已关闭。')
       return false
     }
     if (e.isGroup) {
@@ -695,6 +748,8 @@ export class chatgpt extends plugin {
       speaker = convertSpeaker(userSetting.ttsRole || Config.defaultTTSRole)
     } else if (Config.ttsMode === 'azure') {
       speaker = userSetting.ttsRoleAzure || Config.azureTTSSpeaker
+    } else if (Config.ttsMode === 'voicevox') {
+      speaker = userSetting.ttsRoleVoiceVox || Config.voicevoxTTSSpeaker
     }
     // 每个回答可以指定
     let trySplit = prompt.split('回答：')
@@ -981,14 +1036,18 @@ export class chatgpt extends plugin {
           }
         } else if (Config.ttsMode === 'azure' && Config.azureTTSKey) {
           wav = await AzureTTS.generateAudio(ttsResponse, {
-            speaker: speaker
+            speaker
+          })
+        } else if (Config.ttsMode === 'voicevox' && Config.voicevoxSpace) {
+          wav = await VoiceVoxTTS.generateAudio(ttsResponse, {
+            speaker
           })
         } else {
           await this.reply('你没有配置转语音API哦')
         }
         try {
           try {
-            let sendable = await uploadRecord(wav, Config.ttsMode === 'azure')
+            let sendable = await uploadRecord(wav, Config.ttsMode)
             if (sendable) {
               await e.reply(sendable)
             } else {
@@ -1706,19 +1765,19 @@ export class chatgpt extends plugin {
         Authorization: 'Bearer ' + Config.apiKey
       }
     })
-      .then(response => response.json())
-      .then(data => {
-        if (data.error) {
-          this.reply('获取失败：' + data.error.code)
-          return false
-        } else {
-          let total_granted = data.total_granted.toFixed(2)
-          let total_used = data.total_used.toFixed(2)
-          let total_available = data.total_available.toFixed(2)
-          let expires_at = new Date(data.grants.data[0].expires_at * 1000).toLocaleDateString().replace(/\//g, '-')
-          this.reply('总额度：$' + total_granted + '\n已经使用额度：$' + total_used + '\n当前剩余额度：$' + total_available + '\n到期日期(UTC)：' + expires_at)
-        }
-      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.error) {
+            this.reply('获取失败：' + data.error.code)
+            return false
+          } else {
+            let total_granted = data.total_granted.toFixed(2)
+            let total_used = data.total_used.toFixed(2)
+            let total_available = data.total_available.toFixed(2)
+            let expires_at = new Date(data.grants.data[0].expires_at * 1000).toLocaleDateString().replace(/\//g, '-')
+            this.reply('总额度：$' + total_granted + '\n已经使用额度：$' + total_used + '\n当前剩余额度：$' + total_available + '\n到期日期(UTC)：' + expires_at)
+          }
+        })
   }
 
   /**

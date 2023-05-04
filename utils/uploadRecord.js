@@ -8,6 +8,7 @@ import stream from 'stream'
 import crypto from 'crypto'
 import child_process from 'child_process'
 import { Config } from './config.js'
+import {mkdirs} from "./common.js";
 let module
 try {
   module = await import('oicq')
@@ -37,13 +38,29 @@ if (module) {
 // import { pcm2slk } from 'node-silk'
 let errors = {}
 
-async function uploadRecord (recordUrl, forceFile) {
+async function uploadRecord (recordUrl, ttsMode = 'vits-uma-genshin-honkai') {
+  let recordType = 'url'
+  let tmpFile = ''
+  if (ttsMode === 'azure') {
+    recordType = 'file'
+  } else if (ttsMode === 'voicevox') {
+    recordType = 'buffer'
+    tmpFile = `data/chatgpt/tts/tmp/${crypto.randomUUID()}.wav`
+  }
   let result
   if (pcm2slk) {
     result = await getPttBuffer(recordUrl, Bot.config.ffmpeg_path)
   } else if (Config.cloudTranscode) {
+    logger.mark('使用云转码silk进行高清语音生成:"')
     try {
-      if (forceFile || Config.cloudMode === 'file') {
+      if (recordType === 'buffer') {
+        // save it as a file
+        mkdirs('data/chatgpt/tts/tmp')
+        fs.writeFileSync(tmpFile, recordUrl)
+        recordType = 'file'
+        recordUrl = tmpFile
+      }
+      if (recordType === 'file' || Config.cloudMode === 'file') {
         const formData = new FormData()
         let buffer
         if (!recordUrl.startsWith('http')) {
@@ -103,7 +120,7 @@ async function uploadRecord (recordUrl, forceFile) {
   if (!result.buffer) {
     return false
   }
-  let buf = result.buffer
+  let buf = Buffer.from(result.buffer)
   const hash = md5(buf)
   const codec = String(buf.slice(0, 7)).includes('SILK') ? 1 : 0
   const body = core.pb.encode({
@@ -165,6 +182,13 @@ async function uploadRecord (recordUrl, forceFile) {
     18: fid,
     30: Buffer.from([8, 0, 40, 0, 56, 0])
   })
+  if (tmpFile) {
+    try {
+      fs.unlinkSync(tmpFile)
+    } catch (err) {
+      logger.warn('fail to delete temp audio file')
+    }
+  }
   return {
     type: 'record', file: 'protobuf://' + Buffer.from(b).toString('base64')
   }
