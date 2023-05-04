@@ -623,7 +623,8 @@ export class chatgpt extends plugin {
           userSetting.ttsRoleAzure = chosen[0].code
           await redis.set(`CHATGPT:USER:${e.sender.user_id}`, JSON.stringify(userSetting))
           // Config.azureTTSSpeaker = chosen[0].code
-          await this.reply(`您的默认语音角色已被设置为”${speaker}-${chosen[0].gender}-${chosen[0].languageDetail}“`)
+          const supportEmotion = AzureTTS.supportConfigurations.find(config => config.name === speaker)?.emotion
+          await this.reply(`您的默认语音角色已被设置为 ${speaker}-${chosen[0].gender}-${chosen[0].languageDetail} ${supportEmotion && Config.azureTTSEmotion ? '，此角色支持多情绪配置，建议重新使用设定并结束对话以获得最佳体验！' : ''}`)
         }
         break
       }
