@@ -8,7 +8,8 @@ import fetch from 'node-fetch'
 import { mkdirs } from '../utils/common.js'
 import uploadRecord from '../utils/uploadRecord.js'
 import { makeWordcloud } from '../utils/wordcloud/wordcloud.js'
-
+import Translate, { transMap } from '../utils/baiduTranslate.js'
+import _ from 'lodash'
 let useSilk = false
 try {
   await import('node-silk')
@@ -20,7 +21,7 @@ export class Entertainment extends plugin {
   constructor (e) {
     super({
       name: 'ChatGPT-Plugin 娱乐小功能',
-      dsc: '让你的聊天更有趣！现已支持主动打招呼和表情合成小功能！',
+      dsc: '让你的聊天更有趣！现已支持主动打招呼、表情合成、群聊词云统计与文本翻译小功能！',
       event: 'message',
       priority: 500,
       rule: [
@@ -41,6 +42,10 @@ export class Entertainment extends plugin {
         {
           reg: '^#?(今日词云|群友在聊什么)$',
           fnc: 'wordcloud'
+        },
+        {
+          reg: '^#((?:寄批踢)?翻.*|chatgpt翻译帮助)',
+          fnc: 'translate'
         }
       ]
     })
@@ -53,6 +58,42 @@ export class Entertainment extends plugin {
         fnc: this.sendRandomMessage.bind(this)
       }
     ]
+  }
+
+  async translate (e) {
+    if (e.msg.trim() === '#chatgpt翻译帮助') {
+      await this.reply('支持中、日、文(文言文)、英、俄、韩语言之间的文本翻译功能，"寄批踢"为可选前缀' +
+          '\n示例：1. #寄批踢翻英 你好' +
+          '\t2. #翻中 你好' +
+          '\t3. #寄批踢翻文 hello')
+      return
+    }
+    if (_.isEmpty(Config.baiduTranslateAppId) || _.isEmpty(Config.baiduTranslateSecret)) {
+      this.reply('请检查翻译配置是否正确。')
+      return
+    }
+    const regExp = /(#(?:寄批踢)?翻(.))(.*)/
+    const msg = e.msg.trim()
+    const match = msg.match(regExp)
+    let result = ''
+    if (!(match[2] in transMap)) {
+      e.reply('输入格式有误或暂不支持该语言，' +
+          '\n当前支持：中、日、文(文言文)、英、俄、韩。', e.isGroup
+      )
+      return
+    }
+    const PendingText = match[3]
+    try {
+      const translate = new Translate({
+        appid: Config.baiduTranslateAppId,
+        secret: Config.baiduTranslateSecret
+      })
+      result = await translate(PendingText, match[2])
+    } catch (err) {
+      logger.error(err)
+      result = err.message
+    }
+    await this.reply(result, e.isGroup)
   }
 
   async wordcloud (e) {
@@ -248,8 +289,8 @@ export class Entertainment extends plugin {
           return false
         } else {
           Config.initiativeChatGroups = Config.initiativeChatGroups
-            .filter(group => group.trim() !== '')
-            .concat(validGroups)
+              .filter(group => group.trim() !== '')
+              .concat(validGroups)
         }
         if (typeof paramArray[2] === 'undefined' && typeof paramArray[3] === 'undefined') {
           replyMsg = `已更新打招呼设置：\n${!e.isGroup ? '群号：' + Config.initiativeChatGroups.join(', ') + '\n' : ''}间隔时间：${Config.helloInterval}小时\n触发概率：${Config.helloProbability}%`

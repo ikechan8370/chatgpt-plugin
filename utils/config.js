@@ -111,8 +111,12 @@ const defaultConfig = {
   azureTTSSpeaker: 'zh-CN-XiaochenNeural',
   voicevoxSpace: '',
   voicevoxTTSSpeaker: '护士机器子T',
+  baiduTranslateAppId: '',
+  baiduTranslateSecret: '',
+  azureTTSEmotion: false,
+  enhanceAzureTTSEmotion: false,
+  autoJapanese: false,
   version: 'v2.5.8'
-
 }
 const _path = process.cwd()
 let config = {}
