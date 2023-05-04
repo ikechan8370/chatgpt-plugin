@@ -229,24 +229,22 @@ export class ChatgptManagement extends plugin {
   }
 
   async getTTSRoleList (e) {
-    if (e.isGroup) return
     let ttsMode = Config.ttsMode
     let roleList = []
-    let chunks = []
-    switch (ttsMode) {
-      case 'vits-uma-genshin-honkai':
-        roleList = '太多了！建议手动查看~'
-        // roleList = vitsRoleList.join('、')
-        break
-      case 'voicevox':
-        roleList = voxRoleList.map(item => item.name).join('、')
-        break
-      case 'azure':
-        roleList = azureRoleList.map(item => item.name).join('、')
-        break
+    if (ttsMode === 'vits-uma-genshin-honkai') {
+      const [firstHalf, secondHalf] = [vitsRoleList.slice(0, Math.floor(vitsRoleList.length / 2)).join('、'), vitsRoleList.slice(Math.floor(vitsRoleList.length / 2)).join('、')]
+      const [chunk1, chunk2] = [firstHalf.match(/[^、]+(?:、[^、]+){0,30}/g), secondHalf.match(/[^、]+(?:、[^、]+){0,30}/g)]
+      const list = [await makeForwardMsg(e, chunk1, `${Config.ttsMode}角色列表1`), await makeForwardMsg(e, chunk2, `${Config.ttsMode}角色列表2`)]
+      roleList = await makeForwardMsg(e, list, `${Config.ttsMode}角色列表`)
+      await this.reply(roleList)
+      return
+    } else if (ttsMode === 'voicevox') {
+      roleList = voxRoleList.map(item => item.name).join('、')
+    } else if (ttsMode === 'azure') {
+      roleList = azureRoleList.map(item => item.name).join('、')
     }
     if (roleList.length > 300) {
-      chunks = roleList.match(/[^、]+(?:、[^、]+){0,30}/g)
+      let chunks = roleList.match(/[^、]+(?:、[^、]+){0,30}/g)
       roleList = await makeForwardMsg(e, chunks, `${Config.ttsMode}角色列表`)
     }
     await this.reply(roleList)
