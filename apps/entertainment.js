@@ -44,7 +44,7 @@ export class Entertainment extends plugin {
           fnc: 'wordcloud'
         },
         {
-          reg: '^#(?:寄批踢)?翻',
+          reg: '^#((?:寄批踢)?翻.*|chatgpt翻译帮助)',
           fnc: 'translate'
         }
       ]
@@ -61,6 +61,13 @@ export class Entertainment extends plugin {
   }
 
   async translate (e) {
+    if (e.msg.trim() === '#chatgpt翻译帮助') {
+      await this.reply('支持中、日、文(文言文)、英、俄、韩语言之间的文本翻译功能，"寄批踢"为可选前缀' +
+          '\n示例：1. #寄批踢翻英 你好' +
+          '\t2. #翻中 你好' +
+          '\t3. #寄批踢翻文 hello')
+      return
+    }
     if (_.isEmpty(Config.baiduTranslateAppId) || _.isEmpty(Config.baiduTranslateSecret)) {
       this.reply('请检查翻译配置是否正确。')
       return
