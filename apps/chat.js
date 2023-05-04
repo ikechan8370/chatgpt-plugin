@@ -530,7 +530,7 @@ export class chatgpt extends plugin {
         }
         break
       case 'azure':
-        if (!Config.azureKey) {
+        if (!Config.azureTTSKey) {
           await this.reply('您没有配置Azure Key，请前往锅巴面板进行配置')
           return
         }

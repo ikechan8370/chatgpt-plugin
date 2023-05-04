@@ -1,7 +1,15 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import { Config } from '../utils/config.js'
 import { exec } from 'child_process'
-import { checkPnpm, formatDuration, parseDuration, getPublicIP, renderUrl, makeForwardMsg } from '../utils/common.js'
+import {
+  checkPnpm,
+  formatDuration,
+  parseDuration,
+  getPublicIP,
+  renderUrl,
+  makeForwardMsg,
+  getDefaultReplySetting
+} from '../utils/common.js'
 import SydneyAIClient from '../utils/SydneyAIClient.js'
 import { convertSpeaker, speakers as vitsRoleList } from '../utils/tts.js'
 import md5 from 'md5'
@@ -229,6 +237,11 @@ export class ChatgptManagement extends plugin {
   }
 
   async getTTSRoleList (e) {
+    let userReplySetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
+    userReplySetting = !userReplySetting
+      ? getDefaultReplySetting()
+      : JSON.parse(userReplySetting)
+    if (!userReplySetting.useTTS) return
     let ttsMode = Config.ttsMode
     let roleList = []
     if (ttsMode === 'vits-uma-genshin-honkai') {
