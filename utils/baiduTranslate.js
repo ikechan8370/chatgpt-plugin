@@ -39,7 +39,7 @@ function Translate (config) {
   this.translate = async (value, ...params) => {
     let result = ''
     let from = 'auto'
-    let to = 'en'
+    let to = 'zh'
 
     if (params.length === 1) {
       to = transMap[params[0]] || to
@@ -83,7 +83,7 @@ function Translate (config) {
       appid,
       salt,
       from: params.from || 'auto',
-      to: params.to || 'en'
+      to: params.to || 'zh'
     }
 
     const fanyiApi = this.createUrl(this.baiduApi, fromData)
@@ -121,7 +121,7 @@ function Translate (config) {
       .join('\n')
     const res = reqData ? await this.requestApi(reqData, parames) : []
     for (let key in value) {
-      if (typeof value[key] === 'string') {
+      if (res[index]?.dst) {
         obj[key] = res[index].dst
         index++
       }

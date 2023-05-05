@@ -10,6 +10,7 @@ import { PoeClient } from '../utils/poe/index.js'
 import AzureTTS from '../utils/tts/microsoft-azure.js'
 import VoiceVoxTTS from '../utils/tts/voicevox.js'
 import fs from 'fs'
+import { getImg, getImageOcrText } from './entertainment.js'
 import {
   render, renderUrl,
   getMessageById,
@@ -60,10 +61,10 @@ if (Config.proxy) {
 const defaultPropmtPrefix = ', a large language model trained by OpenAI. You answer as concisely as possible for each response (e.g. don’t be verbose). It is very important that you answer as concisely as possible, so please remember this. If you are generating a list, do not have too many items. Keep the number of items short.'
 const newFetch = (url, options = {}) => {
   const defaultOptions = Config.proxy
-      ? {
+    ? {
         agent: proxy(Config.proxy)
       }
-      : {}
+    : {}
   const mergedOptions = {
     ...defaultOptions,
     ...options
@@ -771,40 +772,12 @@ export class chatgpt extends plugin {
       speaker = convertSpeaker(trySplit[0])
       prompt = trySplit[1]
     }
-    if (Config.imgOcr) {
-      // 取消息中的图片、at的头像、回复的图片，放入e.img
-      if (e.at && !e.source) {
-        e.img = [`https://q1.qlogo.cn/g?b=qq&s=0&nk=${e.at}`]
-      }
-      if (e.source) {
-        let reply
-        if (e.isGroup) {
-          reply = (await e.group.getChatHistory(e.source.seq, 1)).pop()?.message
-        } else {
-          reply = (await e.friend.getChatHistory(e.source.time, 1)).pop()?.message
+    if (Config.imgOcr && await getImg(e)) {
+      let imgOcrText = await getImageOcrText(e)
+      if (imgOcrText) {
+        for (let imgOcrTextKey in imgOcrText) {
+          prompt += imgOcrText[imgOcrTextKey]
         }
-        if (reply) {
-          for (let val of reply) {
-            if (val.type === 'image') {
-              e.img = [val.url]
-              break
-            }
-          }
-        }
-      }
-      if (e.img) {
-        try {
-          let imgOcrText = ''
-          for (let i in e.img) {
-            const imgorc = await Bot.imageOcr(e.img[i])
-            // if (imgorc.language === 'zh' || imgorc.language === 'en') {
-            for (let text of imgorc.wordslist) {
-              imgOcrText += `${text.words}  \n`
-            }
-            // }
-          }
-          prompt = imgOcrText + prompt
-        } catch (err) { }
       }
     }
     // 检索是否有屏蔽词
@@ -1095,6 +1068,7 @@ export class chatgpt extends plugin {
           ttsRegex = ''
         }
         ttsResponse = response.replace(ttsRegex, '')
+        // 处理azure语音会读出emoji的问题
         ttsResponse = emojiStrip(ttsResponse)
         // 处理多行回复有时候只会读第一行和azure语音会读出一些标点符号的问题
         ttsResponse = ttsResponse.replace(/[-:_；*;\n]/g, '，')
@@ -1879,19 +1853,19 @@ export class chatgpt extends plugin {
         Authorization: 'Bearer ' + Config.apiKey
       }
     })
-        .then(response => response.json())
-        .then(data => {
-          if (data.error) {
-            this.reply('获取失败：' + data.error.code)
-            return false
-          } else {
-            let total_granted = data.total_granted.toFixed(2)
-            let total_used = data.total_used.toFixed(2)
-            let total_available = data.total_available.toFixed(2)
-            let expires_at = new Date(data.grants.data[0].expires_at * 1000).toLocaleDateString().replace(/\//g, '-')
-            this.reply('总额度：$' + total_granted + '\n已经使用额度：$' + total_used + '\n当前剩余额度：$' + total_available + '\n到期日期(UTC)：' + expires_at)
-          }
-        })
+      .then(response => response.json())
+      .then(data => {
+        if (data.error) {
+          this.reply('获取失败：' + data.error.code)
+          return false
+        } else {
+          let total_granted = data.total_granted.toFixed(2)
+          let total_used = data.total_used.toFixed(2)
+          let total_available = data.total_available.toFixed(2)
+          let expires_at = new Date(data.grants.data[0].expires_at * 1000).toLocaleDateString().replace(/\//g, '-')
+          this.reply('总额度：$' + total_granted + '\n已经使用额度：$' + total_used + '\n当前剩余额度：$' + total_available + '\n到期日期(UTC)：' + expires_at)
+        }
+      })
   }
 
   /**
