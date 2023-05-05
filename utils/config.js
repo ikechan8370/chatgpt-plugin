@@ -26,6 +26,7 @@ const defaultConfig = {
   cacheEntry: false,
   apiKey: '',
   openAiBaseUrl: defaultOpenAIReverseProxy,
+  OpenAiPlatformRefreshToken: '',
   openAiForceUseReverse: false,
   drawCD: 30,
   model: '',

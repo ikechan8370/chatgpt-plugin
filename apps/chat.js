@@ -60,10 +60,10 @@ if (Config.proxy) {
 const defaultPropmtPrefix = ', a large language model trained by OpenAI. You answer as concisely as possible for each response (e.g. don’t be verbose). It is very important that you answer as concisely as possible, so please remember this. If you are generating a list, do not have too many items. Keep the number of items short.'
 const newFetch = (url, options = {}) => {
   const defaultOptions = Config.proxy
-      ? {
+    ? {
         agent: proxy(Config.proxy)
       }
-      : {}
+    : {}
   const mergedOptions = {
     ...defaultOptions,
     ...options
@@ -108,6 +108,12 @@ export class chatgpt extends plugin {
           reg: '^#bing[sS]*',
           /** 执行方法 */
           fnc: 'bing'
+        },
+        {
+          /** 命令正则匹配 */
+          reg: '^#claude[sS]*',
+          /** 执行方法 */
+          fnc: 'claude'
         },
         {
           /** 命令正则匹配 */
@@ -690,7 +696,7 @@ export class chatgpt extends plugin {
       }
       if (e.user_id == Bot.uin) return false
       prompt = e.raw_message.trim()
-      if (e.isGroup) {
+      if (e.isGroup && typeof this.e.group.getMemberMap === 'function') {
         let mm = await this.e.group.getMemberMap()
         let me = mm.get(Bot.uin)
         let card = me.card
@@ -1083,17 +1089,15 @@ export class chatgpt extends plugin {
       if (useTTS) {
         // 缓存数据
         this.cacheContent(e, use, response, prompt, quotemessage, mood, chatMessage.suggestedResponses, imgUrls)
-        if(response.match('New topic')) {
+        if (response.match('New topic')) {
           this.reply('当前对话超过上限，已重置对话', false, { at: true })
           await redis.del(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
           return false
-        }
-        else if(response === 'Unexpected message author.') {
+        } else if (response === 'Unexpected message author.') {
           this.reply('无法回答当前话题，已重置对话', false, { at: true })
           await redis.del(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
           return false
-        }
-        else if(response === 'Throttled: Request is throttled.') {
+        } else if (response === 'Throttled: Request is throttled.') {
           this.reply('今日对话已达上限')
           return false
         }
@@ -1162,7 +1166,7 @@ export class chatgpt extends plugin {
           wav = await VoiceVoxTTS.generateAudio(ttsResponse, {
             speaker
           })
-        } else if(!Config.ttsSpace && !Config.azureTTSKey && !Config.voicevoxSpace){
+        } else if (!Config.ttsSpace && !Config.azureTTSKey && !Config.voicevoxSpace) {
           await this.reply('你没有配置转语音API哦')
         }
         try {
@@ -1204,17 +1208,15 @@ export class chatgpt extends plugin {
         }
       } else {
         this.cacheContent(e, use, response, prompt, quotemessage, mood, chatMessage.suggestedResponses, imgUrls)
-        if(response.match('New topic')) {
+        if (response.match('New topic')) {
           this.reply('当前对话超过上限，已重置对话', false, { at: true })
           await redis.del(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
           return false
-        }
-        else if(response === 'Unexpected message author.') {
+        } else if (response === 'Unexpected message author.') {
           this.reply('无法回答当前话题，已重置对话', false, { at: true })
           await redis.del(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
           return false
-        }
-        else if(response === 'Throttled: Request is throttled.') {
+        } else if (response === 'Throttled: Request is throttled.') {
           this.reply('今日对话已达上限')
           return false
         }
@@ -1335,6 +1337,29 @@ export class chatgpt extends plugin {
       return false
     }
     await this.abstractChat(e, prompt, 'bing')
+    return true
+  }
+
+  async claude (e) {
+    if (!e.isMaster && e.isPrivate && !Config.enablePrivateChat) {
+      // await this.reply('ChatGpt私聊通道已关闭。')
+      return false
+    }
+    if (!Config.allowOtherMode) {
+      return false
+    }
+    let ats = e.message.filter(m => m.type === 'at')
+    if (!e.atme && ats.length > 0) {
+      if (Config.debug) {
+        logger.mark('艾特别人了，没艾特我，忽略#bing')
+      }
+      return false
+    }
+    let prompt = _.replace(e.raw_message.trimStart(), '#claude', '').trim()
+    if (prompt.length === 0) {
+      return false
+    }
+    await this.abstractChat(e, prompt, 'claude')
     return true
   }
 
@@ -1503,7 +1528,7 @@ export class chatgpt extends plugin {
               bingAIClient.opts.userToken = bingToken
               bingAIClient.opts.cookies = cookies
               opt.messageType = allThrottled ? 'Chat' : 'SearchQuery'
-              if (Config.enableGroupContext && e.isGroup) {
+              if (Config.enableGroupContext && e.isGroup && typeof e.group.getMemberMap === 'function') {
                 try {
                   opt.groupId = e.group_id
                   opt.qq = e.sender.user_id
@@ -1515,7 +1540,7 @@ export class chatgpt extends plugin {
                     opt.masterName = e.group.pickMember(parseInt(master)).card || e.group.pickMember(parseInt(master)).nickname
                   }
                   if (master && !e.group) {
-                    opt.masterName = Bot.getFriendList().get(master)?.nickname
+                    opt.masterName = Bot.getFriendList().get(parseInt(master))?.nickname
                   }
                   let latestChat = await e.group.getChatHistory(0, 1)
                   let seq = latestChat[0].seq
@@ -1895,31 +1920,94 @@ export class chatgpt extends plugin {
   }
 
   async totalAvailable (e) {
-    if (!Config.apiKey) {
-      this.reply('当前未配置OpenAI API key，请在锅巴面板或插件配置文件config/config.js中配置。若使用免费的API3则无需关心计费。')
+    if (!Config.OpenAiPlatformRefreshToken) {
+      this.reply('当前未配置platform.openai.com的刷新token，请发送【#chatgpt设置后台刷新token】进行配置。温馨提示：仅API模式需要关心计费。')
       return false
     }
-    // 查询OpenAI API剩余试用额度
-    newFetch(`${Config.openAiBaseUrl}/dashboard/billing/credit_grants`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: 'Bearer ' + Config.apiKey
-      }
+    let refreshRes = await newFetch('https://auth0.openai.com/oauth/token', {
+      method: 'POST',
+      body: JSON.stringify({
+        refresh_token: Config.OpenAiPlatformRefreshToken,
+        client_id: 'DRivsnm2Mu42T3KOpqdtwB3NYviHYzwD',
+        grant_type: 'refresh_token'
+      })
     })
+    if (refreshRes.status !== 200) {
+      let errMsg = await refreshRes.json()
+      if (errMsg.error === 'access_denied') {
+        await e.reply('刷新令牌失效，请重新发送【#chatgpt设置后台刷新token】进行配置。建议退出platform.openai.com重新登录后再获取和配置')
+      } else {
+        await e.reply('获取失败')
+      }
+      return false
+    }
+    let newToken = await refreshRes.json()
+    // eslint-disable-next-line camelcase
+    const { access_token, refresh_token } = newToken
+    // eslint-disable-next-line camelcase
+    Config.OpenAiPlatformRefreshToken = refresh_token
+    let res = await newFetch(`${Config.openAiBaseUrl}/dashboard/onboarding/login`, {
+      headers: {
+        // eslint-disable-next-line camelcase
+        Authorization: `Bearer ${access_token}`
+      },
+      method: 'POST'
+    })
+    if (res.status === 200) {
+      let authRes = await res.json()
+      let sess = authRes.user.session.sensitive_id
+      newFetch(`${Config.openAiBaseUrl}/dashboard/billing/credit_grants`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + sess
+        }
+      })
         .then(response => response.json())
         .then(data => {
           if (data.error) {
             this.reply('获取失败：' + data.error.code)
             return false
           } else {
+            // eslint-disable-next-line camelcase
             let total_granted = data.total_granted.toFixed(2)
+            // eslint-disable-next-line camelcase
             let total_used = data.total_used.toFixed(2)
+            // eslint-disable-next-line camelcase
             let total_available = data.total_available.toFixed(2)
+            // eslint-disable-next-line camelcase
             let expires_at = new Date(data.grants.data[0].expires_at * 1000).toLocaleDateString().replace(/\//g, '-')
+            // eslint-disable-next-line camelcase
             this.reply('总额度：$' + total_granted + '\n已经使用额度：$' + total_used + '\n当前剩余额度：$' + total_available + '\n到期日期(UTC)：' + expires_at)
           }
         })
+    } else {
+      let errorMsg = await res.text()
+      logger.error(errorMsg)
+      await e.reply(errorMsg)
+    }
+
+    // // 查询OpenAI API剩余试用额度
+    // newFetch(`${Config.openAiBaseUrl}/dashboard/billing/credit_grants`, {
+    //   method: 'GET',
+    //   headers: {
+    //     'Content-Type': 'application/json',
+    //     Authorization: 'Bearer ' + Config.apiKey
+    //   }
+    // })
+    //   .then(response => response.json())
+    //   .then(data => {
+    //     if (data.error) {
+    //       this.reply('获取失败：' + data.error.code)
+    //       return false
+    //     } else {
+    //       let total_granted = data.total_granted.toFixed(2)
+    //       let total_used = data.total_used.toFixed(2)
+    //       let total_available = data.total_available.toFixed(2)
+    //       let expires_at = new Date(data.grants.data[0].expires_at * 1000).toLocaleDateString().replace(/\//g, '-')
+    //       this.reply('总额度：$' + total_granted + '\n已经使用额度：$' + total_used + '\n当前剩余额度：$' + total_available + '\n到期日期(UTC)：' + expires_at)
+    //     }
+    //   })
   }
 
   /**
