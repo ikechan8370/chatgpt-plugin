@@ -772,7 +772,7 @@ export class chatgpt extends plugin {
       speaker = convertSpeaker(trySplit[0])
       prompt = trySplit[1]
     }
-    const [isImg] = await getImg(e)
+    const isImg = await getImg(e)
     if (Config.imgOcr && !!isImg) {
       let imgOcrText = await getImageOcrText(e)
       if (imgOcrText) {

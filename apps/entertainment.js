@@ -21,7 +21,7 @@ export class Entertainment extends plugin {
   constructor(e) {
     super({
       name: 'ChatGPT-Plugin 娱乐小功能',
-      dsc: '让你的聊天更有趣！现已支持主动打招呼、表情合成、群聊词云统计与文本翻译小功能！',
+      dsc: '让你的聊天更有趣！现已支持主动打招呼、表情合成、群聊词云统计、文本翻译与图片ocr小功能！',
       event: 'message',
       priority: 500,
       rule: [
@@ -70,11 +70,7 @@ export class Entertainment extends plugin {
       await this.reply('没有识别到文字', e.isGroup)
       return false
     }
-    if (imgOcrText.length > 1 || imgOcrText[0].length > 200) {
-      replyMsg = await makeForwardMsg(e, imgOcrText, 'OCR结果')
-    } else {
-      replyMsg = imgOcrText[0]
-    }
+    replyMsg = await makeForwardMsg(e, imgOcrText, 'OCR结果')
     await this.reply(replyMsg, e.isGroup)
   }
   async translate(e) {
@@ -96,8 +92,7 @@ export class Entertainment extends plugin {
     const match = msg.match(regExp)
     let languageCode = match[2] === '译' ? '中' : match[2]
     let pendingText = match[3]
-    const [img, imgLength] = await getImg(e)
-    const isImg = !!img
+    const isImg = !!(await getImg(e))
     let result = ''
     if (!(languageCode in transMap)) {
       e.reply('输入格式有误或暂不支持该语言，' +
@@ -105,12 +100,8 @@ export class Entertainment extends plugin {
       )
       return false
     }
-    if (isImg && imgLength !== 1) {
-      await this.reply('一张一张来吧~', e.isGroup)
-      return false
-    }
     // 引用回复
-    if (e.source?.message) {
+    if (e.source) {
       if (pendingText.length) {
         await this.reply('引用模式下不需要添加翻译文本，请直接使用“#翻中|英|日...”', e.isGroup)
         return false
@@ -125,24 +116,45 @@ export class Entertainment extends plugin {
       }
     }
     if (isImg) {
+      // 获取结果数组
       let imgOcrText = await getImageOcrText(e)
       function getChineseCharRatio (str) {
         const chineseCharReg = /[\u4e00-\u9fa5，。！？、；：“”‘’（）【】\n]/g
         const chineseCharCount = (str.match(chineseCharReg) || []).length
         return chineseCharCount / str.length
       }
-      if (getChineseCharRatio(imgOcrText.join()) > 0.5 && languageCode === '中') {
+      // 判断中文占比
+      if (!!imgOcrText && getChineseCharRatio(imgOcrText.join()) > 0.5 && languageCode === '中') {
         await this.reply('给你一下信不信！(☄⊙ω⊙)☄', e.isGroup)
         return true
       }
       if (imgOcrText) {
+        if (imgOcrText.length > 1) {
+          await this.reply('一张一张来吧~|・ω・`）♪', e.isGroup)
+          return true
+        }
+        // 只取第一张的结果
         pendingText = imgOcrText[0]
       } else {
-        await this.reply('没有识别到有效文字', e.isGroup)
+        await this.reply('没有识别到有效文字(・-・*)', e.isGroup)
         return false
       }
     } else {
-      pendingText = e.source?.message ? e.source.message : pendingText
+      if (e.source) {
+        let previousMsg
+        if (e.isGroup) {
+          previousMsg = (await e.group.getChatHistory(e.source.seq, 1)).pop()?.message
+        } else {
+          previousMsg = (await e.friend.getChatHistory(e.source.time, 1)).pop()?.message
+        }
+        // logger.warn(previousMsg)
+        if (previousMsg[0]?.type === 'text') {
+          pendingText = previousMsg[0].text
+        } else {
+          await this.reply('这是什么怪东西!(⊙ˍ⊙)', e.isGroup)
+          return false
+        }
+      }
     }
     try {
       const translate = new Translate({
@@ -399,36 +411,35 @@ export async function getImg (e) {
       reply = (await e.friend.getChatHistory(e.source.time, 1)).pop()?.message
     }
     if (reply) {
+      let i = []
       for (let val of reply) {
         if (val.type === 'image') {
-          e.img = [val.url]
-          break
+          i.push(val.url)
         }
       }
+      e.img = i
     }
   }
-  return [e.img, e.img?.length]
+  return e.img
 }
 export async function getImageOcrText (e) {
-  const [img] = await getImg(e)
-  // logger.warn(img)
+  const img = await getImg(e)
   if (img) {
     try {
       let resultArr = []
       let eachImgRes = ''
       for (let i in img) {
         const imgOCR = await Bot.imageOcr(img[i])
-        // if (imgorc.language === 'zh' || imgorc.language === 'en') {
         for (let text of imgOCR.wordslist) {
           eachImgRes += (`${text?.words}  \n`)
         }
         if (eachImgRes) resultArr.push(eachImgRes)
         eachImgRes = ''
-        // }
       }
+      // logger.warn('resultArr', resultArr)
       return resultArr
     } catch (err) {
-      logger.error(err)
+      // logger.error(err)
     }
   } else {
     return 0
