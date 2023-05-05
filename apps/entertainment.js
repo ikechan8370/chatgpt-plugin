@@ -91,11 +91,11 @@ export class Entertainment extends plugin {
       this.reply('先填写翻译配置吧~')
       return
     }
-    const regExp = /(#(?:寄批踢)?翻(.))(.*)/
+    const regExp = /(#(?:寄批踢)?翻(.))([\s\S]*)/
     const msg = e.msg.trim()
     const match = msg.match(regExp)
     let languageCode = match[2] === '译' ? '中' : match[2]
-    let PendingText = match[3]
+    let pendingText = match[3]
     const [img, imgLength] = await getImg(e)
     const isImg = !!img
     let result = ''
@@ -111,15 +111,15 @@ export class Entertainment extends plugin {
     }
     // 引用回复
     if (e.source?.message) {
-      if (PendingText.length) {
+      if (pendingText.length) {
         await this.reply('引用模式下不需要添加翻译文本，请直接使用“#翻中|英|日...”', e.isGroup)
         return false
       }
     } else {
-      if (isImg && PendingText) {
+      if (isImg && pendingText) {
         await this.reply('检测到图片输入，已自动忽略输入文本...', e.isGroup)
       }
-      if (!PendingText && !isImg) {
+      if (!pendingText && !isImg) {
         await this.reply('请输入有效文本', e.isGroup)
         return false
       }
@@ -131,38 +131,48 @@ export class Entertainment extends plugin {
         const chineseCharCount = (str.match(chineseCharReg) || []).length
         return chineseCharCount / str.length
       }
-      if (getChineseCharRatio(imgOcrText.join()) > 0.7 && languageCode === '中') {
+      if (getChineseCharRatio(imgOcrText.join()) > 0.5 && languageCode === '中') {
         await this.reply('给你一下信不信！(☄⊙ω⊙)☄', e.isGroup)
         return true
       }
       if (imgOcrText) {
-        PendingText += imgOcrText[0]
+        pendingText = imgOcrText[0]
       } else {
         await this.reply('没有识别到有效文字', e.isGroup)
         return false
       }
     } else {
-      PendingText = e.source?.message ? e.source.message : PendingText
+      pendingText = e.source?.message ? e.source.message : pendingText
     }
     try {
       const translate = new Translate({
         appid: Config.baiduTranslateAppId,
         secret: Config.baiduTranslateSecret
       })
-      // 处理直接传入多行文本会导致结果不完整的问题
-      result = await translate(PendingText.split('\n').filter(item => item), languageCode)
+      if (/\n/.test(pendingText)) {
+        // 传入文本数组，处理直接传入多行文本会导致结果不完整的问题
+        result = await translate(pendingText.split('\n').filter(item => item), languageCode)
+      } else if (/\r/.test(pendingText)) { // 垃圾windows
+        result = await translate(pendingText.split('\r').filter(item => item), languageCode)
+      } else {
+        result = await translate(pendingText, languageCode)
+      }
     } catch (err) {
-      logger.error(err)
-      result = err.message.split()
+      result = err.message
     }
-    const totalLength = result.reduce((acc, cur) => acc + cur.length, 0)
+    const totalLength = Array.isArray(result)
+      ? result.reduce((acc, cur) => acc + cur.length, 0)
+      : result.length
     if (totalLength > 200) {
-      result = await makeForwardMsg(e, result.join('').split(), '翻译结果')
+      result = Array.isArray(result)
+        ? await makeForwardMsg(e, result.join('\n').split(), '翻译结果')
+        : await makeForwardMsg(e, result.split(), '翻译结果')
       await this.reply(result, e.isGroup)
       return true
     }
     // 保持原格式输出
-    await this.reply(result.join('\n'), e.isGroup)
+    result = Array.isArray(result) ? result.join('\n') : result
+    await this.reply(result, e.isGroup)
   }
 
   async wordcloud(e) {
