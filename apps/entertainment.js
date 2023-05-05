@@ -5,7 +5,7 @@ import { generateAudio } from '../utils/tts.js'
 import fs from 'fs'
 import { emojiRegex, googleRequestUrl } from '../utils/emoj/index.js'
 import fetch from 'node-fetch'
-import {makeForwardMsg, mkdirs} from '../utils/common.js'
+import { makeForwardMsg, mkdirs } from '../utils/common.js'
 import uploadRecord from '../utils/uploadRecord.js'
 import { makeWordcloud } from '../utils/wordcloud/wordcloud.js'
 import Translate, { transMap } from '../utils/baiduTranslate.js'
@@ -44,7 +44,7 @@ export class Entertainment extends plugin {
           fnc: 'wordcloud'
         },
         {
-          reg: '^#((?:寄批踢)?翻.*|chatgpt翻译帮助)',
+          reg: '^#((?:(寄批踢|gpt|GPT))翻.*|chatgpt翻译帮助)',
           fnc: 'translate'
         },
         {
@@ -66,6 +66,7 @@ export class Entertainment extends plugin {
   async ocr (e) {
     let replyMsg
     let imgOcrText = await getImageOcrText(e)
+    logger.error(imgOcrText)
     if (!imgOcrText) {
       await this.reply('没有识别到文字', e.isGroup)
       return false
@@ -87,7 +88,7 @@ export class Entertainment extends plugin {
       this.reply('先填写翻译配置吧~')
       return
     }
-    const regExp = /(#(?:寄批踢)?翻(.))([\s\S]*)/
+    const regExp = /^#(?:(寄批踢|gpt|GPT))翻(.)([\s\S]*)/
     const msg = e.msg.trim()
     const match = msg.match(regExp)
     let languageCode = match[2] === '译' ? '中' : match[2]
@@ -436,12 +437,13 @@ export async function getImageOcrText (e) {
         if (eachImgRes) resultArr.push(eachImgRes)
         eachImgRes = ''
       }
-      // logger.warn('resultArr', resultArr)
+      logger.warn('resultArr', resultArr)
       return resultArr
     } catch (err) {
+      return false
       // logger.error(err)
     }
   } else {
-    return 0
+    return false
   }
 }
