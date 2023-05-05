@@ -1930,7 +1930,10 @@ export class chatgpt extends plugin {
         refresh_token: Config.OpenAiPlatformRefreshToken,
         client_id: 'DRivsnm2Mu42T3KOpqdtwB3NYviHYzwD',
         grant_type: 'refresh_token'
-      })
+      }),
+      headers: {
+        'Content-Type': 'application/json'
+      }
     })
     if (refreshRes.status !== 200) {
       let errMsg = await refreshRes.json()
