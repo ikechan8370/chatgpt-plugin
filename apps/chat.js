@@ -958,6 +958,8 @@ export class chatgpt extends plugin {
         }
       }
       let response = chatMessage?.text
+      // 过滤无法正常显示的emoji
+      if (use === 'claude') response = response.replace(/:[a-zA-Z_]+:/g, '')
       let mood = 'blandness'
       if (!response) {
         await e.reply('没有任何回复', true)
