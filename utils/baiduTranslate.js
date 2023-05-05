@@ -121,9 +121,11 @@ function Translate (config) {
       .join('\n')
     const res = reqData ? await this.requestApi(reqData, parames) : []
     for (let key in value) {
-      if (res[index]?.dst) {
-        obj[key] = res[index].dst
-        index++
+      if (typeof value[key] === 'string') {
+        if (res[index]?.dst) {
+          obj[key] = res[index].dst
+          index++
+        }
       }
       if (
         Array.isArray(value[key]) ||
