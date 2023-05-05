@@ -96,7 +96,8 @@ export class Entertainment extends plugin {
     const match = msg.match(regExp)
     let languageCode = match[2] === '译' ? '中' : match[2]
     let PendingText = match[3]
-    const isImg = !!(await getImg(e))
+    const [img, imgLength] = await getImg(e)
+    const isImg = !!img
     let result = ''
     if (!(languageCode in transMap)) {
       e.reply('输入格式有误或暂不支持该语言，' +
@@ -104,7 +105,7 @@ export class Entertainment extends plugin {
       )
       return false
     }
-    if ((await getImg(e)).length !== 1) {
+    if (isImg && imgLength !== 1) {
       await this.reply('一张一张来吧~', e.isGroup)
       return false
     }
@@ -396,10 +397,10 @@ export async function getImg (e) {
       }
     }
   }
-  return e.img
+  return [e.img, e.img?.length]
 }
 export async function getImageOcrText (e) {
-  const img = await getImg(e)
+  const [img] = await getImg(e)
   // logger.warn(img)
   if (img) {
     try {

@@ -772,12 +772,15 @@ export class chatgpt extends plugin {
       speaker = convertSpeaker(trySplit[0])
       prompt = trySplit[1]
     }
-    if (Config.imgOcr && await getImg(e)) {
+    const [isImg] = await getImg(e)
+    if (Config.imgOcr && !!isImg) {
       let imgOcrText = await getImageOcrText(e)
       if (imgOcrText) {
+        prompt = prompt + '"'
         for (let imgOcrTextKey in imgOcrText) {
           prompt += imgOcrText[imgOcrTextKey]
         }
+        prompt = prompt + ' "'
       }
     }
     // 检索是否有屏蔽词
