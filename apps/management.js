@@ -263,6 +263,20 @@ export class ChatgptManagement extends plugin {
     await this.reply(roleList)
   }
   async ttsSwitch (e) {
+    let userReplySetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
+    userReplySetting = !userReplySetting
+      ? getDefaultReplySetting()
+      : JSON.parse(userReplySetting)
+    if (!userReplySetting.useTTS) {
+      let replyMsg
+      if (userReplySetting.usePicture) {
+        replyMsg = `当前为${!userReplySetting.useTTS ? '图片模式' : ''}，请先切换到语音模式吧~`
+      } else {
+        replyMsg = `当前为${!userReplySetting.useTTS ? '文本模式' : ''}，请先切换到语音模式吧~`
+      }
+      await this.reply(replyMsg, e.isGroup)
+      return false
+    }
     let regExp = /#语音切换(.*)/
     let ttsMode = e.msg.match(regExp)[1]
     if (['vits', 'azure', 'voicevox'].includes(ttsMode)) {
@@ -486,7 +500,7 @@ export class ChatgptManagement extends plugin {
   }
 
   async setDefaultReplySetting (e) {
-    const reg = /^#chatgpt(打开|关闭|设置)?全局((图片模式|语音模式|(语音角色|角色语音|角色).*)|回复帮助)/
+    const reg = /^#chatgpt(打开|关闭|设置)?全局((文本模式|图片模式|语音模式|(语音角色|角色语音|角色).*)|回复帮助)/
     const matchCommand = e.msg.match(reg)
     const settingType = matchCommand[2]
     let replyMsg = ''
@@ -505,6 +519,23 @@ export class ChatgptManagement extends plugin {
           }
         } else if (matchCommand[1] === '设置') {
           replyMsg = '请使用“#chatgpt打开全局图片模式”或“#chatgpt关闭全局图片模式”命令来设置回复模式'
+        } break
+      case '文本模式':
+        if (matchCommand[1] === '打开') {
+          Config.defaultUsePicture = false
+          Config.defaultUseTTS = false
+          replyMsg = 'ChatGPT将默认以文本回复'
+        } else if (matchCommand[1] === '关闭') {
+          if (Config.defaultUseTTS) {
+            replyMsg = 'ChatGPT将默认以语音回复'
+          } else if (Config.defaultUsePicture) {
+            replyMsg = 'ChatGPT将默认以图片回复'
+          } else {
+            Config.defaultUseTTS = true
+            replyMsg = 'ChatGPT将默认以语音回复'
+          }
+        } else if (matchCommand[1] === '设置') {
+          replyMsg = '请使用“#chatgpt打开全局文本模式”或“#chatgpt关闭全局文本模式”命令来设置回复模式'
         } break
       case '语音模式':
         if (!Config.ttsSpace) {
@@ -526,7 +557,7 @@ export class ChatgptManagement extends plugin {
           replyMsg = '请使用“#chatgpt打开全局语音模式”或“#chatgpt关闭全局语音模式”命令来设置回复模式'
         } break
       case '回复帮助':
-        replyMsg = '可使用以下命令配置全局回复:\n#chatgpt(打开/关闭)全局(语音/图片)模式\n#chatgpt设置全局(语音角色|角色语音|角色)+角色名称(留空则为随机)'
+        replyMsg = '可使用以下命令配置全局回复:\n#chatgpt(打开/关闭)全局(语音/图片/文本)模式\n#chatgpt设置全局(语音角色|角色语音|角色)+角色名称(留空则为随机)'
         break
       default:
         if (!Config.ttsSpace) {

@@ -9,6 +9,7 @@ import SydneyAIClient from '../utils/SydneyAIClient.js'
 import { PoeClient } from '../utils/poe/index.js'
 import AzureTTS from '../utils/tts/microsoft-azure.js'
 import VoiceVoxTTS from '../utils/tts/voicevox.js'
+import { translate } from '../utils/translate.js'
 import fs from 'fs'
 import { getImg, getImageOcrText } from './entertainment.js'
 import {
@@ -34,8 +35,11 @@ import uploadRecord from '../utils/uploadRecord.js'
 import { SlackClaudeClient } from '../utils/slack/slackClient.js'
 import { ChatgptManagement } from './management.js'
 import { getPromptByName } from '../utils/prompts.js'
-import Translate from '../utils/baiduTranslate.js'
-import emojiStrip from 'emoji-strip'
+try {
+  await import('emoji-strip')
+} catch (err) {
+  logger.warn('【ChatGPT-Plugin】依赖emoji-strip未安装，会导致azure语音模式下朗读emoji的问题，建议执行pnpm install emoji-strip安装')
+}
 try {
   await import('keyv')
 } catch (err) {
@@ -1074,7 +1078,13 @@ export class chatgpt extends plugin {
         }
         ttsResponse = response.replace(ttsRegex, '')
         // 处理azure语音会读出emoji的问题
-        ttsResponse = emojiStrip(ttsResponse)
+        try {
+          let emojiStrip
+          emojiStrip = (await import('emoji-strip')).default
+          ttsResponse = emojiStrip(ttsResponse)
+        } catch (error) {
+          await this.reply('依赖emoji-strip未安装，请执行pnpm install emoji-strip安装依赖', true)
+        }
         // 处理多行回复有时候只会读第一行和azure语音会读出一些标点符号的问题
         ttsResponse = ttsResponse.replace(/[-:_；*;\n]/g, '，')
         // 先把文字回复发出去，避免过久等待合成语音
@@ -1092,16 +1102,8 @@ export class chatgpt extends plugin {
         }
         let wav
         if (Config.ttsMode === 'vits-uma-genshin-honkai' && Config.ttsSpace) {
-          if (Config.autoJapanese && (_.isEmpty(Config.baiduTranslateAppId) || _.isEmpty(Config.baiduTranslateSecret))) {
-            await this.reply('请检查翻译配置是否正确。')
-            return false
-          }
           if (Config.autoJapanese) {
             try {
-              const translate = new Translate({
-                appid: Config.baiduTranslateAppId,
-                secret: Config.baiduTranslateSecret
-              })
               ttsResponse = await translate(ttsResponse, '日')
             } catch (err) {
               logger.error(err)

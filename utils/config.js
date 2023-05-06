@@ -111,8 +111,6 @@ const defaultConfig = {
   azureTTSSpeaker: 'zh-CN-XiaochenNeural',
   voicevoxSpace: '',
   voicevoxTTSSpeaker: '护士机器子T',
-  baiduTranslateAppId: '',
-  baiduTranslateSecret: '',
   azureTTSEmotion: false,
   enhanceAzureTTSEmotion: false,
   autoJapanese: false,
