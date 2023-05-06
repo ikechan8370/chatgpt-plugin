@@ -231,6 +231,10 @@ export class ChatgptManagement extends plugin {
         {
           reg: '^#chatgpt角色列表$',
           fnc: 'getTTSRoleList'
+        },
+        {
+          reg: '^#chatgpt设置后台(刷新|refresh)(t|T)oken$',
+          fnc: 'setOpenAIPlatformToken'
         }
       ]
     })
@@ -1252,5 +1256,20 @@ export class ChatgptManagement extends plugin {
     }
     const viewHost = Config.serverHost ? `http://${Config.serverHost}/` : `http://${await getPublicIP()}:${Config.serverPort || 3321}/`
     await this.reply(`请登录${viewHost + 'admin/dashboard'}进行系统配置`, true)
+  }
+
+  async setOpenAIPlatformToken (e) {
+    this.setContext('doSetOpenAIPlatformToken')
+    await e.reply('请发送refreshToken\n你可以在已登录的platform.openai.com后台界面打开调试窗口，在终端中执行\nJSON.parse(localStorage.getItem(Object.keys(localStorage).filter(k => k.includes(\'auth0\'))[0])).body.refresh_token\n如果仍不能查看余额，请退出登录重新获取刷新令牌')
+  }
+
+  async doSetOpenAIPlatformToken () {
+    let token = this.e.msg
+    if (!token) {
+      return false
+    }
+    Config.OpenAiPlatformRefreshToken = token.replaceAll('\'', '')
+    await this.e.reply('设置成功')
+    this.finish('doSetOpenAIPlatformToken')
   }
 }

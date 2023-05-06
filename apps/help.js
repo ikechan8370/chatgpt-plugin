@@ -200,6 +200,11 @@ let helpData = [
         icon: 'eat',
         title: '#chatgpt查看(API|Sydney)设定',
         desc: '查看AI当前的风格设定，文本形式返回，设定太长可能发不出来'
+      },
+      {
+        icon: 'token',
+        title: '#chatgpt设置后台刷新token',
+        desc: '用于查看API余额。注意和配置的key保持同一账号。'
       }
     ]
   },
