@@ -1,0 +1,58 @@
+{
+	"Version": 3,
+	"FileReferences": {
+		"Moc": "Murasame_Yukata.moc3",
+		"Textures": [
+			"Murasame_Yukata.8192/texture_00.png"
+		],
+		"Physics": "Murasame_Yukata.physics3.json",
+		"DisplayInfo": "Murasame_Yukata.cdi3.json",
+		"Expressions": [
+			{
+				"Name": "01_LianHei",
+				"File": "01_LianHei.exp3.json"
+			},
+			{
+				"Name": "02_LianHei2",
+				"File": "02_LianHei2.exp3.json"
+			},
+			{
+				"Name": "03_GaoGuang",
+				"File": "03_GaoGuang.exp3.json"
+			},
+			{
+				"Name": "04_LiuHan",
+				"File": "04_LiuHan.exp3.json"
+			},
+			{
+				"Name": "05_LianHong",
+				"File": "05_LianHong.exp3.json"
+			},
+			{
+				"Name": "06_KuMei",
+				"File": "06_KuMei.exp3.json"
+			},
+			{
+				"Name": "07_HengYan",
+				"File": "07_HengYan.exp3.json"
+			},
+			{
+				"Name": "08_qYan",
+				"File": "08_qYan.exp3.json"
+			}
+		]
+	},
+	"Groups": [
+		{
+			"Target": "Parameter",
+			"Name": "LipSync",
+			"Ids": []
+		},
+		{
+			"Target": "Parameter",
+			"Name": "EyeBlink",
+			"Ids": []
+		}
+	],
+	"HitAreas": []
+}
