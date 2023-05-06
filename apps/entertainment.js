@@ -151,10 +151,15 @@ ${translateLangLabels}
     const totalLength = Array.isArray(result)
       ? result.reduce((acc, cur) => acc + cur.length, 0)
       : result.length
-    if (totalLength > 200 || multiText) {
-      result = Array.isArray(result)
-        ? await makeForwardMsg(e, result, '翻译结果')
-        : await makeForwardMsg(e, result.split(), '翻译结果')
+    if (totalLength > 300 || multiText) {
+      // 多条翻译结果
+      if (Array.isArray(result)) {
+        result = await makeForwardMsg(e, result, '翻译结果')
+      } else {
+        result = ('译文：\n' + result.trim()).split()
+        result.unshift('原文：\n' + pendingText.trim())
+        result = await makeForwardMsg(e, result, '翻译结果')
+      }
       await this.reply(result, e.isGroup)
       return true
     }
