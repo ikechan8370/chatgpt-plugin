@@ -87,7 +87,6 @@ ${translateLangLabels}
     }
     const regExp = /^#(寄批踢|gpt|GPT)?翻(.)([\s\S]*)/
     const match = e.msg.trim().match(regExp)
-    logger.warn(match)
     let languageCode = match[2] === '译' ? 'auto' : match[2]
     let pendingText = match[3]
     const isImg = !!(await getImg(e))?.length
@@ -128,7 +127,7 @@ ${translateLangLabels}
         } else {
           previousMsg = (await e.friend.getChatHistory(e.source.time, 1)).pop()?.message
         }
-        logger.warn('previousMsg', previousMsg)
+        // logger.warn('previousMsg', previousMsg)
         if (previousMsg.find(msg => msg.type === 'text')?.text) {
           pendingText = previousMsg.find(msg => msg.type === 'text')?.text
         } else {
@@ -143,7 +142,7 @@ ${translateLangLabels}
       } else {
         result = await translate(pendingText, languageCode)
       }
-      logger.warn(multiText, result)
+      // logger.warn(multiText, result)
     } catch (err) {
       await this.reply(err.message, e.isGroup)
       return false
