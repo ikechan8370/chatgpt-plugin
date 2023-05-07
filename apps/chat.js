@@ -1071,7 +1071,7 @@ export class chatgpt extends plugin {
       if (useTTS) {
         // 缓存数据
         this.cacheContent(e, use, response, prompt, quotemessage, mood, chatMessage.suggestedResponses, imgUrls)
-        if (response.match('New topic')) {
+        if (response === 'Thanks for this conversation! I\'ve reached my limit, will you hit “New topic,” please?') {
           this.reply('当前对话超过上限，已重置对话', false, { at: true })
           await redis.del(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
           return false
@@ -1189,7 +1189,7 @@ export class chatgpt extends plugin {
         }
       } else {
         this.cacheContent(e, use, response, prompt, quotemessage, mood, chatMessage.suggestedResponses, imgUrls)
-        if (response.match('New topic')) {
+        if (response === 'Thanks for this conversation! I\'ve reached my limit, will you hit “New topic,” please?') {
           this.reply('当前对话超过上限，已重置对话', false, { at: true })
           await redis.del(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
           return false
