@@ -211,6 +211,14 @@ export async function createServer() {
           mood: body.content.mood || 'blandness',
           live2d: Config.live2d,
           live2dModel: Config.live2dModel,
+          live2dOption: {
+            scale: Config.live2dOption_scale,
+            position: {
+              x: Config.live2dOption_positionX,
+              y: Config.live2dOption_positionY
+            },
+            rotation :Config.live2dOption_rotation,
+          },
           time: new Date()
         }
         fs.writeFileSync(filepath, JSON.stringify(data))

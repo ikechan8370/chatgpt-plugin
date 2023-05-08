@@ -16,79 +16,39 @@
           "Interruptable": true
         }
       ],
-      "Tapface": [
+      "blandness": [
         {
-          "File": "motion/motion02.motion3.json",
-          "Sound": "sounds/bandicam 2021-11-23 02-18-04-516.mp4.wav",
-          "Text": "吾名丛雨，乃是这“丛雨丸”的管理者……简单来说，也算是“丛雨丸”的灵魂",
-          "Interruptable": true
-        },
-        {
-          "File": "motion/motion03.motion3.json",
-          "Sound": "sounds/bandicam 2021-11-23 02-19-03-123.mp4.wav",
-          "Text": "你，就是本座的主人？",
+          "File": "motion/motion01.motion3.json",
           "Interruptable": true
         }
       ],
-      "Taphair": [
+      "happy": [
         {
           "File": "motion/motion04.motion3.json",
-          "Sound": "sounds/bandicam 2021-11-23 02-19-13-234.mp4.wav",
-          "Text": "在这里，这里",
-          "Interruptable": true
-        },
-        {
-          "File": "motion/motion05.motion3.json",
-          "Sound": "sounds/bandicam 2021-11-23 02-19-22-154.mp4.wav",
-          "Text": "你看，复原了",
           "Interruptable": true
         }
       ],
-      "Tapxiongbu": [
+      "shy": [
         {
           "File": "motion/motion07.motion3.json",
-          "Sound": "sounds/bandicam 2021-11-23 02-19-37-560.mp4.wav",
-          "Text": "主人就是主人。是你拔出了丛雨丸吧？",
-          "Interruptable": true
-        },
-        {
-          "File": "motion/motion10.motion3.json",
-          "Sound": "sounds/bandicam 2021-11-23 02-20-13-844.mp4.wav",
-          "Text": "你这————！！",
           "Interruptable": true
         }
       ],
-      "Tapqunzi": [
-        {
-          "File": "motion/motion06.motion3.json",
-          "Sound": "sounds/bandicam 2021-11-23 02-19-30-578.mp4.wav",
-          "Text": "——着陆",
-          "Interruptable": true
-        },
+      "frustrated": [
         {
           "File": "motion/motion08.motion3.json",
-          "Sound": "sounds/bandicam 2021-11-23 02-19-47-794.mp4.wav",
-          "Text": "本座才不是幽灵！完全不是！不要把幽灵和本座相提并论！",
           "Interruptable": true
         }
       ],
-      "Tapleg": [
+      "disgusted": [
         {
           "File": "motion/motion09.motion3.json",
-          "Sound": "sounds/bandicam 2021-11-23 02-19-58-125.mp4.wav",
-          "Text": "哪是什么幽灵，别……别别别把本座和那种毫无事实依据的东西混为一谈",
           "Interruptable": true
-        },
+        }
+      ],
+      "frightened": [
         {
-          "File": "motion/motion11.motion3.json",
-          "Sound": "sounds/bandicam 2021-11-23 02-20-24-955.mp4.wav",
-          "Text": "你醒了吗，主人。早上好",
-          "Interruptable": true
-        },
-        {
-          "File": "motion/motion12.motion3.json",
-          "Sound": "sounds/bandicam 2021-11-23 02-20-39-029.mp4.wav",
-          "Text": "本座不是幻觉，更不是幽灵，主人！",
+          "File": "motion/motion10.motion3.json",
           "Interruptable": true
         }
       ]
@@ -356,33 +316,6 @@
     },
     "IntimacySystem": {}
   },
-  "HitAreas": [
-    {
-      "Name": "face",
-      "Id": "HitArea",
-      "Motion": "Tapface"
-    },
-    {
-      "Name": "hair",
-      "Id": "HitArea2",
-      "Motion": "Taphair"
-    },
-    {
-      "Name": "xiongbu",
-      "Id": "HitArea3",
-      "Motion": "Tapxiongbu"
-    },
-    {
-      "Name": "qunzi",
-      "Id": "HitArea4",
-      "Motion": "Tapqunzi"
-    },
-    {
-      "Name": "leg",
-      "Id": "HitArea5",
-      "Motion": "Tapleg"
-    }
-  ],
   "Options": {
     "ScaleFactor": 0.7
   }
