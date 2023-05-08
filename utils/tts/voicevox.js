@@ -73,7 +73,7 @@ async function generateAudio (text, options = {}) {
   return Buffer.from(synthesisResponseData)
 }
 
-const supportConfigurations = [
+export const supportConfigurations = [
   {
     supported_features: { permitted_synthesis_morphing: 'SELF_ONLY' },
     name: '四国めたん',

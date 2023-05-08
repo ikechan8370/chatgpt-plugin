@@ -72,5 +72,11 @@
   "enablePrivateChat": false,
   "groupWhitelist": [],
   "groupBlacklist": [],
-  "ttsRegex": "/匹配规则/匹配模式"
+  "ttsRegex": "/匹配规则/匹配模式",
+  "baiduTranslateAppId": "",
+  "baiduTranslateSecret": "",
+  "azureTTSSpeaker": "zh-CN-XiaochenNeural",
+  "azureTTSEmotion": false,
+  "enhanceAzureTTSEmotion": false,
+  "autoJapanese": false
 }

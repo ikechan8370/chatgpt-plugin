@@ -22,7 +22,8 @@ export class history extends plugin {
       rule: [
         {
           reg: '^#(chatgpt|ChatGPT)(导出)?聊天记录$',
-          fnc: 'history'
+          fnc: 'history',
+          permission: 'master'
         }
       ]
     })

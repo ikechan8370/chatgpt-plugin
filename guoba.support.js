@@ -98,7 +98,7 @@ export function supportGuoba () {
         },
         {
           field: 'defaultTTSRole',
-          label: '语音模式默认角色（vits-uma-genshin-honkai）',
+          label: 'vits默认角色',
           bottomHelpMessage: 'vits-uma-genshin-honkai语音模式下，未指定角色时使用的角色。若留空，将使用随机角色回复。若用户通过指令指定了角色，将忽略本设定',
           component: 'Select',
           componentProps: {
@@ -106,21 +106,8 @@ export function supportGuoba () {
           }
         },
         {
-          field: 'voicevoxTTSSpeaker',
-          label: '语音模式默认角色（VoiceVox）',
-          bottomHelpMessage: 'VoiceVox语音模式下，未指定角色时使用的角色。若留空，将使用随机角色回复。若用户通过指令指定了角色，将忽略本设定',
-          component: 'Select',
-          componentProps: {
-            options: VoiceVoxTTS.supportConfigurations.map(item => {
-              return item.styles.map(style => {
-                return `${item.name}-${style.name}`
-              }).concat(item.name)
-            }).flat().concat('随机').map(s => { return { label: s, value: s } })
-          }
-        },
-        {
           field: 'azureTTSSpeaker',
-          label: '语音模式默认角色（微软Azure）',
+          label: 'Azure默认角色',
           bottomHelpMessage: '微软Azure语音模式下，未指定角色时使用的角色。若用户通过指令指定了角色，将忽略本设定',
           component: 'Select',
           componentProps: {
@@ -130,6 +117,19 @@ export function supportGuoba () {
                 value: item.code
               }
             })
+          }
+        },
+        {
+          field: 'voicevoxTTSSpeaker',
+          label: 'VoiceVox默认角色',
+          bottomHelpMessage: 'VoiceVox语音模式下，未指定角色时使用的角色。若留空，将使用随机角色回复。若用户通过指令指定了角色，将忽略本设定',
+          component: 'Select',
+          componentProps: {
+            options: VoiceVoxTTS.supportConfigurations.map(item => {
+              return item.styles.map(style => {
+                return `${item.name}-${style.name}`
+              }).concat(item.name)
+            }).flat().concat('随机').map(s => { return { label: s, value: s } })
           }
         },
         {
@@ -153,6 +153,14 @@ export function supportGuoba () {
           field: 'alsoSendText',
           label: '语音同时发送文字',
           bottomHelpMessage: '语音模式下，同时发送文字版，避免音质较低听不懂',
+          component: 'Switch'
+        },
+        {
+          field: 'autoJapanese',
+          label: 'vits模式日语输出',
+          bottomHelpMessage: '使用vits语音时，将机器人的文字回复翻译成日文后获取语音。' +
+              '需要填写下方的翻译配置，配置文档：http://api.fanyi.baidu.com/doc/21 ' +
+              '填写配置后另外支持通过本插件使用文字翻译功能，发送"#chatgpt翻译帮助"查看使用方法。',
           component: 'Switch'
         },
         {
@@ -558,6 +566,16 @@ export function supportGuoba () {
           component: 'InputPassword'
         },
         {
+          field: 'baiduTranslateAppId',
+          label: '百度翻译应用ID',
+          component: 'Input'
+        },
+        {
+          field: 'baiduTranslateSecret',
+          label: '百度翻译密钥',
+          component: 'Input'
+        },
+        {
           field: 'ttsSpace',
           label: 'vits-uma-genshin-honkai语音转换API地址',
           bottomHelpMessage: '前往duplicate空间https://huggingface.co/spaces/ikechan8370/vits-uma-genshin-honkai后查看api地址',
@@ -579,6 +597,18 @@ export function supportGuoba () {
           label: 'Azure语音服务区域',
           bottomHelpMessage: '例如japaneast',
           component: 'Input'
+        },
+        {
+          field: 'azureTTSEmotion',
+          label: 'Azure情绪多样化',
+          bottomHelpMessage: '切换角色后使用"#chatgpt使用设定xxx"重新开始对话以更新不同角色的情绪配置。支持使用不同的说话风格回复，各个角色支持说话风格详情：https://speech.microsoft.com/portal/voicegallery',
+          component: 'Switch'
+        },
+        {
+          field: 'enhanceAzureTTSEmotion',
+          label: 'Azure情绪纠正',
+          bottomHelpMessage: '当机器人未使用或使用了不支持的说话风格时，将在对话中提醒机器人。注意：bing模式开启此项后有概率增大触发抱歉的机率，且不要单独开启此项。',
+          component: 'Switch'
         },
         {
           field: 'huggingFaceReverseProxy',

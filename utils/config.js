@@ -26,6 +26,7 @@ const defaultConfig = {
   cacheEntry: false,
   apiKey: '',
   openAiBaseUrl: defaultOpenAIReverseProxy,
+  OpenAiPlatformRefreshToken: '',
   openAiForceUseReverse: false,
   drawCD: 30,
   model: '',
@@ -116,8 +117,12 @@ const defaultConfig = {
   azureTTSSpeaker: 'zh-CN-XiaochenNeural',
   voicevoxSpace: '',
   voicevoxTTSSpeaker: '护士机器子T',
-  version: 'v2.5.8'
-
+  baiduTranslateAppId: '',
+  baiduTranslateSecret: '',
+  azureTTSEmotion: false,
+  enhanceAzureTTSEmotion: false,
+  autoJapanese: false,
+  version: 'v2.5.9'
 }
 const _path = process.cwd()
 let config = {}

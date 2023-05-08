@@ -4,6 +4,7 @@ import _ from 'lodash'
 import { Config } from '../utils/config.js'
 import { getMasterQQ, limitString, makeForwardMsg, maskQQ } from '../utils/common.js'
 import { deleteOnePrompt, getPromptByName, readPrompts, saveOnePrompt } from '../utils/prompts.js'
+import AzureTTS from "../utils/tts/microsoft-azure.js";
 export class help extends plugin {
   constructor (e) {
     super({
@@ -160,7 +161,12 @@ export class help extends plugin {
     }
 
     if (keyMap[use]) {
-      Config[keyMap[use]] = prompt.content
+      if (Config.ttsMode === 'azure') {
+        Config[keyMap[use]] = prompt.content + '\n' + await AzureTTS.getEmotionPrompt(e)
+        logger.warn(Config[keyMap[use]])
+      } else {
+        Config[keyMap[use]] = prompt.content
+      }
       await redis.set(`CHATGPT:PROMPT_USE_${use}`, promptName)
       await e.reply(`你当前正在使用${use}模式，已将该模式设定应用为"${promptName}"。更该设定后建议结束对话以使设定更好生效`, true)
     } else {
