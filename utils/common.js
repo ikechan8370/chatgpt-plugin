@@ -341,7 +341,8 @@ export async function renderUrl (e, url, renderCfg = {}) {
           height: renderCfg.Viewport.height || 720,
           timeout: 120000,
           waitUtil: renderCfg.waitUtil || 'networkidle2',
-          wait: renderCfg.wait || 1000
+          wait: renderCfg.wait || 1000,
+          func: renderCfg.func || ''
         },
         type: 'image'
       })
