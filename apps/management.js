@@ -330,7 +330,34 @@ export class ChatgptManagement extends plugin {
         commandSet.push({ name, dsc: plugin.dsc, rule })
       }
     }
-
+    if (e.msg.includes('搜索')) {
+      let cmd = e.msg.trim().match(/^#chatgpt(对话|管理|娱乐|绘图|人物设定|聊天记录)?指令表(帮助|搜索(.+))?/)[3]
+      logger.warn(cmd)
+      if (!cmd) {
+        await this.reply('(⊙ˍ⊙)')
+        return 0
+      } else {
+        let searchResults = []
+        commandSet.forEach(plugin => {
+          plugin.rule.forEach(item => {
+            if (item.reg.toLowerCase().includes(cmd.toLowerCase())) {
+              searchResults.push(item.reg)
+            }
+          })
+        })
+        if (!searchResults.length) {
+          await this.reply('没有找到符合的结果，换个关键词吧！', e.isGroup)
+          return 0
+        } else if (searchResults.length <= 5) {
+          await this.reply(searchResults.join('\n'), e.isGroup)
+          return 1
+        } else {
+          let msg = await makeForwardMsg(e, searchResults, e.msg.slice(8))
+          await this.reply(msg)
+          return 1
+        }
+      }
+    }
     const generatePrompt = (plugin, command) => {
       const category = getCategory(e, plugin)
       const commandsStr = command.length ? `正则指令:\n${command.join('\n')}\n` : '正则指令: 无\n'
