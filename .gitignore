@@ -3,7 +3,7 @@ config/*
 !config/config.example.json
 !config/config.md
 server/static/live2dw/*
-!server/static/live2dw/live2d-widget-model-default
+!server/static/live2dw/Murasame
 prompts/*
 !prompts/.gitkeep
 node_modules/

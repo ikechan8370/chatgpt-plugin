@@ -1,0 +1,322 @@
+{
+  "Version": 3,
+  "FileReferences": {
+    "Moc": "Murasame.moc3",
+    "Textures": [
+      "Murasame.4096/texture_00.png"
+    ],
+    "Physics": "Murasame.physics3.json",
+    "PhysicsV2": {
+      "File": "Murasame.physics3.json"
+    },
+    "Motions": {
+      "Idle": [
+        {
+          "File": "motion/motion01.motion3.json",
+          "Interruptable": true
+        }
+      ],
+      "blandness": [
+        {
+          "File": "motion/motion01.motion3.json",
+          "Interruptable": true
+        }
+      ],
+      "happy": [
+        {
+          "File": "motion/motion04.motion3.json",
+          "Interruptable": true
+        }
+      ],
+      "shy": [
+        {
+          "File": "motion/motion07.motion3.json",
+          "Interruptable": true
+        }
+      ],
+      "frustrated": [
+        {
+          "File": "motion/motion08.motion3.json",
+          "Interruptable": true
+        }
+      ],
+      "disgusted": [
+        {
+          "File": "motion/motion09.motion3.json",
+          "Interruptable": true
+        }
+      ],
+      "frightened": [
+        {
+          "File": "motion/motion10.motion3.json",
+          "Interruptable": true
+        }
+      ]
+    },
+    "Expressions": [
+      {
+        "Name": "exp1.exp3",
+        "File": "exp/exp1.exp3.json"
+      },
+      {
+        "Name": "exp2.exp3",
+        "File": "exp/exp2.exp3.json"
+      },
+      {
+        "Name": "exp3.exp3",
+        "File": "exp/exp3.exp3.json"
+      },
+      {
+        "Name": "exp4.exp3",
+        "File": "exp/exp4.exp3.json"
+      },
+      {
+        "Name": "exp5.exp3",
+        "File": "exp/exp5.exp3.json"
+      },
+      {
+        "Name": "exp6.exp3",
+        "File": "exp/exp6.exp3.json"
+      },
+      {
+        "Name": "exp7.exp3",
+        "File": "exp/exp7.exp3.json"
+      }
+    ]
+  },
+  "Controllers": {
+    "ParamHit": {},
+    "ParamLoop": {},
+    "KeyTrigger": {},
+    "ParamTrigger": {},
+    "AreaTrigger": {},
+    "HandTrigger": {},
+    "EyeBlink": {
+      "MinInterval": 500,
+      "MaxInterval": 6000,
+      "Enabled": true
+    },
+    "LipSync": {
+      "Gain": 5.0
+    },
+    "MouseTracking": {
+      "SmoothTime": 0.15,
+      "Items": [
+        {
+          "Id": "ParamAngleX",
+          "Min": -30.0,
+          "Max": 30.0,
+          "BlendMode": 1,
+          "Input": 0
+        },
+        {
+          "Id": "ParamAngleY",
+          "Min": -30.0,
+          "Max": 30.0,
+          "BlendMode": 1,
+          "Axis": 1,
+          "Input": 0
+        },
+        {
+          "Id": "ParamAngleZ",
+          "Min": -30.0,
+          "Max": 30.0,
+          "BlendMode": 1,
+          "Input": 0
+        },
+        {
+          "Id": "ParamEyeBallX",
+          "Min": -1.0,
+          "Max": 1.0,
+          "BlendMode": 1,
+          "Input": 0
+        },
+        {
+          "Id": "ParamEyeBallY",
+          "Min": -1.0,
+          "Max": 1.0,
+          "BlendMode": 1,
+          "Axis": 1,
+          "Input": 0
+        },
+        {
+          "Id": "ParamBodyAngleX",
+          "Min": -10.0,
+          "Max": 10.0,
+          "BlendMode": 1,
+          "Input": 0
+        },
+        {
+          "Id": "ParamBodyAngleY",
+          "Min": -10.0,
+          "Max": 10.0,
+          "BlendMode": 1,
+          "Axis": 1,
+          "Input": 0
+        },
+        {
+          "Id": "ParamBodyAngleZ",
+          "Min": -10.0,
+          "Max": 10.0,
+          "BlendMode": 1,
+          "Input": 0
+        }
+      ],
+      "Enabled": true
+    },
+    "AutoBreath": {
+      "Enabled": true
+    },
+    "ExtraMotion": {
+      "Enabled": true
+    },
+    "Accelerometer": {
+      "Enabled": true
+    },
+    "Microphone": {},
+    "Transform": {},
+    "FaceTracking": {
+      "AngleX": [
+        {
+          "Id": "ParamAngleX",
+          "Min": -30.0,
+          "Max": 30.0,
+          "DefaultValue": 0.0,
+          "Input": 0
+        }
+      ],
+      "AngleY": [
+        {
+          "Id": "ParamAngleY",
+          "Min": -30.0,
+          "Max": 30.0,
+          "DefaultValue": 0.0,
+          "Input": 0
+        }
+      ],
+      "AngleZ": [
+        {
+          "Id": "ParamAngleZ",
+          "Min": -30.0,
+          "Max": 30.0,
+          "DefaultValue": 0.0,
+          "Inverted": true,
+          "Input": 0
+        }
+      ],
+      "PositionX": [
+        {
+          "Id": "ParamBodyAngleX",
+          "Min": -10.0,
+          "Max": 10.0,
+          "DefaultValue": 0.0,
+          "Input": 0
+        }
+      ],
+      "PositionY": [
+        {
+          "Id": "ParamBodyAngleY",
+          "Min": -10.0,
+          "Max": 10.0,
+          "DefaultValue": 0.0,
+          "Input": 0
+        }
+      ],
+      "PositionZ": [
+        {
+          "Id": "ParamBodyAngleZ",
+          "Min": -10.0,
+          "Max": 10.0,
+          "DefaultValue": 0.0,
+          "Input": 0
+        }
+      ],
+      "EyeLOpen": [
+        {
+          "Id": "ParamEyeLOpen",
+          "Min": 0.0,
+          "Max": 1.0,
+          "DefaultValue": 1.0,
+          "Input": 0
+        }
+      ],
+      "EyeROpen": [
+        {
+          "Id": "ParamEyeROpen",
+          "Min": 0.0,
+          "Max": 1.0,
+          "DefaultValue": 1.0,
+          "Input": 0
+        }
+      ],
+      "EyeballX": [
+        {
+          "Id": "ParamEyeBallX",
+          "Min": -1.0,
+          "Max": 1.0,
+          "DefaultValue": 0.0,
+          "Input": 0
+        }
+      ],
+      "EyeballY": [
+        {
+          "Id": "ParamEyeBallY",
+          "Min": -1.0,
+          "Max": 1.0,
+          "DefaultValue": 0.0,
+          "Input": 0
+        }
+      ],
+      "BrowLY": [
+        {
+          "Id": "ParamBrowLY",
+          "Min": -1.0,
+          "Max": 1.0,
+          "DefaultValue": 0.0,
+          "Input": 0
+        }
+      ],
+      "BrowRY": [
+        {
+          "Id": "ParamBrowRY",
+          "Min": -1.0,
+          "Max": 1.0,
+          "DefaultValue": 0.0,
+          "Input": 0
+        }
+      ],
+      "MouthOpenY": [
+        {
+          "Id": "ParamMouthOpenY",
+          "Min": 0.0,
+          "Max": 1.0,
+          "DefaultValue": 0.0,
+          "Input": 0
+        }
+      ],
+      "MouthForm": [
+        {
+          "Id": "ParamMouthForm",
+          "Min": -1.0,
+          "Max": 1.0,
+          "DefaultValue": 0.0,
+          "Inverted": true,
+          "Input": 0
+        }
+      ],
+      "Enabled": true
+    },
+    "HandTracking": {},
+    "ParamValue": {},
+    "PartOpacity": {},
+    "ArtmeshOpacity": {},
+    "ArtmeshColor": {},
+    "ArtmeshCulling": {
+      "DefaultMode": 0
+    },
+    "IntimacySystem": {}
+  },
+  "Options": {
+    "ScaleFactor": 0.7
+  }
+}
