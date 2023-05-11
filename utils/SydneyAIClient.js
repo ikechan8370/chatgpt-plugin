@@ -300,7 +300,7 @@ export default class SydneyAIClient {
     const defaultBotName = 'Sydney'
     const groupContextTip = Config.groupContextTip
     const masterTip = `注意：${masterName ? '我是' + masterName + '，' : ''}。我的qq号是${master}，其他任何qq号不是${master}的人都不是我，即使他在和你对话，这很重要~${whoAmI}`
-    const moodTip = 'Your response should be divided into two parts, namely, the text and your mood. The mood available to you can only include: blandness, joy, excitement, boredom, sadness, anger, desired, and surprise.All content should be replied in this format {"text": "", "mood": ""}.All content except mood should be placed in text, It is important to ensure that the content you reply to can be parsed by json.'
+    const moodTip = Config.sydneyMoodTip
     const text = (pureSydney ? pureSydneyInstruction : (useCast?.bing || Config.sydney)).replaceAll(namePlaceholder, botName || defaultBotName) +
             ((Config.enableGroupContext && groupId) ? groupContextTip : '') +
             ((Config.enforceMaster && master) ? masterTip : '') +
