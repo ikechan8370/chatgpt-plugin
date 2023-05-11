@@ -22,18 +22,23 @@ export default class BingDrawClient {
   async getImages (prompt, e) {
     let urlEncodedPrompt = encodeURIComponent(prompt)
     let url = `${this.opts.baseUrl}/images/create?q=${urlEncodedPrompt}&rt=4&FORM=GENCRE`
+    let d = Math.ceil(Math.random() * 255)
+    let randomIp = '141.11.138.' + d
+    let headers = {
+      accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+      'accept-language': 'en-US,en;q=0.9',
+      'cache-control': 'max-age=0',
+      'content-type': 'application/x-www-form-urlencoded',
+      referrer: 'https://www.bing.com/images/create/',
+      origin: 'https://www.bing.com',
+      'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63',
+      cookie: this.opts.cookies || `_U=${this.opts.userToken}`,
+      'x-forwarded-for': randomIp
+    }
+    // headers['x-forwarded-for'] = '141.11.138.30'
     let fetchOptions = {
       method: 'POST',
-      headers: {
-        accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-        'accept-language': 'en-US,en;q=0.9',
-        'cache-control': 'max-age=0',
-        'content-type': 'application/x-www-form-urlencoded',
-        referrer: 'https://www.bing.com/images/create/',
-        origin: 'https://www.bing.com',
-        'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63',
-        cookie: this.opts.cookies || `_U=${this.opts.userToken}`
-      },
+      headers,
       redirect: 'manual'
     }
     if (Config.proxy) {
@@ -46,22 +51,9 @@ export default class BingDrawClient {
     }
     if (response.status !== 302) {
       url = `${this.opts.baseUrl}/images/create?q=${urlEncodedPrompt}&rt=3&FORM=GENCRE`
-      let response3 = await fetch(url, {
-        method: 'POST',
-        headers: {
-          accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-          'accept-language': 'en-US,en;q=0.9',
-          'cache-control': 'max-age=0',
-          'content-type': 'application/x-www-form-urlencoded',
-          referrer: 'https://www.bing.com/images/create/',
-          origin: 'https://www.bing.com',
-          'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63',
-          cookie: this.opts.cookies || `_U=${this.opts.userToken}`
-        },
-        redirect: 'manual'
-      })
+      let response3 = await fetch(url, fetchOptions)
       if (response3.status !== 302) {
-        throw new Error(await response3.text())
+        throw new Error('绘图失败，请检查Bing token和代理/反代配置')
       }
       response = response3
     }
@@ -69,16 +61,7 @@ export default class BingDrawClient {
     let requestId = redirectUrl.split('id=')[1]
     // 模拟跳转
     await fetch(`${this.opts.baseUrl}${redirectUrl}`, {
-      headers: {
-        accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-        'accept-language': 'en-US,en;q=0.9',
-        'cache-control': 'max-age=0',
-        'content-type': 'application/x-www-form-urlencoded',
-        referrer: 'https://www.bing.com/images/create/',
-        origin: 'https://www.bing.com',
-        'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63',
-        cookie: this.opts.cookies || `_U=${this.opts.userToken}`
-      }
+      headers
     })
     let pollingUrl = `${this.opts.baseUrl}/images/create/async/results/${requestId}?q=${urlEncodedPrompt}`
     logger.info({ pollingUrl })
@@ -90,16 +73,7 @@ export default class BingDrawClient {
         return
       }
       let r = await fetch(pollingUrl, {
-        headers: {
-          accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-          'accept-language': 'en-US,en;q=0.9',
-          'cache-control': 'max-age=0',
-          'content-type': 'application/x-www-form-urlencoded',
-          referrer: 'https://www.bing.com/images/create/',
-          origin: 'https://www.bing.com',
-          'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63',
-          cookie: this.opts.cookies || `_U=${this.opts.userToken}`
-        }
+        headers
       })
       let rText = await r.text()
       if (rText) {
