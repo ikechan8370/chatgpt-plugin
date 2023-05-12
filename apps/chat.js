@@ -111,6 +111,10 @@ export class chatgpt extends plugin {
           fnc: 'bing'
         },
         {
+          reg: '^#claude开启新对话',
+          fnc: 'newClaudeConversation'
+        },
+        {
           /** 命令正则匹配 */
           reg: '^#claude[sS]*',
           /** 执行方法 */
@@ -194,10 +198,6 @@ export class chatgpt extends plugin {
           reg: '^#chatgpt删除对话',
           fnc: 'deleteConversation',
           permission: 'master'
-        },
-        {
-          reg: '^#claude开启新对话',
-          fnc: 'newClaudeConversation'
         }
       ]
     })
@@ -1894,6 +1894,7 @@ export class chatgpt extends plugin {
         await e.reply(response, true)
       }
     }
+    return true
   }
 
   async emptyQueue (e) {
