@@ -47,6 +47,7 @@ const defaultConfig = {
   apiForceUseReverse: false,
   plus: false,
   useGPT4: false,
+  xinghuoToken: '',
   promptPrefixOverride: 'Your answer shouldn\'t be too verbose. Prefer to answer in Chinese.',
   assistantLabel: 'ChatGPT',
   // thinkingTips: true,

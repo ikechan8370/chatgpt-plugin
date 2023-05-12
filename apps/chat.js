@@ -35,6 +35,7 @@ import { ChatgptManagement } from './management.js'
 import { getPromptByName } from '../utils/prompts.js'
 import Translate from '../utils/baiduTranslate.js'
 import emojiStrip from 'emoji-strip'
+import XinghuoClient from "../utils/xinghuo/xinghuo.js";
 try {
   await import('keyv')
 } catch (err) {
@@ -114,6 +115,12 @@ export class chatgpt extends plugin {
           reg: '^#claude[sS]*',
           /** 执行方法 */
           fnc: 'claude'
+        },
+        {
+          /** 命令正则匹配 */
+          reg: '^#xh[sS]*',
+          /** 执行方法 */
+          fnc: 'xh'
         },
         {
           /** 命令正则匹配 */
@@ -237,6 +244,11 @@ export class chatgpt extends plugin {
       // await client.endConversation()
       await redis.del(`CHATGPT:SLACK_CONVERSATION:${e.sender.user_id}`)
       await e.reply('claude对话已结束')
+      return
+    }
+    if (use === 'xh') {
+      await redis.del(`CHATGPT:CONVERSATIONS_XH:${e.sender.user_id}`)
+      await e.reply('星火对话已结束')
       return
     }
     let ats = e.message.filter(m => m.type === 'at')
@@ -386,6 +398,17 @@ export class chatgpt extends plugin {
         }
         for (const element of we) {
           await redis.del(element)
+        }
+        break
+      }
+      case 'xh': {
+        let cs = await redis.keys('CHATGPT:CONVERSATIONS_XH:*')
+        for (let i = 0; i < cs.length; i++) {
+          await redis.del(cs[i])
+          if (Config.debug) {
+            logger.info('delete slack conversation of qq: ' + cs[i])
+          }
+          deleted++
         }
         break
       }
@@ -929,6 +952,10 @@ export class chatgpt extends plugin {
           key = `CHATGPT:CONVERSATIONS_BROWSER:${e.sender.user_id}`
           break
         }
+        case 'xh': {
+          key = `CHATGPT:CONVERSATIONS_XH:${e.sender.user_id}`
+          break
+        }
       }
       let ctime = new Date()
       previousConversation = (key ? await redis.get(key) : null) || JSON.stringify({
@@ -1351,7 +1378,7 @@ export class chatgpt extends plugin {
     let ats = e.message.filter(m => m.type === 'at')
     if (!e.atme && ats.length > 0) {
       if (Config.debug) {
-        logger.mark('艾特别人了，没艾特我，忽略#bing')
+        logger.mark('艾特别人了，没艾特我，忽略#claude')
       }
       return false
     }
@@ -1360,6 +1387,28 @@ export class chatgpt extends plugin {
       return false
     }
     await this.abstractChat(e, prompt, 'claude')
+    return true
+  }
+  async xh (e) {
+    if (!e.isMaster && e.isPrivate && !Config.enablePrivateChat) {
+      // await this.reply('ChatGpt私聊通道已关闭。')
+      return false
+    }
+    if (!Config.allowOtherMode) {
+      return false
+    }
+    let ats = e.message.filter(m => m.type === 'at')
+    if (!e.atme && ats.length > 0) {
+      if (Config.debug) {
+        logger.mark('艾特别人了，没艾特我，忽略#xh')
+      }
+      return false
+    }
+    let prompt = _.replace(e.raw_message.trimStart(), '#xh', '').trim()
+    if (prompt.length === 0) {
+      return false
+    }
+    await this.abstractChat(e, prompt, 'xh')
     return true
   }
 
@@ -1743,6 +1792,17 @@ export class chatgpt extends plugin {
         return {
           text
         }
+      }
+      case 'xh': {
+        const ssoSessionId = Config.xinghuoToken
+        if (!ssoSessionId) {
+          throw new Error('未绑定星火token，请使用#chatgpt设置星火token命令绑定token。（获取对话页面的ssoSessionId cookie值）')
+        }
+        let client = new XinghuoClient({
+          ssoSessionId
+        })
+        let response = await client.sendMessage(prompt, conversation?.conversationId)
+        return response
       }
       default: {
         let completionParams = {}
