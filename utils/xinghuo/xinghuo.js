@@ -138,6 +138,9 @@ export default class XinghuoClient {
     createChatListRes = await createChatListRes.json()
     if (createChatListRes.data?.id) {
       logger.info('星火对话创建成功：' + createChatListRes.data.id)
+    } else {
+      logger.error('星火对话创建成功: ' + JSON.stringify(createChatListRes))
+      throw new Error('星火对话创建成功:'  + JSON.stringify(createChatListRes))
     }
     return {
       chatListId: createChatListRes.data?.id,
