@@ -124,7 +124,7 @@ const defaultConfig = {
   azureTTSEmotion: false,
   enhanceAzureTTSEmotion: false,
   autoJapanese: false,
-  version: 'v2.5.9'
+  version: 'v2.6.0'
 }
 const _path = process.cwd()
 let config = {}
