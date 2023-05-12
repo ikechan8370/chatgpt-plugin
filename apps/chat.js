@@ -34,6 +34,7 @@ import { SlackClaudeClient } from '../utils/slack/slackClient.js'
 import { ChatgptManagement } from './management.js'
 import { getPromptByName } from '../utils/prompts.js'
 import Translate from '../utils/baiduTranslate.js'
+import BingDrawClient from '../utils/BingDraw.js'
 import emojiStrip from 'emoji-strip'
 try {
   await import('keyv')
@@ -1603,6 +1604,25 @@ export class chatgpt extends plugin {
                 })
               }
             }
+            console.log(response)
+            // 处理内容生成的图片
+            if (response.details.imageTag) {
+              if (Config.debug) {
+                logger.mark(`开始生成内容：${response.details.imageTag}`)
+              }
+              let client = new BingDrawClient({
+                baseUrl: Config.sydneyReverseProxy,
+                userToken: bingToken
+              })
+              await redis.set(`CHATGPT:DRAW:${e.sender.user_id}`, 'c', { EX: 30 })
+              try {
+                await client.getImages(response.details.imageTag, e)
+              } catch (err) {
+                await redis.del(`CHATGPT:DRAW:${e.sender.user_id}`)
+                await e.reply('绘图失败：' + err)
+              }
+            }
+            
             // 如果token曾经有异常，则清除异常
             let Tokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
             const TokenIndex = Tokens.findIndex(element => element.Token === abtrs.bingToken)
