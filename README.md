@@ -36,6 +36,7 @@
 * 2023-03-15 API3支持GPT-4尝鲜，需要Plus用户
 * 支持[ChatGLM](https://github.com/THUDM/ChatGLM-6B)模型。基于[自建API](https://github.com/ikechan8370/SimpleChatGLM6BAPI)
 * 2023-04-15 支持[Claude by Slack](https://www.anthropic.com/claude-in-slack )和Poe（WIP）。Claude配置参考[这里](https://ikechan8370.com/archives/chatgpt-plugin-for-yunzaipei-zhi-slack-claude)
+* 2023-05-12 支持星火大模型
 
 ### 如果觉得这个插件有趣或者对你有帮助，请点一个star吧！
 
@@ -63,9 +64,16 @@ Node.js >= 18 / Node.js >= 14(with node-fetch)
 推荐使用 git 进行安装，以方便后续升级。在 Yunzai-Bot 根目录夹打开终端，运行下述指令进行安装
 
 ```shell
+# github源
 git clone --depth=1 https://github.com/ikechan8370/chatgpt-plugin.git ./plugins/chatgpt-plugin/
+
+# 网络不好连不上github可以使用gitee源，但更新可能不如github及时
+git clone --depth=1 https://gitee.com/ikechan/chatgpt-plugin.git ./plugins/chatgpt-plugin/
+
+# 以上二选一后执行下面步骤进入目录安装依赖
 cd plugins/chatgpt-plugin
 pnpm i
+
 ```
 
 如果是手工下载的 zip 压缩包，请将解压后的 chatgpt-plugin 文件夹（请删除压缩自带的-master或版本号后缀）放置在 Yunzai-Bot 目录下的 plugins 文件夹内

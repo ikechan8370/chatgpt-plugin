@@ -556,6 +556,16 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
+          label: '以下为星火方式的配置',
+          component: 'Divider'
+        },
+        {
+          field: 'xinghuoToken',
+          label: '星火Cookie',
+          bottomHelpMessage: '获取对话页面的ssoSessionId cookie。不要带等号和分号',
+          component: 'Input'
+        },
+        {
           label: '以下为杂七杂八的配置',
           component: 'Divider'
         },
