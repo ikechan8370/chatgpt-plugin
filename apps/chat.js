@@ -1113,7 +1113,7 @@ export class chatgpt extends plugin {
       for (let quote of quotemessage) {
         if (quote.imageLink) imgUrls.push(quote.imageLink)
       }
-      if (useTTS) {
+      if (useTTS && response.length <= Config.autoUsePictureThreshold {
         // 缓存数据
         this.cacheContent(e, use, response, prompt, quotemessage, mood, chatMessage.suggestedResponses, imgUrls)
         if (response === 'Thanks for this conversation! I\'ve reached my limit, will you hit “New topic,” please?') {

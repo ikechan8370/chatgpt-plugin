@@ -185,6 +185,11 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
+            reg: '^#chatgpt(开启|关闭)高清语音',
+            fnc: 'enableTtsHD',
+            permission: 'master'
+        },
+        {
           /** 命令正则匹配 */
           reg: '^#(关闭|打开)群聊上下文$',
           /** 执行方法 */
@@ -483,7 +488,14 @@ export class ChatgptManagement extends plugin {
     await this.reply('设置成功', e.isGroup)
     return false
   }
-
+  async enableTtsHD (e) {
+    Config.ttsHD = e.msg.indexOf('开启') > -1
+    if(Config.ttsHD) {
+        await this.reply('已开启高清语音，电脑端将无法播放语音', true)
+    } else {
+        await this.reply('已关闭高清语音', true)
+    }
+  }
   async enableGroupContext (e) {
     const reg = /(关闭|打开)/
     const match = e.msg.match(reg)

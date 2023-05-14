@@ -114,6 +114,7 @@ const defaultConfig = {
   cloudMode: 'url',
   cloudDPR: 1,
   ttsMode: 'vits-uma-genshin-honkai', // or azure
+  ttsHD: false,
   azureTTSKey: '',
   azureTTSRegion: '',
   azureTTSSpeaker: 'zh-CN-XiaochenNeural',
