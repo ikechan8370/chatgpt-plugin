@@ -4,7 +4,7 @@ import { readFileSync, writeFile } from 'fs'
 const scrape = async (pbCookie, proxy) => {
   let option = { headers: { cookie: `${pbCookie}` } }
   if (proxy) {
-    option.proxy = proxy
+    option.agent = proxy
   }
   const _setting = await fetch(
     'https://poe.com/api/settings',
@@ -24,7 +24,7 @@ const scrape = async (pbCookie, proxy) => {
 const getUpdatedSettings = async (channelName, pbCookie, proxy) => {
   let option = { headers: { cookie: `${pbCookie}` } }
   if (proxy) {
-    option.proxy = proxy
+    option.agent = proxy
   }
   const _setting = await fetch(
       `https://poe.com/api/settings?channel=${channelName}`,

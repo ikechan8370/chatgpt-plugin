@@ -58,7 +58,7 @@ export class PoeClient {
     this.config.app_settings = result.appSettings
 
     // set value
-    this.headers['poe-formkey'] = this.config.quora_formkey
+    this.headers['poe-formkey'] = this.config.quora_formkey // unused
     this.headers['poe-tchannel'] = this.config.channel_name
     this.headers.Cookie = this.config.quora_cookie
     console.log(this.headers)
@@ -150,7 +150,9 @@ export class PoeClient {
     const nextData = JSON.parse(jsonText)
     this.nextData = nextData
     this.viewer = nextData.props.pageProps.payload.viewer
-    this.formkey = nextData.props.formkey
+
+    this.formkey = this.extract_formkey(text)
+    this.headers['poe-formkey'] = this.formkey
     let bots = this.viewer.availableBots
     this.bots = {}
     for (let i = 0; i < bots.length; i++) {
@@ -159,6 +161,24 @@ export class PoeClient {
       this.bots[chatData.defaultBotObject.nickname] = chatData
     }
     console.log(this.bots)
+  }
+
+  extract_formkey (html) {
+    const scriptRegex = /<script>if\(.+\)throw new Error;(.+)<\/script>/
+    const scriptText = html.match(scriptRegex)[1]
+    const keyRegex = /var .="([0-9a-f]+)",/
+    const keyText = scriptText.match(keyRegex)[1]
+    const cipherRegex = /.\[(\d+)]=.\[(\d+)]/g
+    const cipherPairs = scriptText.match(cipherRegex)
+
+    const formkeyList = Array(cipherPairs.length).fill('')
+    for (const pair of cipherPairs) {
+      const [formkeyIndex, keyIndex] = pair.match(/\d+/g).map(Number)
+      formkeyList[formkeyIndex] = keyText[keyIndex]
+    }
+    const formkey = formkeyList.join('')
+
+    return formkey
   }
 
   async clearContext (bot) {
