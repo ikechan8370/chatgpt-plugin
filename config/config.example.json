@@ -78,5 +78,6 @@
   "azureTTSSpeaker": "zh-CN-XiaochenNeural",
   "azureTTSEmotion": false,
   "enhanceAzureTTSEmotion": false,
-  "autoJapanese": false
+  "autoJapanese": false,
+  "ttsHD": false
 }
