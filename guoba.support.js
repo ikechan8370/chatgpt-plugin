@@ -150,6 +150,12 @@ export function supportGuoba () {
           }
         },
         {
+          field: 'ttsHD',
+          label: '开启高清语音',
+          bottomHelpMessage: '开启高清语音后，电脑端将无法播放语音',
+          component: 'Switch'
+        },
+        {
           field: 'alsoSendText',
           label: '语音同时发送文字',
           bottomHelpMessage: '语音模式下，同时发送文字版，避免音质较低听不懂',
