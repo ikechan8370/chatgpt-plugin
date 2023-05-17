@@ -83,9 +83,13 @@ async function uploadRecord (recordUrl, ttsMode = 'vits-uma-genshin-honkai') {
           method: 'POST',
           body: formData
         })
-        let t = await resultres.text()
+        let t = await resultres.arrayBuffer()
         try {
-          result = JSON.parse(t)
+          result = {
+            buffer: {
+              data: t
+            }
+          }
         } catch (e) {
           logger.error(t)
           throw e
