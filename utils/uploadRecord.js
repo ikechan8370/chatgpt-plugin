@@ -126,7 +126,7 @@ async function uploadRecord (recordUrl, ttsMode = 'vits-uma-genshin-honkai') {
     return false
   }
   let buf = Buffer.from(result.buffer)
-  let seconds = result.time.seconds
+  let seconds = result.time ? result.time.seconds : 0
   const hash = md5(buf)
   const codec = String(buf.slice(0, 7)).includes('SILK') ? 1 : 0
   const body = core.pb.encode({
