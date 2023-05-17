@@ -126,6 +126,7 @@ async function uploadRecord (recordUrl, ttsMode = 'vits-uma-genshin-honkai') {
     return false
   }
   let buf = Buffer.from(result.buffer)
+  let seconds = result.time.seconds
   const hash = md5(buf)
   const codec = String(buf.slice(0, 7)).includes('SILK') ? 1 : 0
   const body = core.pb.encode({
@@ -181,9 +182,10 @@ async function uploadRecord (recordUrl, ttsMode = 'vits-uma-genshin-honkai') {
     3: fid,
     4: hash,
     5: hash.toString('hex') + '.amr',
-    6: buf.length,
+    6: seconds,
     11: 1,
     18: fid,
+    19: seconds,
     30: Buffer.from([8, 0, 40, 0, 56, 0])
   })
   if (tmpFile) {
