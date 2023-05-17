@@ -468,7 +468,7 @@ export async function convertFaces (msg, handleAt = false, e) {
   handleAt = e?.isGroup && handleAt
   let groupMembers
   let groupCardQQMap = {}
-  if (handleAt) {
+  if (handleAt && typeof e.group.getMemberMap === 'function') {
     groupMembers = await e.group.getMemberMap()
     for (let key of groupMembers.keys()) {
       groupCardQQMap[groupMembers.get(key).card || groupMembers.get(key).nickname] = groupMembers.get(key).user_id
