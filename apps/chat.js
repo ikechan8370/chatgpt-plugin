@@ -36,8 +36,7 @@ import { SlackClaudeClient } from '../utils/slack/slackClient.js'
 import { ChatgptManagement } from './management.js'
 import { getPromptByName } from '../utils/prompts.js'
 import BingDrawClient from '../utils/BingDraw.js'
-import emojiStrip from 'emoji-strip'
-import XinghuoClient from "../utils/xinghuo/xinghuo.js";
+import XinghuoClient from '../utils/xinghuo/xinghuo.js'
 try {
   await import('emoji-strip')
 } catch (err) {
