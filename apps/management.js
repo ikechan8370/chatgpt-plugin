@@ -230,7 +230,7 @@ export class ChatgptManagement extends plugin {
           fnc: 'userPage'
         },
         {
-          reg: '^#chatgpt(对话|管理|娱乐|绘图|人物设定|聊天记录)?指令表(帮助)?',
+          reg: '^#(chatgpt)?(对话|管理|娱乐|绘图|人物设定|聊天记录)?指令表(帮助|搜索(.+))?',
           fnc: 'commandHelp'
         },
         {
@@ -308,9 +308,10 @@ export class ChatgptManagement extends plugin {
 
   async commandHelp (e) {
     if (!this.e.isMaster) { return this.reply('你没有权限') }
-    if (e.msg.trim() === '#chatgpt指令表帮助') {
+    if (/^#(chatgpt)?指令表帮助$/.exec(e.msg.trim())) {
       await this.reply('#chatgpt指令表: 查看本插件的所有指令\n' +
-          '#chatgpt(对话|管理|娱乐|绘图|人物设定|聊天记录)指令表: 查看对应功能分类的指令表')
+          '#chatgpt(对话|管理|娱乐|绘图|人物设定|聊天记录)指令表: 查看对应功能分类的指令表\n' +
+          '#chatgpt指令表搜索xxx: 查看包含对应关键词的指令')
       return false
     }
     const categories = {
@@ -341,8 +342,7 @@ export class ChatgptManagement extends plugin {
       }
     }
     if (e.msg.includes('搜索')) {
-      let cmd = e.msg.trim().match(/^#chatgpt(对话|管理|娱乐|绘图|人物设定|聊天记录)?指令表(帮助|搜索(.+))?/)[3]
-      logger.warn(cmd)
+      let cmd = e.msg.trim().match(/^#(chatgpt)?(对话|管理|娱乐|绘图|人物设定|聊天记录)?指令表(帮助|搜索(.+))?/)[4]
       if (!cmd) {
         await this.reply('(⊙ˍ⊙)')
         return 0
@@ -362,7 +362,7 @@ export class ChatgptManagement extends plugin {
           await this.reply(searchResults.join('\n'), e.isGroup)
           return 1
         } else {
-          let msg = await makeForwardMsg(e, searchResults, e.msg.slice(8))
+          let msg = await makeForwardMsg(e, searchResults, e.msg.slice(1).startsWith('chatgpt') ? e.msg.slice(8) : 'chatgpt' + e.msg.slice(1))
           await this.reply(msg)
           return 1
         }
@@ -383,7 +383,7 @@ export class ChatgptManagement extends plugin {
         prompts.push(generatePrompt(plugin, commands))
       }
     }
-    let msg = await makeForwardMsg(e, prompts, e.msg.slice(1))
+    let msg = await makeForwardMsg(e, prompts, e.msg.slice(1).startsWith('chatgpt') ? e.msg.slice(1) : ('chatgpt' + e.msg.slice(1)))
     await this.reply(msg)
     return true
   }

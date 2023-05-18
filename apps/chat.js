@@ -1164,6 +1164,11 @@ export class chatgpt extends plugin {
             await this.reply('合成语音发生错误~')
           }
         } else if (Config.ttsMode === 'azure' && Config.azureTTSKey) {
+          const ttsRoleAzure = userReplySetting.ttsRoleAzure
+          const isEn = AzureTTS.supportConfigurations.find(config => config.code === ttsRoleAzure)?.language.includes('en')
+          if (isEn) {
+            ttsResponse = (await translate(ttsResponse, '英')).replace('\n', '')
+          }
           let ssml = AzureTTS.generateSsml(ttsResponse, {
             speaker,
             emotion,
