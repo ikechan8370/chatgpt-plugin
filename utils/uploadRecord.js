@@ -62,6 +62,10 @@ async function uploadRecord (recordUrl, ttsMode = 'vits-uma-genshin-honkai') {
         recordUrl = tmpFile
       }
       if (recordType === 'file' || Config.cloudMode === 'file') {
+        if (!recordUrl) {
+          logger.error('云转码错误：recordUrl 异常')
+          return false
+        }
         const formData = new FormData()
         let buffer
         if (!recordUrl.startsWith('http')) {
