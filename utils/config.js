@@ -47,6 +47,7 @@ const defaultConfig = {
   apiForceUseReverse: false,
   plus: false,
   useGPT4: false,
+  xinghuoToken: '',
   promptPrefixOverride: 'Your answer shouldn\'t be too verbose. Prefer to answer in Chinese.',
   assistantLabel: 'ChatGPT',
   // thinkingTips: true,
@@ -121,7 +122,7 @@ const defaultConfig = {
   azureTTSEmotion: false,
   enhanceAzureTTSEmotion: false,
   autoJapanese: false,
-  version: 'v2.5.9'
+  version: 'v2.6.0'
 }
 const _path = process.cwd()
 let config = {}

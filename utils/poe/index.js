@@ -2,6 +2,16 @@ import { readFileSync } from 'fs'
 import { scrape } from './credential.js'
 import fetch from 'node-fetch'
 import crypto from 'crypto'
+import { Config } from '../config.js'
+
+let proxy
+if (Config.proxy) {
+  try {
+    proxy = (await import('https-proxy-agent')).default
+  } catch (e) {
+    console.warn('未安装https-proxy-agent，请在插件目录下执行pnpm add https-proxy-agent')
+  }
+}
 // used when test as a single file
 // const _path = process.cwd()
 const _path = process.cwd() + '/plugins/chatgpt-plugin/utils/poe'
@@ -41,14 +51,14 @@ export class PoeClient {
   reConnectWs = false
 
   async setCredentials () {
-    let result = await scrape(this.config.quora_cookie)
+    let result = await scrape(this.config.quora_cookie, this.config.proxy ? proxy(Config.proxy) : null)
     console.log(result)
     this.config.quora_formkey = result.appSettings.formkey
     this.config.channel_name = result.channelName
     this.config.app_settings = result.appSettings
 
     // set value
-    this.headers['poe-formkey'] = this.config.quora_formkey
+    this.headers['poe-formkey'] = this.config.quora_formkey // unused
     this.headers['poe-tchannel'] = this.config.channel_name
     this.headers.Cookie = this.config.quora_cookie
     console.log(this.headers)
@@ -79,14 +89,18 @@ export class PoeClient {
     let payload = JSON.stringify(request)
     let baseString = payload + this.headers['poe-formkey'] + 'WpuLMiXEKKE98j56k'
     const md5 = crypto.createHash('md5').update(baseString).digest('hex')
-    const response = await fetch('https://poe.com/api/gql_POST', {
+    let option = {
       method: 'POST',
       headers: Object.assign(this.headers, {
         'poe-tag-id': md5,
         'content-type': 'application/json'
       }),
       body: payload
-    })
+    }
+    if (this.config.proxy) {
+      option.agent = proxy(Config.proxy)
+    }
+    const response = await fetch('https://poe.com/api/gql_POST', option)
     let text = await response.text()
     try {
       let result = JSON.parse(text)
@@ -103,9 +117,13 @@ export class PoeClient {
     let retry = 10
     while (retry >= 0) {
       let url = `https://poe.com/_next/data/${this.nextData.buildId}/${displayName}.json`
-      let r = await fetch(url, {
+      let option = {
         headers: this.headers
-      })
+      }
+      if (this.config.proxy) {
+        option.agent = proxy(Config.proxy)
+      }
+      let r = await fetch(url, option)
       let res = await r.text()
       try {
         let chatData = (JSON.parse(res)).pageProps.payload.chatOfBotDisplayName
@@ -119,16 +137,22 @@ export class PoeClient {
   }
 
   async getChatId () {
-    let r = await fetch('https://poe.com', {
+    let option = {
       headers: this.headers
-    })
+    }
+    if (this.config.proxy) {
+      option.agent = proxy(Config.proxy)
+    }
+    let r = await fetch('https://poe.com', option)
     let text = await r.text()
     const jsonRegex = /<script id="__NEXT_DATA__" type="application\/json">(.+?)<\/script>/
     const jsonText = text.match(jsonRegex)[1]
     const nextData = JSON.parse(jsonText)
     this.nextData = nextData
     this.viewer = nextData.props.pageProps.payload.viewer
-    this.formkey = nextData.props.formkey
+
+    this.formkey = this.extract_formkey(text)
+    this.headers['poe-formkey'] = this.formkey
     let bots = this.viewer.availableBots
     this.bots = {}
     for (let i = 0; i < bots.length; i++) {
@@ -137,6 +161,24 @@ export class PoeClient {
       this.bots[chatData.defaultBotObject.nickname] = chatData
     }
     console.log(this.bots)
+  }
+
+  extract_formkey (html) {
+    const scriptRegex = /<script>if\(.+\)throw new Error;(.+)<\/script>/
+    const scriptText = html.match(scriptRegex)[1]
+    const keyRegex = /var .="([0-9a-f]+)",/
+    const keyText = scriptText.match(keyRegex)[1]
+    const cipherRegex = /.\[(\d+)]=.\[(\d+)]/g
+    const cipherPairs = scriptText.match(cipherRegex)
+
+    const formkeyList = Array(cipherPairs.length).fill('')
+    for (const pair of cipherPairs) {
+      const [formkeyIndex, keyIndex] = pair.match(/\d+/g).map(Number)
+      formkeyList[formkeyIndex] = keyText[keyIndex]
+    }
+    const formkey = formkeyList.join('')
+
+    return formkey
   }
 
   async clearContext (bot) {
@@ -255,24 +297,3 @@ export class PoeClient {
     }
   }
 }
-
-async function testPoe () {
-  // const key = 'deb04db9f2332a3287b7d2545061af62'
-  // const channel = 'poe-chan55-8888-ujygckefewomybvkqfrp'
-  const cookie = 'p-b=WSvmyvjHVJoMtQVkirtn-A%3D%3D'
-  let client = new PoeClient({
-    // quora_formkey: key,
-    // channel_name: channel,
-    quora_cookie: cookie
-  })
-  await client.setCredentials()
-  await client.getChatId()
-  let ai = 'a2'
-  await client.sendMsg(ai, '你说话不是很通顺啊')
-  const response = await client.getResponse(ai)
-  return response
-}
-
-// testPoe().then(res => {
-//   console.log(res)
-// })

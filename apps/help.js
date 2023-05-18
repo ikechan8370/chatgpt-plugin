@@ -13,8 +13,8 @@ let helpData = [
       },
       {
         icon: 'chat',
-        title: '#chat1/#chat3/#chatglm/#bing',
-        desc: '分别使用API/API3/ChatGLM/Bing模式与机器人聊天，无论主人设定了何种全局模式'
+        title: '#chat1/#chat3/#chatglm/#bing/#claude/#xh',
+        desc: '分别使用API/API3/ChatGLM/Bing/Claude/星火模式与机器人聊天，无论主人设定了何种全局模式'
       },
       {
         icon: 'chat-private',
@@ -190,6 +190,11 @@ let helpData = [
         icon: 'key',
         title: '#chatgpt设置APIKey',
         desc: '设置APIKey'
+      },
+      {
+        icon: 'key',
+        title: '#chatgpt设置星火token',
+        desc: '设置星火ssoSessionId（对话页面的ssoSessionId cookie值）'
       },
       {
         icon: 'eat',
