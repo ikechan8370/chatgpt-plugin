@@ -252,7 +252,6 @@ export class ChatgptManagement extends plugin {
 
   async getTTSRoleList (e) {
     const matchCommand = e.msg.match(/^#(chatgpt)?(vits|azure|vox)?语音(服务|角色列表)/)
-    logger.warn(matchCommand)
     if (matchCommand[3] === '服务') {
       await this.reply(`当前支持vox、vits、azure语音服务，可使用'#(vox|azure|vits)语音角色列表'查看支持的语音角色。
       
