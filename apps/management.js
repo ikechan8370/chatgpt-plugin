@@ -266,9 +266,9 @@ export class ChatgptManagement extends plugin {
       await this.reply(roleList)
       return
     } else if (ttsMode === 'voicevox') {
-      roleList = voxRoleList.map(item => item.name).join('、')
+      roleList = getVoicevoxRoleList()
     } else if (ttsMode === 'azure') {
-      roleList = azureRoleList.map(item => item.name).join('、')
+      roleList = getAzureRoleList()
     }
     if (roleList.length > 300) {
       let chunks = roleList.match(/[^、]+(?:、[^、]+){0,30}/g)
@@ -276,6 +276,7 @@ export class ChatgptManagement extends plugin {
     }
     await this.reply(roleList)
   }
+
   async ttsSwitch (e) {
     let userReplySetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
     userReplySetting = !userReplySetting
@@ -341,8 +342,8 @@ export class ChatgptManagement extends plugin {
         commandSet.push({ name, dsc: plugin.dsc, rule })
       }
     }
-    if (e.msg.includes('搜索')) {
-      let cmd = e.msg.trim().match(/^#(chatgpt)?(对话|管理|娱乐|绘图|人物设定|聊天记录)?指令表(帮助|搜索(.+))?/)[4]
+    if (/^#(chatgpt)?指令表搜索(.+)/.test(e.msg.trim())) {
+      let cmd = e.msg.trim().match(/#(chatgpt)?指令表搜索(.+)/)[2]
       if (!cmd) {
         await this.reply('(⊙ˍ⊙)')
         return 0
@@ -545,6 +546,7 @@ export class ChatgptManagement extends plugin {
     const matchCommand = e.msg.match(reg)
     const settingType = matchCommand[2]
     let replyMsg = ''
+    let ttsSupportKinds = Config.azureTTSKey ? 1 : Config.ttsSpace ? 2 : Config.voicevoxSpace ? 3 : undefined
     switch (settingType) {
       case '图片模式':
         if (matchCommand[1] === '打开') {
@@ -579,8 +581,8 @@ export class ChatgptManagement extends plugin {
           replyMsg = '请使用“#chatgpt打开全局文本模式”或“#chatgpt关闭全局文本模式”命令来设置回复模式'
         } break
       case '语音模式':
-        if (!Config.ttsSpace) {
-          replyMsg = '您没有配置VITS API，请前往锅巴面板进行配置'
+        if (!ttsSupportKinds) {
+          replyMsg = '您没有配置任何语音服务，请前往锅巴面板进行配置'
           break
         }
         if (matchCommand[1] === '打开') {
@@ -601,8 +603,8 @@ export class ChatgptManagement extends plugin {
         replyMsg = '可使用以下命令配置全局回复:\n#chatgpt(打开/关闭)全局(语音/图片/文本)模式\n#chatgpt设置全局(语音角色|角色语音|角色)+角色名称(留空则为随机)'
         break
       default:
-        if (!Config.ttsSpace) {
-          replyMsg = '您没有配置VITS API，请前往锅巴面板进行配置'
+        if (!ttsSupportKinds) {
+          replyMsg = '您没有配置任何语音服务，请前往锅巴面板进行配置'
           break
         }
         if (settingType.match(/(语音角色|角色语音|角色)/)) {
@@ -611,12 +613,28 @@ export class ChatgptManagement extends plugin {
             replyMsg = 'ChatGpt将随机挑选角色回复'
             Config.defaultTTSRole = ''
           } else {
-            const ttsRole = convertSpeaker(speaker)
-            if (vitsRoleList.includes(ttsRole)) {
-              Config.defaultTTSRole = ttsRole
-              replyMsg = `ChatGPT默认语音角色已被设置为“${ttsRole}”`
-            } else {
-              replyMsg = `抱歉，我还不认识“${ttsRole}”这个语音角色`
+            if (ttsSupportKinds === 1) {
+              if (getAzureRoleList().includes(speaker)) {
+                Config.defaultUseTTS = azureRoleList.filter(s => s.name === speaker)[0].code
+                replyMsg = `ChatGPT默认语音角色已被设置为“${speaker}”`
+              } else {
+                await this.reply(`抱歉，没有"${speaker}"这个角色，目前azure模式下支持的角色有${azureRoleList.map(item => item.name).join('、')}`)
+              }
+            } else if (ttsSupportKinds === 2) {
+              const ttsRole = convertSpeaker(speaker)
+              if (vitsRoleList.includes(ttsRole)) {
+                Config.defaultTTSRole = ttsRole
+                replyMsg = `ChatGPT默认语音角色已被设置为“${ttsRole}”`
+              } else {
+                replyMsg = `抱歉，我还不认识“${ttsRole}”这个语音角色`
+              }
+            } else if (ttsSupportKinds === 3) {
+              if (getVoicevoxRoleList().includes(speaker)) {
+                Config.defaultUseTTS = voxRoleList.filter(s => s.name === speaker)[0].code
+                replyMsg = `ChatGPT默认语音角色已被设置为“${speaker}”`
+              } else {
+                await this.reply(`抱歉，没有"${speaker}"这个角色，目前voicevox模式下支持的角色有${voxRoleList.map(item => item.name).join('、')}`)
+              }
             }
           }
         } else {
@@ -992,27 +1010,27 @@ export class ChatgptManagement extends plugin {
       poe: 'Poe'
     }
     let modeText = modeMap[mode || 'api']
-    let message = `    API模式和浏览器模式如何选择？
+    let message = `API模式和浏览器模式如何选择？
 
-    // eslint-disable-next-line no-irregular-whitespace
-    API模式会调用OpenAI官方提供的gpt-3.5-turbo API，只需要提供API Key。一般情况下，该种方式响应速度更快，不会像chatGPT官网一样总出现不可用的现象，但注意gpt-3.5-turbo的API调用是收费的，新用户有18美元试用金可用于支付，价格为$0.0020/ 1K tokens.(问题和回答加起来算token)
-   
-    API3模式会调用官网反代API，他会帮你绕过CF防护，需要提供ChatGPT的Token。效果与官网和浏览器一致。设置token指令：#chatgpt设置token。
+API模式会调用 OpenAI 官方提供的 gpt-3.5-turbo API，只需要提供 API Key。一般情况下，该种方式响应速度更快，不会像 chatGPT 官网一样总出现不可用的现象，但要注意 gpt-3.5-turbo 的 API 调用是收费的，新用户有 $5 的试用金可用于支付，价格为 $0.0020/1K tokens。（问题和回答加起来算 token）
 
-    浏览器模式通过在本地启动Chrome等浏览器模拟用户访问ChatGPT网站，使得获得和官方以及API2模式一模一样的回复质量，同时保证安全性。缺点是本方法对环境要求较高，需要提供桌面环境和一个可用的代理（能够访问ChatGPT的IP地址），且响应速度不如API，而且高峰期容易无法使用。
+API3 模式会调用官网反代 API，它会帮你绕过 CF 防护，需要提供 ChatGPT 的 Token。效果与官网和浏览器一致。设置 Token 指令：#chatgpt设置token。
 
-    必应（Bing）将调用微软新必应接口进行对话。需要在必应网页能够正常使用新必应且设置有效的Bing 登录Cookie方可使用。#chatgpt设置必应token
-    
-    自建ChatGLM模式会调用自建的ChatGLM-6B服务器API进行对话，需要自建。参考https://github.com/ikechan8370/SimpleChatGLM6BAPI
-    
-    Claude模式会调用Slack中的Claude机器人进行对话，与其他模式不同的是全局共享一个对话。配置参考https://ikechan8370.com/archives/chatgpt-plugin-for-yunzaipei-zhi-slack-claude
-    
-    Poe模式会调用Poe中的Claude-instant进行对话。需要提供cookie：#chatgpt设置PoeToken
+浏览器模式通过在本地启动 Chrome 等浏览器模拟用户访问 ChatGPT 网站，使得获得和官方以及 API2 模式一模一样的回复质量，同时保证安全性。缺点是本方法对环境要求较高，需要提供桌面环境和一个可用的代理（能够访问 ChatGPT 的 IP 地址），且响应速度不如 API，而且高峰期容易无法使用。
 
-    您可以使用‘#chatgpt切换浏览器/API/API3/Bing/ChatGLM/Claude/Poe’来切换到指定模式。
+必应（Bing）将调用微软新必应接口进行对话。需要在必应网页能够正常使用新必应且设置有效的 Bing 登录 Cookie 方可使用。#chatgpt设置必应 Token。
 
-    当前为${modeText}模式。
-`
+自建 ChatGLM 模式会调用自建的 ChatGLM-6B 服务器 API 进行对话，需要自建。参考 https://github.com/ikechan8370/SimpleChatGLM6BAPI。
+
+Claude 模式会调用 Slack 中的 Claude 机器人进行对话，与其他模式不同的是全局共享一个对话。配置参考 https://ikechan8370.com/archives/chatgpt-plugin-for-yunzaipei-zhi-slack-claude。
+
+Poe 模式会调用 Poe 中的 Claude-instant 进行对话。需要提供 Cookie：#chatgpt设置 Poe Token。
+
+星火 模式会调用科大讯飞推出的新一代认知智能大模型 '星火认知大模型' 进行对话。需要提供Cookie：#chatgpt设置星火token。
+
+您可以使用 "#chatgpt切换浏览器/API/API3/Bing/ChatGLM/Claude/Poe/星火" 来切换到指定模式。
+
+当前为 ${modeText} 模式。`
     await this.reply(message)
   }
 
@@ -1334,4 +1352,12 @@ export class ChatgptManagement extends plugin {
     await this.e.reply('设置成功')
     this.finish('doSetOpenAIPlatformToken')
   }
+}
+
+export function getVoicevoxRoleList () {
+  return voxRoleList.map(item => item.name).join('、')
+}
+
+export function getAzureRoleList () {
+  return azureRoleList.map(item => item.name).join('、')
 }

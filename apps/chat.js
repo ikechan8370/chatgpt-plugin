@@ -1168,6 +1168,7 @@ export class chatgpt extends plugin {
           if (isEn) {
             ttsResponse = (await translate(ttsResponse, '英')).replace('\n', '')
           }
+          logger.warn(emotion, emotionDegree)
           let ssml = AzureTTS.generateSsml(ttsResponse, {
             speaker,
             emotion,

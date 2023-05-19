@@ -9,6 +9,8 @@ import { makeForwardMsg, mkdirs } from '../utils/common.js'
 import uploadRecord from '../utils/uploadRecord.js'
 import { makeWordcloud } from '../utils/wordcloud/wordcloud.js'
 import { translate, translateLangSupports } from '../utils/translate.js'
+import AzureTTS from '../utils/tts/microsoft-azure.js'
+import VoiceVoxTTS from '../utils/tts/voicevox.js'
 let useSilk = false
 try {
   await import('node-silk')
@@ -56,7 +58,7 @@ export class Entertainment extends plugin {
       {
         // 设置十分钟左右的浮动
         cron: '0 ' + Math.ceil(Math.random() * 10) + ' 7-23/' + Config.helloInterval + ' * * ?',
-        // cron: '0 ' + '*/' + Config.helloInterval + ' * * * ?',
+        // cron: '*/2 * * * *',
         name: 'ChatGPT主动随机说话',
         fnc: this.sendRandomMessage.bind(this)
       }
@@ -273,18 +275,66 @@ ${translateLangLabels}
       logger.info('开始处理：ChatGPT随机打招呼。')
     }
     let toSend = Config.initiativeChatGroups || []
-    for (let i = 0; i < toSend.length; i++) {
-      if (!toSend[i]) {
+    for (const element of toSend) {
+      if (!element) {
         continue
       }
-      let groupId = parseInt(toSend[i])
+      let groupId = parseInt(element)
       if (Bot.getGroupList().get(groupId)) {
         // 打招呼概率
         if (Math.floor(Math.random() * 100) < Config.helloProbability) {
           let message = await generateHello()
           logger.info(`打招呼给群聊${groupId}：` + message)
           if (Config.defaultUseTTS) {
-            let audio = await generateAudio(message, Config.defaultTTSRole)
+            let audio
+            const [defaultVitsTTSRole, defaultAzureTTSRole, defaultVoxTTSRole] = [Config.defaultTTSRole, Config.azureTTSSpeaker, Config.voicevoxTTSSpeaker]
+            let ttsSupportKinds = []
+            if (Config.azureTTSKey) ttsSupportKinds.push(1)
+            if (Config.ttsSpace) ttsSupportKinds.push(2)
+            if (Config.voicevoxSpace) ttsSupportKinds.push(3)
+            if (!ttsSupportKinds.length) {
+              logger.warn('没有配置任何语音服务！')
+              return false
+            }
+            const randomIndex = Math.floor(Math.random() * ttsSupportKinds.length)
+            switch (ttsSupportKinds[randomIndex]) {
+              case 1 : {
+                const isEn = AzureTTS.supportConfigurations.find(config => config.code === defaultAzureTTSRole)?.language.includes('en')
+                if (isEn) {
+                  message = (await translate(message, '英')).replace('\n', '')
+                }
+                audio = await AzureTTS.generateAudio(message, {
+                  defaultAzureTTSRole
+                })
+                break
+              }
+              case 2 : {
+                if (Config.autoJapanese) {
+                  try {
+                    message = await translate(message, '日')
+                  } catch (err) {
+                    logger.error(err)
+                  }
+                }
+                try {
+                  audio = await generateAudio(message, defaultVitsTTSRole, '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）')
+                } catch (err) {
+                  logger.error(err)
+                }
+                break
+              }
+              case 3 : {
+                message = (await translate(message, '日')).replace('\n', '')
+                try {
+                  audio = await VoiceVoxTTS.generateAudio(message, {
+                    speaker: defaultVoxTTSRole
+                  })
+                } catch (err) {
+                  logger.error(err)
+                }
+                break
+              }
+            }
             if (useSilk) {
               await Bot.sendGroupMsg(groupId, await uploadRecord(audio))
             } else {
@@ -360,8 +410,8 @@ ${translateLangLabels}
           return false
         } else {
           Config.initiativeChatGroups = Config.initiativeChatGroups
-              .filter(group => group.trim() !== '')
-              .concat(validGroups)
+            .filter(group => group.trim() !== '')
+            .concat(validGroups)
         }
         if (typeof paramArray[2] === 'undefined' && typeof paramArray[3] === 'undefined') {
           replyMsg = `已更新打招呼设置：\n${!e.isGroup ? '群号：' + Config.initiativeChatGroups.join(', ') + '\n' : ''}间隔时间：${Config.helloInterval}小时\n触发概率：${Config.helloProbability}%`
