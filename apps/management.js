@@ -180,7 +180,7 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
-          reg: '^#chatgpt(打开|关闭|设置)?全局((图片模式|语音模式|(语音角色|角色语音|角色).*)|回复帮助)$',
+          reg: '^#chatgpt(打开|关闭|设置)?全局((图片模式|语音模式|((azure|vits|vox)语音角色|角色语音|角色).*)|回复帮助)$',
           fnc: 'setDefaultReplySetting',
           permission: 'master'
         },
@@ -239,7 +239,7 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
-          reg: '^#chatgpt角色列表$',
+          reg: '^#(chatgpt)?(vits|azure|vox)?语音(角色列表|服务)$',
           fnc: 'getTTSRoleList'
         },
         {
@@ -251,24 +251,54 @@ export class ChatgptManagement extends plugin {
   }
 
   async getTTSRoleList (e) {
+    const matchCommand = e.msg.match(/^#(chatgpt)?(vits|azure|vox)?语音(服务|角色列表)/)
+    logger.warn(matchCommand)
+    if (matchCommand[3] === '服务') {
+      await this.reply(`当前支持vox、vits、azure语音服务，可使用'#(vox|azure|vits)语音角色列表'查看支持的语音角色。
+      
+vits语音：主要有赛马娘，原神中文，原神日语，崩坏 3 的音色、结果有随机性，语调可能很奇怪。
+      
+vox语音：Voicevox 是一款由日本 DeNA 开发的语音合成软件，它可以将文本转换为自然流畅的语音。Voicevox 支持多种语言和声音，可以用于制作各种语音内容，如动画、游戏、广告等。Voicevox 还提供了丰富的调整选项，可以调整声音的音调、速度、音量等参数，以满足不同需求。除了桌面版软件外，Voicevox 还提供了 Web 版本和 API 接口，方便开发者在各种平台上使用。
+
+azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，它可以帮助开发者将语音转换为文本、将文本转换为语音、实现自然语言理解和对话等功能。Azure 语音支持多种语言和声音，可以用于构建各种语音应用程序，如智能客服、语音助手、自动化电话系统等。Azure 语音还提供了丰富的 API 和 SDK，方便开发者在各种平台上集成使用。
+      `)
+      return true
+    }
     let userReplySetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
     userReplySetting = !userReplySetting
       ? getDefaultReplySetting()
       : JSON.parse(userReplySetting)
-    if (!userReplySetting.useTTS) return
+    if (!userReplySetting.useTTS && matchCommand[2] === undefined) {
+      await this.reply('当前不是语音模式,如果想查看不同语音模式下支持的角色列表,可使用"#(vox|azure|vits)语音角色列表"查看')
+      return false
+    }
     let ttsMode = Config.ttsMode
     let roleList = []
-    if (ttsMode === 'vits-uma-genshin-honkai') {
-      const [firstHalf, secondHalf] = [vitsRoleList.slice(0, Math.floor(vitsRoleList.length / 2)).join('、'), vitsRoleList.slice(Math.floor(vitsRoleList.length / 2)).join('、')]
-      const [chunk1, chunk2] = [firstHalf.match(/[^、]+(?:、[^、]+){0,30}/g), secondHalf.match(/[^、]+(?:、[^、]+){0,30}/g)]
-      const list = [await makeForwardMsg(e, chunk1, `${Config.ttsMode}角色列表1`), await makeForwardMsg(e, chunk2, `${Config.ttsMode}角色列表2`)]
-      roleList = await makeForwardMsg(e, list, `${Config.ttsMode}角色列表`)
-      await this.reply(roleList)
-      return
-    } else if (ttsMode === 'voicevox') {
+    if (matchCommand[2] === 'vits') {
+      roleList = getVitsRoleList(this.e)
+    } else if (matchCommand[2] === 'vox') {
       roleList = getVoicevoxRoleList()
-    } else if (ttsMode === 'azure') {
+    } else if (matchCommand[2] === 'azure') {
       roleList = getAzureRoleList()
+    } else if (matchCommand[2] === undefined) {
+      switch (ttsMode) {
+        case 'vits-uma-genshin-honkai':
+          roleList = getVitsRoleList(this.e)
+          break
+        case 'voicevox':
+          roleList = getVoicevoxRoleList()
+          break
+        case 'azure':
+          if (matchCommand[2] === 'azure') {
+            roleList = getAzureRoleList()
+          }
+          break
+        default:
+          break
+      }
+    } else {
+      await this.reply('设置错误,请使用"#chatgpt语音服务"查看支持的语音配置')
+      return false
     }
     if (roleList.length > 300) {
       let chunks = roleList.match(/[^、]+(?:、[^、]+){0,30}/g)
@@ -542,7 +572,7 @@ export class ChatgptManagement extends plugin {
   }
 
   async setDefaultReplySetting (e) {
-    const reg = /^#chatgpt(打开|关闭|设置)?全局((文本模式|图片模式|语音模式|(语音角色|角色语音|角色).*)|回复帮助)/
+    const reg = /^#chatgpt(打开|关闭|设置)?全局((文本模式|图片模式|语音模式|((azure|vits|vox)?语音角色|角色语音|角色)(.*))|回复帮助)/
     const matchCommand = e.msg.match(reg)
     const settingType = matchCommand[2]
     let replyMsg = ''
@@ -608,33 +638,49 @@ export class ChatgptManagement extends plugin {
           break
         }
         if (settingType.match(/(语音角色|角色语音|角色)/)) {
-          const speaker = matchCommand[2].replace(/(语音角色|角色语音|角色)/, '').trim() || ''
+          const voiceKind = matchCommand[5] || 'vits'
+          const speaker = matchCommand[6] || ''
           if (!speaker.length) {
             replyMsg = 'ChatGpt将随机挑选角色回复'
-            Config.defaultTTSRole = ''
+            if (voiceKind === 'vits') Config.defaultTTSRole = '随机'
+            if (voiceKind === 'azure') Config.azureTTSSpeaker = '随机'
+            if (voiceKind === 'vox') Config.voicevoxTTSSpeaker = '随机'
           } else {
-            if (ttsSupportKinds === 1) {
+            if (ttsSupportKinds === 1 && voiceKind === 'azure') {
               if (getAzureRoleList().includes(speaker)) {
                 Config.defaultUseTTS = azureRoleList.filter(s => s.name === speaker)[0].code
                 replyMsg = `ChatGPT默认语音角色已被设置为“${speaker}”`
+              } else if (speaker === '随机') {
+                replyMsg = '设置成功,ChatGpt将随机挑选azure角色回复'
+                Config.azureTTSSpeaker = '随机'
               } else {
                 await this.reply(`抱歉，没有"${speaker}"这个角色，目前azure模式下支持的角色有${azureRoleList.map(item => item.name).join('、')}`)
+                return false
               }
-            } else if (ttsSupportKinds === 2) {
+            } else if (ttsSupportKinds === 2 && voiceKind === 'vits') {
               const ttsRole = convertSpeaker(speaker)
               if (vitsRoleList.includes(ttsRole)) {
                 Config.defaultTTSRole = ttsRole
                 replyMsg = `ChatGPT默认语音角色已被设置为“${ttsRole}”`
+              } else if (speaker === '随机') {
+                replyMsg = '设置成功,ChatGpt将随机挑选vits角色回复'
+                Config.defaultTTSRole = '随机'
               } else {
-                replyMsg = `抱歉，我还不认识“${ttsRole}”这个语音角色`
+                replyMsg = `抱歉，我还不认识“${ttsRole}”这个语音角色,可使用'#vits角色列表'查看可配置的角色`
               }
-            } else if (ttsSupportKinds === 3) {
+            } else if (ttsSupportKinds === 3 && voiceKind === 'vox') {
               if (getVoicevoxRoleList().includes(speaker)) {
                 Config.defaultUseTTS = voxRoleList.filter(s => s.name === speaker)[0].code
                 replyMsg = `ChatGPT默认语音角色已被设置为“${speaker}”`
+              } else if (speaker === '随机') {
+                replyMsg = '设置成功,ChatGpt将随机挑选vox角色回复'
+                Config.voicevoxTTSSpeaker = '随机'
               } else {
                 await this.reply(`抱歉，没有"${speaker}"这个角色，目前voicevox模式下支持的角色有${voxRoleList.map(item => item.name).join('、')}`)
+                return false
               }
+            } else {
+              replyMsg = '设置错误,请检查语音配置~'
             }
           }
         } else {
@@ -1360,4 +1406,10 @@ export function getVoicevoxRoleList () {
 
 export function getAzureRoleList () {
   return azureRoleList.map(item => item.name).join('、')
+}
+async function getVitsRoleList (e) {
+  const [firstHalf, secondHalf] = [vitsRoleList.slice(0, Math.floor(vitsRoleList.length / 2)).join('、'), vitsRoleList.slice(Math.floor(vitsRoleList.length / 2)).join('、')]
+  const [chunk1, chunk2] = [firstHalf.match(/[^、]+(?:、[^、]+){0,30}/g), secondHalf.match(/[^、]+(?:、[^、]+){0,30}/g)]
+  const list = [await makeForwardMsg(e, chunk1, 'vits角色列表1'), await makeForwardMsg(e, chunk2, 'vits角色列表2')]
+  return await makeForwardMsg(e, list, 'vits角色列表')
 }
