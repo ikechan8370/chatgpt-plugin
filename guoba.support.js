@@ -791,10 +791,6 @@ export function supportGuoba () {
         }
         // 正确储存azureRoleSelect结果
         const azureSpeaker = azureRoleList.find(config => {
-          // if (data.azureTTSSpeaker === '随机') {
-          //   Config.azureTTSSpeaker = '随机'
-          //   return true
-          // }
           let i = config.roleInfo || config.code
           if (i === data.azureTTSSpeaker) {
             return config
@@ -805,7 +801,6 @@ export function supportGuoba () {
         if (typeof azureSpeaker === 'object' && azureSpeaker !== null) {
           Config.azureTTSSpeaker = azureSpeaker.code
         }
-
         return Result.ok({}, '保存成功~')
       }
     }

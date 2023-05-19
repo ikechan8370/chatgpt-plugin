@@ -35,15 +35,14 @@ async function generateAudio (text, option = {}, ssml = '') {
   } else {
     speechConfig.speechSynthesisLanguage = option?.language || supportConfigurations.find(config => config.code === speaker).language
     speechConfig.speechSynthesisVoiceName = speaker
-    logger.info('using language: ' + speechConfig.speechSynthesisLanguage)
     logger.info('using speaker: ' + speaker)
+    logger.info('using language: ' + speechConfig.speechSynthesisLanguage)
     synthesizer = new sdk.SpeechSynthesizer(speechConfig, audioConfig)
     await speakTextAsync(synthesizer, context)
   }
 
   console.log('synthesis finished.')
   synthesizer.close()
-  synthesizer = undefined
   return filename
 }
 
@@ -92,6 +91,7 @@ async function generateSsml (text, option = {}) {
       const keys = Object.keys(role.emotion)
       emotion = keys[Math.floor(Math.random() * keys.length)]
     }
+    logger.info('using emotion: ' + emotion)
     emotionDegree = 2
   } else {
     emotion = option.emotion
