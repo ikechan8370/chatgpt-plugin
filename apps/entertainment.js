@@ -5,12 +5,13 @@ import { generateAudio } from '../utils/tts.js'
 import fs from 'fs'
 import { emojiRegex, googleRequestUrl } from '../utils/emoj/index.js'
 import fetch from 'node-fetch'
-import { makeForwardMsg, mkdirs } from '../utils/common.js'
+import { getImageOcrText, getImg, makeForwardMsg, mkdirs } from '../utils/common.js'
 import uploadRecord from '../utils/uploadRecord.js'
 import { makeWordcloud } from '../utils/wordcloud/wordcloud.js'
 import { translate, translateLangSupports } from '../utils/translate.js'
 import AzureTTS from '../utils/tts/microsoft-azure.js'
 import VoiceVoxTTS from '../utils/tts/voicevox.js'
+
 let useSilk = false
 try {
   await import('node-silk')
@@ -19,7 +20,7 @@ try {
   useSilk = false
 }
 export class Entertainment extends plugin {
-  constructor(e) {
+  constructor (e) {
     super({
       name: 'ChatGPT-Plugin 娱乐小功能',
       dsc: '让你的聊天更有趣！现已支持主动打招呼、表情合成、群聊词云统计、文本翻译与图片ocr小功能！',
@@ -64,6 +65,7 @@ export class Entertainment extends plugin {
       }
     ]
   }
+
   async ocr (e) {
     let replyMsg
     let imgOcrText = await getImageOcrText(e)
@@ -74,7 +76,8 @@ export class Entertainment extends plugin {
     replyMsg = await makeForwardMsg(e, imgOcrText, 'OCR结果')
     await this.reply(replyMsg, e.isGroup)
   }
-  async translate(e) {
+
+  async translate (e) {
     const translateLangLabels = translateLangSupports.map(item => item.label).join('，')
     const translateLangLabelAbbrS = translateLangSupports.map(item => item.abbr).join('，')
     if (e.msg.trim() === '#chatgpt翻译帮助') {
@@ -169,7 +172,8 @@ ${translateLangLabels}
     await this.reply(result, e.isGroup)
     return true
   }
-  async wordcloud(e) {
+
+  async wordcloud (e) {
     if (e.isGroup) {
       let groupId = e.group_id
       let lock = await redis.get(`CHATGPT:WORDCLOUD:${groupId}`)
@@ -178,7 +182,7 @@ ${translateLangLabels}
         return true
       }
       await e.reply('在统计啦，请稍等...')
-      await redis.set(`CHATGPT:WORDCLOUD:${groupId}`, '1', {EX: 600})
+      await redis.set(`CHATGPT:WORDCLOUD:${groupId}`, '1', { EX: 600 })
       try {
         await makeWordcloud(e, e.group_id)
       } catch (err) {
@@ -191,7 +195,7 @@ ${translateLangLabels}
     }
   }
 
-  async combineEmoj(e) {
+  async combineEmoj (e) {
     let left = e.msg.codePointAt(0).toString(16).toLowerCase()
     let right = e.msg.codePointAt(2).toString(16).toLowerCase()
     if (left === right) {
@@ -239,7 +243,7 @@ ${translateLangLabels}
     return true
   }
 
-  async sendMessage(e) {
+  async sendMessage (e) {
     if (e.msg.match(/^#chatgpt打招呼帮助/) !== null) {
       await this.reply('设置主动打招呼的群聊名单，群号之间以,隔开，参数之间空格隔开\n' +
           '#chatgpt打招呼+群号：立即在指定群聊发起打招呼' +
@@ -270,7 +274,7 @@ ${translateLangLabels}
     }
   }
 
-  async sendRandomMessage() {
+  async sendRandomMessage () {
     if (Config.debug) {
       logger.info('开始处理：ChatGPT随机打招呼。')
     }
@@ -352,7 +356,7 @@ ${translateLangLabels}
     }
   }
 
-  async handleSentMessage(e) {
+  async handleSentMessage (e) {
     const addReg = /^#chatgpt设置打招呼[:：]?\s?(\S+)(?:\s+(\d+))?(?:\s+(\d+))?$/
     const delReg = /^#chatgpt删除打招呼[:：\s]?(\S+)/
     const checkReg = /^#chatgpt查看打招呼$/
@@ -425,54 +429,6 @@ ${translateLangLabels}
       replyMsg = '无效的打招呼设置，请输入正确的命令。\n可发送”#chatgpt打招呼帮助“获取打招呼指北。'
     }
     await this.reply(replyMsg)
-    return false
-  }
-}
-export async function getImg (e) {
-  // 取消息中的图片、at的头像、回复的图片，放入e.img
-  if (e.at && !e.source) {
-    e.img = [`https://q1.qlogo.cn/g?b=qq&s=0&nk=${e.at}`]
-  }
-  if (e.source) {
-    let reply
-    if (e.isGroup) {
-      reply = (await e.group.getChatHistory(e.source.seq, 1)).pop()?.message
-    } else {
-      reply = (await e.friend.getChatHistory(e.source.time, 1)).pop()?.message
-    }
-    if (reply) {
-      let i = []
-      for (let val of reply) {
-        if (val.type === 'image') {
-          i.push(val.url)
-        }
-      }
-      e.img = i
-    }
-  }
-  return e.img
-}
-export async function getImageOcrText (e) {
-  const img = await getImg(e)
-  if (img) {
-    try {
-      let resultArr = []
-      let eachImgRes = ''
-      for (let i in img) {
-        const imgOCR = await Bot.imageOcr(img[i])
-        for (let text of imgOCR.wordslist) {
-          eachImgRes += (`${text?.words}  \n`)
-        }
-        if (eachImgRes) resultArr.push(eachImgRes)
-        eachImgRes = ''
-      }
-      // logger.warn('resultArr', resultArr)
-      return resultArr
-    } catch (err) {
-      return false
-      // logger.error(err)
-    }
-  } else {
     return false
   }
 }

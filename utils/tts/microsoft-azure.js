@@ -1,7 +1,7 @@
 import crypto from 'crypto'
-import {getDefaultReplySetting, mkdirs} from '../common.js'
-import {Config} from '../config.js'
-import {translate} from '../translate.js'
+import { getDefaultReplySetting, mkdirs } from '../common.js'
+import { Config } from '../config.js'
+import { translate } from '../translate.js'
 
 let sdk
 try {
@@ -23,6 +23,7 @@ async function generateAudio (text, option = {}, ssml = '') {
   let synthesizer
   let speaker = option?.speaker || '随机'
   let context = text
+  // 打招呼用
   if (speaker === '随机') {
     speaker = supportConfigurations[Math.floor(Math.random() * supportConfigurations.length)].code
     let languagePrefix = supportConfigurations.find(config => config.code === speaker).languageDetail.charAt(0)
@@ -32,7 +33,7 @@ async function generateAudio (text, option = {}, ssml = '') {
   if (ssml) {
     synthesizer = new sdk.SpeechSynthesizer(speechConfig, audioConfig)
     await speakSsmlAsync(synthesizer, ssml)
-  } else {
+  } else { // 打招呼用
     speechConfig.speechSynthesisLanguage = option?.language || supportConfigurations.find(config => config.code === speaker).language
     speechConfig.speechSynthesisVoiceName = speaker
     logger.info('using speaker: ' + speaker)
@@ -84,6 +85,7 @@ async function speakSsmlAsync (synthesizer, ssml) {
 async function generateSsml (text, option = {}) {
   let speaker = option?.speaker || '随机'
   let emotionDegree, role, emotion
+  // 打招呼用
   if (speaker === '随机') {
     role = supportConfigurations[Math.floor(Math.random() * supportConfigurations.length)]
     speaker = role.code
@@ -91,6 +93,7 @@ async function generateSsml (text, option = {}) {
       const keys = Object.keys(role.emotion)
       emotion = keys[Math.floor(Math.random() * keys.length)]
     }
+    logger.info('using speaker: ' + speaker)
     logger.info('using emotion: ' + emotion)
     emotionDegree = 2
   } else {
@@ -995,6 +998,5 @@ export const supportConfigurations = [
     roleInfo: 'Prabhat-男-英语（印度）'
   }
 ]
-
 
 export default { generateAudio, generateSsml, getEmotionPrompt, supportConfigurations }
