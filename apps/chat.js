@@ -9,7 +9,9 @@ import SydneyAIClient from '../utils/SydneyAIClient.js'
 import { PoeClient } from '../utils/poe/index.js'
 import AzureTTS from '../utils/tts/microsoft-azure.js'
 import VoiceVoxTTS from '../utils/tts/voicevox.js'
+import { translate } from '../utils/translate.js'
 import fs from 'fs'
+import { getImg, getImageOcrText } from './entertainment.js'
 import {
   render, renderUrl,
   getMessageById,
@@ -33,9 +35,13 @@ import uploadRecord from '../utils/uploadRecord.js'
 import { SlackClaudeClient } from '../utils/slack/slackClient.js'
 import { ChatgptManagement } from './management.js'
 import { getPromptByName } from '../utils/prompts.js'
-import Translate from '../utils/baiduTranslate.js'
-import emojiStrip from 'emoji-strip'
-import XinghuoClient from "../utils/xinghuo/xinghuo.js";
+import BingDrawClient from '../utils/BingDraw.js'
+import XinghuoClient from '../utils/xinghuo/xinghuo.js'
+try {
+  await import('emoji-strip')
+} catch (err) {
+  logger.warn('【ChatGPT-Plugin】依赖emoji-strip未安装，会导致azure语音模式下朗读emoji的问题，建议执行pnpm install emoji-strip安装')
+}
 try {
   await import('keyv')
 } catch (err) {
@@ -800,40 +806,15 @@ export class chatgpt extends plugin {
       speaker = convertSpeaker(trySplit[0])
       prompt = trySplit[1]
     }
-    if (Config.imgOcr) {
-      // 取消息中的图片、at的头像、回复的图片，放入e.img
-      if (e.at && !e.source) {
-        e.img = [`https://q1.qlogo.cn/g?b=qq&s=0&nk=${e.at}`]
-      }
-      if (e.source) {
-        let reply
-        if (e.isGroup) {
-          reply = (await e.group.getChatHistory(e.source.seq, 1)).pop()?.message
-        } else {
-          reply = (await e.friend.getChatHistory(e.source.time, 1)).pop()?.message
+    const isImg = await getImg(e)
+    if (Config.imgOcr && !!isImg) {
+      let imgOcrText = await getImageOcrText(e)
+      if (imgOcrText) {
+        prompt = prompt + '"'
+        for (let imgOcrTextKey in imgOcrText) {
+          prompt += imgOcrText[imgOcrTextKey]
         }
-        if (reply) {
-          for (let val of reply) {
-            if (val.type === 'image') {
-              e.img = [val.url]
-              break
-            }
-          }
-        }
-      }
-      if (e.img) {
-        try {
-          let imgOcrText = ''
-          for (let i in e.img) {
-            const imgorc = await Bot.imageOcr(e.img[i])
-            // if (imgorc.language === 'zh' || imgorc.language === 'en') {
-            for (let text of imgorc.wordslist) {
-              imgOcrText += `${text.words}  \n`
-            }
-            // }
-          }
-          prompt = imgOcrText + prompt
-        } catch (err) { }
+        prompt = prompt + ' "'
       }
     }
     // 检索是否有屏蔽词
@@ -1015,6 +996,8 @@ export class chatgpt extends plugin {
         }
       }
       let response = chatMessage?.text
+      // 过滤无法正常显示的emoji
+      if (use === 'claude') response = response.replace(/:[a-zA-Z_]+:/g, '')
       let mood = 'blandness'
       if (!response) {
         await e.reply('没有任何回复', true)
@@ -1139,7 +1122,14 @@ export class chatgpt extends plugin {
           ttsRegex = ''
         }
         ttsResponse = response.replace(ttsRegex, '')
-        ttsResponse = emojiStrip(ttsResponse)
+        // 处理azure语音会读出emoji的问题
+        try {
+          let emojiStrip
+          emojiStrip = (await import('emoji-strip')).default
+          ttsResponse = emojiStrip(ttsResponse)
+        } catch (error) {
+          await this.reply('依赖emoji-strip未安装，请执行pnpm install emoji-strip安装依赖', true)
+        }
         // 处理多行回复有时候只会读第一行和azure语音会读出一些标点符号的问题
         ttsResponse = ttsResponse.replace(/[-:_；*;\n]/g, '，')
         // 先把文字回复发出去，避免过久等待合成语音
@@ -1158,16 +1148,8 @@ export class chatgpt extends plugin {
         if(ttsResponse.length <= Config.ttsAutoFallbackThreshold) {
           let wav
           if (Config.ttsMode === 'vits-uma-genshin-honkai' && Config.ttsSpace) {
-            if (Config.autoJapanese && (_.isEmpty(Config.baiduTranslateAppId) || _.isEmpty(Config.baiduTranslateSecret))) {
-              await this.reply('请检查翻译配置是否正确。')
-              return false
-            }
             if (Config.autoJapanese) {
               try {
-                const translate = new Translate({
-                  appid: Config.baiduTranslateAppId,
-                  secret: Config.baiduTranslateSecret
-                })
                 ttsResponse = await translate(ttsResponse, '日')
               } catch (err) {
                 logger.error(err)
@@ -1181,6 +1163,11 @@ export class chatgpt extends plugin {
               await this.reply('合成语音发生错误~')
             }
           } else if (Config.ttsMode === 'azure' && Config.azureTTSKey) {
+            const ttsRoleAzure = userReplySetting.ttsRoleAzure
+            const isEn = AzureTTS.supportConfigurations.find(config => config.code === ttsRoleAzure)?.language.includes('en')
+            if (isEn) {
+              ttsResponse = (await translate(ttsResponse, '英')).replace('\n', '')
+            }
             let ssml = AzureTTS.generateSsml(ttsResponse, {
               speaker,
               emotion,
@@ -1641,6 +1628,25 @@ export class chatgpt extends plugin {
                 })
               }
             }
+            console.log(response)
+            // 处理内容生成的图片
+            if (response.details.imageTag) {
+              if (Config.debug) {
+                logger.mark(`开始生成内容：${response.details.imageTag}`)
+              }
+              let client = new BingDrawClient({
+                baseUrl: Config.sydneyReverseProxy,
+                userToken: bingToken
+              })
+              await redis.set(`CHATGPT:DRAW:${e.sender.user_id}`, 'c', { EX: 30 })
+              try {
+                await client.getImages(response.details.imageTag, e)
+              } catch (err) {
+                await redis.del(`CHATGPT:DRAW:${e.sender.user_id}`)
+                await e.reply('绘图失败：' + err)
+              }
+            }
+
             // 如果token曾经有异常，则清除异常
             let Tokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
             const TokenIndex = Tokens.findIndex(element => element.Token === abtrs.bingToken)

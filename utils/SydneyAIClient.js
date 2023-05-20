@@ -358,6 +358,9 @@ export default class SydneyAIClient {
             'responsible_ai_policy_235',
             'enablemm',
             toneOption,
+            'clgalileo',
+            'gencontentv3',
+            'rai267',
             'dtappid',
             'cricinfo',
             'cricinfov2',
@@ -625,7 +628,11 @@ export default class SydneyAIClient {
                   adaptiveCards: adaptiveCardsSoFar,
                   text: replySoFar.join('')
                 }
-            message.text = messages.filter(m => m.author === 'bot').map(m => m.text).join('')
+            // 获取到图片内容
+            if (message.contentType === 'IMAGE') {
+              message.imageTag = messages.filter(m => m.contentType === 'IMAGE').map(m => m.text).join('')
+            }
+            message.text = messages.filter(m => m.author === 'bot' && m.contentType != 'IMAGE').map(m => m.text).join('')
             if (!message) {
               reject('No message was generated.')
               return

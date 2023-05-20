@@ -235,7 +235,7 @@ export class ChatgptManagement extends plugin {
           fnc: 'userPage'
         },
         {
-          reg: '^#chatgpt(对话|管理|娱乐|绘图|人物设定|聊天记录)?指令表(帮助)?',
+          reg: '^#(chatgpt)?(对话|管理|娱乐|绘图|人物设定|聊天记录)?指令表(帮助|搜索(.+))?',
           fnc: 'commandHelp'
         },
         {
@@ -281,8 +281,21 @@ export class ChatgptManagement extends plugin {
     }
     await this.reply(roleList)
   }
-
   async ttsSwitch (e) {
+    let userReplySetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
+    userReplySetting = !userReplySetting
+      ? getDefaultReplySetting()
+      : JSON.parse(userReplySetting)
+    if (!userReplySetting.useTTS) {
+      let replyMsg
+      if (userReplySetting.usePicture) {
+        replyMsg = `当前为${!userReplySetting.useTTS ? '图片模式' : ''}，请先切换到语音模式吧~`
+      } else {
+        replyMsg = `当前为${!userReplySetting.useTTS ? '文本模式' : ''}，请先切换到语音模式吧~`
+      }
+      await this.reply(replyMsg, e.isGroup)
+      return false
+    }
     let regExp = /#语音切换(.*)/
     let ttsMode = e.msg.match(regExp)[1]
     if (['vits', 'azure', 'voicevox'].includes(ttsMode)) {
@@ -300,9 +313,10 @@ export class ChatgptManagement extends plugin {
 
   async commandHelp (e) {
     if (!this.e.isMaster) { return this.reply('你没有权限') }
-    if (e.msg.trim() === '#chatgpt指令表帮助') {
+    if (/^#(chatgpt)?指令表帮助$/.exec(e.msg.trim())) {
       await this.reply('#chatgpt指令表: 查看本插件的所有指令\n' +
-          '#chatgpt(对话|管理|娱乐|绘图|人物设定|聊天记录)指令表: 查看对应功能分类的指令表')
+          '#chatgpt(对话|管理|娱乐|绘图|人物设定|聊天记录)指令表: 查看对应功能分类的指令表\n' +
+          '#chatgpt指令表搜索xxx: 查看包含对应关键词的指令')
       return false
     }
     const categories = {
@@ -332,7 +346,33 @@ export class ChatgptManagement extends plugin {
         commandSet.push({ name, dsc: plugin.dsc, rule })
       }
     }
-
+    if (e.msg.includes('搜索')) {
+      let cmd = e.msg.trim().match(/^#(chatgpt)?(对话|管理|娱乐|绘图|人物设定|聊天记录)?指令表(帮助|搜索(.+))?/)[4]
+      if (!cmd) {
+        await this.reply('(⊙ˍ⊙)')
+        return 0
+      } else {
+        let searchResults = []
+        commandSet.forEach(plugin => {
+          plugin.rule.forEach(item => {
+            if (item.reg.toLowerCase().includes(cmd.toLowerCase())) {
+              searchResults.push(item.reg)
+            }
+          })
+        })
+        if (!searchResults.length) {
+          await this.reply('没有找到符合的结果，换个关键词吧！', e.isGroup)
+          return 0
+        } else if (searchResults.length <= 5) {
+          await this.reply(searchResults.join('\n'), e.isGroup)
+          return 1
+        } else {
+          let msg = await makeForwardMsg(e, searchResults, e.msg.slice(1).startsWith('chatgpt') ? e.msg.slice(8) : 'chatgpt' + e.msg.slice(1))
+          await this.reply(msg)
+          return 1
+        }
+      }
+    }
     const generatePrompt = (plugin, command) => {
       const category = getCategory(e, plugin)
       const commandsStr = command.length ? `正则指令:\n${command.join('\n')}\n` : '正则指令: 无\n'
@@ -348,7 +388,7 @@ export class ChatgptManagement extends plugin {
         prompts.push(generatePrompt(plugin, commands))
       }
     }
-    let msg = await makeForwardMsg(e, prompts, e.msg.slice(1))
+    let msg = await makeForwardMsg(e, prompts, e.msg.slice(1).startsWith('chatgpt') ? e.msg.slice(1) : ('chatgpt' + e.msg.slice(1)))
     await this.reply(msg)
     return true
   }
@@ -513,7 +553,7 @@ export class ChatgptManagement extends plugin {
   }
 
   async setDefaultReplySetting (e) {
-    const reg = /^#chatgpt(打开|关闭|设置)?全局((图片模式|语音模式|(语音角色|角色语音|角色).*)|回复帮助)/
+    const reg = /^#chatgpt(打开|关闭|设置)?全局((文本模式|图片模式|语音模式|(语音角色|角色语音|角色).*)|回复帮助)/
     const matchCommand = e.msg.match(reg)
     const settingType = matchCommand[2]
     let replyMsg = ''
@@ -532,6 +572,23 @@ export class ChatgptManagement extends plugin {
           }
         } else if (matchCommand[1] === '设置') {
           replyMsg = '请使用“#chatgpt打开全局图片模式”或“#chatgpt关闭全局图片模式”命令来设置回复模式'
+        } break
+      case '文本模式':
+        if (matchCommand[1] === '打开') {
+          Config.defaultUsePicture = false
+          Config.defaultUseTTS = false
+          replyMsg = 'ChatGPT将默认以文本回复'
+        } else if (matchCommand[1] === '关闭') {
+          if (Config.defaultUseTTS) {
+            replyMsg = 'ChatGPT将默认以语音回复'
+          } else if (Config.defaultUsePicture) {
+            replyMsg = 'ChatGPT将默认以图片回复'
+          } else {
+            Config.defaultUseTTS = true
+            replyMsg = 'ChatGPT将默认以语音回复'
+          }
+        } else if (matchCommand[1] === '设置') {
+          replyMsg = '请使用“#chatgpt打开全局文本模式”或“#chatgpt关闭全局文本模式”命令来设置回复模式'
         } break
       case '语音模式':
         if (!Config.ttsSpace) {
@@ -553,7 +610,7 @@ export class ChatgptManagement extends plugin {
           replyMsg = '请使用“#chatgpt打开全局语音模式”或“#chatgpt关闭全局语音模式”命令来设置回复模式'
         } break
       case '回复帮助':
-        replyMsg = '可使用以下命令配置全局回复:\n#chatgpt(打开/关闭)全局(语音/图片)模式\n#chatgpt设置全局(语音角色|角色语音|角色)+角色名称(留空则为随机)'
+        replyMsg = '可使用以下命令配置全局回复:\n#chatgpt(打开/关闭)全局(语音/图片/文本)模式\n#chatgpt设置全局(语音角色|角色语音|角色)+角色名称(留空则为随机)'
         break
       default:
         if (!Config.ttsSpace) {

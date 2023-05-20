@@ -5,11 +5,10 @@ import { generateAudio } from '../utils/tts.js'
 import fs from 'fs'
 import { emojiRegex, googleRequestUrl } from '../utils/emoj/index.js'
 import fetch from 'node-fetch'
-import { mkdirs } from '../utils/common.js'
+import { makeForwardMsg, mkdirs } from '../utils/common.js'
 import uploadRecord from '../utils/uploadRecord.js'
 import { makeWordcloud } from '../utils/wordcloud/wordcloud.js'
-import Translate, { transMap } from '../utils/baiduTranslate.js'
-import _ from 'lodash'
+import { translate, translateLangSupports } from '../utils/translate.js'
 let useSilk = false
 try {
   await import('node-silk')
@@ -18,10 +17,10 @@ try {
   useSilk = false
 }
 export class Entertainment extends plugin {
-  constructor (e) {
+  constructor(e) {
     super({
       name: 'ChatGPT-Plugin 娱乐小功能',
-      dsc: '让你的聊天更有趣！现已支持主动打招呼、表情合成、群聊词云统计与文本翻译小功能！',
+      dsc: '让你的聊天更有趣！现已支持主动打招呼、表情合成、群聊词云统计、文本翻译与图片ocr小功能！',
       event: 'message',
       priority: 500,
       rule: [
@@ -44,8 +43,12 @@ export class Entertainment extends plugin {
           fnc: 'wordcloud'
         },
         {
-          reg: '^#((?:寄批踢)?翻.*|chatgpt翻译帮助)',
+          reg: '^#((寄批踢|gpt|GPT)?翻.*|chatgpt翻译帮助)',
           fnc: 'translate'
+        },
+        {
+          reg: '^#ocr',
+          fnc: 'ocr'
         }
       ]
     })
@@ -59,44 +62,112 @@ export class Entertainment extends plugin {
       }
     ]
   }
-
-  async translate (e) {
-    if (e.msg.trim() === '#chatgpt翻译帮助') {
-      await this.reply('支持中、日、文(文言文)、英、俄、韩语言之间的文本翻译功能，"寄批踢"为可选前缀' +
-          '\n示例：1. #寄批踢翻英 你好' +
-          '\t2. #翻中 你好' +
-          '\t3. #寄批踢翻文 hello')
-      return
+  async ocr (e) {
+    let replyMsg
+    let imgOcrText = await getImageOcrText(e)
+    if (!imgOcrText) {
+      await this.reply('没有识别到文字', e.isGroup)
+      return false
     }
-    if (_.isEmpty(Config.baiduTranslateAppId) || _.isEmpty(Config.baiduTranslateSecret)) {
-      this.reply('请检查翻译配置是否正确。')
-      return
-    }
-    const regExp = /(#(?:寄批踢)?翻(.))(.*)/
-    const msg = e.msg.trim()
-    const match = msg.match(regExp)
-    let result = ''
-    if (!(match[2] in transMap)) {
-      e.reply('输入格式有误或暂不支持该语言，' +
-          '\n当前支持：中、日、文(文言文)、英、俄、韩。', e.isGroup
-      )
-      return
-    }
-    const PendingText = match[3]
-    try {
-      const translate = new Translate({
-        appid: Config.baiduTranslateAppId,
-        secret: Config.baiduTranslateSecret
-      })
-      result = await translate(PendingText, match[2])
-    } catch (err) {
-      logger.error(err)
-      result = err.message
-    }
-    await this.reply(result, e.isGroup)
+    replyMsg = await makeForwardMsg(e, imgOcrText, 'OCR结果')
+    await this.reply(replyMsg, e.isGroup)
   }
-
-  async wordcloud (e) {
+  async translate(e) {
+    const translateLangLabels = translateLangSupports.map(item => item.label).join('，')
+    const translateLangLabelAbbrS = translateLangSupports.map(item => item.abbr).join('，')
+    if (e.msg.trim() === '#chatgpt翻译帮助') {
+      await this.reply(`支持以下语种的翻译：
+${translateLangLabels}
+在使用本工具时，请采用简写的方式描述目标语言。此外，可以引用消息或图片来进行翻译。
+示例：
+1. #gpt翻英 你好
+2. #gpt翻中 你好
+3. #gpt翻译 hello`)
+      return true
+    }
+    const regExp = /^#(寄批踢|gpt|GPT)?翻(.)([\s\S]*)/
+    const match = e.msg.trim().match(regExp)
+    let languageCode = match[2] === '译' ? 'auto' : match[2]
+    let pendingText = match[3]
+    const isImg = !!(await getImg(e))?.length
+    let result = []
+    let multiText = false
+    if (languageCode !== 'auto' && !translateLangLabelAbbrS.includes(languageCode)) {
+      e.reply(`输入格式有误或暂不支持该语言，\n当前支持${translateLangLabels}`, e.isGroup)
+      return false
+    }
+    // 引用回复
+    if (e.source) {
+      if (pendingText.length) {
+        await this.reply('引用模式下不需要添加翻译文本，已自动忽略输入文本...((*・∀・）ゞ→→”', e.isGroup)
+      }
+    } else {
+      if (isImg && pendingText) {
+        await this.reply('检测到图片输入，已自动忽略输入文本...((*・∀・）ゞ→→', e.isGroup)
+      }
+      if (!pendingText && !isImg) {
+        await this.reply('你让我翻译啥呢￣へ￣！', e.isGroup)
+        return false
+      }
+    }
+    if (isImg) {
+      let imgOcrText = await getImageOcrText(e)
+      multiText = Array.isArray(imgOcrText)
+      if (imgOcrText) {
+        pendingText = imgOcrText
+      } else {
+        await this.reply('没有识别到有效文字(・-・*)', e.isGroup)
+        return false
+      }
+    } else {
+      if (e.source) {
+        let previousMsg
+        if (e.isGroup) {
+          previousMsg = (await e.group.getChatHistory(e.source.seq, 1)).pop()?.message
+        } else {
+          previousMsg = (await e.friend.getChatHistory(e.source.time, 1)).pop()?.message
+        }
+        // logger.warn('previousMsg', previousMsg)
+        if (previousMsg.find(msg => msg.type === 'text')?.text) {
+          pendingText = previousMsg.find(msg => msg.type === 'text')?.text
+        } else {
+          await this.reply('这是什么怪东西!(⊙ˍ⊙)', e.isGroup)
+          return false
+        }
+      }
+    }
+    try {
+      if (multiText) {
+        result = await Promise.all(pendingText.map(text => translate(text, languageCode)))
+      } else {
+        result = await translate(pendingText, languageCode)
+      }
+      // logger.warn(multiText, result)
+    } catch (err) {
+      await this.reply(err.message, e.isGroup)
+      return false
+    }
+    const totalLength = Array.isArray(result)
+      ? result.reduce((acc, cur) => acc + cur.length, 0)
+      : result.length
+    if (totalLength > 300 || multiText) {
+      // 多条翻译结果
+      if (Array.isArray(result)) {
+        result = await makeForwardMsg(e, result, '翻译结果')
+      } else {
+        result = ('译文：\n' + result.trim()).split()
+        result.unshift('原文：\n' + pendingText.trim())
+        result = await makeForwardMsg(e, result, '翻译结果')
+      }
+      await this.reply(result, e.isGroup)
+      return true
+    }
+    // 保持原格式输出
+    result = Array.isArray(result) ? result.join('\n') : result
+    await this.reply(result, e.isGroup)
+    return true
+  }
+  async wordcloud(e) {
     if (e.isGroup) {
       let groupId = e.group_id
       let lock = await redis.get(`CHATGPT:WORDCLOUD:${groupId}`)
@@ -105,7 +176,7 @@ export class Entertainment extends plugin {
         return true
       }
       await e.reply('在统计啦，请稍等...')
-      await redis.set(`CHATGPT:WORDCLOUD:${groupId}`, '1', { EX: 600 })
+      await redis.set(`CHATGPT:WORDCLOUD:${groupId}`, '1', {EX: 600})
       try {
         await makeWordcloud(e, e.group_id)
       } catch (err) {
@@ -118,7 +189,7 @@ export class Entertainment extends plugin {
     }
   }
 
-  async combineEmoj (e) {
+  async combineEmoj(e) {
     let left = e.msg.codePointAt(0).toString(16).toLowerCase()
     let right = e.msg.codePointAt(2).toString(16).toLowerCase()
     if (left === right) {
@@ -166,7 +237,7 @@ export class Entertainment extends plugin {
     return true
   }
 
-  async sendMessage (e) {
+  async sendMessage(e) {
     if (e.msg.match(/^#chatgpt打招呼帮助/) !== null) {
       await this.reply('设置主动打招呼的群聊名单，群号之间以,隔开，参数之间空格隔开\n' +
           '#chatgpt打招呼+群号：立即在指定群聊发起打招呼' +
@@ -197,7 +268,7 @@ export class Entertainment extends plugin {
     }
   }
 
-  async sendRandomMessage () {
+  async sendRandomMessage() {
     if (Config.debug) {
       logger.info('开始处理：ChatGPT随机打招呼。')
     }
@@ -231,7 +302,7 @@ export class Entertainment extends plugin {
     }
   }
 
-  async handleSentMessage (e) {
+  async handleSentMessage(e) {
     const addReg = /^#chatgpt设置打招呼[:：]?\s?(\S+)(?:\s+(\d+))?(?:\s+(\d+))?$/
     const delReg = /^#chatgpt删除打招呼[:：\s]?(\S+)/
     const checkReg = /^#chatgpt查看打招呼$/
@@ -304,6 +375,54 @@ export class Entertainment extends plugin {
       replyMsg = '无效的打招呼设置，请输入正确的命令。\n可发送”#chatgpt打招呼帮助“获取打招呼指北。'
     }
     await this.reply(replyMsg)
+    return false
+  }
+}
+export async function getImg (e) {
+  // 取消息中的图片、at的头像、回复的图片，放入e.img
+  if (e.at && !e.source) {
+    e.img = [`https://q1.qlogo.cn/g?b=qq&s=0&nk=${e.at}`]
+  }
+  if (e.source) {
+    let reply
+    if (e.isGroup) {
+      reply = (await e.group.getChatHistory(e.source.seq, 1)).pop()?.message
+    } else {
+      reply = (await e.friend.getChatHistory(e.source.time, 1)).pop()?.message
+    }
+    if (reply) {
+      let i = []
+      for (let val of reply) {
+        if (val.type === 'image') {
+          i.push(val.url)
+        }
+      }
+      e.img = i
+    }
+  }
+  return e.img
+}
+export async function getImageOcrText (e) {
+  const img = await getImg(e)
+  if (img) {
+    try {
+      let resultArr = []
+      let eachImgRes = ''
+      for (let i in img) {
+        const imgOCR = await Bot.imageOcr(img[i])
+        for (let text of imgOCR.wordslist) {
+          eachImgRes += (`${text?.words}  \n`)
+        }
+        if (eachImgRes) resultArr.push(eachImgRes)
+        eachImgRes = ''
+      }
+      // logger.warn('resultArr', resultArr)
+      return resultArr
+    } catch (err) {
+      return false
+      // logger.error(err)
+    }
+  } else {
     return false
   }
 }
