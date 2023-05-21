@@ -251,7 +251,7 @@ export class ChatgptManagement extends plugin {
           fnc: 'setOpenAIPlatformToken'
         },
         {
-          reg: '^#chatgpt查看回复设置$',
+          reg: '^#(chatgpt)?查看回复设置$',
           fnc: 'viewUserSetting'
         }
       ]
