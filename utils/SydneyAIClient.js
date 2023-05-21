@@ -347,25 +347,26 @@ export default class SydneyAIClient {
       logger.mark('sydney websocket constructed successful')
     }
     const toneOption = 'h3imaginative'
+    let optionsSets = [
+      'nlu_direct_response_filter',
+      'deepleo',
+      'disable_emoji_spoken_text',
+      'responsible_ai_policy_235',
+      'enablemm',
+      toneOption,
+      'dtappid',
+      'cricinfo',
+      'cricinfov2',
+      'dv3sugg'
+    ]
+    if (Config.enableGenerateContents) {
+      optionsSets.push(...['clgalileo', 'gencontentv3', 'rai267'])
+    }
     const obj = {
       arguments: [
         {
           source: 'cib',
-          optionsSets: [
-            'nlu_direct_response_filter',
-            'deepleo',
-            'disable_emoji_spoken_text',
-            'responsible_ai_policy_235',
-            'enablemm',
-            toneOption,
-            'clgalileo',
-            'gencontentv3',
-            'rai267',
-            'dtappid',
-            'cricinfo',
-            'cricinfov2',
-            'dv3sugg'
-          ],
+          optionsSets,
           sliceIds: [
             '222dtappid',
             '225cricinfo',
