@@ -140,7 +140,7 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
-          reg: '^#chatgpt查看?(关闭|闭嘴|关机|休眠|下班|休眠）列表',
+          reg: '^#chatgpt查看?(关闭|闭嘴|关机|休眠|下班|休眠)列表',
           fnc: 'listShutUp',
           permission: 'master'
         },
