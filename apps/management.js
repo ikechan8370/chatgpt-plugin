@@ -276,6 +276,7 @@ export class ChatgptManagement extends plugin {
     }
     await this.reply(roleList)
   }
+
   async ttsSwitch (e) {
     let userReplySetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
     userReplySetting = !userReplySetting
