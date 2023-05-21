@@ -134,17 +134,17 @@ export class ChatgptManagement extends plugin {
           fnc: 'versionChatGPTPlugin'
         },
         {
-          reg: '^#chatgpt(本群)?(群\\d+)?闭嘴',
+          reg: '^#chatgpt(本群)?(群\\d+)?(关闭|闭嘴|关机|休眠|下班)',
           fnc: 'shutUp',
           permission: 'master'
         },
         {
-          reg: '^#chatgpt(本群)?(群\\d+)?(张嘴|开口|说话|上班)',
+          reg: '^#chatgpt(本群)?(群\\d+)?(打开|开启|启动|激活|张嘴|开口|说话|上班)',
           fnc: 'openMouth',
           permission: 'master'
         },
         {
-          reg: '^#chatgpt查看闭嘴',
+          reg: '^#chatgpt查看?(关闭|闭嘴|关机|休眠|下班|休眠)列表',
           fnc: 'listShutUp',
           permission: 'master'
         },
@@ -1109,7 +1109,7 @@ Poe 模式会调用 Poe 中的 Claude-instant 进行对话。需要提供 Cookie
   }
 
   async shutUp (e) {
-    let duration = e.msg.replace(/^#chatgpt(本群)?(群\d+)?闭嘴/, '')
+    let duration = e.msg.replace(/^#chatgpt(本群)?(群\d+)?(关闭|闭嘴|关机|休眠|下班)/, '')
     let scope
     let time = 3600000
     if (duration === '永久') {
@@ -1117,20 +1117,20 @@ Poe 模式会调用 Poe 中的 Claude-instant 进行对话。需要提供 Cookie
     } else if (duration) {
       time = parseDuration(duration)
     }
-    const match = e.msg.match(/#chatgpt群(\d+)闭嘴(.*)/)
+    const match = e.msg.match(/#chatgpt群(\d+)?(关闭|闭嘴|关机|休眠|下班)(.*)/)
     if (e.msg.indexOf('本群') > -1) {
       if (e.isGroup) {
         scope = e.group.group_id
         if (await redis.get(`CHATGPT:SHUT_UP:${scope}`)) {
           await redis.del(`CHATGPT:SHUT_UP:${scope}`)
           await redis.set(`CHATGPT:SHUT_UP:${scope}`, '1', { EX: time })
-          await e.reply(`好的，从现在开始我会在当前群聊闭嘴${formatDuration(time)}`)
+          await e.reply(`好的，已切换休眠状态：倒计时${formatDuration(time)}`)
         } else {
           await redis.set(`CHATGPT:SHUT_UP:${scope}`, '1', { EX: time })
-          await e.reply(`好的，从现在开始我会在当前群聊闭嘴${formatDuration(time)}`)
+          await e.reply(`好的，已切换休眠状态：倒计时${formatDuration(time)}`)
         }
       } else {
-        await e.reply('本群是指？你也没在群聊里让我闭嘴啊？')
+        await e.reply('主人，这里好像不是群哦')
         return false
       }
     } else if (match) {
@@ -1139,23 +1139,23 @@ Poe 模式会调用 Poe 中的 Claude-instant 进行对话。需要提供 Cookie
         if (await redis.get(`CHATGPT:SHUT_UP:${groupId}`)) {
           await redis.del(`CHATGPT:SHUT_UP:${groupId}`)
           await redis.set(`CHATGPT:SHUT_UP:${groupId}`, '1', { EX: time })
-          await e.reply(`好的，从现在开始我会在群聊${groupId}闭嘴${formatDuration(time)}`)
+          await e.reply(`好的，即将在群${groupId}中休眠${formatDuration(time)}`)
         } else {
           await redis.set(`CHATGPT:SHUT_UP:${groupId}`, '1', { EX: time })
-          await e.reply(`好的，从现在开始我会在群聊${groupId}闭嘴${formatDuration(time)}`)
+          await e.reply(`好的，即将在群${groupId}中休眠${formatDuration(time)}`)
         }
       } else {
-        await e.reply('这是什么群？')
+        await e.reply('主人还没告诉我群号呢')
         return false
       }
     } else {
       if (await redis.get('CHATGPT:SHUT_UP:ALL')) {
         await redis.del('CHATGPT:SHUT_UP:ALL')
         await redis.set('CHATGPT:SHUT_UP:ALL', '1', { EX: time })
-        await e.reply(`好的，我会再闭嘴${formatDuration(time)}`)
+        await e.reply(`好的，我会延长休眠时间${formatDuration(time)}`)
       } else {
         await redis.set('CHATGPT:SHUT_UP:ALL', '1', { EX: time })
-        await e.reply(`好的，我会闭嘴${formatDuration(time)}`)
+        await e.reply(`好的，我会延长休眠时间${formatDuration(time)}`)
       }
     }
   }
@@ -1164,36 +1164,36 @@ Poe 模式会调用 Poe 中的 Claude-instant 进行对话。需要提供 Cookie
     const match = e.msg.match(/^#chatgpt群(\d+)/)
     if (e.msg.indexOf('本群') > -1) {
       if (await redis.get('CHATGPT:SHUT_UP:ALL')) {
-        await e.reply('主人，我现在全局闭嘴呢，你让我在这个群张嘴咱也不敢张啊')
+        await e.reply('当前为休眠模式，没办法做出回应呢')
         return false
       }
       if (e.isGroup) {
         let scope = e.group.group_id
         if (await redis.get(`CHATGPT:SHUT_UP:${scope}`)) {
           await redis.del(`CHATGPT:SHUT_UP:${scope}`)
-          await e.reply('好的主人，我终于又可以在本群说话了')
+          await e.reply('好的主人，我又可以和大家聊天啦')
         } else {
-          await e.reply('啊？我也没闭嘴啊？')
+          await e.reply('主人，我已经启动过了哦')
         }
       } else {
-        await e.reply('本群是指？你也没在群聊里让我张嘴啊？')
+        await e.reply('主人，这里好像不是群哦')
         return false
       }
     } else if (match) {
       if (await redis.get('CHATGPT:SHUT_UP:ALL')) {
-        await e.reply('主人，我现在全局闭嘴呢，你让我在那个群张嘴咱也不敢张啊')
+        await e.reply('当前为休眠模式，没办法做出回应呢')
         return false
       }
       const groupId = parseInt(match[1], 10)
       if (Bot.getGroupList().get(groupId)) {
         if (await redis.get(`CHATGPT:SHUT_UP:${groupId}`)) {
           await redis.del(`CHATGPT:SHUT_UP:${groupId}`)
-          await e.reply(`好的主人，我终于又可以在群${groupId}说话了`)
+          await e.reply(`好的主人，我终于又可以在群${groupId}和大家聊天了`)
         } else {
-          await e.reply(`啊？我也没在群${groupId}闭嘴啊？`)
+          await e.reply(`主人，我在群${groupId}中已经是启动状态了哦`)
         }
       } else {
-        await e.reply('这是什么群？')
+        await e.reply('主人还没告诉我群号呢')
         return false
       }
     } else {
@@ -1203,14 +1203,14 @@ Poe 模式会调用 Poe 中的 Claude-instant 进行对话。需要提供 Cookie
         for (let i = 0; i < keys.length; i++) {
           await redis.del(keys[i])
         }
-        await e.reply('好的，我会结束所有闭嘴')
+        await e.reply('好的，我会开启所有群聊响应')
       } else if (keys || keys.length > 0) {
         for (let i = 0; i < keys.length; i++) {
           await redis.del(keys[i])
         }
-        await e.reply('好的，我会结束所有闭嘴？')
+        await e.reply('已经开启过全群响应啦')
       } else {
-        await e.reply('我没有在任何地方闭嘴啊？')
+        await e.reply('我没有在任何群休眠哦')
       }
     }
   }
@@ -1218,7 +1218,7 @@ Poe 模式会调用 Poe 中的 Claude-instant 进行对话。需要提供 Cookie
   async listShutUp () {
     let keys = await redis.keys('CHATGPT:SHUT_UP:*')
     if (!keys || keys.length === 0) {
-      await this.reply('我没有在任何群闭嘴', true)
+      await this.reply('已经开启过全群响应啦', true)
     } else {
       let list = []
       for (let i = 0; i < keys.length; i++) {
