@@ -377,6 +377,12 @@ export function supportGuoba () {
           bottomHelpMessage: '加强主人认知。希望机器人认清主人，避免NTR可开启。开启后可能会与自设定的内容有部分冲突。sydney模式可以放心开启',
           component: 'Switch'
         },
+        {
+          field: 'enableGenerateContents',
+          label: '允许生成图像等内容',
+          bottomHelpMessage: '开启后类似网页版能够发图。但是此选项会占用大量token，自设定等模式下容易爆token',
+          component: 'Switch'
+        },
         // {
         //   field: 'cognitiveReinforcementTip',
         //   label: '加强主人认知的后台prompt',
