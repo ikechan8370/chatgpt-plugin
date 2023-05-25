@@ -4,7 +4,7 @@ import fetch, {
   Response
 } from 'node-fetch'
 import crypto from 'crypto'
-
+import WebSocket from 'ws'
 import HttpsProxyAgent from 'https-proxy-agent'
 import { Config, pureSydneyInstruction } from './config.js'
 import { formatDate, getMasterQQ, isCN, getUserData } from './common.js'
@@ -29,15 +29,16 @@ if (Config.proxy) {
     console.warn('未安装https-proxy-agent，请在插件目录下执行pnpm add https-proxy-agent')
   }
 }
-async function getWebSocket () {
-  let WebSocket
-  try {
-    WebSocket = (await import('ws')).default
-  } catch (error) {
-    throw new Error('ws依赖未安装，请使用pnpm install ws安装')
-  }
-  return WebSocket
-}
+
+// async function getWebSocket () {
+//   let WebSocket
+//   try {
+//     WebSocket = (await import('ws')).default
+//   } catch (error) {
+//     throw new Error('ws依赖未安装，请使用pnpm install ws安装')
+//   }
+//   return WebSocket
+// }
 async function getKeyv () {
   let Keyv
   try {
@@ -80,28 +81,32 @@ export default class SydneyAIClient {
     const fetchOptions = {
       headers: {
         accept: 'application/json',
-        'accept-language': 'en-US,en;q=0.9',
+        'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
         'content-type': 'application/json',
-        'sec-ch-ua': '"Chromium";v="112", "Microsoft Edge";v="112", "Not:A-Brand";v="99"',
-        'sec-ch-ua-arch': '"x86"',
-        'sec-ch-ua-bitness': '"64"',
-        'sec-ch-ua-full-version': '"112.0.1722.7"',
-        'sec-ch-ua-full-version-list': '"Chromium";v="112.0.5615.20", "Microsoft Edge";v="112.0.1722.7", "Not:A-Brand";v="99.0.0.0"',
+        'sec-ch-ua': '"Microsoft Edge";v="113", "Chromium";v="113", "Not-A.Brand";v="24"',
+        // 'sec-ch-ua-arch': '"x86"',
+        // 'sec-ch-ua-bitness': '"64"',
+        // 'sec-ch-ua-full-version': '"112.0.1722.7"',
+        // 'sec-ch-ua-full-version-list': '"Chromium";v="112.0.5615.20", "Microsoft Edge";v="112.0.1722.7", "Not:A-Brand";v="99.0.0.0"',
         'sec-ch-ua-mobile': '?0',
-        'sec-ch-ua-model': '',
-        'sec-ch-ua-platform': '"Windows"',
-        'sec-ch-ua-platform-version': '"15.0.0"',
+        // 'sec-ch-ua-model': '',
+        'sec-ch-ua-platform': '"macOS"',
+        // 'sec-ch-ua-platform-version': '"15.0.0"',
         'sec-fetch-dest': 'empty',
         'sec-fetch-mode': 'cors',
         'sec-fetch-site': 'same-origin',
         'x-ms-client-request-id': crypto.randomUUID(),
-        'x-ms-useragent': 'azsdk-js-api-client-factory/1.0.0-beta.1 core-rest-pipeline/1.10.0 OS/Win32',
-        cookie: this.opts.cookies || `_U=${this.opts.userToken}`,
-        Referer: 'https://www.bing.com/search?q=Bing+AI&showconv=1&FORM=hpcodx',
+        'x-ms-useragent': 'azsdk-js-api-client-factory/1.0.0-beta.1 core-rest-pipeline/1.10.3 OS/macOS',
+        // cookie: this.opts.cookies || `_U=${this.opts.userToken}`,
+        Referer: 'https://edgeservices.bing.com/edgesvc/chat?udsframed=1&form=SHORUN&clientscopes=chat,noheader,channelstable,',
         'Referrer-Policy': 'origin-when-cross-origin',
         // Workaround for request being blocked due to geolocation
         'x-forwarded-for': '1.1.1.1'
       }
+    }
+    if (this.opts.cookies || this.opts.userToken) {
+      // 疑似无需token了
+      fetchOptions.headers.cookie = this.opts.cookies || `_U=${this.opts.userToken}`
     }
     if (this.opts.proxy) {
       fetchOptions.agent = proxy(Config.proxy)
@@ -115,7 +120,7 @@ export default class SydneyAIClient {
     logger.mark('使用host：' + this.opts.host)
     let response = await fetch(`${this.opts.host}/turing/conversation/create`, fetchOptions)
     let text = await response.text()
-    let retry = 30
+    let retry = 10
     while (retry >= 0 && response.status === 200 && !text) {
       await delay(400)
       response = await fetch(`${this.opts.host}/turing/conversation/create`, fetchOptions)
@@ -138,7 +143,7 @@ export default class SydneyAIClient {
 
   async createWebSocketConnection () {
     await this.initCache()
-    let WebSocket = await getWebSocket()
+    // let WebSocket = await getWebSocket()
     return new Promise((resolve, reject) => {
       let agent
       let sydneyHost = 'wss://sydney.bing.com'
@@ -149,7 +154,7 @@ export default class SydneyAIClient {
         sydneyHost = Config.sydneyReverseProxy.replace('https://', 'wss://').replace('http://', 'ws://')
       }
       logger.mark(`use sydney websocket host: ${sydneyHost}`)
-      let ws = new WebSocket(sydneyHost + '/sydney/ChatHub', { agent })
+      let ws = new WebSocket(sydneyHost + '/sydney/ChatHub', undefined, { agent, origin: 'https://edgeservices.bing.com' })
       ws.on('error', (err) => {
         console.error(err)
         reject(err)
@@ -354,13 +359,18 @@ export default class SydneyAIClient {
       'responsible_ai_policy_235',
       'enablemm',
       toneOption,
-      'dtappid',
-      'cricinfo',
-      'cricinfov2',
-      'dv3sugg'
+      'dagslnv1',
+      'sportsansgnd',
+      'dl_edge_desc',
+      'noknowimg',
+      // 'dtappid',
+      // 'cricinfo',
+      // 'cricinfov2',
+      'dv3sugg',
+      'gencontentv3'
     ]
     if (Config.enableGenerateContents) {
-      optionsSets.push(...['clgalileo', 'gencontentv3', 'rai267'])
+      optionsSets.push(...['gencontentv3'])
     }
     const obj = {
       arguments: [
