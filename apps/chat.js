@@ -1683,21 +1683,22 @@ export class chatgpt extends plugin {
               // 不减次数
             } else if (message && typeof message === 'string' && message.indexOf('UnauthorizedRequest') > -1) {
               // token过期了
-              let bingTokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
-              const badBingToken = bingTokens.findIndex(element => element.Token === bingToken)
-              // 可能是微软抽风，给三次机会
-              if (bingTokens[badBingToken].exception) {
-                if (bingTokens[badBingToken].exception <= 3) {
-                  bingTokens[badBingToken].exception += 1
-                } else {
-                  bingTokens[badBingToken].exception = 0
-                  bingTokens[badBingToken].State = '过期'
-                }
-              } else {
-                bingTokens[badBingToken].exception = 1
-              }
-              await redis.set('CHATGPT:BING_TOKENS', JSON.stringify(bingTokens))
-              logger.warn(`token${bingToken}已过期`)
+              // let bingTokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
+              // const badBingToken = bingTokens.findIndex(element => element.Token === bingToken)
+              // // 可能是微软抽风，给三次机会
+              // if (bingTokens[badBingToken].exception) {
+              //   if (bingTokens[badBingToken].exception <= 3) {
+              //     bingTokens[badBingToken].exception += 1
+              //   } else {
+              //     bingTokens[badBingToken].exception = 0
+              //     bingTokens[badBingToken].State = '过期'
+              //   }
+              // } else {
+              //   bingTokens[badBingToken].exception = 1
+              // }
+              // await redis.set('CHATGPT:BING_TOKENS', JSON.stringify(bingTokens))
+              logger.warn(`token${bingToken}疑似不存在或已过期，再试试`)
+              retry = retry - 0.1
             } else {
               retry--
               errorMessage = message === 'Timed out waiting for response. Try enabling debug mode to see more information.' ? (reply ? `${reply}\n不行了，我的大脑过载了，处理不过来了!` : '必应的小脑瓜不好使了，不知道怎么回答！') : message
