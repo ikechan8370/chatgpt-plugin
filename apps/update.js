@@ -1,4 +1,4 @@
-// modified from StarRail-plugin | ÒÑ¾­¹ıStarRail-plugin×÷Õß±¾ÈËÍ¬Òâ
+ï»¿// modified from StarRail-plugin | å·²ç»è¿‡StarRail-pluginä½œè€…æœ¬äººåŒæ„
 import plugin from '../../../lib/plugins/plugin.js'
 import { createRequire } from 'module'
 import _ from 'lodash'
@@ -12,27 +12,27 @@ const { exec, execSync } = require('child_process')
 
 const checkAuth = async function (e) {
   if (!e.isMaster) {
-    e.reply(`Ö»ÓĞÖ÷ÈË²ÅÄÜÃüÁîChatGPTÅ¶~(*/¦Ø£Ü*)`)
+    e.reply(`åªæœ‰ä¸»äººæ‰èƒ½å‘½ä»¤ChatGPTå“¦~(*/Ï‰ï¼¼*)`)
     return false
   }
   return true
 }
 
-// ÊÇ·ñÔÚ¸üĞÂÖĞ
+// æ˜¯å¦åœ¨æ›´æ–°ä¸­
 let uping = false
 
 /**
- * ´¦Àí²å¼ş¸üĞÂ
+ * å¤„ç†æ’ä»¶æ›´æ–°
  */
 export class Update extends plugin {
   constructor () {
     super({
-      name: 'chatgpt¸üĞÂ²å¼ş',
+      name: 'chatgptæ›´æ–°æ’ä»¶',
       event: 'message',
       priority: 1000,
       rule: [
         {
-          reg: '^#?(chat|chatgpt)(²å¼ş)?(Ç¿ÖÆ)?¸üĞÂ$',
+          reg: '^#?(chat|chatgpt)(æ’ä»¶)?(å¼ºåˆ¶)?æ›´æ–°$',
           fnc: 'update'
         }
       ]
@@ -43,29 +43,29 @@ export class Update extends plugin {
 
 
   /**
-   * rule - ¸üĞÂchatgpt²å¼ş
+   * rule - æ›´æ–°chatgptæ’ä»¶
    * @returns
    */
   async update () {
     if (!this.e.isMaster) return false
 
-    /** ¼ì²éÊÇ·ñÕıÔÚ¸üĞÂÖĞ */
+    /** æ£€æŸ¥æ˜¯å¦æ­£åœ¨æ›´æ–°ä¸­ */
     if (uping) {
-      await this.reply('ÒÑÓĞÃüÁî¸üĞÂÖĞ..ÇëÎğÖØ¸´²Ù×÷')
+      await this.reply('å·²æœ‰å‘½ä»¤æ›´æ–°ä¸­..è¯·å‹¿é‡å¤æ“ä½œ')
       return
     }
 
-    /** ¼ì²égit°²×° */
+    /** æ£€æŸ¥gitå®‰è£… */
     if (!(await this.checkGit())) return
 
-    const isForce = this.e.msg.includes('Ç¿ÖÆ')
+    const isForce = this.e.msg.includes('å¼ºåˆ¶')
 
-    /** Ö´ĞĞ¸üĞÂ */
+    /** æ‰§è¡Œæ›´æ–° */
     await this.runUpdate(isForce)
 
-    /** ÊÇ·ñĞèÒªÖØÆô */
+    /** æ˜¯å¦éœ€è¦é‡å¯ */
     if (this.isUp) {
-      // await this.reply("¸üĞÂÍê±Ï£¬ÇëÖØÆôÔÆáÌºóÉúĞ§")
+      // await this.reply("æ›´æ–°å®Œæ¯•ï¼Œè¯·é‡å¯äº‘å´½åç”Ÿæ•ˆ")
       setTimeout(() => this.restart(), 2000)
     }
   }
@@ -75,51 +75,51 @@ export class Update extends plugin {
   }
 
   /**
-   * chatgpt²å¼ş¸üĞÂº¯Êı
-   * @param {boolean} isForce ÊÇ·ñÎªÇ¿ÖÆ¸üĞÂ
+   * chatgptæ’ä»¶æ›´æ–°å‡½æ•°
+   * @param {boolean} isForce æ˜¯å¦ä¸ºå¼ºåˆ¶æ›´æ–°
    * @returns
    */
   async runUpdate (isForce) {
     let command = 'git -C ./plugins/chatgpt-plugin/ pull --no-rebase'
     if (isForce) {
       command = `git -C ./plugins/chatgpt-plugin/ checkout . && ${command}`
-      this.e.reply('ÕıÔÚÖ´ĞĞÇ¿ÖÆ¸üĞÂ²Ù×÷£¬ÇëÉÔµÈ')
+      this.e.reply('æ­£åœ¨æ‰§è¡Œå¼ºåˆ¶æ›´æ–°æ“ä½œï¼Œè¯·ç¨ç­‰')
     } else {
-      this.e.reply('ÕıÔÚÖ´ĞĞ¸üĞÂ²Ù×÷£¬ÇëÉÔµÈ')
+      this.e.reply('æ­£åœ¨æ‰§è¡Œæ›´æ–°æ“ä½œï¼Œè¯·ç¨ç­‰')
     }
-    /** »ñÈ¡ÉÏ´ÎÌá½»µÄcommitId£¬ÓÃÓÚ»ñÈ¡ÈÕÖ¾Ê±ÅĞ¶ÏĞÂÔöµÄ¸üĞÂÈÕÖ¾ */
+    /** è·å–ä¸Šæ¬¡æäº¤çš„commitIdï¼Œç”¨äºè·å–æ—¥å¿—æ—¶åˆ¤æ–­æ–°å¢çš„æ›´æ–°æ—¥å¿— */
     this.oldCommitId = await this.getcommitId('chatgpt-plugin')
     uping = true
     let ret = await this.execSync(command)
     uping = false
 
     if (ret.error) {
-      logger.mark(`${this.e.logFnc} ¸üĞÂÊ§°Ü£ºchatgpt-plugin`)
+      logger.mark(`${this.e.logFnc} æ›´æ–°å¤±è´¥ï¼šchatgpt-plugin`)
       this.gitErr(ret.error, ret.stdout)
       return false
     }
 
-    /** »ñÈ¡²å¼şÌá½»µÄ×îĞÂÊ±¼ä */
+    /** è·å–æ’ä»¶æäº¤çš„æœ€æ–°æ—¶é—´ */
     let time = await this.getTime('chatgpt-plugin')
 
-    if (/(Already up[ -]to[ -]date|ÒÑ¾­ÊÇ×îĞÂµÄ)/.test(ret.stdout)) {
-      await this.reply(`chatgpt-pluginÒÑ¾­ÊÇ×îĞÂ°æ±¾\n×îºó¸üĞÂÊ±¼ä£º${time}`)
+    if (/(Already up[ -]to[ -]date|å·²ç»æ˜¯æœ€æ–°çš„)/.test(ret.stdout)) {
+      await this.reply(`chatgpt-pluginå·²ç»æ˜¯æœ€æ–°ç‰ˆæœ¬\næœ€åæ›´æ–°æ—¶é—´ï¼š${time}`)
     } else {
-      await this.reply(`chatgpt-plugin\n×îºó¸üĞÂÊ±¼ä£º${time}`)
+      await this.reply(`chatgpt-plugin\næœ€åæ›´æ–°æ—¶é—´ï¼š${time}`)
       this.isUp = true
-      /** »ñÈ¡chatgpt×é¼şµÄ¸üĞÂÈÕÖ¾ */
+      /** è·å–chatgptç»„ä»¶çš„æ›´æ–°æ—¥å¿— */
       let log = await this.getLog('chatgpt-plugin')
       await this.reply(log)
     }
 
-    logger.mark(`${this.e.logFnc} ×îºó¸üĞÂÊ±¼ä£º${time}`)
+    logger.mark(`${this.e.logFnc} æœ€åæ›´æ–°æ—¶é—´ï¼š${time}`)
 
     return true
   }
 
   /**
-   * »ñÈ¡chatgpt²å¼şµÄ¸üĞÂÈÕÖ¾
-   * @param {string} plugin ²å¼şÃû³Æ
+   * è·å–chatgptæ’ä»¶çš„æ›´æ–°æ—¥å¿—
+   * @param {string} plugin æ’ä»¶åç§°
    * @returns
    */
   async getLog (plugin = '') {
@@ -151,16 +151,16 @@ export class Update extends plugin {
 
     let end = ''
     end =
-      '¸ü¶àÏêÏ¸ĞÅÏ¢£¬ÇëÇ°Íùgithub²é¿´\nhttps://github.com/ikechan8370/chatgpt-plugin'
+      'æ›´å¤šè¯¦ç»†ä¿¡æ¯ï¼Œè¯·å‰å¾€githubæŸ¥çœ‹\nhttps://github.com/ikechan8370/chatgpt-plugin'
 
-    log = await this.makeForwardMsg(`chatgpt-plugin¸üĞÂÈÕÖ¾£¬¹²${line}Ìõ`, log, end)
+    log = await this.makeForwardMsg(`chatgpt-pluginæ›´æ–°æ—¥å¿—ï¼Œå…±${line}æ¡`, log, end)
 
     return log
   }
 
   /**
-   * »ñÈ¡ÉÏ´ÎÌá½»µÄcommitId
-   * @param {string} plugin ²å¼şÃû³Æ
+   * è·å–ä¸Šæ¬¡æäº¤çš„commitId
+   * @param {string} plugin æ’ä»¶åç§°
    * @returns
    */
   async getcommitId (plugin = '') {
@@ -173,8 +173,8 @@ export class Update extends plugin {
   }
 
   /**
-   * »ñÈ¡±¾´Î¸üĞÂ²å¼şµÄ×îºóÒ»´ÎÌá½»Ê±¼ä
-   * @param {string} plugin ²å¼şÃû³Æ
+   * è·å–æœ¬æ¬¡æ›´æ–°æ’ä»¶çš„æœ€åä¸€æ¬¡æäº¤æ—¶é—´
+   * @param {string} plugin æ’ä»¶åç§°
    * @returns
    */
   async getTime (plugin = '') {
@@ -186,16 +186,16 @@ export class Update extends plugin {
       time = _.trim(time)
     } catch (error) {
       logger.error(error.toString())
-      time = '»ñÈ¡Ê±¼äÊ§°Ü'
+      time = 'è·å–æ—¶é—´å¤±è´¥'
     }
     return time
   }
 
   /**
-   * ÖÆ×÷×ª·¢ÏûÏ¢
-   * @param {string} title ±êÌâ - Ê×ÌõÏûÏ¢
-   * @param {string} msg ÈÕÖ¾ĞÅÏ¢
-   * @param {string} end ×îºóÒ»ÌõĞÅÏ¢
+   * åˆ¶ä½œè½¬å‘æ¶ˆæ¯
+   * @param {string} title æ ‡é¢˜ - é¦–æ¡æ¶ˆæ¯
+   * @param {string} msg æ—¥å¿—ä¿¡æ¯
+   * @param {string} end æœ€åä¸€æ¡ä¿¡æ¯
    * @returns
    */
   async makeForwardMsg (title, msg, end) {
@@ -227,14 +227,14 @@ export class Update extends plugin {
       })
     }
 
-    /** ÖÆ×÷×ª·¢ÄÚÈİ */
+    /** åˆ¶ä½œè½¬å‘å†…å®¹ */
     if (this.e.isGroup) {
       forwardMsg = await this.e.group.makeForwardMsg(forwardMsg)
     } else {
       forwardMsg = await this.e.friend.makeForwardMsg(forwardMsg)
     }
 
-    /** ´¦ÀíÃèÊö */
+    /** å¤„ç†æè¿° */
     forwardMsg.data = forwardMsg.data
       .replace(/\n/g, '')
       .replace(/<title color="#777777" size="26">(.+?)<\/title>/g, '___')
@@ -244,43 +244,43 @@ export class Update extends plugin {
   }
 
   /**
-   * ´¦Àí¸üĞÂÊ§°ÜµÄÏà¹Øº¯Êı
+   * å¤„ç†æ›´æ–°å¤±è´¥çš„ç›¸å…³å‡½æ•°
    * @param {string} err
    * @param {string} stdout
    * @returns
    */
   async gitErr (err, stdout) {
-    let msg = '¸üĞÂÊ§°Ü£¡'
+    let msg = 'æ›´æ–°å¤±è´¥ï¼'
     let errMsg = err.toString()
     stdout = stdout.toString()
 
     if (errMsg.includes('Timed out')) {
       let remote = errMsg.match(/'(.+?)'/g)[0].replace(/'/g, '')
-      await this.reply(msg + `\nÁ¬½Ó³¬Ê±£º${remote}`)
+      await this.reply(msg + `\nè¿æ¥è¶…æ—¶ï¼š${remote}`)
       return
     }
 
     if (/Failed to connect|unable to access/g.test(errMsg)) {
       let remote = errMsg.match(/'(.+?)'/g)[0].replace(/'/g, '')
-      await this.reply(msg + `\nÁ¬½ÓÊ§°Ü£º${remote}`)
+      await this.reply(msg + `\nè¿æ¥å¤±è´¥ï¼š${remote}`)
       return
     }
 
     if (errMsg.includes('be overwritten by merge')) {
       await this.reply(
         msg +
-        `´æÔÚ³åÍ»£º\n${errMsg}\n` +
-        'Çë½â¾ö³åÍ»ºóÔÙ¸üĞÂ£¬»òÕßÖ´ĞĞ#Ç¿ÖÆ¸üĞÂ£¬·ÅÆú±¾µØĞŞ¸Ä'
+        `å­˜åœ¨å†²çªï¼š\n${errMsg}\n` +
+        'è¯·è§£å†³å†²çªåå†æ›´æ–°ï¼Œæˆ–è€…æ‰§è¡Œ#å¼ºåˆ¶æ›´æ–°ï¼Œæ”¾å¼ƒæœ¬åœ°ä¿®æ”¹'
       )
       return
     }
 
     if (stdout.includes('CONFLICT')) {
       await this.reply([
-        msg + '´æÔÚ³åÍ»\n',
+        msg + 'å­˜åœ¨å†²çª\n',
         errMsg,
         stdout,
-        '\nÇë½â¾ö³åÍ»ºóÔÙ¸üĞÂ£¬»òÕßÖ´ĞĞ#Ç¿ÖÆ¸üĞÂ£¬·ÅÆú±¾µØĞŞ¸Ä'
+        '\nè¯·è§£å†³å†²çªåå†æ›´æ–°ï¼Œæˆ–è€…æ‰§è¡Œ#å¼ºåˆ¶æ›´æ–°ï¼Œæ”¾å¼ƒæœ¬åœ°ä¿®æ”¹'
       ])
       return
     }
@@ -289,8 +289,8 @@ export class Update extends plugin {
   }
 
   /**
-   * Òì²½Ö´ĞĞgitÏà¹ØÃüÁî
-   * @param {string} cmd gitÃüÁî
+   * å¼‚æ­¥æ‰§è¡Œgitç›¸å…³å‘½ä»¤
+   * @param {string} cmd gitå‘½ä»¤
    * @returns
    */
   async execSync (cmd) {
@@ -302,13 +302,13 @@ export class Update extends plugin {
   }
 
   /**
-   * ¼ì²égitÊÇ·ñ°²×°
+   * æ£€æŸ¥gitæ˜¯å¦å®‰è£…
    * @returns
    */
   async checkGit () {
     let ret = await execSync('git --version', { encoding: 'utf-8' })
     if (!ret || !ret.includes('git version')) {
-      await this.reply('ÇëÏÈ°²×°git')
+      await this.reply('è¯·å…ˆå®‰è£…git')
       return false
     }
     return true
