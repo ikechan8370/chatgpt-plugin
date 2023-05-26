@@ -1,3 +1,4 @@
+// modified from StarRail-plugin | 已经过StarRail-plugin作者本人同意
 import plugin from '../../../lib/plugins/plugin.js'
 import { createRequire } from 'module'
 import _ from 'lodash'
