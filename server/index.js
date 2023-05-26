@@ -299,6 +299,9 @@ export async function createServer() {
       if (await redis.exists('CHATGPT:CONFIRM') != 0) {
         redisConfig.turnConfirm = await redis.get('CHATGPT:CONFIRM') === 'on'
       }
+      if (await redis.exists('CHATGPT:USE') != 0) {
+        redisConfig.useMode = await redis.get('CHATGPT:USE')
+      }
       reply.send({
         chatConfig: Config,
         redisConfig
@@ -362,6 +365,9 @@ export async function createServer() {
       }
       if (redisConfig.turnConfirm != null) {
         await redis.set('CHATGPT:CONFIRM', redisConfig.turnConfirm ? 'on' : 'off')
+      }
+      if (redisConfig.useMode != null) {
+        await redis.set('CHATGPT:USE', redisConfig.useMode)
       }
     } else {
       if (body.userSetting) {

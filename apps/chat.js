@@ -1762,9 +1762,11 @@ export class chatgpt extends plugin {
           if (Config.slackClaudeEnableGlobalPreset && (useCast?.slack || Config.slackClaudeGlobalPreset)) {
             // 先发送设定
             let prompt = (useCast?.slack || Config.slackClaudeGlobalPreset)
+            let emotion = await AzureTTS.getEmotionPrompt(e)
+            if (emotion) {
+              prompt = prompt + '\n' + emotion
+            }
             await client.sendMessage(prompt, e)
-            // 处理可能由情绪参数导致的设定超限问题
-            await client.sendMessage(await AzureTTS.getEmotionPrompt(e), e)
             logger.info('claudeFirst:', prompt)
           }
         }
