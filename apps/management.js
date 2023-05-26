@@ -226,7 +226,7 @@ export class ChatgptManagement extends plugin {
           fnc: 'userPage'
         },
         {
-          reg: '^#(chatgpt)?(对话|管理|娱乐|绘图|人物设定|聊天记录)?指令表(帮助|搜索(.+))?',
+          reg: '^#?(chatgpt)(对话|管理|娱乐|绘图|人物设定|聊天记录)?指令表(帮助|搜索(.+))?',
           fnc: 'commandHelp'
         },
         {
