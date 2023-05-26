@@ -309,8 +309,7 @@ export default class SydneyAIClient {
     const text = (pureSydney ? pureSydneyInstruction : (useCast?.bing || Config.sydney)).replaceAll(namePlaceholder, botName || defaultBotName) +
             ((Config.enableGroupContext && groupId) ? groupContextTip : '') +
             ((Config.enforceMaster && master) ? masterTip : '') +
-            (Config.sydneyMood ? moodTip : '') + 
-            (Config.sydneySystemCode ? '' : '')
+            (Config.sydneyMood ? moodTip : '')
     // logger.info(text)
     if (pureSydney) {
       previousMessages = invocationId === 0
