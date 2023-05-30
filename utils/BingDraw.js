@@ -91,7 +91,7 @@ export default class BingDrawClient {
       }
       let r = await fetch(pollingUrl, fetchOptions)
       let rText = await r.text()
-      if (rText) {
+      if (r.status === 200 && rText) {
         // logger.info(rText)
         logger.info('got bing draw results!')
         found = true
