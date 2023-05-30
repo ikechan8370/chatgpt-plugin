@@ -61,18 +61,28 @@ export default class BingDrawClient {
     if (Config.proxy) {
       fetchOptions.agent = proxy(Config.proxy)
     }
-    let response = await fetch(url, Object.assign(fetchOptions, { body, redirect: 'manual', method: 'POST' }))
-    let res = await response.text()
-    if (res.toLowerCase().indexOf('this prompt has been blocked') > -1) {
-      throw new Error('Your prompt has been blocked by Bing. Try to change any bad words and try again.')
-    }
-    if (response.status !== 302) {
-      url = `${this.opts.baseUrl}/images/create?q=${urlEncodedPrompt}&rt=3&FORM=GENCRE`
-      let response3 = await fetch(url, Object.assign(fetchOptions, { body, redirect: 'manual', method: 'POST' }))
-      if (response3.status !== 302) {
-        throw new Error('绘图失败，请检查Bing token和代理/反代配置')
+    let success = false
+    let retry = 5
+    let response
+    while (!success && retry >= 0) {
+      response = await fetch(url, Object.assign(fetchOptions, { body, redirect: 'manual', method: 'POST' }))
+      let res = await response.text()
+      if (res.toLowerCase().indexOf('this prompt has been blocked') > -1) {
+        throw new Error('Your prompt has been blocked by Bing. Try to change any bad words and try again.')
       }
-      response = response3
+      if (response.status !== 302) {
+        url = `${this.opts.baseUrl}/images/create?q=${urlEncodedPrompt}&rt=3&FORM=GENCRE`
+        response = await fetch(url, Object.assign(fetchOptions, { body, redirect: 'manual', method: 'POST' }))
+      }
+      if (response.status === 302) {
+        success = true
+        break
+      } else {
+        retry--
+      }
+    }
+    if (!success) {
+      throw new Error('绘图失败，请检查Bing token和代理/反代配置')
     }
     let redirectUrl = response.headers.get('Location').replace('&nfy=1', '')
     let requestId = redirectUrl.split('id=')[1]
