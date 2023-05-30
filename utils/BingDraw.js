@@ -93,7 +93,7 @@ export default class BingDrawClient {
     let pollingUrl = `${this.opts.baseUrl}/images/create/async/results/${requestId}?q=${urlEncodedPrompt}`
     logger.info({ pollingUrl })
     logger.info('waiting for bing draw results...')
-    let timeoutTimes = 50
+    let timeoutTimes = 30
     let found = false
     let timer = setInterval(async () => {
       if (found) {
@@ -108,9 +108,8 @@ export default class BingDrawClient {
         let regex = /src="([^"]+)"/g
         let imageLinks = rText.match(regex)
         if (!imageLinks || imageLinks.length === 0) {
-          await e.reply('绘图失败：no images', true)
-          logger.error(rText)
-          throw new Error('no images')
+          // 很可能是微软内部error，重试即可
+          return
         }
         imageLinks = imageLinks.map(link => link.split('?w=')[0]).map(link => link.replace('src="', ''))
         imageLinks = [...new Set(imageLinks)]
@@ -133,11 +132,12 @@ export default class BingDrawClient {
         if (timeoutTimes === 0) {
           await e.reply('绘图超时', true)
           clearInterval(timer)
+          timer = null
         } else {
           logger.info('still waiting for bing draw results... times left: ' + timeoutTimes)
           timeoutTimes--
         }
       }
-    }, 1500)
+    }, 2000)
   }
 }
