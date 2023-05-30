@@ -140,7 +140,7 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
-          reg: '^#chatgpt(本群)?(群\\d+)?(打开|开启|启动|激活|张嘴|开口|说话|上班)',
+          reg: '^#chatgpt(本群)?(群\\d+)?(开启|启动|激活|张嘴|开口|说话|上班)',
           fnc: 'openMouth',
           permission: 'master'
         },
