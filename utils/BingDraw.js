@@ -61,18 +61,28 @@ export default class BingDrawClient {
     if (Config.proxy) {
       fetchOptions.agent = proxy(Config.proxy)
     }
-    let response = await fetch(url, Object.assign(fetchOptions, { body, redirect: 'manual', method: 'POST' }))
-    let res = await response.text()
-    if (res.toLowerCase().indexOf('this prompt has been blocked') > -1) {
-      throw new Error('Your prompt has been blocked by Bing. Try to change any bad words and try again.')
-    }
-    if (response.status !== 302) {
-      url = `${this.opts.baseUrl}/images/create?q=${urlEncodedPrompt}&rt=3&FORM=GENCRE`
-      let response3 = await fetch(url, Object.assign(fetchOptions, { body, redirect: 'manual', method: 'POST' }))
-      if (response3.status !== 302) {
-        throw new Error('绘图失败，请检查Bing token和代理/反代配置')
+    let success = false
+    let retry = 5
+    let response
+    while (!success && retry >= 0) {
+      response = await fetch(url, Object.assign(fetchOptions, { body, redirect: 'manual', method: 'POST' }))
+      let res = await response.text()
+      if (res.toLowerCase().indexOf('this prompt has been blocked') > -1) {
+        throw new Error('Your prompt has been blocked by Bing. Try to change any bad words and try again.')
       }
-      response = response3
+      if (response.status !== 302) {
+        url = `${this.opts.baseUrl}/images/create?q=${urlEncodedPrompt}&rt=3&FORM=GENCRE`
+        response = await fetch(url, Object.assign(fetchOptions, { body, redirect: 'manual', method: 'POST' }))
+      }
+      if (response.status === 302) {
+        success = true
+        break
+      } else {
+        retry--
+      }
+    }
+    if (!success) {
+      throw new Error('绘图失败，请检查Bing token和代理/反代配置')
     }
     let redirectUrl = response.headers.get('Location').replace('&nfy=1', '')
     let requestId = redirectUrl.split('id=')[1]
@@ -83,7 +93,7 @@ export default class BingDrawClient {
     let pollingUrl = `${this.opts.baseUrl}/images/create/async/results/${requestId}?q=${urlEncodedPrompt}`
     logger.info({ pollingUrl })
     logger.info('waiting for bing draw results...')
-    let timeoutTimes = 50
+    let timeoutTimes = 30
     let found = false
     let timer = setInterval(async () => {
       if (found) {
@@ -91,16 +101,15 @@ export default class BingDrawClient {
       }
       let r = await fetch(pollingUrl, fetchOptions)
       let rText = await r.text()
-      if (rText) {
+      if (r.status === 200 && rText) {
         // logger.info(rText)
         logger.info('got bing draw results!')
         found = true
         let regex = /src="([^"]+)"/g
         let imageLinks = rText.match(regex)
         if (!imageLinks || imageLinks.length === 0) {
-          await e.reply('绘图失败：no images', true)
-          logger.error(rText)
-          throw new Error('no images')
+          // 很可能是微软内部error，重试即可
+          return
         }
         imageLinks = imageLinks.map(link => link.split('?w=')[0]).map(link => link.replace('src="', ''))
         imageLinks = [...new Set(imageLinks)]
@@ -123,11 +132,12 @@ export default class BingDrawClient {
         if (timeoutTimes === 0) {
           await e.reply('绘图超时', true)
           clearInterval(timer)
+          timer = null
         } else {
           logger.info('still waiting for bing draw results... times left: ' + timeoutTimes)
           timeoutTimes--
         }
       }
-    }, 1500)
+    }, 2000)
   }
 }

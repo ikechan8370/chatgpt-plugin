@@ -329,3 +329,12 @@ https://afdian.net/a/ikechan8370
 
 [![Star History Chart](https://api.star-history.com/svg?repos=ikechan8370/chatgpt-plugin&type=Date)](https://star-history.com/#ikechan8370/chatgpt-plugin&Date)
 
+## 工具支持
+<a href="https://jb.gg/OpenSourceSupport" >
+   <img style="width: 300px" src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.png"/>
+</a>
+
+JetBrains for Open Source development license
+
+
+
