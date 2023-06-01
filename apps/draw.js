@@ -239,7 +239,7 @@ export class dalle extends plugin {
       this.reply('请提供绘图prompt')
       return false
     }
-
+    this.reply('在画了，请稍等……')
     let bingToken = ''
     if (await redis.exists('CHATGPT:BING_TOKENS') != 0) {
       let bingTokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))

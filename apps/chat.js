@@ -1660,7 +1660,7 @@ export class chatgpt extends plugin {
             // 如果token曾经有异常，则清除异常
             let Tokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
             const TokenIndex = Tokens.findIndex(element => element.Token === abtrs.bingToken)
-            if (Tokens[TokenIndex].exception) {
+            if (TokenIndex > 0 && Tokens[TokenIndex].exception) {
               delete Tokens[TokenIndex].exception
               await redis.set('CHATGPT:BING_TOKENS', JSON.stringify(Tokens))
             }
@@ -1789,9 +1789,11 @@ export class chatgpt extends plugin {
           if (Config.slackClaudeEnableGlobalPreset && (useCast?.slack || Config.slackClaudeGlobalPreset)) {
             // 先发送设定
             let prompt = (useCast?.slack || Config.slackClaudeGlobalPreset)
+            let emotion = await AzureTTS.getEmotionPrompt(e)
+            if (emotion) {
+              prompt = prompt + '\n' + emotion
+            }
             await client.sendMessage(prompt, e)
-            // 处理可能由情绪参数导致的设定超限问题
-            await client.sendMessage(await AzureTTS.getEmotionPrompt(e), e)
             logger.info('claudeFirst:', prompt)
           }
         }
@@ -2139,7 +2141,11 @@ async function getAvailableBingToken (conversation, throttled = []) {
     })
     bingToken = minElement.Token
   } else {
-    throw new Error('全部Token均已失效，暂时无法使用')
+    // throw new Error('全部Token均已失效，暂时无法使用')
+    return {
+      bingToken: null,
+      allThrottled
+    }
   }
   if (Config.toneStyle != 'Sydney' && Config.toneStyle != 'Custom') {
     // bing 下，需要保证同一对话使用同一账号的token

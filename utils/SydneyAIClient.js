@@ -59,7 +59,7 @@ export default class SydneyAIClient {
   constructor (opts) {
     this.opts = {
       ...opts,
-      host: opts.host || Config.sydneyReverseProxy || 'https://www.bing.com'
+      host: opts.host || Config.sydneyReverseProxy || 'https://edgeservices.bing.com/edgesvc'
     }
     // if (opts.proxy && !Config.sydneyForceUseReverse) {
     //   this.opts.host = 'https://www.bing.com'
@@ -309,7 +309,8 @@ export default class SydneyAIClient {
     const text = (pureSydney ? pureSydneyInstruction : (useCast?.bing || Config.sydney)).replaceAll(namePlaceholder, botName || defaultBotName) +
             ((Config.enableGroupContext && groupId) ? groupContextTip : '') +
             ((Config.enforceMaster && master) ? masterTip : '') +
-            (Config.sydneyMood ? moodTip : '')
+            (Config.sydneyMood ? moodTip : '') + 
+            (Config.sydneySystemCode ? '' : '')
     // logger.info(text)
     if (pureSydney) {
       previousMessages = invocationId === 0

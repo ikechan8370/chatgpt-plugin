@@ -302,6 +302,12 @@ export function supportGuoba () {
           component: 'InputPassword'
         },
         {
+          field: 'model',
+          label: 'OpenAI 模型',
+          bottomHelpMessage: 'gpt-4, gpt-4-0314, gpt-4-32k, gpt-4-32k-0314, gpt-3.5-turbo, gpt-3.5-turbo-0301。默认为gpt-3.5-turbo，gpt-4需账户支持',
+          component: 'Input'
+        },
+        {
           field: 'openAiBaseUrl',
           label: 'OpenAI API服务器地址',
           bottomHelpMessage: 'OpenAI的API服务器地址。注意要带上/v1。默认为https://api.openai.com/v1',
