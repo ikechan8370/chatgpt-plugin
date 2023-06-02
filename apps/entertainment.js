@@ -5,10 +5,11 @@ import { generateAudio } from '../utils/tts.js'
 import fs from 'fs'
 import { emojiRegex, googleRequestUrl } from '../utils/emoj/index.js'
 import fetch from 'node-fetch'
-import { makeForwardMsg, mkdirs } from '../utils/common.js'
+import { makeForwardMsg, mkdirs, renderUrl } from '../utils/common.js'
 import uploadRecord from '../utils/uploadRecord.js'
 import { makeWordcloud } from '../utils/wordcloud/wordcloud.js'
 import { translate, translateLangSupports } from '../utils/translate.js'
+import { URL } from 'node:url'
 let useSilk = false
 try {
   await import('node-silk')
@@ -49,6 +50,10 @@ export class Entertainment extends plugin {
         {
           reg: '^#ocr',
           fnc: 'ocr'
+        },
+        {
+          reg: '^#url(：|:)',
+          fnc: 'screenshotUrl'
         }
       ]
     })
@@ -377,7 +382,35 @@ ${translateLangLabels}
     await this.reply(replyMsg)
     return false
   }
+  
+  async screenshotUrl (e) {
+    let url = e.msg.replace(/^#url(：|:)/, '')
+    if (url.length === 0) { return false }
+    try {
+      if (!url.startsWith("http://") && !url.startsWith("https://")) {
+        url = "http://" + url
+      }
+      let urlLink = new URL(url)
+      await e.reply(
+        await renderUrl(
+            e, urlLink.href, 
+            { 
+              retType: 'base64',
+              Viewport: {
+                width: Config.chatViewWidth,
+                height: parseInt(Config.chatViewWidth * 0.56)
+              },
+              deviceScaleFactor: Config.cloudDPR 
+            }
+        ),
+      e.isGroup && Config.quoteReply)
+    } catch (err) {
+      this.reply('无效url:' + url)
+    }
+    return true
+  }
 }
+
 export async function getImg (e) {
   // 取消息中的图片、at的头像、回复的图片，放入e.img
   if (e.at && !e.source) {
