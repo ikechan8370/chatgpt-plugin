@@ -72,7 +72,7 @@ export class Tokenizer {
       throw new Error('未安装node-rs/jieba，娱乐功能-词云统计不可用')
     }
     // duration represents the number of hours to go back, should in range [0, 24]
-    let chats = await this.getHistory(groupId, duration=duration)
+    let chats = await this.getHistory(groupId, date = new Date(), duration = duration)
     let duration_str = duration > 0 ? `${duration}小时` : '今日'
     logger.mark(`聊天记录拉取完成，获取到${duration_str}内${chats.length}条聊天记录，准备分词中`)
    
