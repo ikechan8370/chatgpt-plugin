@@ -343,7 +343,7 @@ export async function renderUrl (e, url, renderCfg = {}) {
           waitUtil: renderCfg.waitUtil || 'networkidle2',
           wait: renderCfg.wait || 1000,
           func: renderCfg.func || '',
-          dpr: renderCfg.dpr || 1
+          dpr: renderCfg.deviceScaleFactor || 1
         },
         type: 'image'
       })
