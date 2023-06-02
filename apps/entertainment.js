@@ -43,7 +43,7 @@ export class Entertainment extends plugin {
           fnc: 'wordcloud'
         },
         {
-          reg: '^#(|最新)词云(\d{1,2}h{0,1}|)$',
+          reg: '^#(|最新)词云(\\d{1,2}h{0,1}|)$',
           fnc: 'wordcloud_latest'
         },
         {
