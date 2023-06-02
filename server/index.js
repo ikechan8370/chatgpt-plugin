@@ -218,7 +218,8 @@ export async function createServer() {
               y: Config.live2dOption_positionY
             },
             rotation :Config.live2dOption_rotation,
-            alpha: Config.live2dOption_alpha
+            alpha: Config.live2dOption_alpha,
+            dpr: Config.cloudDPR
           },
           time: new Date()
         }
