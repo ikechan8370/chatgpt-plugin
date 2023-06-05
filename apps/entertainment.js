@@ -43,6 +43,10 @@ export class Entertainment extends plugin {
           fnc: 'wordcloud'
         },
         {
+          reg: '^#(|最新)词云(\\d{1,2}h{0,1}|)$',
+          fnc: 'wordcloud_latest'
+        },
+        {
           reg: '^#((寄批踢|gpt|GPT)?翻.*|chatgpt翻译帮助)',
           fnc: 'translate'
         },
@@ -179,6 +183,37 @@ ${translateLangLabels}
       await redis.set(`CHATGPT:WORDCLOUD:${groupId}`, '1', {EX: 600})
       try {
         await makeWordcloud(e, e.group_id)
+      } catch (err) {
+        logger.error(err)
+        await e.reply(err)
+      }
+      await redis.del(`CHATGPT:WORDCLOUD:${groupId}`)
+    } else {
+      await e.reply('请在群里发送此命令')
+    }
+  }
+  async wordcloud_latest(e) {
+    if (e.isGroup) {
+      let groupId = e.group_id
+      let lock = await redis.get(`CHATGPT:WORDCLOUD:${groupId}`)
+      if (lock) {
+        await e.reply('别着急，上次统计还没完呢')
+        return true
+      }
+
+      const regExp = /词云(\d{0,2})(|h)/
+      const match = e.msg.trim().match(regExp)
+      const duration = !match[1] ? 12 : parseInt(match[1])  // default 12h
+      
+      if(duration > 24) {
+        await e.reply('最多只能统计24小时内的记录哦')
+        return false
+      }
+      await e.reply('在统计啦，请稍等...')
+      
+      await redis.set(`CHATGPT:WORDCLOUD:${groupId}`, '1', {EX: 600})
+      try {
+        await makeWordcloud(e, e.group_id, duration)
       } catch (err) {
         logger.error(err)
         await e.reply(err)
