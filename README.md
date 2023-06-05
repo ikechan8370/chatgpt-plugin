@@ -18,6 +18,7 @@
 
 ### 推荐的相关文档和参考资料
 本README
+[手册](https://chatgptplugin.ikechan8370.com/)
 [文档1（建设中）](https://chatgpt-docs.err0r.top/) 
 [插件常见问题（鹤望兰版）](https://www.wolai.com/4FCxxWAdjbrHF29MCJmAQK) 
 [Yunzai常见问题（LUCK小运版）](https://www.wolai.com/oA43vuW71aBnv7UsEysn4T) 

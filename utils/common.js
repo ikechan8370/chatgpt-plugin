@@ -8,6 +8,9 @@ import buffer from 'buffer'
 import yaml from 'yaml'
 import puppeteer from '../../../lib/puppeteer/puppeteer.js'
 import { Config } from './config.js'
+import { speakers as vitsRoleList } from './tts.js'
+import { supportConfigurations as voxRoleList } from './tts/voicevox.js'
+import { supportConfigurations as azureRoleList } from './tts/microsoft-azure.js'
 // export function markdownToText (markdown) {
 //  return remark()
 //    .use(stripMarkdown)
@@ -19,7 +22,7 @@ let _puppeteer
 try {
   const Puppeteer = (await import('../../../renderers/puppeteer/lib/puppeteer.js')).default
   let puppeteerCfg = {}
-  let configFile = `./renderers/puppeteer/config.yaml`
+  let configFile = './renderers/puppeteer/config.yaml'
   if (fs.existsSync(configFile)) {
     try {
       puppeteerCfg = yaml.parse(fs.readFileSync(configFile, 'utf8'))
@@ -335,7 +338,7 @@ export async function renderUrl (e, url, renderCfg = {}) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        url: url,
+        url,
         option: {
           width: renderCfg.Viewport.width || 1280,
           height: renderCfg.Viewport.height || 720,
@@ -350,7 +353,7 @@ export async function renderUrl (e, url, renderCfg = {}) {
     })
     if (resultres.ok) {
       const buff = Buffer.from(await resultres.arrayBuffer())
-      if(buff) {
+      if (buff) {
         const base64 = segment.image(buff)
         if (renderCfg.retType === 'base64') {
           return base64
@@ -363,7 +366,7 @@ export async function renderUrl (e, url, renderCfg = {}) {
       }
     }
   }
-  
+
   await _puppeteer.browserInit()
   const page = await _puppeteer.browser.newPage()
   let base64
@@ -401,7 +404,8 @@ export function getDefaultReplySetting () {
     usePicture: Config.defaultUsePicture,
     useTTS: Config.defaultUseTTS,
     ttsRole: Config.defaultTTSRole,
-    ttsRoleAzure: Config.azureTTSSpeaker
+    ttsRoleAzure: Config.azureTTSSpeaker,
+    ttsRoleVoiceVox: Config.voicevoxTTSSpeaker
   }
 }
 
@@ -679,16 +683,106 @@ export async function getUserData (user) {
     return JSON.parse(data)
   } catch (error) {
     return {
-      user: user,
+      user,
       passwd: '',
       chat: [],
       mode: '',
       cast: {
-        api: '', //API设定
-        bing: '', //必应设定
-        bing_resource: '', //必应扩展资料
-        slack: '', //Slack设定
+        api: '', // API设定
+        bing: '', // 必应设定
+        bing_resource: '', // 必应扩展资料
+        slack: '' // Slack设定
       }
     }
   }
+}
+
+export function getVoicevoxRoleList () {
+  return voxRoleList.map(item => item.name).join('、')
+}
+
+export function getAzureRoleList () {
+  return azureRoleList.map(item => item.name).join('、')
+}
+
+export async function getVitsRoleList (e) {
+  const [firstHalf, secondHalf] = [vitsRoleList.slice(0, Math.floor(vitsRoleList.length / 2)).join('、'), vitsRoleList.slice(Math.floor(vitsRoleList.length / 2)).join('、')]
+  const [chunk1, chunk2] = [firstHalf.match(/[^、]+(?:、[^、]+){0,30}/g), secondHalf.match(/[^、]+(?:、[^、]+){0,30}/g)]
+  const list = [await makeForwardMsg(e, chunk1, 'vits角色列表1'), await makeForwardMsg(e, chunk2, 'vits角色列表2')]
+  return await makeForwardMsg(e, list, 'vits角色列表')
+}
+
+export async function getUserReplySetting (e) {
+  let userSetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
+  if (userSetting) {
+    userSetting = JSON.parse(userSetting)
+    if (Object.keys(userSetting).indexOf('useTTS') < 0) {
+      userSetting.useTTS = Config.defaultUseTTS
+    }
+  } else {
+    userSetting = getDefaultReplySetting()
+  }
+  return userSetting
+}
+
+export async function getImg (e) {
+  // 取消息中的图片、at的头像、回复的图片，放入e.img
+  if (e.at && !e.source) {
+    e.img = [`https://q1.qlogo.cn/g?b=qq&s=0&nk=${e.at}`]
+  }
+  if (e.source) {
+    let reply
+    if (e.isGroup) {
+      reply = (await e.group.getChatHistory(e.source.seq, 1)).pop()?.message
+    } else {
+      reply = (await e.friend.getChatHistory(e.source.time, 1)).pop()?.message
+    }
+    if (reply) {
+      let i = []
+      for (let val of reply) {
+        if (val.type === 'image') {
+          i.push(val.url)
+        }
+      }
+      e.img = i
+    }
+  }
+  return e.img
+}
+
+export async function getImageOcrText (e) {
+  const img = await getImg(e)
+  if (img) {
+    try {
+      let resultArr = []
+      let eachImgRes = ''
+      for (let i in img) {
+        const imgOCR = await Bot.imageOcr(img[i])
+        for (let text of imgOCR.wordslist) {
+          eachImgRes += (`${text?.words}  \n`)
+        }
+        if (eachImgRes) resultArr.push(eachImgRes)
+        eachImgRes = ''
+      }
+      // logger.warn('resultArr', resultArr)
+      return resultArr
+    } catch (err) {
+      return false
+      // logger.error(err)
+    }
+  } else {
+    return false
+  }
+}
+// 对原始黑白名单进行去重和去除无效群号处理，并处理通过锅巴面板添加错误配置时可能导致的问题
+export function processList (whitelist, blacklist) {
+  whitelist = Array.isArray(whitelist)
+    ? whitelist
+    : String(whitelist).split(/[,，]/)
+  blacklist = !Array.isArray(blacklist)
+    ? blacklist
+    : String(blacklist).split(/[,，]/)
+  whitelist = Array.from(new Set(whitelist)).filter(value => /^\^?[1-9]\d{5,9}$/.test(value))
+  blacklist = Array.from(new Set(blacklist)).filter(value => /^\^?[1-9]\d{5,9}$/.test(value))
+  return [whitelist, blacklist]
 }

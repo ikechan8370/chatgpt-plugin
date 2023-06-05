@@ -10,7 +10,7 @@ try {
 }
 
 export class Tokenizer {
-  async getTodayHistory (groupId, date = new Date()) {
+  async getHistory (groupId, date = new Date(), duration = 0) {
     if (!groupId) {
       throw new Error('no valid group id')
     }
@@ -29,11 +29,22 @@ export class Tokenizer {
       }
       return 0
     }
+    // Get the current timestamp
+    let currentTime = date.getTime()
+
     // Step 2: Set the hours, minutes, seconds, and milliseconds to 0
     date.setHours(0, 0, 0, 0)
 
     // Step 3: Calculate the timestamp representing the start of the specified date
-    const startOfSpecifiedDate = date.getTime()
+    // duration represents the number of hours to go back
+    // if duration is 0, keeping the original date (start of today)
+    let startOfSpecifiedDate = date.getTime()
+    // if duration > 0, go back to the specified number of hours
+    if (duration > 0) {
+        // duration should be in range [0, 24]
+        duration = Math.min(duration, 24)
+        startOfSpecifiedDate = currentTime - (duration * 60 * 60 * 1000)
+    }
 
     // Step 4: Get the end of the specified date by adding 24 hours (in milliseconds)
     const endOfSpecifiedDate = startOfSpecifiedDate + (24 * 60 * 60 * 1000)
@@ -56,12 +67,14 @@ export class Tokenizer {
     return chats
   }
 
-  async getTodayKeywordTopK (groupId, topK = 100) {
+  async getKeywordTopK (groupId, topK = 100, duration = 0) {
     if (!nodejieba) {
       throw new Error('未安装node-rs/jieba，娱乐功能-词云统计不可用')
     }
-    let chats = await this.getTodayHistory(groupId)
-    logger.mark(`聊天记录拉去完成，获取到今日内${chats.length}条聊天记录，准备分词中`)
+    // duration represents the number of hours to go back, should in range [0, 24]
+    let chats = await this.getHistory(groupId, new Date(), duration)
+    let duration_str = duration > 0 ? `${duration}小时` : '今日'
+    logger.mark(`聊天记录拉取完成，获取到${duration_str}内${chats.length}条聊天记录，准备分词中`)
    
     const _path = process.cwd()
     let stopWordsPath = `${_path}/plugins/chatgpt-plugin/utils/wordcloud/cn_stopwords.txt`
