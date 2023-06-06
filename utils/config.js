@@ -85,6 +85,7 @@ const defaultConfig = {
   sydneyApologyIgnored: true,
   enforceMaster: false,
   oldview: false,
+  newhelp: false,
   serverPort: 3321,
   serverHost: '',
   viewHost: '',
@@ -98,8 +99,8 @@ const defaultConfig = {
   live2dOption_rotation: 0,
   groupAdminPage: false,
   enablePrivateChat: false,
-  groupWhitelist: [],
-  groupBlacklist: [],
+  whitelist: [],
+  blacklist: [],
   ttsRegex: '/匹配规则/匹配模式',
   slackUserToken: '',
   slackBotUserToken: '',
@@ -123,7 +124,8 @@ const defaultConfig = {
   azureTTSEmotion: false,
   enhanceAzureTTSEmotion: false,
   autoJapanese: false,
-  version: 'v2.6.0'
+  enableGenerateContents: false,
+  version: 'v2.6.2'
 }
 const _path = process.cwd()
 let config = {}

@@ -1,4 +1,4 @@
-import fetch from 'node-fetch'
+import fetch, { FormData } from 'node-fetch'
 import { makeForwardMsg } from './common.js'
 import { Config } from './config.js'
 
@@ -22,8 +22,8 @@ export default class BingDrawClient {
   async getImages (prompt, e) {
     let urlEncodedPrompt = encodeURIComponent(prompt)
     let url = `${this.opts.baseUrl}/images/create?q=${urlEncodedPrompt}&rt=4&FORM=GENCRE`
-    let d = Math.ceil(Math.random() * 255)
-    let randomIp = '141.11.138.' + d
+    // let d = Math.ceil(Math.random() * 255)
+    // let randomIp = '141.11.138.' + d
     let headers = {
       accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
       'accept-language': 'en-US,en;q=0.9',
@@ -31,31 +31,58 @@ export default class BingDrawClient {
       'content-type': 'application/x-www-form-urlencoded',
       referrer: 'https://www.bing.com/images/create/',
       origin: 'https://www.bing.com',
-      'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63',
+      'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36 Edg/113.0.1774.50',
       cookie: this.opts.cookies || `_U=${this.opts.userToken}`,
-      'x-forwarded-for': randomIp
+      // 'x-forwarded-for': randomIp,
+      Dnt: '1',
+      'sec-ch-ua': '"Microsoft Edge";v="113", "Chromium";v="113", "Not-A.Brand";v="24"',
+      'sec-ch-ua-arch': '"x86"',
+      'sec-ch-ua-bitness': '"64"',
+      'sec-ch-ua-full-version': '"113.0.5672.126"',
+      'sec-ch-ua-full-version-list': '"Google Chrome";v="113.0.5672.126", "Chromium";v="113.0.5672.126", "Not-A.Brand";v="24.0.0.0"',
+      'sec-ch-ua-mobile': '?0',
+      'sec-ch-ua-model': '',
+      'sec-ch-ua-platform': '"macOS"',
+      'sec-ch-ua-platform-version': '"13.1.0"',
+      'sec-fetch-dest': 'document',
+      'sec-fetch-mode': 'navigate',
+      'sec-fetch-site': 'same-origin',
+      'sec-fetch-user': '?1',
+      'Referrer-Policy': 'origin-when-cross-origin',
+      'x-edge-shopping-flag': '1'
     }
     // headers['x-forwarded-for'] = '141.11.138.30'
+    let body = new FormData()
+    body.append('q', prompt)
+    body.append('qs', 'ds')
     let fetchOptions = {
-      method: 'POST',
-      headers,
-      redirect: 'manual'
+      headers
     }
     if (Config.proxy) {
       fetchOptions.agent = proxy(Config.proxy)
     }
-    let response = await fetch(url, fetchOptions)
-    let res = await response.text()
-    if (res.toLowerCase().indexOf('this prompt has been blocked') > -1) {
-      throw new Error('Your prompt has been blocked by Bing. Try to change any bad words and try again.')
-    }
-    if (response.status !== 302) {
-      url = `${this.opts.baseUrl}/images/create?q=${urlEncodedPrompt}&rt=3&FORM=GENCRE`
-      let response3 = await fetch(url, fetchOptions)
-      if (response3.status !== 302) {
-        throw new Error('绘图失败，请检查Bing token和代理/反代配置')
+    let success = false
+    let retry = 5
+    let response
+    while (!success && retry >= 0) {
+      response = await fetch(url, Object.assign(fetchOptions, { body, redirect: 'manual', method: 'POST' }))
+      let res = await response.text()
+      if (res.toLowerCase().indexOf('this prompt has been blocked') > -1) {
+        throw new Error('Your prompt has been blocked by Bing. Try to change any bad words and try again.')
       }
-      response = response3
+      if (response.status !== 302) {
+        url = `${this.opts.baseUrl}/images/create?q=${urlEncodedPrompt}&rt=3&FORM=GENCRE`
+        response = await fetch(url, Object.assign(fetchOptions, { body, redirect: 'manual', method: 'POST' }))
+      }
+      if (response.status === 302) {
+        success = true
+        break
+      } else {
+        retry--
+      }
+    }
+    if (!success) {
+      throw new Error('绘图失败，请检查Bing token和代理/反代配置')
     }
     let redirectUrl = response.headers.get('Location').replace('&nfy=1', '')
     let requestId = redirectUrl.split('id=')[1]
@@ -66,26 +93,23 @@ export default class BingDrawClient {
     let pollingUrl = `${this.opts.baseUrl}/images/create/async/results/${requestId}?q=${urlEncodedPrompt}`
     logger.info({ pollingUrl })
     logger.info('waiting for bing draw results...')
-    let timeoutTimes = 50
+    let timeoutTimes = 30
     let found = false
     let timer = setInterval(async () => {
       if (found) {
         return
       }
-      let r = await fetch(pollingUrl, {
-        headers
-      })
+      let r = await fetch(pollingUrl, fetchOptions)
       let rText = await r.text()
-      if (rText) {
+      if (r.status === 200 && rText) {
         // logger.info(rText)
         logger.info('got bing draw results!')
         found = true
         let regex = /src="([^"]+)"/g
         let imageLinks = rText.match(regex)
         if (!imageLinks || imageLinks.length === 0) {
-          await e.reply('绘图失败：no images', true)
-          logger.error(rText)
-          throw new Error('no images')
+          // 很可能是微软内部error，重试即可
+          return
         }
         imageLinks = imageLinks.map(link => link.split('?w=')[0]).map(link => link.replace('src="', ''))
         imageLinks = [...new Set(imageLinks)]
@@ -108,11 +132,12 @@ export default class BingDrawClient {
         if (timeoutTimes === 0) {
           await e.reply('绘图超时', true)
           clearInterval(timer)
+          timer = null
         } else {
           logger.info('still waiting for bing draw results... times left: ' + timeoutTimes)
           timeoutTimes--
         }
       }
-    }, 1500)
+    }, 2000)
   }
 }
