@@ -122,11 +122,11 @@ export async function createServer() {
       if (body.qq == Bot.uin && await redis.get('CHATGPT:ADMIN_PASSWD') == body.passwd) {
         usertoken.push({ user: body.qq, token, autho: 'admin' })
         reply.setCookie('token', token, { path: '/' })
-        reply.send({ login: true, autho: 'admin' })
+        reply.send({ login: true, autho: 'admin', token: token })
       } else {
         const user = await getUserData(body.qq)
         if (user.passwd != '' && user.passwd === body.passwd) {
-          usertoken.push({ user: body.qq, token, autho: 'user' })
+          usertoken.push({ user: body.qq, token, autho: 'user', token: token })
           reply.setCookie('token', token, { path: '/' })
           reply.send({ login: true, autho: 'user' })
         } else {
