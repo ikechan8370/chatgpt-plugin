@@ -85,7 +85,7 @@ export async function createServer() {
     reply.type('text/html').send(stream)
   })
   await server.get('/admin*', (request, reply) => {
-    const token = request.cookies.token || 'unknown'
+    const token = request.cookies.token || request.body.token || 'unknown'
     const user = usertoken.find(user => user.token === token)
     if (!user) {
       reply.redirect(301, '/auth/login')
@@ -94,7 +94,7 @@ export async function createServer() {
     reply.type('text/html').send(stream)
   })
   await server.get('/admin/dashboard', (request, reply) => {
-    const token = request.cookies.token || 'unknown'
+    const token = request.cookies.token || request.body.token || 'unknown'
     const user = usertoken.find(user => user.token === token)
     if (!user) {
       reply.redirect(301, '/auth/login')
@@ -106,7 +106,7 @@ export async function createServer() {
     reply.type('text/html').send(stream)
   })
   await server.get('/admin/settings', (request, reply) => {
-    const token = request.cookies.token || 'unknown'
+    const token = request.cookies.token || request.body.token || 'unknown'
     const user = usertoken.find(user => user.token === token)
     if (!user || user.autho != 'admin') {
       reply.redirect(301, '/admin/')
@@ -250,7 +250,7 @@ export async function createServer() {
 
   // 获取用户数据
   server.post('/userData', async (request, reply) => {
-    const token = request.cookies.token || 'unknown'
+    const token = request.cookies.token || request.body.token || 'unknown'
     let user = usertoken.find(user => user.token === token)
     if (!user) user = { user: '' }
     const userData = await getUserData(user.user)
@@ -268,7 +268,7 @@ export async function createServer() {
 
   // 清除缓存数据
   server.post('/cleanCache', async (request, reply) => {
-    const token = request.cookies.token || 'unknown'
+    const token = request.cookies.token || request.body.token || 'unknown'
     let user = usertoken.find(user => user.token === token)
     if (!user) user = { user: '' }
     const userData = await getUserData(user.user)
@@ -285,7 +285,7 @@ export async function createServer() {
 
   // 获取系统参数
   server.post('/sysconfig', async (request, reply) => {
-    const token = request.cookies.token || 'unknown'
+    const token = request.cookies.token || request.body.token || 'unknown'
     const user = usertoken.find(user => user.token === token)
     if (!user) {
       reply.send({ err: '未登录' })
@@ -327,7 +327,7 @@ export async function createServer() {
 
   // 设置系统参数
   server.post('/saveconfig', async (request, reply) => {
-    const token = request.cookies.token || 'unknown'
+    const token = request.cookies.token || request.body.token || 'unknown'
     const user = usertoken.find(user => user.token === token)
     const body = request.body || {}
     if (!user) {
