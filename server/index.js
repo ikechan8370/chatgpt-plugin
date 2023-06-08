@@ -85,7 +85,7 @@ export async function createServer() {
     reply.type('text/html').send(stream)
   })
   await server.get('/admin*', (request, reply) => {
-    const token = request.cookies.token || request.body.token || 'unknown'
+    const token = request.cookies.token || request.body?.token || 'unknown'
     const user = usertoken.find(user => user.token === token)
     if (!user) {
       reply.redirect(301, '/auth/login')
@@ -94,7 +94,7 @@ export async function createServer() {
     reply.type('text/html').send(stream)
   })
   await server.get('/admin/dashboard', (request, reply) => {
-    const token = request.cookies.token || request.body.token || 'unknown'
+    const token = request.cookies.token || request.body?.token || 'unknown'
     const user = usertoken.find(user => user.token === token)
     if (!user) {
       reply.redirect(301, '/auth/login')
@@ -106,7 +106,7 @@ export async function createServer() {
     reply.type('text/html').send(stream)
   })
   await server.get('/admin/settings', (request, reply) => {
-    const token = request.cookies.token || request.body.token || 'unknown'
+    const token = request.cookies.token || request.body?.token || 'unknown'
     const user = usertoken.find(user => user.token === token)
     if (!user || user.autho != 'admin') {
       reply.redirect(301, '/admin/')
@@ -126,7 +126,7 @@ export async function createServer() {
       } else {
         const user = await getUserData(body.qq)
         if (user.passwd != '' && user.passwd === body.passwd) {
-          usertoken.push({ user: body.qq, token, autho: 'user'})
+          usertoken.push({ user: body.qq, token, autho: 'user' })
           reply.setCookie('token', token, { path: '/' })
           reply.send({ login: true, autho: 'user', token: token })
         } else {
@@ -136,6 +136,22 @@ export async function createServer() {
     } else {
       reply.send({ login: false, err: '未输入用户名或密码' })
     }
+  })
+  // 检查用户是否存在
+  server.post('/verify', async (request, reply) => {
+    const token = request.cookies.token || request.body?.token || 'unknown'
+    let user = usertoken.find(user => user.token === token)
+    if (!user || token === 'unknown') {
+      reply.send({
+        verify: false,
+      })
+      return
+    }
+    reply.send({
+      verify: true,
+      user: user.user,
+      autho: user.autho
+    })
   })
   // 页面数据获取
   server.post('/page', async (request, reply) => {
@@ -217,7 +233,7 @@ export async function createServer() {
               x: Config.live2dOption_positionX,
               y: Config.live2dOption_positionY
             },
-            rotation :Config.live2dOption_rotation,
+            rotation: Config.live2dOption_rotation,
             alpha: Config.live2dOption_alpha,
             dpr: Config.cloudDPR
           },
@@ -250,7 +266,7 @@ export async function createServer() {
 
   // 获取用户数据
   server.post('/userData', async (request, reply) => {
-    const token = request.cookies.token || request.body.token || 'unknown'
+    const token = request.cookies.token || request.body?.token || 'unknown'
     let user = usertoken.find(user => user.token === token)
     if (!user) user = { user: '' }
     const userData = await getUserData(user.user)
@@ -266,9 +282,66 @@ export async function createServer() {
     })
   })
 
+  // 删除用户
+  server.post('/deleteUser', async (request, reply) => {
+    const token = request.cookies.token || request.body?.token || 'unknown'
+    let user = usertoken.find(user => user.token === token)
+    if (!user || user === 'unknown') {
+      reply.send({ state: false, error: '无效token' })
+      return
+    }
+    const filepath = `resources/ChatGPTCache/user/${user.user}.json`
+    fs.unlinkSync(filepath)
+    reply.send({ state: true })
+  })
+  // 修改密码
+  server.post('/changePassword', async (request, reply) => {
+    const token = request.cookies.token || request.body?.token || 'unknown'
+    let user = usertoken.find(user => user.token === token)
+    if (!user || user === 'unknown') {
+      reply.send({ state: false, error: '无效token' })
+      return
+    }
+    const body = request.body || {}
+    if (!body.newPasswd) {
+      reply.send({ state: false, error: '无效参数' })
+      return
+    }
+    if (body.passwd && body.passwd != user.token) {
+      reply.send({ state: false, error: '原始密码错误' })
+      return
+    }
+    if (user.autho === 'admin') {
+      await redis.set('CHATGPT:ADMIN_PASSWD', body.newPasswd)
+    } else if (user.autho === 'user') {
+      const dir = 'resources/ChatGPTCache/user'
+      const filename = `${user.user}.json`
+      const filepath = path.join(dir, filename)
+      fs.mkdirSync(dir, { recursive: true })
+      if (fs.existsSync(filepath)) {
+        fs.readFile(filepath, 'utf8', (err, data) => {
+          if (err) {
+            console.error(err)
+            return
+          }
+          const config = JSON.parse(data)
+          config.passwd = body.newPasswd
+          fs.writeFile(filepath, JSON.stringify(config), 'utf8', (err) => {
+            if (err) {
+              console.error(err)
+            }
+          })
+        })
+      } else {
+        reply.send({ state: false, error: '错误的用户数据' })
+        return
+      }
+    }
+    reply.send({ state: true })
+  })
   // 清除缓存数据
   server.post('/cleanCache', async (request, reply) => {
-    const token = request.cookies.token || request.body.token || 'unknown'
+    const token = request.cookies.token || request.body?.token || 'unknown'
     let user = usertoken.find(user => user.token === token)
     if (!user) user = { user: '' }
     const userData = await getUserData(user.user)
@@ -285,7 +358,7 @@ export async function createServer() {
 
   // 获取系统参数
   server.post('/sysconfig', async (request, reply) => {
-    const token = request.cookies.token || request.body.token || 'unknown'
+    const token = request.cookies.token || request.body?.token || 'unknown'
     const user = usertoken.find(user => user.token === token)
     if (!user) {
       reply.send({ err: '未登录' })
@@ -327,7 +400,7 @@ export async function createServer() {
 
   // 设置系统参数
   server.post('/saveconfig', async (request, reply) => {
-    const token = request.cookies.token || request.body.token || 'unknown'
+    const token = request.cookies.token || request.body?.token || 'unknown'
     const user = usertoken.find(user => user.token === token)
     const body = request.body || {}
     if (!user) {
@@ -338,19 +411,19 @@ export async function createServer() {
         if (keyPath === 'blockWords' || keyPath === 'promptBlockWords' || keyPath === 'initiativeChatGroups') { value = value.toString().split(/[,，;；\|]/) }
         if (Config[keyPath] != value) {
           //检查云服务api
-          if(keyPath === 'cloudTranscode') {
+          if (keyPath === 'cloudTranscode') {
             const referer = request.headers.referer;
             const origin = referer.match(/(https?:\/\/[^/]+)/)[1];
-            const checkCloud = await fetch(`${value}/check`, 
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                url: origin
+            const checkCloud = await fetch(`${value}/check`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  url: origin
+                })
               })
-            })
             if (checkCloud.ok) {
               const checkCloudData = await checkCloud.json()
               if (checkCloudData.state != 'ok') {
@@ -358,7 +431,7 @@ export async function createServer() {
               }
             } else value = ''
           }
-          Config[keyPath] = value 
+          Config[keyPath] = value
         }
       }
       const redisConfig = body.redisConfig || {}
