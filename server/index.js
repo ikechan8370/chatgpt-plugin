@@ -299,7 +299,7 @@ export async function createServer() {
     const token = request.cookies.token || request.body?.token || 'unknown'
     let user = usertoken.find(user => user.token === token)
     if (!user || user === 'unknown') {
-      reply.send({ state: false, error: '无效token' })
+      reply.send({ state: false, error: '无效的用户信息' })
       return
     }
     const userData = await getUserData(user.user)
@@ -404,8 +404,9 @@ export async function createServer() {
     const token = request.cookies.token || request.body?.token || 'unknown'
     const user = usertoken.find(user => user.token === token)
     const body = request.body || {}
+    let changeConfig = []
     if (!user) {
-      reply.send({ err: '未登录' })
+      reply.send({ state: false, error: '未登录' })
     } else if (user.autho === 'admin') {
       const chatdata = body.chatConfig || {}
       for (let [keyPath, value] of Object.entries(chatdata)) {
@@ -432,6 +433,11 @@ export async function createServer() {
               }
             } else value = ''
           }
+          changeConfig.push({
+            item: keyPath,
+            old: Config[keyPath],
+            new: value
+          })
           Config[keyPath] = value
         }
       }
@@ -445,6 +451,7 @@ export async function createServer() {
       if (redisConfig.useMode != null) {
         await redis.set('CHATGPT:USE', redisConfig.useMode)
       }
+      reply.send({ change: changeConfig, state: true })
     } else {
       if (body.userSetting) {
         await redis.set(`CHATGPT:USER:${user.user}`, JSON.stringify(body.userSetting))
@@ -459,6 +466,7 @@ export async function createServer() {
         }
         await setUserData(user.user, temp_userData)
       }
+      reply.send({ state: true })
     }
   })
 
