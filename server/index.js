@@ -298,11 +298,11 @@ export async function createServer() {
   server.post('/changePassword', async (request, reply) => {
     const token = request.cookies.token || request.body?.token || 'unknown'
     let user = usertoken.find(user => user.token === token)
-    const userData = await getUserData(user.user)
     if (!user || user === 'unknown') {
       reply.send({ state: false, error: '无效token' })
       return
     }
+    const userData = await getUserData(user.user)
     const body = request.body || {}
     if (!body.newPasswd) {
       reply.send({ state: false, error: '无效参数' })
