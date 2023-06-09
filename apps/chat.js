@@ -1076,7 +1076,7 @@ export class chatgpt extends plugin {
       if (useTTS) {
         // 缓存数据
         this.cacheContent(e, use, response, prompt, quotemessage, mood, chatMessage.suggestedResponses, imgUrls)
-        if (response === 'Thanks for this conversation! I\'ve reached my limit, will you hit “New topic,” please?') {
+        if (response === 'Sorry, I think we need to move on! Click “New topic” to chat about something else.') {
           this.reply('当前对话超过上限，已重置对话', false, { at: true })
           await redis.del(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
           return false
@@ -1815,10 +1815,10 @@ export class chatgpt extends plugin {
           timeoutMs: 120000
           // systemMessage: promptPrefix
         }
-        if (Math.floor(Math.random() * 100) < 5) {
-          // 小概率再次发送系统消息
-          option.systemMessage = promptPrefix
-        }
+        // if (Math.floor(Math.random() * 100) < 5) {
+        //   // 小概率再次发送系统消息
+        //   option.systemMessage = promptPrefix
+        // }
         if (conversation) {
           option = Object.assign(option, conversation)
         }
@@ -2084,7 +2084,11 @@ export class chatgpt extends plugin {
 async function getAvailableBingToken (conversation, throttled = []) {
   let allThrottled = false
   if (!await redis.get('CHATGPT:BING_TOKENS')) {
-    throw new Error('未绑定Bing Cookie，请使用#chatgpt设置必应token命令绑定Bing Cookie')
+    return {
+      bingToken: null,
+      allThrottled
+    }
+    // throw new Error('未绑定Bing Cookie，请使用#chatgpt设置必应token命令绑定Bing Cookie')
   }
 
   let bingToken = ''
