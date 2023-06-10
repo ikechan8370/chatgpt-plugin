@@ -470,6 +470,27 @@ export async function createServer() {
     }
   })
 
+  // 设置系统参数
+  server.post('/serverTest', async (request, reply) => {
+    let serverState = {
+      cache: false,
+      cloud: false
+    }
+    if (Config.cacheUrl) {
+      const checkCacheUrl = await fetch(Config.cacheUrl, { method: 'GET' })
+      if (checkCacheUrl.ok) {
+        serverState.cache = true
+      }
+    }
+    if (Config.cloudTranscode) {
+      const checkCheckCloud= await fetch(Config.cloudTranscode, { method: 'GET' })
+      if (checkCheckCloud.ok) {
+        serverState.cloud = true
+      }
+    }
+    reply.send(serverState)
+  })
+
   server.addHook('onRequest', (request, reply, done) => {
     if (request.method == 'POST') { Statistics.SystemAccess.count += 1 }
     if (request.method == 'GET') { Statistics.WebAccess.count += 1 }
