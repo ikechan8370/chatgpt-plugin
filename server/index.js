@@ -378,6 +378,9 @@ export async function createServer() {
       if (await redis.exists('CHATGPT:USE') != 0) {
         redisConfig.useMode = await redis.get('CHATGPT:USE')
       }
+      if (await redis.exists('CHATGPT:?') != 0) {
+        redisConfig.openAiPlatformAccessToken = await redis.get('CHATGPT:TOKEN')
+      }
       reply.send({
         chatConfig: Config,
         redisConfig
@@ -451,6 +454,10 @@ export async function createServer() {
       if (redisConfig.useMode != null) {
         await redis.set('CHATGPT:USE', redisConfig.useMode)
       }
+      if (redisConfig.openAiPlatformAccessToken != null) {
+        await redis.set('CHATGPT:TOKEN', redisConfig.openAiPlatformAccessToken)
+      }
+      
       reply.send({ change: changeConfig, state: true })
     } else {
       if (body.userSetting) {
@@ -470,7 +477,7 @@ export async function createServer() {
     }
   })
 
-  // 设置系统参数
+  // 系统服务测试
   server.post('/serverTest', async (request, reply) => {
     let serverState = {
       cache: false,
