@@ -254,6 +254,16 @@ export class ChatgptManagement extends plugin {
         {
           reg: '^#(chatgpt)?查看回复设置$',
           fnc: 'viewUserSetting'
+        },
+        {
+          reg: '^#chatgpt导出配置',
+          fnc: 'exportConfig',
+          permission: 'master'
+        },
+        {
+          reg: '^#chatgpt导入配置',
+          fnc: 'importConfig',
+          permission: 'master'
         }
       ]
     })
@@ -1416,4 +1426,107 @@ Poe 模式会调用 Poe 中的 Claude-instant 进行对话。需要提供 Cookie
     await this.e.reply('设置成功')
     this.finish('doSetOpenAIPlatformToken')
   }
+
+  async exportConfig (e) {
+    if (e.isGroup || !e.isPrivate) {
+      await this.reply('请私聊发送命令', true)
+      return true
+    }
+    let redisConfig = {}
+    if (await redis.exists('CHATGPT:BING_TOKENS') != 0) {
+      let bingTokens = await redis.get('CHATGPT:BING_TOKENS')
+      if (bingTokens) { bingTokens = JSON.parse(bingTokens) } else bingTokens = []
+      redisConfig.bingTokens = bingTokens
+    } else {
+      redisConfig.bingTokens = []
+    }
+    if (await redis.exists('CHATGPT:CONFIRM') != 0) {
+      redisConfig.turnConfirm = await redis.get('CHATGPT:CONFIRM') === 'on'
+    }
+    if (await redis.exists('CHATGPT:USE') != 0) {
+      redisConfig.useMode = await redis.get('CHATGPT:USE')
+    }
+    const configJson = JSON.stringify({
+      chatConfig: Config,
+      redisConfig
+    })
+    console.log(configJson)
+    const buf = Buffer.from(configJson)
+    e.friend.sendFile(buf, `ChatGPT-Plugin Config ${new Date}.json`)
+    return true
+  }
+
+  async importConfig (e) {
+    if (e.isGroup || !e.isPrivate) {
+      await this.reply('请私聊发送命令', true)
+      return true
+    }
+    this.setContext('doImportConfig')
+    await e.reply('请发送配置文件')
+  }
+
+  async doImportConfig (e) {
+    const file = this.e.message.find(item => item.type === 'file')
+    if (file) {
+      const fileUrl = await this.e.friend.getFileUrl(file.fid)
+      if (fileUrl) {
+        try {
+          let changeConfig = []
+          const response = await fetch(fileUrl)
+          const data = await response.json()
+          const chatdata = data.chatConfig || {}
+          for (let [keyPath, value] of Object.entries(chatdata)) {
+            if (keyPath === 'blockWords' || keyPath === 'promptBlockWords' || keyPath === 'initiativeChatGroups') { value = value.toString().split(/[,，;；\|]/) }
+            if (Config[keyPath] != value) {
+              changeConfig.push({
+                item: keyPath,
+                value: typeof(value) === 'object' ? JSON.stringify(value): value,
+                old: typeof(Config[keyPath]) === 'object' ? JSON.stringify(Config[keyPath]): Config[keyPath],
+                type: 'config'
+              })
+              Config[keyPath] = value
+            }
+          }
+          const redisConfig = data.redisConfig || {}
+          if (redisConfig.bingTokens != null) {
+            changeConfig.push({
+              item: 'bingTokens',
+              value: JSON.stringify(redisConfig.bingTokens),
+              old: await redis.get('CHATGPT:BING_TOKENS'),
+              type: 'redis'
+            })
+            await redis.set('CHATGPT:BING_TOKENS', JSON.stringify(redisConfig.bingTokens))
+          }
+          if (redisConfig.turnConfirm != null) {
+            changeConfig.push({
+              item: 'turnConfirm',
+              value: redisConfig.turnConfirm ? 'on' : 'off',
+              old: await redis.get('CHATGPT:CONFIRM'),
+              type: 'redis'
+            })
+            await redis.set('CHATGPT:CONFIRM', redisConfig.turnConfirm ? 'on' : 'off')
+          }
+          if (redisConfig.useMode != null) {
+            changeConfig.push({
+              item: 'useMode',
+              value: redisConfig.useMode,
+              old: await redis.get('CHATGPT:USE'),
+              type: 'redis'
+            })
+            await redis.set('CHATGPT:USE', redisConfig.useMode)
+          }
+          await this.reply(await makeForwardMsg(this.e, changeConfig.map(msg => `修改项:${msg.item}\n旧数据\n\n${msg.url}\n\n新数据\n ${msg.url}`)))
+        } catch (error) {
+          console.error(error)
+          await e.reply('配置文件错误')
+        }
+      }
+    } else {
+      await this.reply(`未找到配置文件`, false)
+      return false
+    }
+
+    this.finish('doImportConfig')
+  }
+
 }
