@@ -1631,8 +1631,8 @@ export class chatgpt extends plugin {
             }
 
             // 如果token曾经有异常，则清除异常
-            let Tokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
-            const TokenIndex = Tokens.findIndex(element => element.Token === abtrs.bingToken)
+            let Tokens = JSON.parse((await redis.get('CHATGPT:BING_TOKENS')) || '[]')
+            const TokenIndex = Tokens?.findIndex(element => element.Token === abtrs.bingToken)
             if (TokenIndex > 0 && Tokens[TokenIndex].exception) {
               delete Tokens[TokenIndex].exception
               await redis.set('CHATGPT:BING_TOKENS', JSON.stringify(Tokens))
