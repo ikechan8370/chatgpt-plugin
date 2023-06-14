@@ -393,7 +393,13 @@ export async function createServer() {
               await connection.socket.send(JSON.stringify({command: data.command, start: false, error: '参数不足'}))
             }
             break
-
+            case 'userInfo':
+              if (!connection.login) {
+                await connection.socket.send(JSON.stringify({command: data.command, start: false, error: '请先登录账号'}))
+              } else {
+                await connection.socket.send(JSON.stringify({command: data.command, start: true, user: {user: user.user, autho: user.autho}}))
+              }
+              break
           case 'login':
             const user = usertoken.find(user => user.token === data.token)
             if (user) {
