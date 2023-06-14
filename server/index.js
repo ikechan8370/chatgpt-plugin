@@ -2,6 +2,7 @@ import fastify from 'fastify'
 import fastifyCookie from '@fastify/cookie'
 import cors from '@fastify/cors'
 import fstatic from '@fastify/static'
+import websocket from '@fastify/websocket'
 
 import fs from 'fs'
 import path from 'path'
@@ -66,6 +67,12 @@ export async function createServer() {
   })
   await server.register(fstatic, {
     root: path.join(__dirname, 'plugins/chatgpt-plugin/server/static/')
+  })
+  await server.register(websocket, {
+    cors: true,
+    options: {
+      maxPayload: 1048576
+    }
   })
   await server.register(fastifyCookie)
   await server.get('/page/*', (request, reply) => {
@@ -356,7 +363,82 @@ export async function createServer() {
     await setUserData(user.user, userData)
     reply.send({ state: true })
   })
+  let clients = []
+  // 获取消息
+  const wsFn = async (connection, request) => {
+    connection.socket.on('open', message => {
+      // 开始连接
+      console.log(`Received message: ${message}`)
+      const response = { data: 'hello, client' }
+      connection.socket.send(JSON.stringify(response))
+    })
+    connection.socket.on('message', async (message) => {
+      try {
+        const data = JSON.parse(message)
+        
+        switch (data.command) {
+          case 'sendMsg':
+            if (!connection.login) {
+              await connection.socket.send(JSON.stringify({command: data.command, start: false, error: '请先登录账号'}))
+              return
+            }
+            if (data.id && data.message) {
+              if (data.group) {
+                Bot.sendGroupMsg(parseInt(data.id), data.message)
+              } else {
+                Bot.sendPrivateMsg(parseInt(data.id), data.message)
+              }
+              await connection.socket.send(JSON.stringify({command: data.command, start: true,}))
+            } else {
+              await connection.socket.send(JSON.stringify({command: data.command, start: false, error: '参数不足'}))
+            }
+            break
 
+          case 'login':
+            const user = usertoken.find(user => user.token === data.token)
+            if (user) {
+              clients[user.user] = connection.socket
+              connection.login = true
+              await connection.socket.send(JSON.stringify({command: data.command, start: true}))
+            } else {
+              await connection.socket.send(JSON.stringify({command: data.command, start: false, error: '权限验证失败'}))
+            }
+            break
+          default:
+            await connection.socket.send(JSON.stringify({"data": data}))
+            break
+        }
+      } catch (error) {
+        await connection.socket.send(JSON.stringify({"error": error.message}))
+      }
+    })
+    connection.socket.on('close', () => {
+      // 监听连接关闭事件
+      const response = { code: 403, data: 'Client disconnected',message: 'Client disconnected' }
+      connection.socket.send(JSON.stringify(response))
+    })
+  }
+  Bot.on("message", e => {
+    const messageData = {
+      notice: 'clientMessage',
+      message: e.message,
+      sender: e.sender,
+      group: {
+        isGroup: e.isGroup,
+        group_id: e.group_id,
+        group_name: e.group_name
+      }
+    }
+    if (clients) {
+      for(index in clients) {
+        clients[index].send(JSON.stringify(messageData))
+      }
+    }
+  })
+  server.get('/ws', {
+    websocket: true
+  }, wsFn)
+  
   // 获取系统参数
   server.post('/sysconfig', async (request, reply) => {
     const token = request.cookies.token || request.body?.token || 'unknown'
