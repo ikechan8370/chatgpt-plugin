@@ -436,7 +436,7 @@ export async function createServer() {
       }
     }
     if (clients) {
-      for(index in clients) {
+      for(const index in clients) {
         clients[index].send(JSON.stringify(messageData))
       }
     }
