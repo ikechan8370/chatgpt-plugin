@@ -445,7 +445,10 @@ export async function createServer() {
     }
     if (clients) {
       for (const index in clients) {
-        clients[index].send(JSON.stringify(messageData))
+        const user = usertoken.find(user => user.user === index)
+        if (user.autho == 'admin' || user.user == e.user_id) {
+          clients[index].send(JSON.stringify(messageData))
+        }
       }
     }
   })
