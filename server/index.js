@@ -375,52 +375,52 @@ export async function createServer() {
     connection.socket.on('message', async (message) => {
       try {
         const data = JSON.parse(message)
-        
+
         switch (data.command) {
           case 'sendMsg':
             if (!connection.login) {
-              await connection.socket.send(JSON.stringify({command: data.command, start: false, error: '请先登录账号'}))
+              await connection.socket.send(JSON.stringify({ command: data.command, state: false, error: '请先登录账号' }))
               return
             }
             if (data.id && data.message) {
               if (data.group) {
-                Bot.sendGroupMsg(parseInt(data.id), data.message)
+                Bot.sendGroupMsg(parseInt(data.id), data.message, data.quotable)
               } else {
-                Bot.sendPrivateMsg(parseInt(data.id), data.message)
+                Bot.sendPrivateMsg(parseInt(data.id), data.message, data.quotable)
               }
-              await connection.socket.send(JSON.stringify({command: data.command, start: true,}))
+              await connection.socket.send(JSON.stringify({ command: data.command, state: true, }))
             } else {
-              await connection.socket.send(JSON.stringify({command: data.command, start: false, error: '参数不足'}))
+              await connection.socket.send(JSON.stringify({ command: data.command, state: false, error: '参数不足' }))
             }
             break
-            case 'userInfo':
-              if (!connection.login) {
-                await connection.socket.send(JSON.stringify({command: data.command, start: false, error: '请先登录账号'}))
-              } else {
-                await connection.socket.send(JSON.stringify({command: data.command, start: true, user: {user: user.user, autho: user.autho}}))
-              }
-              break
+          case 'userInfo':
+            if (!connection.login) {
+              await connection.socket.send(JSON.stringify({ command: data.command, state: false, error: '请先登录账号' }))
+            } else {
+              await connection.socket.send(JSON.stringify({ command: data.command, state: true, user: { user: user.user, autho: user.autho } }))
+            }
+            break
           case 'login':
             const user = usertoken.find(user => user.token === data.token)
             if (user) {
               clients[user.user] = connection.socket
               connection.login = true
-              await connection.socket.send(JSON.stringify({command: data.command, start: true}))
+              await connection.socket.send(JSON.stringify({ command: data.command, state: true }))
             } else {
-              await connection.socket.send(JSON.stringify({command: data.command, start: false, error: '权限验证失败'}))
+              await connection.socket.send(JSON.stringify({ command: data.command, state: false, error: '权限验证失败' }))
             }
             break
           default:
-            await connection.socket.send(JSON.stringify({"data": data}))
+            await connection.socket.send(JSON.stringify({ "data": data }))
             break
         }
       } catch (error) {
-        await connection.socket.send(JSON.stringify({"error": error.message}))
+        await connection.socket.send(JSON.stringify({ "error": error.message }))
       }
     })
     connection.socket.on('close', () => {
       // 监听连接关闭事件
-      const response = { code: 403, data: 'Client disconnected',message: 'Client disconnected' }
+      const response = { code: 403, data: 'Client disconnected', message: 'Client disconnected' }
       connection.socket.send(JSON.stringify(response))
     })
   }
@@ -433,10 +433,18 @@ export async function createServer() {
         isGroup: e.isGroup,
         group_id: e.group_id,
         group_name: e.group_name
+      },
+      quotable: {
+        user_id: e.user_id,
+        time: e.time,
+        seq: e.seq,
+        rand: e.rand,
+        message: e.message,
+        user_name: e.sender.nickname,
       }
     }
     if (clients) {
-      for(const index in clients) {
+      for (const index in clients) {
         clients[index].send(JSON.stringify(messageData))
       }
     }
@@ -444,7 +452,7 @@ export async function createServer() {
   server.get('/ws', {
     websocket: true
   }, wsFn)
-  
+
   // 获取系统参数
   server.post('/sysconfig', async (request, reply) => {
     const token = request.cookies.token || request.body?.token || 'unknown'
@@ -545,7 +553,7 @@ export async function createServer() {
       if (redisConfig.openAiPlatformAccessToken != null) {
         await redis.set('CHATGPT:TOKEN', redisConfig.openAiPlatformAccessToken)
       }
-      
+
       reply.send({ change: changeConfig, state: true })
     } else {
       if (body.userSetting) {
@@ -578,7 +586,7 @@ export async function createServer() {
       }
     }
     if (Config.cloudTranscode) {
-      const checkCheckCloud= await fetch(Config.cloudTranscode, { method: 'GET' })
+      const checkCheckCloud = await fetch(Config.cloudTranscode, { method: 'GET' })
       if (checkCheckCloud.ok) {
         serverState.cloud = true
       }
