@@ -556,7 +556,6 @@ export async function createServer() {
       if (redisConfig.openAiPlatformAccessToken != null) {
         await redis.set('CHATGPT:TOKEN', redisConfig.openAiPlatformAccessToken)
       }
-
       reply.send({ change: changeConfig, state: true })
     } else {
       if (body.userSetting) {
