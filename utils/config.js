@@ -97,6 +97,7 @@ const defaultConfig = {
   live2dOption_positionX: 0,
   live2dOption_positionY: 0,
   live2dOption_rotation: 0,
+  live2dOption_alpha: 1,
   groupAdminPage: false,
   enablePrivateChat: false,
   whitelist: [],

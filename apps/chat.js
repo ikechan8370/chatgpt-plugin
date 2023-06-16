@@ -77,8 +77,6 @@ const newFetch = (url, options = {}) => {
 
   return fetch(url, mergedOptions)
 }
-// 后台地址
-const viewHost = Config.viewHost ? `${Config.viewHost}/` : `http://127.0.0.1:${Config.serverPort || 3321}/`
 export class chatgpt extends plugin {
   constructor () {
     let toggleMode = Config.toggleMode
@@ -1393,6 +1391,7 @@ export class chatgpt extends plugin {
         },
         model: use,
         bing: use === 'bing',
+        chatViewBotName: Config.chatViewBotName || '',
         entry: cacheData.file,
         userImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${e.sender.user_id}`,
         botImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${Bot.uin}`,
@@ -1400,7 +1399,7 @@ export class chatgpt extends plugin {
         qq: e.sender.user_id
       })
     }
-    const cacheres = await fetch(viewHost + 'cache', cacheresOption)
+    const cacheres = await fetch(Config.viewHost ? `${Config.viewHost}/` : `http://127.0.0.1:${Config.serverPort || 3321}/` + 'cache', cacheresOption)
     if (cacheres.ok) {
       cacheData = Object.assign({}, cacheData, await cacheres.json())
     } else {
@@ -1414,7 +1413,7 @@ export class chatgpt extends plugin {
     let cacheData = await this.cacheContent(e, use, content, prompt, quote, mood, suggest, imgUrls)
     const template = use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index'
     if (!Config.oldview) {
-      if (cacheData.error || cacheData.status != 200) { await this.reply(`出现错误：${cacheData.error || 'server error ' + cacheData.status}`, true) } else { await e.reply(await renderUrl(e, viewHost + `page/${cacheData.file}?qr=${Config.showQRCode ? 'true' : 'false'}`, { retType: Config.quoteReply ? 'base64' : '', Viewport: { width: Config.chatViewWidth, height: parseInt(Config.chatViewWidth * 0.56) }, func: Config.live2d ? 'window.Live2d == true' : '', dpr: Config.cloudDPR }), e.isGroup && Config.quoteReply) }
+      if (cacheData.error || cacheData.status != 200) { await this.reply(`出现错误：${cacheData.error || 'server error ' + cacheData.status}`, true) } else { await e.reply(await renderUrl(e, (Config.viewHost ? `${Config.viewHost}/` : `http://127.0.0.1:${Config.serverPort || 3321}/`) + `page/${cacheData.file}?qr=${Config.showQRCode ? 'true' : 'false'}`, { retType: Config.quoteReply ? 'base64' : '', Viewport: { width: Config.chatViewWidth, height: parseInt(Config.chatViewWidth * 0.56) }, func: (Config.live2d && !Config.viewHost) ? 'window.Live2d == true' : '', deviceScaleFactor: Config.cloudDPR }), e.isGroup && Config.quoteReply) }
     } else {
       if (Config.cacheEntry) cacheData.file = randomString()
       const cacheresOption = {
@@ -1815,10 +1814,10 @@ export class chatgpt extends plugin {
           timeoutMs: 120000
           // systemMessage: promptPrefix
         }
-        // if (Math.floor(Math.random() * 100) < 5) {
-        //   // 小概率再次发送系统消息
-        //   option.systemMessage = promptPrefix
-        // }
+        if (Math.floor(Math.random() * 100) < 5) {
+          // 小概率再次发送系统消息
+          option.systemMessage = promptPrefix
+        }
         if (conversation) {
           option = Object.assign(option, conversation)
         }
