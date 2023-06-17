@@ -1532,6 +1532,9 @@ export class chatgpt extends plugin {
               if (bingToken?.indexOf('=') > -1) {
                 cookies = bingToken
               }
+              if (!bingAIClient.opts) {
+                bingAIClient.opts = {}
+              }
               bingAIClient.opts.userToken = bingToken
               bingAIClient.opts.cookies = cookies
               opt.messageType = allThrottled ? 'Chat' : 'SearchQuery'
