@@ -1817,10 +1817,10 @@ export class chatgpt extends plugin {
           timeoutMs: 120000
           // systemMessage: promptPrefix
         }
-        // if (Math.floor(Math.random() * 100) < 5) {
-        //   // 小概率再次发送系统消息
-        //   option.systemMessage = promptPrefix
-        // }
+        if (Math.floor(Math.random() * 100) < 5) {
+          // 小概率再次发送系统消息
+          option.systemMessage = promptPrefix
+        }
         if (conversation) {
           option = Object.assign(option, conversation)
         }
