@@ -265,11 +265,6 @@ export async function createServer() {
         await connection.socket.send(JSON.stringify({ "error": error.message }))
       }
     })
-    connection.socket.on('close', () => {
-      // 监听连接关闭事件
-      const response = { code: 403, data: 'Client disconnected', message: 'Client disconnected' }
-      connection.socket.send(JSON.stringify(response))
-    })
   }
   Bot.on("message", e => {
     const messageData = {

@@ -1,5 +1,6 @@
 import { UserInfo, AddUser } from './user_data.js'
 import { randomString, getUserData } from '../../utils/common.js'
+import fs from 'fs'
 
 async function User(fastify, options) {
     // 登录
@@ -24,6 +25,7 @@ async function User(fastify, options) {
         } else {
             reply.send({ login: false, err: '未输入用户名或密码' })
         }
+        return reply
     })
     // 检查用户是否存在
     fastify.post('/verify', async (request, reply) => {
@@ -40,6 +42,7 @@ async function User(fastify, options) {
             user: user.user,
             autho: user.autho
         })
+        return reply
     })
     // 获取用户数据
     fastify.post('/userData', async (request, reply) => {
@@ -57,6 +60,7 @@ async function User(fastify, options) {
                 slack: '', //Slack设定
             }
         })
+        return reply
     })
     // 删除用户
     fastify.post('/deleteUser', async (request, reply) => {
@@ -69,6 +73,7 @@ async function User(fastify, options) {
         const filepath = `resources/ChatGPTCache/user/${user.user}.json`
         fs.unlinkSync(filepath)
         reply.send({ state: true })
+        return reply
     })
     // 修改密码
     fastify.post('/changePassword', async (request, reply) => {
@@ -115,6 +120,7 @@ async function User(fastify, options) {
             }
         }
         reply.send({ state: true })
+        return reply
     })
 }
 

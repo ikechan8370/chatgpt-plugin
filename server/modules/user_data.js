@@ -10,10 +10,14 @@ export const UserData = new Proxy(users, {
 // 获取用户信息
 export function UserInfo(token) {
     const userData = users.user.find(user => user.token.includes(token))
-    return {
-        user: userData.user,
-        autho: userData.autho,
-        label: userData.label
+    if (userData) {
+        return {
+            user: userData.user,
+            autho: userData.autho,
+            label: userData.label
+        }
+    } else {
+        return undefined
     }
 }
 // 获取用户数据
