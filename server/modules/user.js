@@ -1,6 +1,6 @@
 import fs from 'fs'
 import { UserInfo, AddUser } from './user_data.js'
-import { randomString, getUserData } from '../utils/common.js'
+import { randomString, getUserData } from '../../utils/common.js'
 
 async function User(fastify, options) {
     // 登录
