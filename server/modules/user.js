@@ -1,10 +1,9 @@
-import fs from 'fs'
 import { UserInfo, AddUser } from './user_data.js'
 import { randomString, getUserData } from '../../utils/common.js'
 
 async function User(fastify, options) {
     // 登录
-    server.post('/login', async (request, reply) => {
+    fastify.post('/login', async (request, reply) => {
         const body = request.body || {}
         if (body.qq && body.passwd) {
             const token = randomString(32)
@@ -27,7 +26,7 @@ async function User(fastify, options) {
         }
     })
     // 检查用户是否存在
-    server.post('/verify', async (request, reply) => {
+    fastify.post('/verify', async (request, reply) => {
         const token = request.cookies.token || request.body?.token || 'unknown'
         const user = UserInfo(token)
         if (!user || token === 'unknown') {
@@ -43,7 +42,7 @@ async function User(fastify, options) {
         })
     })
     // 获取用户数据
-    server.post('/userData', async (request, reply) => {
+    fastify.post('/userData', async (request, reply) => {
         const token = request.cookies.token || request.body?.token || 'unknown'
         let user = UserInfo(token)
         if (!user) user = { user: '' }
@@ -60,7 +59,7 @@ async function User(fastify, options) {
         })
     })
     // 删除用户
-    server.post('/deleteUser', async (request, reply) => {
+    fastify.post('/deleteUser', async (request, reply) => {
         const token = request.cookies.token || request.body?.token || 'unknown'
         const user = UserInfo(token)
         if (!user || user === 'unknown') {
@@ -72,7 +71,7 @@ async function User(fastify, options) {
         reply.send({ state: true })
     })
     // 修改密码
-    server.post('/changePassword', async (request, reply) => {
+    fastify.post('/changePassword', async (request, reply) => {
         const token = request.cookies.token || request.body?.token || 'unknown'
         const user = UserInfo(token)
         if (!user || user === 'unknown') {
@@ -119,4 +118,4 @@ async function User(fastify, options) {
     })
 }
 
-module.exports = User
+export default User

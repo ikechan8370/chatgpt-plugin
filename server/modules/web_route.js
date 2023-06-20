@@ -1,4 +1,3 @@
-import fs from 'fs'
 import { UserInfo } from './user_data.js'
 
 
@@ -51,4 +50,4 @@ async function routes(fastify, options) {
     })
 }
 
-module.exports = routes
+export default routes

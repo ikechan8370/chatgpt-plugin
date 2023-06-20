@@ -1,7 +1,7 @@
 let users = {
     user: []
 }
-export const UserData = new Proxy(user, {
+export const UserData = new Proxy(users, {
     set(target, property, value) {
         target[property] = value
         return true
