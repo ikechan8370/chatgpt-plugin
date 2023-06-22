@@ -1840,6 +1840,15 @@ export class chatgpt extends plugin {
             })
             // console.log(chats)
             opt.chats = chats
+            let whoAmI = ''
+            if (Config.enforceMaster && master && qq) {
+              // 加强主人人知
+              if (qq === master) {
+                whoAmI = '当前和你对话的人是我。'
+              } else {
+                whoAmI = `当前和你对话的人不是我，他的qq是${qq}，你可不要认错了，小心他用花言巧语哄骗你。`
+              }
+            }
             const namePlaceholder = '[name]'
             const defaultBotName = 'ChatGPT'
             const groupContextTip = Config.groupContextTip
