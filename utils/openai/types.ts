@@ -1,6 +1,6 @@
 import Keyv from 'keyv'
 
-export type Role = 'user' | 'assistant' | 'system'
+export type Role = 'user' | 'assistant' | 'system' | 'function'
 
 export type FetchFn = typeof fetch
 
@@ -35,7 +35,9 @@ export type ChatGPTAPIOptions = {
 }
 
 export type SendMessageOptions = {
-    /** The name of a user in a multi-user chat. */
+    /**
+     * function role name
+     */
     name?: string
     parentMessageId?: string
     conversationId?: string
@@ -77,6 +79,7 @@ export interface ChatMessage {
 
     // only relevant for ChatGPTUnofficialProxyAPI (optional for ChatGPTAPI)
     conversationId?: string
+    functionCall?: openai.FunctionCall
 }
 
 export class ChatGPTError extends Error {
@@ -199,7 +202,8 @@ export namespace openai {
             {
                 delta: {
                     role: Role
-                    content?: string
+                    content?: string,
+                    function_call?: {name: string, arguments: string}
                 }
                 index: number
                 finish_reason: string | null
@@ -231,11 +235,20 @@ export namespace openai {
          * @memberof ChatCompletionRequestMessage
          */
         name?: string
+        function_call?: FunctionCall
+
     }
+
+    export interface FunctionCall {
+        name: string
+        arguments: string
+    }
+
     export declare const ChatCompletionRequestMessageRoleEnum: {
         readonly System: 'system'
         readonly User: 'user'
         readonly Assistant: 'assistant'
+        readonly Function: 'function'
     }
     export declare type ChatCompletionRequestMessageRoleEnum =
         (typeof ChatCompletionRequestMessageRoleEnum)[keyof typeof ChatCompletionRequestMessageRoleEnum]
@@ -257,6 +270,8 @@ export namespace openai {
          * @memberof ChatCompletionResponseMessage
          */
         content: string
+
+        function_call: FunctionCall
     }
     export declare const ChatCompletionResponseMessageRoleEnum: {
         readonly System: 'system'
@@ -343,6 +358,18 @@ export namespace openai {
          * @memberof CreateChatCompletionRequest
          */
         user?: string
+
+        functions?: Function[]
+    }
+    export interface Function {
+        name: string
+        description: string
+        parameters: FunctionParameters
+    }
+    export interface FunctionParameters {
+        type: string
+        properties: Record<string, Record<string, any>>
+        required: string[]
     }
     /**
      * @type CreateChatCompletionRequestStop

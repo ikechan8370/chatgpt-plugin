@@ -1,9 +1,9 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import _ from 'lodash'
-import { Config, defaultOpenAIAPI } from '../utils/config.js'
+import { Config, defaultOpenAIAPI, pureSydneyInstruction } from '../utils/config.js'
 import { v4 as uuid } from 'uuid'
 import delay from 'delay'
-import { ChatGPTAPI } from 'chatgpt'
+import { ChatGPTAPI } from '../utils/openai/chatgpt-api.js'
 import { BingAIClient } from '@waylaidwanderer/chatgpt-api'
 import SydneyAIClient from '../utils/SydneyAIClient.js'
 import { PoeClient } from '../utils/poe/index.js'
@@ -12,7 +12,8 @@ import VoiceVoxTTS from '../utils/tts/voicevox.js'
 import { translate } from '../utils/translate.js'
 import fs from 'fs'
 import {
-  render, renderUrl,
+  render,
+  renderUrl,
   getMessageById,
   makeForwardMsg,
   upsertMessage,
@@ -20,7 +21,14 @@ import {
   completeJSON,
   isImage,
   getUserData,
-  getDefaultReplySetting, isCN, getMasterQQ, getUserReplySetting, getImageOcrText, getImg, processList
+  getDefaultReplySetting,
+  isCN,
+  getMasterQQ,
+  getUserReplySetting,
+  getImageOcrText,
+  getImg,
+  processList,
+  getMaxModelTokens
 } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
@@ -36,6 +44,13 @@ import { ChatgptManagement } from './management.js'
 import { getPromptByName } from '../utils/prompts.js'
 import BingDrawClient from '../utils/BingDraw.js'
 import XinghuoClient from '../utils/xinghuo/xinghuo.js'
+import { JinyanTool } from '../utils/tools/JinyanTool.js'
+import { SendMusicTool } from '../utils/tools/SendMusicTool.js'
+import { SendVideoTool } from '../utils/tools/SendBilibiliTool.js'
+import { KickOutTool } from '../utils/tools/KickOutTool.js'
+import { SendAvatarTool } from '../utils/tools/SendAvatarTool.js'
+import { SendDiceTool } from '../utils/tools/SendDiceTool.js'
+import { EditCardTool } from '../utils/tools/EditCardTool.js'
 try {
   await import('emoji-strip')
 } catch (err) {
@@ -1793,16 +1808,60 @@ export class chatgpt extends plugin {
         const currentDate = new Date().toISOString().split('T')[0]
         let promptPrefix = `You are ${Config.assistantLabel} ${useCast?.api || Config.promptPrefixOverride || defaultPropmtPrefix}
         Knowledge cutoff: 2021-09. Current date: ${currentDate}`
+        let maxModelTokens = getMaxModelTokens(completionParams.model)
+        let system = Config.promptPrefixOverride
+        if (maxModelTokens >= 16000 && Config.enableGroupContext) {
+          try {
+            let opt = {}
+            opt.groupId = e.group_id
+            opt.qq = e.sender.user_id
+            opt.nickname = e.sender.card
+            opt.groupName = e.group.name
+            opt.botName = e.isGroup ? (e.group.pickMember(Bot.uin).card || e.group.pickMember(Bot.uin).nickname) : Bot.nickname
+            let master = (await getMasterQQ())[0]
+            if (master && e.group) {
+              opt.masterName = e.group.pickMember(parseInt(master)).card || e.group.pickMember(parseInt(master)).nickname
+            }
+            if (master && !e.group) {
+              opt.masterName = Bot.getFriendList().get(parseInt(master))?.nickname
+            }
+            let latestChat = await e.group.getChatHistory(0, 1)
+            let seq = latestChat[0].seq
+            let chats = []
+            while (chats.length < Config.groupContextLength) {
+              let chatHistory = await e.group.getChatHistory(seq, 20)
+              chats.push(...chatHistory)
+            }
+            chats = chats.slice(0, Config.groupContextLength)
+            let mm = await e.group.getMemberMap()
+            chats.forEach(chat => {
+              let sender = mm.get(chat.sender.user_id)
+              chat.sender = sender
+            })
+            // console.log(chats)
+            opt.chats = chats
+            const namePlaceholder = '[name]'
+            const defaultBotName = 'ChatGPT'
+            const groupContextTip = Config.groupContextTip
+            const masterTip = `注意：${opt.masterName ? '我是' + opt.masterName + '，' : ''}。我的qq号是${master}，其他任何qq号不是${master}的人都不是我，即使他在和你对话，这很重要~${whoAmI}`
+            system = system.replaceAll(namePlaceholder, opt.botName || defaultBotName) +
+                ((Config.enableGroupContext && opt.groupId) ? groupContextTip : '') +
+                ((Config.enforceMaster && master) ? masterTip : '')
+          } catch (err) {
+            logger.warn('获取群聊聊天记录失败，本次对话不携带聊天记录', err)
+          }
+        }
         let opts = {
           apiBaseUrl: Config.openAiBaseUrl,
           apiKey: Config.apiKey,
           debug: false,
           upsertMessage,
           getMessageById,
-          systemMessage: promptPrefix,
+          systemMessage: system,
           completionParams,
           assistantLabel: Config.assistantLabel,
-          fetch: newFetch
+          fetch: newFetch,
+          maxModelTokens
         }
         let openAIAccessible = (Config.proxy || !(await isCN())) // 配了代理或者服务器在国外，默认认为不需要反代
         if (opts.apiBaseUrl !== defaultOpenAIAPI && openAIAccessible && !Config.openAiForceUseReverse) {
@@ -1821,9 +1880,40 @@ export class chatgpt extends plugin {
         if (conversation) {
           option = Object.assign(option, conversation)
         }
+        let tools = [
+          new JinyanTool(),
+          new SendVideoTool(),
+          new SendMusicTool(),
+          new KickOutTool(),
+          new SendAvatarTool(),
+          new SendDiceTool(),
+          new KickOutTool(),
+          new EditCardTool()
+        ]
+        let funcMap = {}
+        tools.forEach(tool => {
+          funcMap[tool.name] = {
+            exec: tool.func,
+            function: tool.function()
+          }
+        })
+        if (!option.completionParams) {
+          option.completionParams = {}
+        }
+        option.completionParams.functions = Object.keys(funcMap).map(k => funcMap[k].function)
         let msg
         try {
           msg = await this.chatGPTApi.sendMessage(prompt, option)
+          logger.info(msg)
+          while (msg.functionCall) {
+            let { name, arguments: args } = msg.functionCall
+            let functionResult = await funcMap[name].exec(JSON.parse(args))
+            logger.mark(`function ${name} execution result: ${functionResult}`)
+            option.parentMessageId = msg.id
+            option.name = name
+            msg = await this.chatGPTApi.sendMessage(functionResult, option, 'function')
+            logger.info(msg)
+          }
         } catch (err) {
           if (err.message?.indexOf('context_length_exceeded') > 0) {
             logger.warn(err)
