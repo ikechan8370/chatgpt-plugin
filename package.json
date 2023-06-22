@@ -7,11 +7,12 @@
     "@fastify/cors": "^8.2.0",
     "@fastify/static": "^6.9.0",
     "@slack/bolt": "^3.13.0",
-    "@waylaidwanderer/chatgpt-api": "^1.33.2",
+    "@waylaidwanderer/chatgpt-api": "^1.36.0",
     "asn1.js": "^5.0.0",
-    "chatgpt": "^5.1.1",
+    "chatgpt": "^5.2.4",
     "delay": "^5.0.0",
     "diff": "^5.1.0",
+    "emoji-strip": "^1.0.1",
     "eventsource": "^2.0.2",
     "eventsource-parser": "^1.0.0",
     "fastify": "^4.13.0",
@@ -20,13 +21,13 @@
     "keyv": "^4.5.2",
     "keyv-file": "^0.2.0",
     "microsoft-cognitiveservices-speech-sdk": "^1.27.0",
-    "emoji-strip": "^1.0.1",
     "node-fetch": "^3.3.1",
     "openai": "^3.2.1",
     "random": "^4.1.0",
     "undici": "^5.21.0",
     "uuid": "^9.0.0",
-    "ws": "^8.13.0"
+    "ws": "^8.13.0",
+    "js-tiktoken": "^1.0.5"
   },
   "optionalDependencies": {
     "@node-rs/jieba": "^1.6.2",
@@ -36,5 +37,9 @@
     "puppeteer-extra-plugin-recaptcha": "^3.6.8",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
     "sharp": "^0.31.3"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.1",
+    "ts-node-register": "^1.0.0"
   }
 }
