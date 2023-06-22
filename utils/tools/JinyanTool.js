@@ -26,7 +26,8 @@ export class JinyanTool extends AbstractTool {
     let group = await Bot.pickGroup(groupId)
     time = parseInt(time.trim())
     if (qq.trim() === 'all') {
-      await group.muteAll(time > 0)
+      await group.sendMsg('[日志]试图开启全员禁言')
+      // await group.muteAll(time > 0)
     } else {
       qq = parseInt(qq.trim())
       await group.muteMember(qq, time)
