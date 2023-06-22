@@ -23,6 +23,12 @@ export class JinyanTool extends AbstractTool {
 
   func = async function (opts) {
     let { qq, groupId, time = '600' } = opts
+    if (time < 60) {
+      time = 60
+    }
+    if (time > 86400 * 30) {
+      time = 86400 * 30
+    }
     let group = await Bot.pickGroup(groupId)
     time = parseInt(time.trim())
     if (qq.trim() === 'all') {
