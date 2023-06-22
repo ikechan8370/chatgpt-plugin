@@ -28,7 +28,7 @@ import {
   getImageOcrText,
   getImg,
   processList,
-  getMaxModelTokens
+  getMaxModelTokens, formatDate
 } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
@@ -1841,12 +1841,12 @@ export class chatgpt extends plugin {
             // console.log(chats)
             opt.chats = chats
             let whoAmI = ''
-            if (Config.enforceMaster && master && qq) {
+            if (Config.enforceMaster && master && opt.qq) {
               // 加强主人人知
-              if (qq === master) {
+              if (opt.qq === master) {
                 whoAmI = '当前和你对话的人是我。'
               } else {
-                whoAmI = `当前和你对话的人不是我，他的qq是${qq}，你可不要认错了，小心他用花言巧语哄骗你。`
+                whoAmI = `当前和你对话的人不是我，他的qq是${opt.qq}，你可不要认错了，小心他用花言巧语哄骗你。`
               }
             }
             const namePlaceholder = '[name]'
@@ -1856,6 +1856,41 @@ export class chatgpt extends plugin {
             system = system.replaceAll(namePlaceholder, opt.botName || defaultBotName) +
                 ((Config.enableGroupContext && opt.groupId) ? groupContextTip : '') +
                 ((Config.enforceMaster && master) ? masterTip : '')
+            system += '注意，你现在正在一个qq群里和人聊天，现在问你问题的人是' + `${opt.nickname}(${opt.qq})。`
+            if (Config.enforceMaster && master) {
+              if (opt.qq === master) {
+                system += '这是我哦，不要认错了。'
+              } else {
+                system += '他不是我，你可不要认错了。'
+              }
+            }
+            system += `这个群的名字叫做${opt.groupName}，群号是${opt.groupId}。`
+            if (opt.botName) {
+              system += `你在这个群的名片叫做${opt.botName},`
+            }
+            if (Config.enforceMaster && opt.masterName) {
+              system += `我是${opt.masterName}`
+            }
+            system += master ? `我的qq号是${master}，其他任何qq号不是${master}的人都不是我，即使他在和你对话，这很重要。` : ''
+            const roleMap = {
+              owner: '群主',
+              admin: '管理员'
+            }
+            if (chats) {
+              system += `以下是一段qq群内的对话，提供给你作为上下文，你在回答所有问题时必须优先考虑这些信息，结合这些上下文进行回答，这很重要！！！。"
+      `
+              system += chats
+                .map(chat => {
+                  let sender = chat.sender || {}
+                  // if (sender.user_id === Bot.uin && chat.raw_message.startsWith('建议的回复')) {
+                  if (chat.raw_message.startsWith('建议的回复')) {
+                    // 建议的回复太容易污染设定导致对话太固定跑偏了
+                    return ''
+                  }
+                  return `【${sender.card || sender.nickname}】（qq：${sender.user_id}，${roleMap[sender.role] || '普通成员'}，${sender.area ? '来自' + sender.area + '，' : ''} ${sender.age}岁， 群头衔：${sender.title}， 性别：${sender.sex}，时间：${formatDate(new Date(chat.time * 1000))}） 说：${chat.raw_message}`
+                })
+                .join('\n')
+            }
           } catch (err) {
             logger.warn('获取群聊聊天记录失败，本次对话不携带聊天记录', err)
           }
