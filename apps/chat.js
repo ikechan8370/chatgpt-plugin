@@ -51,6 +51,9 @@ import { KickOutTool } from '../utils/tools/KickOutTool.js'
 import { SendAvatarTool } from '../utils/tools/SendAvatarTool.js'
 import { SendDiceTool } from '../utils/tools/SendDiceTool.js'
 import { EditCardTool } from '../utils/tools/EditCardTool.js'
+import {SearchVideoTool} from "../utils/tools/SearchBilibiliTool.js";
+import {SearchMusicTool} from "../utils/tools/SearchMusicTool.js";
+import {QueryStarRailTool} from "../utils/tools/QueryStarRailTool.js";
 try {
   await import('emoji-strip')
 } catch (err) {
@@ -1809,7 +1812,7 @@ export class chatgpt extends plugin {
         let promptPrefix = `You are ${Config.assistantLabel} ${useCast?.api || Config.promptPrefixOverride || defaultPropmtPrefix}
         Knowledge cutoff: 2021-09. Current date: ${currentDate}`
         let maxModelTokens = getMaxModelTokens(completionParams.model)
-        let system = Config.promptPrefixOverride
+        let system = promptPrefix
         if (maxModelTokens >= 16000 && Config.enableGroupContext) {
           try {
             let opt = {}
@@ -1917,22 +1920,22 @@ export class chatgpt extends plugin {
           timeoutMs: 120000
           // systemMessage: promptPrefix
         }
-        if (Math.floor(Math.random() * 100) < 5) {
-          // 小概率再次发送系统消息
-          option.systemMessage = promptPrefix
-        }
+        option.systemMessage = system
         if (conversation) {
           option = Object.assign(option, conversation)
         }
         let tools = [
           new JinyanTool(),
+          new SearchVideoTool(),
           new SendVideoTool(),
+          new SearchMusicTool(),
           new SendMusicTool(),
           new KickOutTool(),
           new SendAvatarTool(),
-          new SendDiceTool(),
+          // new SendDiceTool(),
           new KickOutTool(),
-          new EditCardTool()
+          new EditCardTool(),
+            new QueryStarRailTool()
         ]
         let funcMap = {}
         tools.forEach(tool => {

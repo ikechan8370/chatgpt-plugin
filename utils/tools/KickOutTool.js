@@ -1,4 +1,4 @@
-import {AbstractTool} from "./AbstractTool.js";
+import { AbstractTool } from './AbstractTool.js'
 
 export class KickOutTool extends AbstractTool {
   name = 'kickOut'

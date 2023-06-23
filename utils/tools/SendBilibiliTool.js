@@ -8,31 +8,33 @@ export class SendVideoTool extends AbstractTool {
 
   parameters = {
     properties: {
-      keyword: {
+      id: {
         type: 'string',
-        description: '要发的视频的标题或关键词，用于搜索'
+        description: '要发的视频的id'
       },
       groupId: {
         type: 'string',
         description: '群号或qq号，发送目标'
       }
     },
-    required: ['keyword', 'groupId']
+    required: ['id', 'groupId']
   }
 
   func = async function (opts) {
-    let { keyword, groupId } = opts
+    let { id, groupId } = opts
     groupId = parseInt(groupId.trim())
     let msg = []
     try {
-      let { arcurl, title, pic, description, videoUrl, headers, bvid, author, play, pubdate, like } = await searchBilibili(keyword)
+      let { arcurl, title, pic, description, videoUrl, headers, bvid, author, play, pubdate, like, honor } = await getBilibili(id)
       let group = await Bot.pickGroup(groupId)
-      console.log({ arcurl, title, pic, description, videoUrl })
       msg.push(title.replace(/(<([^>]+)>)/ig, '') + '\n')
       msg.push(`UP主：${author} 发布日期：${formatDate(new Date(pubdate * 1000))} 播放量：${play} 点赞：${like}\n`)
       msg.push(arcurl + '\n')
       msg.push(segment.image('https:' + pic))
       msg.push('\n' + description)
+      if (honor) {
+        msg.push(`本视频曾获得过${honor}称号`)
+      }
       msg.push('\n视频在路上啦！')
       await group.sendMsg(msg)
       const videoResponse = await fetch(videoUrl, { headers })
@@ -45,7 +47,7 @@ export class SendVideoTool extends AbstractTool {
         await fs.writeFileSync(fileLoc, buffer)
         await group.sendMsg(segment.video(fileLoc))
       })
-      return `the video ${title.replace(/(<([^>]+)>)/ig, '')} will be shared to ${groupId} after a while, please wait`
+      return `the video ${title.replace(/(<([^>]+)>)/ig, '')} was shared to ${groupId}. the video information: ${msg}`
     } catch (err) {
       logger.error(err)
       if (msg.length > 0) {
@@ -56,10 +58,10 @@ export class SendVideoTool extends AbstractTool {
     }
   }
 
-  description = 'Useful when you want to share a video. The input should be the group number and the keywords that can find the video, connected with a space. If you want to send a specific video, you can give more detailed keywords'
+  description = 'Useful when you want to share a video. You must use searchVideo to get search result and choose one video and get its id'
 }
 
-export async function searchBilibili (name) {
+export async function getBilibili (bvid) {
   let biliRes = await fetch('https://www.bilibili.com',
     {
       // headers: {
@@ -87,28 +89,28 @@ export async function searchBilibili (name) {
       'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36',
       cookie: cookieHeader
     }
-    let response = await fetch(`https://api.bilibili.com/x/web-interface/search/type?keyword=${name}&search_type=video`,
-      {
-        headers
-      })
-    let json = await response.json()
-    if (json.data?.numResults > 0) {
-      let index = randomIndex()
-      let { arcurl, title, pic, description, bvid, author, play, pubdate, like } = json.data.result[Math.min(index, json.data.numResults)]
-      let videoInfo = await fetch(`https://api.bilibili.com/x/web-interface/view?bvid=${bvid}`, {
-        headers
-      })
-      videoInfo = await videoInfo.json()
-      let cid = videoInfo.data.cid
-      let downloadInfo = await fetch(`https://api.bilibili.com/x/player/playurl?bvid=${bvid}&cid=${cid}`, { headers })
-      let videoUrl = (await downloadInfo.json()).data.durl[0].url
-      return {
-        arcurl, title, pic, description, videoUrl, headers, bvid, author, play, pubdate, like
-      }
+    let videoInfo = await fetch(`https://api.bilibili.com/x/web-interface/view?bvid=${bvid}`, {
+      headers
+    })
+    videoInfo = await videoInfo.json()
+    let cid = videoInfo.data.cid
+    let arcurl = `http://www.bilibili.com/video/av${videoInfo.data.aid}`
+    let title = videoInfo.data.title
+    let pic = videoInfo.data.pic
+    let description = videoInfo.data.desc
+    let author = videoInfo.data.owner.name
+    let play = videoInfo.data.stat.view
+    let pubdate = videoInfo.data.pubdate
+    let like = videoInfo.data.stat.like
+    let honor = videoInfo.data.honor_reply?.honor?.map(h => h.desc)?.join('、')
+    let downloadInfo = await fetch(`https://api.bilibili.com/x/player/playurl?bvid=${bvid}&cid=${cid}`, {headers})
+    let videoUrl = (await downloadInfo.json()).data.durl[0].url
+    return {
+      arcurl, title, pic, description, videoUrl, headers, bvid, author, play, pubdate, like, honor
     }
+  } else {
+    return {}
   }
-
-  return {}
 }
 
 function randomIndex () {

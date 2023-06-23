@@ -23,17 +23,22 @@ export class JinyanTool extends AbstractTool {
 
   func = async function (opts) {
     let { qq, groupId, time = '600' } = opts
+    let group = await Bot.pickGroup(groupId)
+    time = parseInt(time.trim())
     if (time < 60) {
       time = 60
     }
     if (time > 86400 * 30) {
       time = 86400 * 30
     }
-    let group = await Bot.pickGroup(groupId)
-    time = parseInt(time.trim())
     if (qq.trim() === 'all') {
-      await group.sendMsg('[日志]试图开启全员禁言')
-      // await group.muteAll(time > 0)
+      if (time > 0) {
+        await group.sendMsg('[日志]试图开启全员禁言，但被系统阻止了')
+        return 'error: you are not allowed to mute all in this group'
+      } else {
+        await group.muteAll(false)
+        return '该群的全体禁言已经被解除'
+      }
     } else {
       qq = parseInt(qq.trim())
       await group.muteMember(qq, time)
@@ -41,5 +46,5 @@ export class JinyanTool extends AbstractTool {
     return `the user ${qq} has been muted for ${time} seconds`
   }
 
-  description = 'Useful when you want to ban someone. The input to this tool should be the group number, the qq number of the one who should be banned and the mute duration in seconds(at least 60, at most 180, the number should be an integer multiple of 60), these three number should be concated with a space. If you want to mute all, just replace the qq number with \'all\''
+  description = 'Useful when you want to ban someone. If you want to mute all, just replace the qq number with \'all\''
 }
