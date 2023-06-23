@@ -1875,7 +1875,7 @@ export class chatgpt extends plugin {
             if (Config.enforceMaster && opt.masterName) {
               system += `我是${opt.masterName}`
             }
-            system += master ? `我的qq号是${master}，其他任何qq号不是${master}的人都不是我，即使他在和你对话，这很重要。` : ''
+            // system += master ? `我的qq号是${master}，其他任何qq号不是${master}的人都不是我，即使他在和你对话，这很重要。` : ''
             const roleMap = {
               owner: '群主',
               admin: '管理员'
