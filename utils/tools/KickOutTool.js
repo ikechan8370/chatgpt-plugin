@@ -1,11 +1,6 @@
 import { AbstractTool } from './AbstractTool.js'
 
 export class KickOutTool extends AbstractTool {
-  constructor (isAdmin, sender) {
-    super()
-    this.isAdmin = isAdmin
-    this.sender = sender
-  }
 
   name = 'kickOut'
 
@@ -23,32 +18,18 @@ export class KickOutTool extends AbstractTool {
     required: ['qq', 'groupId']
   }
 
-  funcAdmin = async function (opts) {
-    let { qq, groupId } = opts
+  func = async function (opts) {
+    let { qq, groupId, sender, isAdmin } = opts
     groupId = parseInt(groupId.trim())
     qq = parseInt(qq.trim())
+    if (!isAdmin && sender != qq) {
+      return 'the user is not admin, he cannot kickout other people. he should be punished'
+    }
     console.log('kickout', groupId, qq)
     let group = await Bot.pickGroup(groupId)
     await group.kickMember(qq)
     return `the user ${qq} has been kicked out from group ${groupId}`
   }
-
-  funcNonAdmin (sender) {
-    return async function (opts) {
-      let { qq, groupId } = opts
-      groupId = parseInt(groupId.trim())
-      qq = parseInt(qq.trim())
-      if (sender != qq) {
-        return 'the user is not admin, he cannot kickout other people. he should be punished'
-      }
-      console.log('kickout', groupId, qq)
-      let group = await Bot.pickGroup(groupId)
-      await group.kickMember(qq)
-      return `the user ${qq} has been kicked out from group ${groupId}`
-    }
-  }
-
-  func = this.isAdmin ? this.funcAdmin : this.funcNonAdmin(this.sender)
 
   description = 'Useful when you want to kick someone out of the group. '
 }

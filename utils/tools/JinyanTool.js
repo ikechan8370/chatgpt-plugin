@@ -1,12 +1,6 @@
 import { AbstractTool } from './AbstractTool.js'
 
 export class JinyanTool extends AbstractTool {
-  constructor (isAdmin, sender) {
-    super()
-    this.isAdmin = isAdmin
-    this.sender = sender
-  }
-
   name = 'jinyan'
 
   parameters = {
@@ -27,8 +21,8 @@ export class JinyanTool extends AbstractTool {
     required: ['qq', 'groupId']
   }
 
-  funcAdmin = async function (opts) {
-    let { qq, groupId, time = '600' } = opts
+  func = async function (opts) {
+    let { qq, groupId, time = '600', sender, isAdmin } = opts
     let group = await Bot.pickGroup(groupId)
     time = parseInt(time.trim())
     if (time < 60) {
@@ -37,32 +31,14 @@ export class JinyanTool extends AbstractTool {
     if (time > 86400 * 30) {
       time = 86400 * 30
     }
-    if (qq.trim() === 'all') {
-      if (time > 0) {
-        await group.sendMsg('[日志]试图开启全员禁言，但被系统阻止了')
-        return 'error: you are not allowed to mute all in this group'
+    if (isAdmin) {
+      if (qq.trim() === 'all') {
+        return 'you cannot mute all because the master doesn\'t allow it'
       } else {
-        await group.muteAll(false)
-        return '该群的全体禁言已经被解除'
+        qq = parseInt(qq.trim())
+        await group.muteMember(qq, time)
       }
     } else {
-      qq = parseInt(qq.trim())
-      await group.muteMember(qq, time)
-    }
-    return `the user ${qq} has been muted for ${time} seconds`
-  }
-
-  funcNonAdmin (sender) {
-    return async function (opts) {
-      let { qq, groupId, time = '600' } = opts
-      let group = await Bot.pickGroup(groupId)
-      time = parseInt(time.trim())
-      if (time < 60) {
-        time = 60
-      }
-      if (time > 86400 * 30) {
-        time = 86400 * 30
-      }
       if (qq.trim() === 'all') {
         return 'the user is not admin, he can\'t mute all. the user should be punished'
       } else if (qq == sender) {
@@ -71,11 +47,9 @@ export class JinyanTool extends AbstractTool {
       } else {
         return 'the user is not admin, he can\'t mute other people. the user should be punished'
       }
-      return `the user ${qq} has been muted for ${time} seconds`
     }
+    return `the user ${qq} has been muted for ${time} seconds`
   }
-
-  func = this.isAdmin ? this.funcAdmin : this.funcNonAdmin(this.sender)
 
   description = 'Useful when you want to ban someone. If you want to mute all, just replace the qq number with \'all\''
 }

@@ -1926,6 +1926,7 @@ export class chatgpt extends plugin {
           option = Object.assign(option, conversation)
         }
         let isAdmin = e.sender.role === 'admin' || e.sender.role === 'owner'
+        let sender = e.sender.user_id
         let tools = [
           new SearchVideoTool(),
           new SendVideoTool(),
@@ -1936,8 +1937,8 @@ export class chatgpt extends plugin {
           new EditCardTool(),
           new QueryStarRailTool(),
           new WebsiteTool(),
-          new JinyanTool(isAdmin, e.sender.user_id),
-          new KickOutTool(isAdmin, e.sender.user_id)
+          new JinyanTool(),
+          new KickOutTool()
         ]
         // if (e.sender.role === 'admin' || e.sender.role === 'owner') {
         //   tools.push(...[new JinyanTool(), new KickOutTool()])
@@ -1959,7 +1960,7 @@ export class chatgpt extends plugin {
           logger.info(msg)
           while (msg.functionCall) {
             let { name, arguments: args } = msg.functionCall
-            let functionResult = await funcMap[name].exec(JSON.parse(args))
+            let functionResult = await funcMap[name].exec(Object.assign({isAdmin, sender}, JSON.parse(args)))
             logger.mark(`function ${name} execution result: ${functionResult}`)
             option.parentMessageId = msg.id
             option.name = name
