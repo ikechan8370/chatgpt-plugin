@@ -126,6 +126,7 @@ const defaultConfig = {
   autoJapanese: false,
   enableGenerateContents: false,
   amapKey: '',
+  azSerpKey: '',
   version: 'v2.6.2'
 }
 const _path = process.cwd()

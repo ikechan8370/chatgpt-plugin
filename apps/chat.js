@@ -56,6 +56,7 @@ import { SearchMusicTool } from '../utils/tools/SearchMusicTool.js'
 import { QueryStarRailTool } from '../utils/tools/QueryStarRailTool.js'
 import { WebsiteTool } from '../utils/tools/WebsiteTool.js'
 import {WeatherTool} from "../utils/tools/WeatherTool.js";
+import {SerpTool} from "../utils/tools/SerpTool.js";
 try {
   await import('emoji-strip')
 } catch (err) {
@@ -1940,7 +1941,8 @@ export class chatgpt extends plugin {
           new WebsiteTool(),
           new JinyanTool(),
           new KickOutTool(),
-          new WeatherTool()
+          new WeatherTool(),
+          new SerpTool(),
         ]
         // if (e.sender.role === 'admin' || e.sender.role === 'owner') {
         //   tools.push(...[new JinyanTool(), new KickOutTool()])

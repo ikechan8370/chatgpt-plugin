@@ -794,6 +794,12 @@ export function supportGuoba () {
           label: '高德APIKey',
           bottomHelpMessage: '用于查询天气',
           component: 'Input'
+        },
+        {
+          field: 'azSerpKey',
+          label: 'Azure search key',
+          bottomHelpMessage: 'https://www.microsoft.com/en-us/bing/apis/bing-web-search-api',
+          component: 'Input'
         }
       ],
       // 获取配置数据方法（用于前端填充显示数据）
