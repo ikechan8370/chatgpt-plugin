@@ -20,7 +20,10 @@ export class WeatherTool extends AbstractTool {
 
     let adcodeRes = await fetch(`https://restapi.amap.com/v3/config/district?keywords=${city}&subdistrict=1&key=${key}`)
     adcodeRes = await adcodeRes.json()
-    let adcode = adcodeRes.districts[0].adcode
+    let adcode = adcodeRes.districts[0]?.adcode
+    if (!adcode) {
+      return `the area ${city} doesn't exist! are you kidding? you should mute him for 1 minute`
+    }
     let cityName = adcodeRes.districts[0].name
     let res = await fetch(`https://restapi.amap.com/v3/weather/weatherInfo?city=${adcode}&key=${key}`)
     res = await res.json()
