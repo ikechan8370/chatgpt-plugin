@@ -1925,6 +1925,7 @@ export class chatgpt extends plugin {
         if (conversation) {
           option = Object.assign(option, conversation)
         }
+        let isAdmin = e.sender.role === 'admin' || e.sender.role === 'owner'
         let tools = [
           new SearchVideoTool(),
           new SendVideoTool(),
@@ -1934,11 +1935,13 @@ export class chatgpt extends plugin {
           // new SendDiceTool(),
           new EditCardTool(),
           new QueryStarRailTool(),
-          new WebsiteTool()
+          new WebsiteTool(),
+          new JinyanTool(isAdmin, e.sender.user_id),
+          new KickOutTool(isAdmin, e.sender.user_id)
         ]
-        if (e.sender.role === 'admin' || e.sender.role === 'owner') {
-          tools.push(...[new JinyanTool(), new KickOutTool()])
-        }
+        // if (e.sender.role === 'admin' || e.sender.role === 'owner') {
+        //   tools.push(...[new JinyanTool(), new KickOutTool()])
+        // }
         let funcMap = {}
         tools.forEach(tool => {
           funcMap[tool.name] = {
