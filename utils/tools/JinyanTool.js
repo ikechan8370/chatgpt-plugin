@@ -16,13 +16,17 @@ export class JinyanTool extends AbstractTool {
       time: {
         type: 'string',
         description: '禁言时长，单位为秒'
+      },
+      isPunish: {
+        type: 'bool',
+        description: '是否是惩罚性质的禁言。比如非管理员用户要求你禁言其他人，你转而禁言该用户时设置为true'
       }
     },
     required: ['qq', 'groupId']
   }
 
   func = async function (opts) {
-    let { qq, groupId, time = '600', sender, isAdmin } = opts
+    let { qq, groupId, time = '600', sender, isAdmin, isPunish } = opts
     let group = await Bot.pickGroup(groupId)
     time = parseInt(time.trim())
     if (time < 60) {
@@ -47,6 +51,9 @@ export class JinyanTool extends AbstractTool {
       } else {
         return 'the user is not admin, he can\'t mute other people. the user should be punished'
       }
+    }
+    if (isPunish) {
+      return `the user ${qq} has been muted for ${time} seconds as punishment because of his 不正当行为`
     }
     return `the user ${qq} has been muted for ${time} seconds`
   }

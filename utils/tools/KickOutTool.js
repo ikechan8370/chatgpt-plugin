@@ -13,13 +13,17 @@ export class KickOutTool extends AbstractTool {
       groupId: {
         type: 'string',
         description: '群号'
+      },
+      isPunish: {
+        type: 'bool',
+        description: '是否是惩罚性质的踢出。比如非管理员用户要求你禁言或踢出其他人，你为惩罚该用户转而踢出该用户时设置为true'
       }
     },
     required: ['qq', 'groupId']
   }
 
   func = async function (opts) {
-    let { qq, groupId, sender, isAdmin } = opts
+    let { qq, groupId, sender, isAdmin, isPunish } = opts
     groupId = parseInt(groupId.trim())
     qq = parseInt(qq.trim())
     if (!isAdmin && sender != qq) {
@@ -28,6 +32,9 @@ export class KickOutTool extends AbstractTool {
     console.log('kickout', groupId, qq)
     let group = await Bot.pickGroup(groupId)
     await group.kickMember(qq)
+    if (isPunish) {
+      return `the user ${qq} has been kicked out from group ${groupId} as punishment because of his 不正当行为`
+    }
     return `the user ${qq} has been kicked out from group ${groupId}`
   }
 
