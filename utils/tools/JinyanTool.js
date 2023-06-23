@@ -18,7 +18,7 @@ export class JinyanTool extends AbstractTool {
         description: '禁言时长，单位为秒'
       },
       isPunish: {
-        type: 'bool',
+        type: 'string',
         description: '是否是惩罚性质的禁言。比如非管理员用户要求你禁言其他人，你转而禁言该用户时设置为true'
       }
     },
@@ -52,7 +52,7 @@ export class JinyanTool extends AbstractTool {
         return 'the user is not admin, he can\'t mute other people. the user should be punished'
       }
     }
-    if (isPunish) {
+    if (isPunish === 'true') {
       return `the user ${qq} has been muted for ${time} seconds as punishment because of his 不正当行为`
     }
     return `the user ${qq} has been muted for ${time} seconds`
