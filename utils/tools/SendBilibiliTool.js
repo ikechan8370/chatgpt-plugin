@@ -30,7 +30,7 @@ export class SendVideoTool extends AbstractTool {
       msg.push(title.replace(/(<([^>]+)>)/ig, '') + '\n')
       msg.push(`UP主：${author} 发布日期：${formatDate(new Date(pubdate * 1000))} 播放量：${play} 点赞：${like}\n`)
       msg.push(arcurl + '\n')
-      msg.push(segment.image('https:' + pic))
+      msg.push(segment.image(pic))
       msg.push('\n' + description)
       if (honor) {
         msg.push(`本视频曾获得过${honor}称号`)
