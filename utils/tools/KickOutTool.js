@@ -27,5 +27,5 @@ export class KickOutTool extends AbstractTool {
     return `the user ${qq} has been kicked out from group ${groupId}`
   }
 
-  description = 'Useful when you want to kick someone out of the group. The input to this tool should be the group number, the qq number of the one who should be kicked out, these two number should be concated with a space. '
+  description = 'Useful when you want to kick someone out of the group. '
 }

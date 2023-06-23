@@ -51,9 +51,10 @@ import { KickOutTool } from '../utils/tools/KickOutTool.js'
 import { SendAvatarTool } from '../utils/tools/SendAvatarTool.js'
 import { SendDiceTool } from '../utils/tools/SendDiceTool.js'
 import { EditCardTool } from '../utils/tools/EditCardTool.js'
-import {SearchVideoTool} from "../utils/tools/SearchBilibiliTool.js";
-import {SearchMusicTool} from "../utils/tools/SearchMusicTool.js";
-import {QueryStarRailTool} from "../utils/tools/QueryStarRailTool.js";
+import { SearchVideoTool } from '../utils/tools/SearchBilibiliTool.js'
+import { SearchMusicTool } from '../utils/tools/SearchMusicTool.js'
+import { QueryStarRailTool } from '../utils/tools/QueryStarRailTool.js'
+import { WebsiteTool } from '../utils/tools/WebsiteTool.js'
 try {
   await import('emoji-strip')
 } catch (err) {
@@ -1925,18 +1926,19 @@ export class chatgpt extends plugin {
           option = Object.assign(option, conversation)
         }
         let tools = [
-          new JinyanTool(),
           new SearchVideoTool(),
           new SendVideoTool(),
           new SearchMusicTool(),
           new SendMusicTool(),
-          new KickOutTool(),
           new SendAvatarTool(),
           // new SendDiceTool(),
-          new KickOutTool(),
           new EditCardTool(),
-            new QueryStarRailTool()
+          new QueryStarRailTool(),
+          new WebsiteTool()
         ]
+        if (e.sender.role === 'admin' || e.sender.role === 'owner') {
+          tools.push(...[new JinyanTool(), new KickOutTool()])
+        }
         let funcMap = {}
         tools.forEach(tool => {
           funcMap[tool.name] = {
