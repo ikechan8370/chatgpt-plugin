@@ -15,7 +15,7 @@ export class JinyanTool extends AbstractTool {
       },
       time: {
         type: 'string',
-        description: '禁言时长，单位为秒'
+        description: '禁言时长，单位为秒，默认为600'
       },
       isPunish: {
         type: 'string',

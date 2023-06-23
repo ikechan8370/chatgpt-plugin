@@ -788,6 +788,12 @@ export function supportGuoba () {
           label: 'Live2D模型',
           bottomHelpMessage: '选择Live2D使用的模型',
           component: 'Input'
+        },
+        {
+          field: 'amapKey',
+          label: '高德APIKey',
+          bottomHelpMessage: '用于查询天气',
+          component: 'Input'
         }
       ],
       // 获取配置数据方法（用于前端填充显示数据）

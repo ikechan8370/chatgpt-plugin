@@ -125,6 +125,7 @@ const defaultConfig = {
   enhanceAzureTTSEmotion: false,
   autoJapanese: false,
   enableGenerateContents: false,
+  amapKey: '',
   version: 'v2.6.2'
 }
 const _path = process.cwd()
