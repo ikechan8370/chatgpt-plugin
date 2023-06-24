@@ -756,12 +756,12 @@ export class chatgpt extends plugin {
     }
     // 黑白名单过滤对话
     let [whitelist, blacklist] = processList(Config.whitelist, Config.blacklist)
-    if (whitelist.length > 0) {
+    if (whitelist.join('').length > 0) {
       if (e.isGroup && !whitelist.includes(e.group_id.toString())) return false
       const list = whitelist.filter(elem => elem.startsWith('^')).map(elem => elem.slice(1))
       if (!list.includes(e.sender.user_id.toString())) return false
     }
-    if (blacklist.length > 0) {
+    if (blacklist.join('').length > 0) {
       if (e.isGroup && blacklist.includes(e.group_id.toString())) return false
       const list = blacklist.filter(elem => elem.startsWith('^')).map(elem => elem.slice(1))
       if (list.includes(e.sender.user_id.toString())) return false

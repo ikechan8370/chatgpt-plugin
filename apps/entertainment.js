@@ -215,13 +215,13 @@ ${translateLangLabels}
       const regExp = /词云(\d{0,2})(|h)/
       const match = e.msg.trim().match(regExp)
       const duration = !match[1] ? 12 : parseInt(match[1])  // default 12h
-      
+
       if(duration > 24) {
         await e.reply('最多只能统计24小时内的记录哦')
         return false
       }
       await e.reply('在统计啦，请稍等...')
-      
+
       await redis.set(`CHATGPT:WORDCLOUD:${groupId}`, '1', {EX: 600})
       try {
         await makeWordcloud(e, e.group_id, duration)

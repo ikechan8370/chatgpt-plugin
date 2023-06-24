@@ -313,9 +313,7 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
           roleList = getVoicevoxRoleList()
           break
         case 'azure':
-          if (matchCommand[2] === 'azure') {
-            roleList = getAzureRoleList()
-          }
+          roleList = getAzureRoleList()
           break
         default:
           break
