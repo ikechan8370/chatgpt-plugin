@@ -1,8 +1,6 @@
 import { AbstractTool } from './AbstractTool.js'
 import fetch, { File, FormData } from 'node-fetch'
 import { Config } from '../config.js'
-import fs from 'fs'
-import crypto from 'crypto'
 export class ImageCaptionTool extends AbstractTool {
   name = 'imageCaption'
 
@@ -20,7 +18,7 @@ export class ImageCaptionTool extends AbstractTool {
     required: []
   }
 
-  description = 'useful when you want to know what is inside a picture, such as user\'s avatar'
+  description = 'useful when you want to know what is inside a photo, such as user\'s avatar or other pictures'
 
   func = async function (opts) {
     let { imgUrl, qq } = opts
