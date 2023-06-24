@@ -22,6 +22,7 @@ export class SendPictureTool extends AbstractTool {
     let pictures = picture.trim().split(' ')
     pictures = pictures.map(img => segment.image(img))
     let groupList = await Bot.getGroupList()
+    groupId = parseInt(groupId)
     try {
       if (groupList.get(groupId)) {
         let group = await Bot.pickGroup(groupId)
@@ -33,7 +34,7 @@ export class SendPictureTool extends AbstractTool {
         return `picture has been sent to user ${groupId}`
       }
     } catch (err) {
-      return `failed to send pictures, error: ${err.toString()}`
+      return `failed to send pictures, error: ${JSON.stringify(err)}`
     }
   }
 
