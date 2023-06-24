@@ -55,8 +55,9 @@ import { SearchVideoTool } from '../utils/tools/SearchBilibiliTool.js'
 import { SearchMusicTool } from '../utils/tools/SearchMusicTool.js'
 import { QueryStarRailTool } from '../utils/tools/QueryStarRailTool.js'
 import { WebsiteTool } from '../utils/tools/WebsiteTool.js'
-import {WeatherTool} from "../utils/tools/WeatherTool.js";
-import {SerpTool} from "../utils/tools/SerpTool.js";
+import { WeatherTool } from '../utils/tools/WeatherTool.js'
+import { SerpTool } from '../utils/tools/SerpTool.js'
+import { SerpGoogleTool } from '../utils/tools/SerpGoogleTool.js'
 try {
   await import('emoji-strip')
 } catch (err) {
@@ -1929,6 +1930,26 @@ export class chatgpt extends plugin {
         }
         let isAdmin = e.sender.role === 'admin' || e.sender.role === 'owner'
         let sender = e.sender.user_id
+        let serpTool
+        switch (Config.serpSource) {
+          case 'google': {
+            serpTool = new SerpGoogleTool()
+            break
+          }
+          case 'bing': {
+            if (!Config.azSerpKey) {
+              logger.warn('未配置bing搜索密钥，转为使用google搜索')
+              serpTool = new SerpGoogleTool()
+            } else {
+              serpTool = new SerpTool()
+            }
+            break
+          }
+          default: {
+            serpTool = new SerpGoogleTool()
+          }
+        }
+
         let tools = [
           new SearchVideoTool(),
           new SendVideoTool(),
@@ -1942,7 +1963,7 @@ export class chatgpt extends plugin {
           new JinyanTool(),
           new KickOutTool(),
           new WeatherTool(),
-          new SerpTool(),
+          serpTool
         ]
         // if (e.sender.role === 'admin' || e.sender.role === 'owner') {
         //   tools.push(...[new JinyanTool(), new KickOutTool()])

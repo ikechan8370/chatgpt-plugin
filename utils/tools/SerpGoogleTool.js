@@ -1,8 +1,7 @@
 import { AbstractTool } from './AbstractTool.js'
-import { Config } from '../config.js'
 
-export class SerpTool extends AbstractTool {
-  name = 'serp'
+export class SerpGoogleTool extends AbstractTool {
+  name = 'google'
 
   parameters = {
     properties: {
@@ -16,23 +15,14 @@ export class SerpTool extends AbstractTool {
 
   func = async function (opts) {
     let { q } = opts
-    let key = Config.azSerpKey
-
-    let serpRes = await fetch(`https://api.bing.microsoft.com/v7.0/search?q=${encodeURIComponent(q)}&mkt=zh-CN`, {
+    let serpRes = await fetch(`https://serp.ikechan8370.com/google?q=${encodeURIComponent(q)}&lang=zh-CN&limit=10`, {
       headers: {
-        'Ocp-Apim-Subscription-Key': key
+        'X-From-Library': 'ikechan8370'
       }
     })
     serpRes = await serpRes.json()
 
-    let res = serpRes.webPages.value
-    res.forEach(p => {
-      delete p.displayUrl
-      delete p.isFamilyFriendly
-      delete p.thumbnailUrl
-      delete p.id
-      delete p.isNavigational
-    })
+    let res = serpRes.data
     return `the search results are here in json format:\n${JSON.stringify(res)}`
   }
 

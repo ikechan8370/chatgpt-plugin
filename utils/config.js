@@ -127,6 +127,7 @@ const defaultConfig = {
   enableGenerateContents: false,
   amapKey: '',
   azSerpKey: '',
+  serpSource: 'google',
   version: 'v2.6.2'
 }
 const _path = process.cwd()
