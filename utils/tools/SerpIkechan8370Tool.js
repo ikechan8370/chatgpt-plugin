@@ -1,21 +1,28 @@
 import { AbstractTool } from './AbstractTool.js'
 
-export class SerpGoogleTool extends AbstractTool {
-  name = 'google'
+export class SerpIkechan8370Tool extends AbstractTool {
+  name = 'search'
 
   parameters = {
     properties: {
       q: {
         type: 'string',
         description: 'search keyword'
+      },
+      source: {
+        type: 'string',
+        enum: ['google', 'bing', 'baidu']
       }
     },
     required: ['q']
   }
 
   func = async function (opts) {
-    let { q } = opts
-    let serpRes = await fetch(`https://serp.ikechan8370.com/google?q=${encodeURIComponent(q)}&lang=zh-CN&limit=10`, {
+    let { q, source } = opts
+    if (!source) {
+      source = 'google'
+    }
+    let serpRes = await fetch(`https://serp.ikechan8370.com/${source}?q=${encodeURIComponent(q)}&lang=zh-CN&limit=10`, {
       headers: {
         'X-From-Library': 'ikechan8370'
       }

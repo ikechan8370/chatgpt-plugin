@@ -57,7 +57,7 @@ import { QueryStarRailTool } from '../utils/tools/QueryStarRailTool.js'
 import { WebsiteTool } from '../utils/tools/WebsiteTool.js'
 import { WeatherTool } from '../utils/tools/WeatherTool.js'
 import { SerpTool } from '../utils/tools/SerpTool.js'
-import { SerpGoogleTool } from '../utils/tools/SerpGoogleTool.js'
+import { SerpIkechan8370Tool } from '../utils/tools/SerpIkechan8370Tool.js'
 try {
   await import('emoji-strip')
 } catch (err) {
@@ -1932,21 +1932,21 @@ export class chatgpt extends plugin {
         let sender = e.sender.user_id
         let serpTool
         switch (Config.serpSource) {
-          case 'google': {
-            serpTool = new SerpGoogleTool()
+          case 'ikechan8370': {
+            serpTool = new SerpIkechan8370Tool()
             break
           }
-          case 'bing': {
+          case 'azure': {
             if (!Config.azSerpKey) {
-              logger.warn('未配置bing搜索密钥，转为使用google搜索')
-              serpTool = new SerpGoogleTool()
+              logger.warn('未配置bing搜索密钥，转为使用ikechan8370搜索源')
+              serpTool = new SerpIkechan8370Tool()
             } else {
               serpTool = new SerpTool()
             }
             break
           }
           default: {
-            serpTool = new SerpGoogleTool()
+            serpTool = new SerpIkechan8370Tool()
           }
         }
 
