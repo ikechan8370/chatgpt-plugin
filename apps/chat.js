@@ -58,9 +58,9 @@ import { WebsiteTool } from '../utils/tools/WebsiteTool.js'
 import { WeatherTool } from '../utils/tools/WeatherTool.js'
 import { SerpTool } from '../utils/tools/SerpTool.js'
 import { SerpIkechan8370Tool } from '../utils/tools/SerpIkechan8370Tool.js'
-import {SendPictureTool} from "../utils/tools/SendPictureTool.js";
-import {SerpImageTool} from "../utils/tools/SearchImageTool.js";
-import {ImageCaptionTool} from "../utils/tools/ImageCaptionTool.js";
+import { SendPictureTool } from '../utils/tools/SendPictureTool.js'
+import { SerpImageTool } from '../utils/tools/SearchImageTool.js'
+import { ImageCaptionTool } from '../utils/tools/ImageCaptionTool.js'
 try {
   await import('emoji-strip')
 } catch (err) {
@@ -1954,10 +1954,7 @@ export class chatgpt extends plugin {
         }
 
         let tools = [
-          new SearchVideoTool(),
-          new SendVideoTool(),
-          new SearchMusicTool(),
-          new SendMusicTool(),
+
           // new SendAvatarTool(),
           // new SendDiceTool(),
           new EditCardTool(),
@@ -1967,7 +1964,7 @@ export class chatgpt extends plugin {
           new KickOutTool(),
           new WeatherTool(),
           new SendPictureTool(),
-          new SerpImageTool(),
+
           new ImageCaptionTool(),
           serpTool
         ]
@@ -1994,6 +1991,12 @@ export class chatgpt extends plugin {
         }
         if (img.length > 0) {
           prompt += `\nthe url of the picture(s) above: ${img.join(', ')}`
+        } else {
+          tools.push(new SerpImageTool())
+          tools.push(...[new SearchVideoTool(),
+            new SendVideoTool(),
+            new SearchMusicTool(),
+            new SendMusicTool()])
         }
         // if (e.sender.role === 'admin' || e.sender.role === 'owner') {
         //   tools.push(...[new JinyanTool(), new KickOutTool()])
