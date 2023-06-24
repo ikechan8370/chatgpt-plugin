@@ -134,32 +134,32 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
-          reg: '^#chatgpt(本群)?(群\\d+)?(开启|启动|激活|张嘴|开口|说话|上班)',
+          reg: '^#chatgpt(本群)?(群\\d+)?(开启|启动|激活|张嘴|开口|说话|上班)$',
           fnc: 'openMouth',
           permission: 'master'
         },
         {
-          reg: '^#chatgpt查看?(关闭|闭嘴|关机|休眠|下班|休眠)列表',
+          reg: '^#chatgpt查看?(关闭|闭嘴|关机|休眠|下班|休眠)列表$',
           fnc: 'listShutUp',
           permission: 'master'
         },
         {
-          reg: '^#chatgpt设置(API|key)(Key|key)',
+          reg: '^#chatgpt设置(API|key)(Key|key)$',
           fnc: 'setAPIKey',
           permission: 'master'
         },
         {
-          reg: '^#chatgpt设置(API|api)设定',
+          reg: '^#chatgpt设置(API|api)设定$',
           fnc: 'setAPIPromptPrefix',
           permission: 'master'
         },
         {
-          reg: '^#chatgpt设置星火token',
+          reg: '^#chatgpt设置星火token$',
           fnc: 'setXinghuoToken',
           permission: 'master'
         },
         {
-          reg: '^#chatgpt设置(Bing|必应|Sydney|悉尼|sydney|bing)设定',
+          reg: '^#chatgpt设置(Bing|必应|Sydney|悉尼|sydney|bing)设定$',
           fnc: 'setBingPromptPrefix',
           permission: 'master'
         },
