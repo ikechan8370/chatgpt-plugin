@@ -49,7 +49,7 @@ export class JinyanTool extends AbstractTool {
         qq = parseInt(qq.trim())
         await group.muteMember(qq, time)
       } else {
-        return 'the user is not admin, he can\'t mute other people. the user should be punished'
+        return 'the user is not admin, he can\'t let you mute other people.'
       }
     }
     if (isPunish === 'true') {
