@@ -215,9 +215,9 @@ ${translateLangLabels}
 
       const regExp = /词云(\d{0,2})(|h)/
       const match = e.msg.trim().match(regExp)
-      const duration = !match[1] ? 12 : parseInt(match[1]) // default 12h
+      const duration = !match[1] ? 12 : parseInt(match[1])  // default 12h
 
-      if (duration > 24) {
+      if(duration > 24) {
         await e.reply('最多只能统计24小时内的记录哦')
         return false
       }
