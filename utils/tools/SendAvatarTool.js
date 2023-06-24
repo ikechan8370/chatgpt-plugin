@@ -1,4 +1,4 @@
-import {AbstractTool} from "./AbstractTool.js";
+import { AbstractTool } from './AbstractTool.js'
 
 export class SendAvatarTool extends AbstractTool {
   name = 'sendAvatar'
@@ -18,7 +18,7 @@ export class SendAvatarTool extends AbstractTool {
   }
 
   func = async function (opts) {
-    let {qq, groupId} = opts
+    let { qq, groupId } = opts
     let groupList = await Bot.getGroupList()
     groupId = parseInt(groupId.trim())
     console.log('sendAvatar', groupId, qq)

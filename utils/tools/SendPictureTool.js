@@ -7,7 +7,11 @@ export class SendPictureTool extends AbstractTool {
     properties: {
       picture: {
         type: 'string',
-        description: 'the url of the pictures, split with space if more than one '
+        description: 'the url of the pictures, split with space if more than one.'
+      },
+      qq: {
+        type: 'string',
+        description: 'if you want to send avatar of a user, input his qq number.'
       },
       groupId: {
         type: 'string',
@@ -18,7 +22,11 @@ export class SendPictureTool extends AbstractTool {
   }
 
   func = async function (opt) {
-    let { picture, groupId } = opt
+    let { picture, groupId, qq } = opt
+    if (qq) {
+      let avatar = `https://q1.qlogo.cn/g?b=qq&s=0&nk=${qq}`
+      picture += ' ' + avatar
+    }
     let pictures = picture.trim().split(' ')
     pictures = pictures.map(img => segment.image(img))
     let groupList = await Bot.getGroupList()
