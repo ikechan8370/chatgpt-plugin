@@ -1,8 +1,6 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import { Config } from '../utils/config.js'
-import { exec } from 'child_process'
 import {
-  checkPnpm,
   formatDuration,
   getAzureRoleList,
   getPublicIP,
@@ -259,6 +257,11 @@ export class ChatgptManagement extends plugin {
         {
           reg: '^#chatgpt导入配置',
           fnc: 'importConfig',
+          permission: 'master'
+        },
+        {
+          reg: '^#chatgpt(开启|关闭)智能模式$',
+          fnc: 'switchSmartMode',
           permission: 'master'
         }
       ]
@@ -1006,6 +1009,7 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
     }
     return true
   }
+
   async versionChatGPTPlugin (e) {
     await renderUrl(e, `http://127.0.0.1:${Config.serverPort || 3321}/version`, { Viewport: { width: 800, height: 600 } })
   }
@@ -1391,7 +1395,7 @@ Poe 模式会调用 Poe 中的 Claude-instant 进行对话。需要提供 Cookie
     })
     console.log(configJson)
     const buf = Buffer.from(configJson)
-    e.friend.sendFile(buf, `ChatGPT-Plugin Config ${new Date}.json`)
+    e.friend.sendFile(buf, `ChatGPT-Plugin Config ${new Date()}.json`)
     return true
   }
 
@@ -1419,8 +1423,8 @@ Poe 模式会调用 Poe 中的 Claude-instant 进行对话。需要提供 Cookie
             if (Config[keyPath] != value) {
               changeConfig.push({
                 item: keyPath,
-                value: typeof(value) === 'object' ? JSON.stringify(value): value,
-                old: typeof(Config[keyPath]) === 'object' ? JSON.stringify(Config[keyPath]): Config[keyPath],
+                value: typeof (value) === 'object' ? JSON.stringify(value) : value,
+                old: typeof (Config[keyPath]) === 'object' ? JSON.stringify(Config[keyPath]) : Config[keyPath],
                 type: 'config'
               })
               Config[keyPath] = value
@@ -1461,11 +1465,28 @@ Poe 模式会调用 Poe 中的 Claude-instant 进行对话。需要提供 Cookie
         }
       }
     } else {
-      await this.reply(`未找到配置文件`, false)
+      await this.reply('未找到配置文件', false)
       return false
     }
 
     this.finish('doImportConfig')
   }
 
+  async switchSmartMode (e) {
+    if (e.msg.includes('开启')) {
+      if (Config.smartMode) {
+        await e.reply('已经开启了')
+        return
+      }
+      Config.smartMode = true
+      await e.reply('好的，已经打开智能模式，注意API额度哦')
+    } else {
+      if (!Config.smartMode) {
+        await e.reply('已经是关闭得了')
+        return
+      }
+      Config.smartMode = false
+      await e.reply('好的，已经关闭智能模式')
+    }
+  }
 }

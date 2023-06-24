@@ -317,8 +317,14 @@ export function supportGuoba () {
         {
           field: 'model',
           label: 'OpenAI 模型',
-          bottomHelpMessage: 'gpt-4, gpt-4-0314, gpt-4-32k, gpt-4-32k-0314, gpt-3.5-turbo, gpt-3.5-turbo-0301。默认为gpt-3.5-turbo，gpt-4需账户支持',
+          bottomHelpMessage: 'gpt-4, gpt-4-0613, gpt-4-32k, gpt-4-32k-0613, gpt-3.5-turbo, gpt-3.5-turbo-0613, gpt-3.5-turbo-16k-0613。默认为gpt-3.5-turbo，gpt-4需账户支持',
           component: 'Input'
+        },
+        {
+          field: 'smartMode',
+          label: '智能模式',
+          bottomHelpMessage: '仅建议gpt-4-32k和gpt-3.5-turbo-16k-0613开启，gpt-4-0613也可。开启后机器人可以群管、收发图片、发视频发音乐、联网搜索等。注意较费token。',
+          component: 'Switch'
         },
         {
           field: 'openAiBaseUrl',
