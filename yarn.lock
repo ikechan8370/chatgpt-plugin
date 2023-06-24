@@ -106,6 +106,14 @@
     p-limit "^3.1.0"
     readable-stream "^4.0.0"
 
+"@fastify/websocket@^8.1.0":
+  version "8.1.0"
+  resolved "https://registry.npmjs.org/@fastify/websocket/-/websocket-8.1.0.tgz"
+  integrity sha512-7Tk+ODgvS/S9IyPXuXDU1v5tpchAeSWFH0B3Ldz+cnBKy5+lEmuj4ncLhVUzXgn9w3ycX/Vhf1mEEkcemBFUIQ==
+  dependencies:
+    fastify-plugin "^4.0.0"
+    ws "^8.0.0"
+
 "@jimp/bmp@^0.22.8":
   version "0.22.8"
   resolved "https://registry.npmmirror.com/@jimp/bmp/-/bmp-0.22.8.tgz"
@@ -4391,7 +4399,7 @@ ws@^7.5.6:
   resolved "https://registry.npmmirror.com/ws/-/ws-7.5.9.tgz"
   integrity sha512-F+P9Jil7UiSKSkppIiD94dN07AwvFixvLIj1Og1Rl9GGMuNipJnV9JzjD6XuqmAeiswGvUmNLjr5cFuXwNS77Q==
 
-ws@^8.12.0, ws@^8.13.0:
+ws@^8.0.0, ws@^8.12.0, ws@^8.13.0:
   version "8.13.0"
   resolved "https://registry.npmmirror.com/ws/-/ws-8.13.0.tgz"
   integrity sha512-x9vcZYTrFPC7aSIbj7sRCYo7L/Xb8Iy+pW0ng0wt2vCJv7M9HOMy0UoN3rr+IFC7hb7vXoqS+P9ktyLLLhO+LA==
