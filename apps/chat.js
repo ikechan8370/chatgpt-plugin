@@ -58,6 +58,8 @@ import { WebsiteTool } from '../utils/tools/WebsiteTool.js'
 import { WeatherTool } from '../utils/tools/WeatherTool.js'
 import { SerpTool } from '../utils/tools/SerpTool.js'
 import { SerpIkechan8370Tool } from '../utils/tools/SerpIkechan8370Tool.js'
+import {SendPictureTool} from "../utils/tools/SendPictureTool.js";
+import {SerpImageTool} from "../utils/tools/SearchImageTool.js";
 try {
   await import('emoji-strip')
 } catch (err) {
@@ -1963,6 +1965,8 @@ export class chatgpt extends plugin {
           new JinyanTool(),
           new KickOutTool(),
           new WeatherTool(),
+          new SendPictureTool(),
+          new SerpImageTool(),
           serpTool
         ]
         // if (e.sender.role === 'admin' || e.sender.role === 'owner') {
