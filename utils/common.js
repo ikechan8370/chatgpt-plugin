@@ -346,7 +346,7 @@ export async function renderUrl (e, url, renderCfg = {}) {
           waitUtil: renderCfg.waitUtil || 'networkidle2',
           wait: renderCfg.wait || 1000,
           func: renderCfg.func || '',
-          dpr: renderCfg.dpr || 1
+          dpr: renderCfg.deviceScaleFactor || 1
         },
         type: 'image'
       })
@@ -785,4 +785,20 @@ export function processList (whitelist, blacklist) {
   whitelist = Array.from(new Set(whitelist)).filter(value => /^\^?[1-9]\d{5,9}$/.test(value))
   blacklist = Array.from(new Set(blacklist)).filter(value => /^\^?[1-9]\d{5,9}$/.test(value))
   return [whitelist, blacklist]
+}
+
+export function getMaxModelTokens (model = 'gpt-3.5-turbo') {
+  if (model.startsWith('gpt-3.5-turbo')) {
+    if (model.includes('16k')) {
+      return 16000
+    } else {
+      return 4000
+    }
+  } else {
+    if (model.includes('32k')) {
+      return 32000
+    } else {
+      return 16000
+    }
+  }
 }

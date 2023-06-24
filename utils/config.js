@@ -97,6 +97,7 @@ const defaultConfig = {
   live2dOption_positionX: 0,
   live2dOption_positionY: 0,
   live2dOption_rotation: 0,
+  live2dOption_alpha: 1,
   groupAdminPage: false,
   enablePrivateChat: false,
   whitelist: [],
@@ -124,7 +125,10 @@ const defaultConfig = {
   enhanceAzureTTSEmotion: false,
   autoJapanese: false,
   enableGenerateContents: false,
-  version: 'v2.6.2'
+  amapKey: '',
+  azSerpKey: '',
+  serpSource: 'ikechan8370',
+  version: 'v2.7.0'
 }
 const _path = process.cwd()
 let config = {}

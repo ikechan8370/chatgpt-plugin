@@ -788,7 +788,31 @@ export function supportGuoba () {
           label: 'Live2D模型',
           bottomHelpMessage: '选择Live2D使用的模型',
           component: 'Input'
-        }
+        },
+        {
+          field: 'amapKey',
+          label: '高德APIKey',
+          bottomHelpMessage: '用于查询天气',
+          component: 'Input'
+        },
+        {
+          field: 'azSerpKey',
+          label: 'Azure search key',
+          bottomHelpMessage: 'https://www.microsoft.com/en-us/bing/apis/bing-web-search-api',
+          component: 'Input'
+        },
+        {
+          field: 'serpSource',
+          label: '搜索来源，azure需填写key，ikechan8370为作者自备源',
+          component: 'Select',
+          componentProps: {
+            options: [
+              { label: 'Azure', value: 'azure' },
+              { label: 'ikechan8370', value: 'ikechan8370' }
+              // { label: '数据', value: 'buffer' }
+            ]
+          }
+        },
       ],
       // 获取配置数据方法（用于前端填充显示数据）
       getConfigData () {

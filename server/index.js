@@ -85,7 +85,7 @@ export async function createServer() {
     reply.type('text/html').send(stream)
   })
   await server.get('/admin*', (request, reply) => {
-    const token = request.cookies.token || 'unknown'
+    const token = request.cookies.token || request.body?.token || 'unknown'
     const user = usertoken.find(user => user.token === token)
     if (!user) {
       reply.redirect(301, '/auth/login')
@@ -94,7 +94,7 @@ export async function createServer() {
     reply.type('text/html').send(stream)
   })
   await server.get('/admin/dashboard', (request, reply) => {
-    const token = request.cookies.token || 'unknown'
+    const token = request.cookies.token || request.body?.token || 'unknown'
     const user = usertoken.find(user => user.token === token)
     if (!user) {
       reply.redirect(301, '/auth/login')
@@ -106,7 +106,7 @@ export async function createServer() {
     reply.type('text/html').send(stream)
   })
   await server.get('/admin/settings', (request, reply) => {
-    const token = request.cookies.token || 'unknown'
+    const token = request.cookies.token || request.body?.token || 'unknown'
     const user = usertoken.find(user => user.token === token)
     if (!user || user.autho != 'admin') {
       reply.redirect(301, '/admin/')
@@ -122,13 +122,13 @@ export async function createServer() {
       if (body.qq == Bot.uin && await redis.get('CHATGPT:ADMIN_PASSWD') == body.passwd) {
         usertoken.push({ user: body.qq, token, autho: 'admin' })
         reply.setCookie('token', token, { path: '/' })
-        reply.send({ login: true, autho: 'admin' })
+        reply.send({ login: true, autho: 'admin', token: token })
       } else {
         const user = await getUserData(body.qq)
         if (user.passwd != '' && user.passwd === body.passwd) {
           usertoken.push({ user: body.qq, token, autho: 'user' })
           reply.setCookie('token', token, { path: '/' })
-          reply.send({ login: true, autho: 'user' })
+          reply.send({ login: true, autho: 'user', token: token })
         } else {
           reply.send({ login: false, err: `用户名密码错误,如果忘记密码请私聊机器人输入 ${body.qq == Bot.uin ? '#修改管理密码' : '#修改用户密码'} 进行修改` })
         }
@@ -136,6 +136,22 @@ export async function createServer() {
     } else {
       reply.send({ login: false, err: '未输入用户名或密码' })
     }
+  })
+  // 检查用户是否存在
+  server.post('/verify', async (request, reply) => {
+    const token = request.cookies.token || request.body?.token || 'unknown'
+    let user = usertoken.find(user => user.token === token)
+    if (!user || token === 'unknown') {
+      reply.send({
+        verify: false,
+      })
+      return
+    }
+    reply.send({
+      verify: true,
+      user: user.user,
+      autho: user.autho
+    })
   })
   // 页面数据获取
   server.post('/page', async (request, reply) => {
@@ -217,7 +233,9 @@ export async function createServer() {
               x: Config.live2dOption_positionX,
               y: Config.live2dOption_positionY
             },
-            rotation :Config.live2dOption_rotation,
+            rotation: Config.live2dOption_rotation,
+            alpha: Config.live2dOption_alpha,
+            dpr: Config.cloudDPR
           },
           time: new Date()
         }
@@ -248,7 +266,7 @@ export async function createServer() {
 
   // 获取用户数据
   server.post('/userData', async (request, reply) => {
-    const token = request.cookies.token || 'unknown'
+    const token = request.cookies.token || request.body?.token || 'unknown'
     let user = usertoken.find(user => user.token === token)
     if (!user) user = { user: '' }
     const userData = await getUserData(user.user)
@@ -264,9 +282,67 @@ export async function createServer() {
     })
   })
 
+  // 删除用户
+  server.post('/deleteUser', async (request, reply) => {
+    const token = request.cookies.token || request.body?.token || 'unknown'
+    let user = usertoken.find(user => user.token === token)
+    if (!user || user === 'unknown') {
+      reply.send({ state: false, error: '无效token' })
+      return
+    }
+    const filepath = `resources/ChatGPTCache/user/${user.user}.json`
+    fs.unlinkSync(filepath)
+    reply.send({ state: true })
+  })
+  // 修改密码
+  server.post('/changePassword', async (request, reply) => {
+    const token = request.cookies.token || request.body?.token || 'unknown'
+    let user = usertoken.find(user => user.token === token)
+    if (!user || user === 'unknown') {
+      reply.send({ state: false, error: '无效的用户信息' })
+      return
+    }
+    const userData = await getUserData(user.user)
+    const body = request.body || {}
+    if (!body.newPasswd) {
+      reply.send({ state: false, error: '无效参数' })
+      return
+    }
+    if (body.passwd && body.passwd != userData.passwd) {
+      reply.send({ state: false, error: '原始密码错误' })
+      return
+    }
+    if (user.autho === 'admin') {
+      await redis.set('CHATGPT:ADMIN_PASSWD', body.newPasswd)
+    } else if (user.autho === 'user') {
+      const dir = 'resources/ChatGPTCache/user'
+      const filename = `${user.user}.json`
+      const filepath = path.join(dir, filename)
+      fs.mkdirSync(dir, { recursive: true })
+      if (fs.existsSync(filepath)) {
+        fs.readFile(filepath, 'utf8', (err, data) => {
+          if (err) {
+            console.error(err)
+            return
+          }
+          const config = JSON.parse(data)
+          config.passwd = body.newPasswd
+          fs.writeFile(filepath, JSON.stringify(config), 'utf8', (err) => {
+            if (err) {
+              console.error(err)
+            }
+          })
+        })
+      } else {
+        reply.send({ state: false, error: '错误的用户数据' })
+        return
+      }
+    }
+    reply.send({ state: true })
+  })
   // 清除缓存数据
   server.post('/cleanCache', async (request, reply) => {
-    const token = request.cookies.token || 'unknown'
+    const token = request.cookies.token || request.body?.token || 'unknown'
     let user = usertoken.find(user => user.token === token)
     if (!user) user = { user: '' }
     const userData = await getUserData(user.user)
@@ -283,7 +359,7 @@ export async function createServer() {
 
   // 获取系统参数
   server.post('/sysconfig', async (request, reply) => {
-    const token = request.cookies.token || 'unknown'
+    const token = request.cookies.token || request.body?.token || 'unknown'
     const user = usertoken.find(user => user.token === token)
     if (!user) {
       reply.send({ err: '未登录' })
@@ -301,6 +377,9 @@ export async function createServer() {
       }
       if (await redis.exists('CHATGPT:USE') != 0) {
         redisConfig.useMode = await redis.get('CHATGPT:USE')
+      }
+      if (await redis.exists('CHATGPT:?') != 0) {
+        redisConfig.openAiPlatformAccessToken = await redis.get('CHATGPT:TOKEN')
       }
       reply.send({
         chatConfig: Config,
@@ -325,30 +404,31 @@ export async function createServer() {
 
   // 设置系统参数
   server.post('/saveconfig', async (request, reply) => {
-    const token = request.cookies.token || 'unknown'
+    const token = request.cookies.token || request.body?.token || 'unknown'
     const user = usertoken.find(user => user.token === token)
     const body = request.body || {}
+    let changeConfig = []
     if (!user) {
-      reply.send({ err: '未登录' })
+      reply.send({ state: false, error: '未登录' })
     } else if (user.autho === 'admin') {
       const chatdata = body.chatConfig || {}
       for (let [keyPath, value] of Object.entries(chatdata)) {
         if (keyPath === 'blockWords' || keyPath === 'promptBlockWords' || keyPath === 'initiativeChatGroups') { value = value.toString().split(/[,，;；\|]/) }
         if (Config[keyPath] != value) {
           //检查云服务api
-          if(keyPath === 'cloudTranscode') {
+          if (keyPath === 'cloudTranscode') {
             const referer = request.headers.referer;
             const origin = referer.match(/(https?:\/\/[^/]+)/)[1];
-            const checkCloud = await fetch(`${value}/check`, 
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                url: origin
+            const checkCloud = await fetch(`${value}/check`,
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                  url: origin
+                })
               })
-            })
             if (checkCloud.ok) {
               const checkCloudData = await checkCloud.json()
               if (checkCloudData.state != 'ok') {
@@ -356,7 +436,12 @@ export async function createServer() {
               }
             } else value = ''
           }
-          Config[keyPath] = value 
+          changeConfig.push({
+            item: keyPath,
+            old: Config[keyPath],
+            new: value
+          })
+          Config[keyPath] = value
         }
       }
       const redisConfig = body.redisConfig || {}
@@ -369,6 +454,11 @@ export async function createServer() {
       if (redisConfig.useMode != null) {
         await redis.set('CHATGPT:USE', redisConfig.useMode)
       }
+      if (redisConfig.openAiPlatformAccessToken != null) {
+        await redis.set('CHATGPT:TOKEN', redisConfig.openAiPlatformAccessToken)
+      }
+      
+      reply.send({ change: changeConfig, state: true })
     } else {
       if (body.userSetting) {
         await redis.set(`CHATGPT:USER:${user.user}`, JSON.stringify(body.userSetting))
@@ -383,7 +473,29 @@ export async function createServer() {
         }
         await setUserData(user.user, temp_userData)
       }
+      reply.send({ state: true })
     }
+  })
+
+  // 系统服务测试
+  server.post('/serverTest', async (request, reply) => {
+    let serverState = {
+      cache: false,
+      cloud: false
+    }
+    if (Config.cacheUrl) {
+      const checkCacheUrl = await fetch(Config.cacheUrl, { method: 'GET' })
+      if (checkCacheUrl.ok) {
+        serverState.cache = true
+      }
+    }
+    if (Config.cloudTranscode) {
+      const checkCheckCloud= await fetch(Config.cloudTranscode, { method: 'GET' })
+      if (checkCheckCloud.ok) {
+        serverState.cloud = true
+      }
+    }
+    reply.send(serverState)
   })
 
   server.addHook('onRequest', (request, reply, done) => {
