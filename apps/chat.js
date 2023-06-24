@@ -1965,7 +1965,8 @@ export class chatgpt extends plugin {
             new SearchMusicTool(),
             new SendMusicTool(),
             new ImageCaptionTool(),
-            new SearchVideoTool()
+            new SearchVideoTool(),
+            new SerpImageTool()
           ]
           // todo 3.0再重构tool的插拔和管理
           let tools = [
