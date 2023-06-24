@@ -3222,9 +3222,9 @@ p-timeout@^3.2.0:
   dependencies:
     p-finally "^1.0.0"
 
-p-timeout@^6.1.1:
+p-timeout@^6.1.1, p-timeout@^6.1.2:
   version "6.1.2"
-  resolved "https://registry.npmmirror.com/p-timeout/-/p-timeout-6.1.2.tgz"
+  resolved "https://registry.npmjs.org/p-timeout/-/p-timeout-6.1.2.tgz"
   integrity sha512-UbD77BuZ9Bc9aABo74gfXhNvzC9Tx7SxtHSh1fxvx3jTLLYvmVhiQZZrJzqqU0jKbN32kb5VOKiLEQI/3bIjgQ==
 
 pako@^1.0.11:
@@ -3493,7 +3493,7 @@ quick-format-unescaped@^4.0.3:
   resolved "https://registry.npmmirror.com/quick-format-unescaped/-/quick-format-unescaped-4.0.4.tgz"
   integrity sha512-tYC1Q1hgyRuHgloV/YXs2w15unPVh8qfu/qCTfhTYamaw7fyhumKa2yGpdSo87vY32rIclj+4fWYQXUMs9EHvg==
 
-quick-lru@^6.1.1:
+quick-lru@^6.1.1, quick-lru@6.1.1:
   version "6.1.1"
   resolved "https://registry.npmmirror.com/quick-lru/-/quick-lru-6.1.1.tgz"
   integrity sha512-S27GBT+F0NTRiehtbrgaSE1idUAJ5bX8dPAQTdylEyNlrdcH5X4Lz7Edz3DYzecbsCluD5zO8ZNEe04z3D3u6Q==
