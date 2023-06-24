@@ -1953,6 +1953,20 @@ export class chatgpt extends plugin {
               serpTool = new SerpIkechan8370Tool()
             }
           }
+          let fullTools = [
+            new EditCardTool(),
+            new QueryStarRailTool(),
+            new WebsiteTool(),
+            new JinyanTool(),
+            new KickOutTool(),
+            new WeatherTool(),
+            new SendPictureTool(),
+            new SendVideoTool(),
+            new SearchMusicTool(),
+            new SendMusicTool(),
+            new ImageCaptionTool(),
+            new SearchVideoTool()
+          ]
           // todo 3.0再重构tool的插拔和管理
           let tools = [
             // new SendAvatarTool(),
@@ -2001,8 +2015,15 @@ export class chatgpt extends plugin {
           //   tools.push(...[new JinyanTool(), new KickOutTool()])
           // }
           let funcMap = {}
+          let fullFuncMap = {}
           tools.forEach(tool => {
             funcMap[tool.name] = {
+              exec: tool.func,
+              function: tool.function()
+            }
+          })
+          fullTools.forEach(tool => {
+            fullFuncMap[tool.name] = {
               exec: tool.func,
               function: tool.function()
             }
@@ -2017,7 +2038,7 @@ export class chatgpt extends plugin {
             logger.info(msg)
             while (msg.functionCall) {
               let { name, arguments: args } = msg.functionCall
-              let functionResult = await funcMap[name].exec(Object.assign({ isAdmin, sender }, JSON.parse(args)))
+              let functionResult = await fullFuncMap[name].exec(Object.assign({ isAdmin, sender }, JSON.parse(args)))
               logger.mark(`function ${name} execution result: ${functionResult}`)
               option.parentMessageId = msg.id
               option.name = name
