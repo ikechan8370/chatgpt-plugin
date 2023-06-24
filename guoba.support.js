@@ -813,6 +813,12 @@ export function supportGuoba () {
             ]
           }
         },
+        {
+          field: 'extraUrl',
+          label: '额外工具url',
+          bottomHelpMessage: '（测试期间提供一个公益接口，一段时间后撤掉）参考搭建：https://github.com/ikechan8370/chatgpt-plugin-extras',
+          component: 'Input'
+        }
       ],
       // 获取配置数据方法（用于前端填充显示数据）
       getConfigData () {

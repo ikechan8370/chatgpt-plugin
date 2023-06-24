@@ -128,7 +128,7 @@ const defaultConfig = {
   amapKey: '',
   azSerpKey: '',
   serpSource: 'ikechan8370',
-  extraUrl: '',
+  extraUrl: 'https://cpe.ikechan8370.com',
   version: 'v2.7.0'
 }
 const _path = process.cwd()
