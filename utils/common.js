@@ -786,3 +786,19 @@ export function processList (whitelist, blacklist) {
   blacklist = Array.from(new Set(blacklist)).filter(value => /^\^?[1-9]\d{5,9}$/.test(value))
   return [whitelist, blacklist]
 }
+
+export function getMaxModelTokens (model = 'gpt-3.5-turbo') {
+  if (model.startsWith('gpt-3.5-turbo')) {
+    if (model.includes('16k')) {
+      return 16000
+    } else {
+      return 4000
+    }
+  } else {
+    if (model.includes('32k')) {
+      return 32000
+    } else {
+      return 16000
+    }
+  }
+}
