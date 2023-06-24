@@ -1454,7 +1454,7 @@ Poe 模式会调用 Poe 中的 Claude-instant 进行对话。需要提供 Cookie
             })
             await redis.set('CHATGPT:USE', redisConfig.useMode)
           }
-          await this.reply(await makeForwardMsg(this.e, changeConfig.map(msg => `修改项:${msg.item}\n旧数据\n\n${msg.url}\n\n新数据\n ${msg.url}`)))
+          await this.reply(await makeForwardMsg(this.e, changeConfig.map(msg => `修改项:${msg.item}\n旧数据\n\n${msg.old}\n\n新数据\n ${msg.value}`)))
         } catch (error) {
           console.error(error)
           await e.reply('配置文件错误')
