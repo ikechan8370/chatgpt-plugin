@@ -1953,7 +1953,7 @@ export class chatgpt extends plugin {
               serpTool = new SerpIkechan8370Tool()
             }
           }
-
+          // todo 3.0再重构tool的插拔和管理
           let tools = [
             // new SendAvatarTool(),
             // new SendDiceTool(),

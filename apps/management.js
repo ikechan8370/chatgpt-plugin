@@ -1479,7 +1479,7 @@ Poe 模式会调用 Poe 中的 Claude-instant 进行对话。需要提供 Cookie
         return
       }
       Config.smartMode = true
-      await e.reply('好的，已经打开智能模式，注意API额度哦')
+      await e.reply('好的，已经打开智能模式，注意API额度哦。配合开启读取群聊上下文效果更佳！')
     } else {
       if (!Config.smartMode) {
         await e.reply('已经是关闭得了')
