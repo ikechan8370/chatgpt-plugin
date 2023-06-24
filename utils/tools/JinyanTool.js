@@ -29,7 +29,7 @@ export class JinyanTool extends AbstractTool {
     let { qq, groupId, time = '600', sender, isAdmin, isPunish } = opts
     let group = await Bot.pickGroup(groupId)
     time = parseInt(time.trim())
-    if (time < 60) {
+    if (time < 60 && time !== 0) {
       time = 60
     }
     if (time > 86400 * 30) {
