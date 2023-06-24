@@ -60,6 +60,7 @@ import { SerpTool } from '../utils/tools/SerpTool.js'
 import { SerpIkechan8370Tool } from '../utils/tools/SerpIkechan8370Tool.js'
 import {SendPictureTool} from "../utils/tools/SendPictureTool.js";
 import {SerpImageTool} from "../utils/tools/SearchImageTool.js";
+import {ImageCaptionTool} from "../utils/tools/ImageCaptionTool.js";
 try {
   await import('emoji-strip')
 } catch (err) {
@@ -1957,7 +1958,7 @@ export class chatgpt extends plugin {
           new SendVideoTool(),
           new SearchMusicTool(),
           new SendMusicTool(),
-          new SendAvatarTool(),
+          // new SendAvatarTool(),
           // new SendDiceTool(),
           new EditCardTool(),
           new QueryStarRailTool(),
@@ -1967,8 +1968,33 @@ export class chatgpt extends plugin {
           new WeatherTool(),
           new SendPictureTool(),
           new SerpImageTool(),
+          new ImageCaptionTool(),
           serpTool
         ]
+        let img = []
+        if (e.source) {
+          // 优先从回复找图
+          let reply
+          if (e.isGroup) {
+            reply = (await e.group.getChatHistory(e.source.seq, 1)).pop()?.message
+          } else {
+            reply = (await e.friend.getChatHistory(e.source.time, 1)).pop()?.message
+          }
+          if (reply) {
+            for (let val of reply) {
+              if (val.type === 'image') {
+                console.log(val)
+                img.push(val.url)
+              }
+            }
+          }
+        }
+        if (e.img) {
+          img.push(...e.img)
+        }
+        if (img.length > 0) {
+          prompt += `\nthe url of the picture(s) above: ${img.join(', ')}`
+        }
         // if (e.sender.role === 'admin' || e.sender.role === 'owner') {
         //   tools.push(...[new JinyanTool(), new KickOutTool()])
         // }
@@ -2004,6 +2030,7 @@ export class chatgpt extends plugin {
             await e.reply('字数超限啦，将为您自动结束本次对话。')
             return null
           } else {
+            logger.error(err)
             throw new Error(err)
           }
         }
