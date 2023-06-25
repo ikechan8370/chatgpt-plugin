@@ -5,10 +5,14 @@ import { generateAudio } from '../utils/tts.js'
 import fs from 'fs'
 import { emojiRegex, googleRequestUrl } from '../utils/emoj/index.js'
 import fetch from 'node-fetch'
-import { makeForwardMsg, mkdirs } from '../utils/common.js'
+import { getImageOcrText, getImg, makeForwardMsg, mkdirs, renderUrl } from '../utils/common.js'
 import uploadRecord from '../utils/uploadRecord.js'
 import { makeWordcloud } from '../utils/wordcloud/wordcloud.js'
 import { translate, translateLangSupports } from '../utils/translate.js'
+import AzureTTS from '../utils/tts/microsoft-azure.js'
+import VoiceVoxTTS from '../utils/tts/voicevox.js'
+import { URL } from 'node:url'
+
 let useSilk = false
 try {
   await import('node-silk')
@@ -17,7 +21,7 @@ try {
   useSilk = false
 }
 export class Entertainment extends plugin {
-  constructor(e) {
+  constructor (e) {
     super({
       name: 'ChatGPT-Plugin 娱乐小功能',
       dsc: '让你的聊天更有趣！现已支持主动打招呼、表情合成、群聊词云统计、文本翻译与图片ocr小功能！',
@@ -43,12 +47,20 @@ export class Entertainment extends plugin {
           fnc: 'wordcloud'
         },
         {
+          reg: '^#(|最新)词云(\\d{1,2}h{0,1}|)$',
+          fnc: 'wordcloud_latest'
+        },
+        {
           reg: '^#((寄批踢|gpt|GPT)?翻.*|chatgpt翻译帮助)',
           fnc: 'translate'
         },
         {
           reg: '^#ocr',
           fnc: 'ocr'
+        },
+        {
+          reg: '^#url(：|:)',
+          fnc: 'screenshotUrl'
         }
       ]
     })
@@ -56,12 +68,13 @@ export class Entertainment extends plugin {
       {
         // 设置十分钟左右的浮动
         cron: '0 ' + Math.ceil(Math.random() * 10) + ' 7-23/' + Config.helloInterval + ' * * ?',
-        // cron: '0 ' + '*/' + Config.helloInterval + ' * * * ?',
+        // cron: '*/2 * * * *',
         name: 'ChatGPT主动随机说话',
         fnc: this.sendRandomMessage.bind(this)
       }
     ]
   }
+
   async ocr (e) {
     let replyMsg
     let imgOcrText = await getImageOcrText(e)
@@ -72,7 +85,8 @@ export class Entertainment extends plugin {
     replyMsg = await makeForwardMsg(e, imgOcrText, 'OCR结果')
     await this.reply(replyMsg, e.isGroup)
   }
-  async translate(e) {
+
+  async translate (e) {
     const translateLangLabels = translateLangSupports.map(item => item.label).join('，')
     const translateLangLabelAbbrS = translateLangSupports.map(item => item.abbr).join('，')
     if (e.msg.trim() === '#chatgpt翻译帮助') {
@@ -167,7 +181,8 @@ ${translateLangLabels}
     await this.reply(result, e.isGroup)
     return true
   }
-  async wordcloud(e) {
+
+  async wordcloud (e) {
     if (e.isGroup) {
       let groupId = e.group_id
       let lock = await redis.get(`CHATGPT:WORDCLOUD:${groupId}`)
@@ -176,7 +191,7 @@ ${translateLangLabels}
         return true
       }
       await e.reply('在统计啦，请稍等...')
-      await redis.set(`CHATGPT:WORDCLOUD:${groupId}`, '1', {EX: 600})
+      await redis.set(`CHATGPT:WORDCLOUD:${groupId}`, '1', { EX: 600 })
       try {
         await makeWordcloud(e, e.group_id)
       } catch (err) {
@@ -189,7 +204,39 @@ ${translateLangLabels}
     }
   }
 
-  async combineEmoj(e) {
+  async wordcloud_latest (e) {
+    if (e.isGroup) {
+      let groupId = e.group_id
+      let lock = await redis.get(`CHATGPT:WORDCLOUD:${groupId}`)
+      if (lock) {
+        await e.reply('别着急，上次统计还没完呢')
+        return true
+      }
+
+      const regExp = /词云(\d{0,2})(|h)/
+      const match = e.msg.trim().match(regExp)
+      const duration = !match[1] ? 12 : parseInt(match[1])  // default 12h
+
+      if(duration > 24) {
+        await e.reply('最多只能统计24小时内的记录哦')
+        return false
+      }
+      await e.reply('在统计啦，请稍等...')
+
+      await redis.set(`CHATGPT:WORDCLOUD:${groupId}`, '1', { EX: 600 })
+      try {
+        await makeWordcloud(e, e.group_id, duration)
+      } catch (err) {
+        logger.error(err)
+        await e.reply(err)
+      }
+      await redis.del(`CHATGPT:WORDCLOUD:${groupId}`)
+    } else {
+      await e.reply('请在群里发送此命令')
+    }
+  }
+
+  async combineEmoj (e) {
     let left = e.msg.codePointAt(0).toString(16).toLowerCase()
     let right = e.msg.codePointAt(2).toString(16).toLowerCase()
     if (left === right) {
@@ -237,7 +284,7 @@ ${translateLangLabels}
     return true
   }
 
-  async sendMessage(e) {
+  async sendMessage (e) {
     if (e.msg.match(/^#chatgpt打招呼帮助/) !== null) {
       await this.reply('设置主动打招呼的群聊名单，群号之间以,隔开，参数之间空格隔开\n' +
           '#chatgpt打招呼+群号：立即在指定群聊发起打招呼' +
@@ -268,23 +315,71 @@ ${translateLangLabels}
     }
   }
 
-  async sendRandomMessage() {
+  async sendRandomMessage () {
     if (Config.debug) {
       logger.info('开始处理：ChatGPT随机打招呼。')
     }
     let toSend = Config.initiativeChatGroups || []
-    for (let i = 0; i < toSend.length; i++) {
-      if (!toSend[i]) {
+    for (const element of toSend) {
+      if (!element) {
         continue
       }
-      let groupId = parseInt(toSend[i])
+      let groupId = parseInt(element)
       if (Bot.getGroupList().get(groupId)) {
         // 打招呼概率
         if (Math.floor(Math.random() * 100) < Config.helloProbability) {
           let message = await generateHello()
           logger.info(`打招呼给群聊${groupId}：` + message)
           if (Config.defaultUseTTS) {
-            let audio = await generateAudio(message, Config.defaultTTSRole)
+            let audio
+            const [defaultVitsTTSRole, defaultAzureTTSRole, defaultVoxTTSRole] = [Config.defaultTTSRole, Config.azureTTSSpeaker, Config.voicevoxTTSSpeaker]
+            let ttsSupportKinds = []
+            if (Config.azureTTSKey) ttsSupportKinds.push(1)
+            if (Config.ttsSpace) ttsSupportKinds.push(2)
+            if (Config.voicevoxSpace) ttsSupportKinds.push(3)
+            if (!ttsSupportKinds.length) {
+              logger.warn('没有配置任何语音服务！')
+              return false
+            }
+            const randomIndex = Math.floor(Math.random() * ttsSupportKinds.length)
+            switch (ttsSupportKinds[randomIndex]) {
+              case 1 : {
+                const isEn = AzureTTS.supportConfigurations.find(config => config.code === defaultAzureTTSRole)?.language.includes('en')
+                if (isEn) {
+                  message = (await translate(message, '英')).replace('\n', '')
+                }
+                audio = await AzureTTS.generateAudio(message, {
+                  defaultAzureTTSRole
+                })
+                break
+              }
+              case 2 : {
+                if (Config.autoJapanese) {
+                  try {
+                    message = await translate(message, '日')
+                  } catch (err) {
+                    logger.error(err)
+                  }
+                }
+                try {
+                  audio = await generateAudio(message, defaultVitsTTSRole, '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）')
+                } catch (err) {
+                  logger.error(err)
+                }
+                break
+              }
+              case 3 : {
+                message = (await translate(message, '日')).replace('\n', '')
+                try {
+                  audio = await VoiceVoxTTS.generateAudio(message, {
+                    speaker: defaultVoxTTSRole
+                  })
+                } catch (err) {
+                  logger.error(err)
+                }
+                break
+              }
+            }
             if (useSilk) {
               await Bot.sendGroupMsg(groupId, await uploadRecord(audio))
             } else {
@@ -302,7 +397,7 @@ ${translateLangLabels}
     }
   }
 
-  async handleSentMessage(e) {
+  async handleSentMessage (e) {
     const addReg = /^#chatgpt设置打招呼[:：]?\s?(\S+)(?:\s+(\d+))?(?:\s+(\d+))?$/
     const delReg = /^#chatgpt删除打招呼[:：\s]?(\S+)/
     const checkReg = /^#chatgpt查看打招呼$/
@@ -360,8 +455,8 @@ ${translateLangLabels}
           return false
         } else {
           Config.initiativeChatGroups = Config.initiativeChatGroups
-              .filter(group => group.trim() !== '')
-              .concat(validGroups)
+            .filter(group => group.trim() !== '')
+            .concat(validGroups)
         }
         if (typeof paramArray[2] === 'undefined' && typeof paramArray[3] === 'undefined') {
           replyMsg = `已更新打招呼设置：\n${!e.isGroup ? '群号：' + Config.initiativeChatGroups.join(', ') + '\n' : ''}间隔时间：${Config.helloInterval}小时\n触发概率：${Config.helloProbability}%`
@@ -377,52 +472,31 @@ ${translateLangLabels}
     await this.reply(replyMsg)
     return false
   }
-}
-export async function getImg (e) {
-  // 取消息中的图片、at的头像、回复的图片，放入e.img
-  if (e.at && !e.source) {
-    e.img = [`https://q1.qlogo.cn/g?b=qq&s=0&nk=${e.at}`]
-  }
-  if (e.source) {
-    let reply
-    if (e.isGroup) {
-      reply = (await e.group.getChatHistory(e.source.seq, 1)).pop()?.message
-    } else {
-      reply = (await e.friend.getChatHistory(e.source.time, 1)).pop()?.message
-    }
-    if (reply) {
-      let i = []
-      for (let val of reply) {
-        if (val.type === 'image') {
-          i.push(val.url)
-        }
-      }
-      e.img = i
-    }
-  }
-  return e.img
-}
-export async function getImageOcrText (e) {
-  const img = await getImg(e)
-  if (img) {
+
+  async screenshotUrl (e) {
+    let url = e.msg.replace(/^#url(：|:)/, '')
+    if (url.length === 0) { return false }
     try {
-      let resultArr = []
-      let eachImgRes = ''
-      for (let i in img) {
-        const imgOCR = await Bot.imageOcr(img[i])
-        for (let text of imgOCR.wordslist) {
-          eachImgRes += (`${text?.words}  \n`)
-        }
-        if (eachImgRes) resultArr.push(eachImgRes)
-        eachImgRes = ''
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'http://' + url
       }
-      // logger.warn('resultArr', resultArr)
-      return resultArr
+      let urlLink = new URL(url)
+      await e.reply(
+        await renderUrl(
+          e, urlLink.href,
+          {
+            retType: 'base64',
+            Viewport: {
+              width: Config.chatViewWidth,
+              height: parseInt(Config.chatViewWidth * 0.56)
+            },
+            deviceScaleFactor: Config.cloudDPR
+          }
+        ),
+        e.isGroup && Config.quoteReply)
     } catch (err) {
-      return false
-      // logger.error(err)
+      this.reply('无效url:' + url)
     }
-  } else {
-    return false
+    return true
   }
 }

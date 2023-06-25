@@ -1,14 +1,15 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import { Config } from '../utils/config.js'
-import { exec } from 'child_process'
 import {
-  checkPnpm,
   formatDuration,
-  parseDuration,
+  getAzureRoleList,
   getPublicIP,
-  renderUrl,
+  getUserReplySetting,
+  getVitsRoleList,
+  getVoicevoxRoleList,
   makeForwardMsg,
-  getDefaultReplySetting
+  parseDuration, processList,
+  renderUrl
 } from '../utils/common.js'
 import SydneyAIClient from '../utils/SydneyAIClient.js'
 import { convertSpeaker, speakers as vitsRoleList } from '../utils/tts.js'
@@ -16,9 +17,11 @@ import md5 from 'md5'
 import path from 'path'
 import fs from 'fs'
 import loader from '../../../lib/plugins/loader.js'
-import { supportConfigurations as voxRoleList } from '../utils/tts/voicevox.js'
+import VoiceVoxTTS, { supportConfigurations as voxRoleList } from '../utils/tts/voicevox.js'
 import { supportConfigurations as azureRoleList } from '../utils/tts/microsoft-azure.js'
+
 let isWhiteList = true
+let isSetGroup = true
 export class ChatgptManagement extends plugin {
   constructor (e) {
     super({
@@ -122,10 +125,6 @@ export class ChatgptManagement extends plugin {
           fnc: 'modeHelp'
         },
         {
-          reg: '^#chatgpt(强制)?更新$',
-          fnc: 'updateChatGPTPlugin'
-        },
-        {
           reg: '^#chatgpt版本(信息)',
           fnc: 'versionChatGPTPlugin'
         },
@@ -135,32 +134,32 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
-          reg: '^#chatgpt(本群)?(群\\d+)?(打开|开启|启动|激活|张嘴|开口|说话|上班)',
+          reg: '^#chatgpt(本群)?(群\\d+)?(开启|启动|激活|张嘴|开口|说话|上班)$',
           fnc: 'openMouth',
           permission: 'master'
         },
         {
-          reg: '^#chatgpt查看?(关闭|闭嘴|关机|休眠|下班|休眠)列表',
+          reg: '^#chatgpt查看?(关闭|闭嘴|关机|休眠|下班|休眠)列表$',
           fnc: 'listShutUp',
           permission: 'master'
         },
         {
-          reg: '^#chatgpt设置(API|key)(Key|key)',
+          reg: '^#chatgpt设置(API|key)(Key|key)$',
           fnc: 'setAPIKey',
           permission: 'master'
         },
         {
-          reg: '^#chatgpt设置(API|api)设定',
+          reg: '^#chatgpt设置(API|api)设定$',
           fnc: 'setAPIPromptPrefix',
           permission: 'master'
         },
         {
-          reg: '^#chatgpt设置星火token',
+          reg: '^#chatgpt设置星火token$',
           fnc: 'setXinghuoToken',
           permission: 'master'
         },
         {
-          reg: '^#chatgpt设置(Bing|必应|Sydney|悉尼|sydney|bing)设定',
+          reg: '^#chatgpt设置(Bing|必应|Sydney|悉尼|sydney|bing)设定$',
           fnc: 'setBingPromptPrefix',
           permission: 'master'
         },
@@ -180,7 +179,7 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
-          reg: '^#chatgpt(打开|关闭|设置)?全局((图片模式|语音模式|(语音角色|角色语音|角色).*)|回复帮助)$',
+          reg: '^#chatgpt(打开|关闭|设置)?全局((文本模式|图片模式|语音模式|((azure|vits|vox)?语音角色|角色语音|角色).*)|回复帮助)$',
           fnc: 'setDefaultReplySetting',
           permission: 'master'
         },
@@ -197,18 +196,18 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
-          reg: '^#chatgpt(设置|添加)群聊[白黑]名单$',
+          reg: '^#chatgpt(设置|添加)对话[白黑]名单$',
           fnc: 'setList',
           permission: 'master'
         },
         {
-          reg: '^#chatgpt查看群聊[白黑]名单$',
-          fnc: 'checkGroupList',
+          reg: '^#chatgpt(查看)?对话[白黑]名单(帮助)?$',
+          fnc: 'checkList',
           permission: 'master'
         },
         {
-          reg: '^#chatgpt(删除|移除)群聊[白黑]名单$',
-          fnc: 'delGroupList',
+          reg: '^#chatgpt(删除|移除)对话[白黑]名单$',
+          fnc: 'delList',
           permission: 'master'
         },
         {
@@ -230,7 +229,7 @@ export class ChatgptManagement extends plugin {
           fnc: 'userPage'
         },
         {
-          reg: '^#(chatgpt)?(对话|管理|娱乐|绘图|人物设定|聊天记录)?指令表(帮助|搜索(.+))?',
+          reg: '^#?(chatgpt)(对话|管理|娱乐|绘图|人物设定|聊天记录)?指令表(帮助|搜索(.+))?',
           fnc: 'commandHelp'
         },
         {
@@ -239,49 +238,102 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
-          reg: '^#chatgpt角色列表$',
+          reg: '^#(chatgpt)?(vits|azure|vox)?语音(角色列表|服务)$',
           fnc: 'getTTSRoleList'
         },
         {
           reg: '^#chatgpt设置后台(刷新|refresh)(t|T)oken$',
           fnc: 'setOpenAIPlatformToken'
+        },
+        {
+          reg: '^#(chatgpt)?查看回复设置$',
+          fnc: 'viewUserSetting'
+        },
+        {
+          reg: '^#chatgpt导出配置',
+          fnc: 'exportConfig',
+          permission: 'master'
+        },
+        {
+          reg: '^#chatgpt导入配置',
+          fnc: 'importConfig',
+          permission: 'master'
+        },
+        {
+          reg: '^#chatgpt(开启|关闭)智能模式$',
+          fnc: 'switchSmartMode',
+          permission: 'master'
         }
       ]
     })
   }
 
+  async viewUserSetting (e) {
+    const userSetting = await getUserReplySetting(this.e)
+    const replyMsg = `${this.e.sender.user_id}的回复设置:
+图片模式: ${userSetting.usePicture === true ? '开启' : '关闭'}
+语音模式: ${userSetting.useTTS === true ? '开启' : '关闭'}
+Vits语音角色: ${userSetting.ttsRole}
+Azure语音角色: ${userSetting.ttsRoleAzure}
+VoiceVox语音角色: ${userSetting.ttsRoleVoiceVox}
+${userSetting.useTTS === true ? '当前语音模式为' + Config.ttsMode : ''}`
+    await this.reply(replyMsg.replace(/\n\s*$/, ''), e.isGroup)
+    return true
+  }
+
   async getTTSRoleList (e) {
-    let userReplySetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
-    userReplySetting = !userReplySetting
-      ? getDefaultReplySetting()
-      : JSON.parse(userReplySetting)
-    if (!userReplySetting.useTTS) return
+    const matchCommand = e.msg.match(/^#(chatgpt)?(vits|azure|vox)?语音(服务|角色列表)/)
+    if (matchCommand[3] === '服务') {
+      await this.reply(`当前支持vox、vits、azure语音服务，可使用'#(vox|azure|vits)语音角色列表'查看支持的语音角色。
+      
+vits语音：主要有赛马娘，原神中文，原神日语，崩坏 3 的音色、结果有随机性，语调可能很奇怪。
+      
+vox语音：Voicevox 是一款由日本 DeNA 开发的语音合成软件，它可以将文本转换为自然流畅的语音。Voicevox 支持多种语言和声音，可以用于制作各种语音内容，如动画、游戏、广告等。Voicevox 还提供了丰富的调整选项，可以调整声音的音调、速度、音量等参数，以满足不同需求。除了桌面版软件外，Voicevox 还提供了 Web 版本和 API 接口，方便开发者在各种平台上使用。
+
+azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，它可以帮助开发者将语音转换为文本、将文本转换为语音、实现自然语言理解和对话等功能。Azure 语音支持多种语言和声音，可以用于构建各种语音应用程序，如智能客服、语音助手、自动化电话系统等。Azure 语音还提供了丰富的 API 和 SDK，方便开发者在各种平台上集成使用。
+      `)
+      return true
+    }
+    let userReplySetting = await getUserReplySetting(this.e)
+    if (!userReplySetting.useTTS && matchCommand[2] === undefined) {
+      await this.reply('当前不是语音模式,如果想查看不同语音模式下支持的角色列表,可使用"#(vox|azure|vits)语音角色列表"查看')
+      return false
+    }
     let ttsMode = Config.ttsMode
     let roleList = []
-    if (ttsMode === 'vits-uma-genshin-honkai') {
-      const [firstHalf, secondHalf] = [vitsRoleList.slice(0, Math.floor(vitsRoleList.length / 2)).join('、'), vitsRoleList.slice(Math.floor(vitsRoleList.length / 2)).join('、')]
-      const [chunk1, chunk2] = [firstHalf.match(/[^、]+(?:、[^、]+){0,30}/g), secondHalf.match(/[^、]+(?:、[^、]+){0,30}/g)]
-      const list = [await makeForwardMsg(e, chunk1, `${Config.ttsMode}角色列表1`), await makeForwardMsg(e, chunk2, `${Config.ttsMode}角色列表2`)]
-      roleList = await makeForwardMsg(e, list, `${Config.ttsMode}角色列表`)
-      await this.reply(roleList)
-      return
-    } else if (ttsMode === 'voicevox') {
-      roleList = voxRoleList.map(item => item.name).join('、')
-    } else if (ttsMode === 'azure') {
-      roleList = azureRoleList.map(item => item.name).join('、')
+    if (matchCommand[2] === 'vits') {
+      roleList = getVitsRoleList(this.e)
+    } else if (matchCommand[2] === 'vox') {
+      roleList = getVoicevoxRoleList()
+    } else if (matchCommand[2] === 'azure') {
+      roleList = getAzureRoleList()
+    } else if (matchCommand[2] === undefined) {
+      switch (ttsMode) {
+        case 'vits-uma-genshin-honkai':
+          roleList = getVitsRoleList(this.e)
+          break
+        case 'voicevox':
+          roleList = getVoicevoxRoleList()
+          break
+        case 'azure':
+          roleList = getAzureRoleList()
+          break
+        default:
+          break
+      }
+    } else {
+      await this.reply('设置错误,请使用"#chatgpt语音服务"查看支持的语音配置')
+      return false
     }
     if (roleList.length > 300) {
       let chunks = roleList.match(/[^、]+(?:、[^、]+){0,30}/g)
-      roleList = await makeForwardMsg(e, chunks, `${Config.ttsMode}角色列表`)
+      roleList = await makeForwardMsg(e, chunks, `${Config.ttsMode}语音角色列表`)
     }
     await this.reply(roleList)
   }
 
   async ttsSwitch (e) {
-    let userReplySetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
-    userReplySetting = !userReplySetting
-      ? getDefaultReplySetting()
-      : JSON.parse(userReplySetting)
+    let userReplySetting = await getUserReplySetting(this.e)
     if (!userReplySetting.useTTS) {
       let replyMsg
       if (userReplySetting.usePicture) {
@@ -308,7 +360,6 @@ export class ChatgptManagement extends plugin {
   }
 
   async commandHelp (e) {
-    if (!this.e.isMaster) { return this.reply('你没有权限') }
     if (/^#(chatgpt)?指令表帮助$/.exec(e.msg.trim())) {
       await this.reply('#chatgpt指令表: 查看本插件的所有指令\n' +
           '#chatgpt(对话|管理|娱乐|绘图|人物设定|聊天记录)指令表: 查看对应功能分类的指令表\n' +
@@ -342,8 +393,8 @@ export class ChatgptManagement extends plugin {
         commandSet.push({ name, dsc: plugin.dsc, rule })
       }
     }
-    if (e.msg.includes('搜索')) {
-      let cmd = e.msg.trim().match(/^#(chatgpt)?(对话|管理|娱乐|绘图|人物设定|聊天记录)?指令表(帮助|搜索(.+))?/)[4]
+    if (/^#(chatgpt)?指令表搜索(.+)/.test(e.msg.trim())) {
+      let cmd = e.msg.trim().match(/#(chatgpt)?指令表搜索(.+)/)[2]
       if (!cmd) {
         await this.reply('(⊙ˍ⊙)')
         return 0
@@ -389,134 +440,124 @@ export class ChatgptManagement extends plugin {
     return true
   }
 
-  /**
-   * 对原始黑白名单进行去重和去除无效群号处理
-   * @param whitelist
-   * @param blacklist
-   * @returns {Promise<any[][]>}
-   */
-  async processList (whitelist, blacklist) {
-    let groupWhitelist = Array.isArray(whitelist)
-      ? whitelist
-      : String(whitelist).split(/[,，]/)
-    let groupBlacklist = !Array.isArray(blacklist)
-      ? blacklist
-      : String(blacklist).split(/[,，]/)
-    groupWhitelist = Array.from(new Set(groupWhitelist)).filter(value => /^[1-9]\d{8,9}$/.test(value))
-    groupBlacklist = Array.from(new Set(groupBlacklist)).filter(value => /^[1-9]\d{8,9}$/.test(value))
-    return [groupWhitelist, groupBlacklist]
-  }
-
   async setList (e) {
     this.setContext('saveList')
     isWhiteList = e.msg.includes('白')
-    const listType = isWhiteList ? '白名单' : '黑名单'
-    await this.reply(`请发送需要设置的群聊${listType}，群号间使用,隔开`, e.isGroup)
+    const listType = isWhiteList ? '对话白名单' : '对话黑名单'
+    await this.reply(`请发送需要添加的${listType}号码，默认设置为添加群号，需要添加QQ号时在前面添加^(例如：^123456)。`, e.isGroup)
     return false
   }
 
   async saveList (e) {
     if (!this.e.msg) return
-    const listType = isWhiteList ? '白名单' : '黑名单'
-    const inputMatch = this.e.msg.match(/\d+/g)
-    let [groupWhitelist, groupBlacklist] = await this.processList(Config.groupWhitelist, Config.groupBlacklist)
-    let inputList = Array.isArray(inputMatch) ? this.e.msg.match(/\d+/g).filter(value => /^[1-9]\d{8,9}$/.test(value)) : []
+    const listType = isWhiteList ? '对话白名单' : '对话黑名单'
+    const regex = /^\^?[1-9]\d{5,9}$/
+    const wrongInput = []
+    const inputSet = new Set()
+    const inputList = this.e.msg.split(/[,，]/).reduce((acc, value) => {
+      if (value.length > 11 || !regex.test(value)) {
+        wrongInput.push(value)
+      } else if (!inputSet.has(value)) {
+        inputSet.add(value)
+        acc.push(value)
+      }
+      return acc
+    }, [])
     if (!inputList.length) {
-      await this.reply('无效输入，请在检查群号是否正确后重新输入', e.isGroup)
+      let replyMsg = '名单更新失败，请在检查输入是否正确后重新输入。'
+      if (wrongInput.length) replyMsg += `\n${wrongInput.length ? '检测到以下错误输入："' + wrongInput.join('，') + '"，已自动忽略。' : ''}`
+      await this.reply(replyMsg, e.isGroup)
       return false
     }
-    inputList = Array.from(new Set(inputList))
-    let whitelist = []
-    let blacklist = []
-    for (const element of inputList) {
-      if (listType === '白名单') {
-        groupWhitelist = groupWhitelist.filter(item => item !== element)
-        whitelist.push(element)
-      } else {
-        groupBlacklist = groupBlacklist.filter(item => item !== element)
-        blacklist.push(element)
-      }
-    }
-    if (!(whitelist.length || blacklist.length)) {
-      await this.reply('无效输入，请在检查群号是否正确或重复添加后重新输入', e.isGroup)
-      return false
+    let [whitelist, blacklist] = processList(Config.whitelist, Config.blacklist)
+    whitelist = [...inputList, ...whitelist]
+    blacklist = [...inputList, ...blacklist]
+    if (listType === '对话白名单') {
+      Config.whitelist = Array.from(new Set(whitelist))
     } else {
-      if (listType === '白名单') {
-        Config.groupWhitelist = groupWhitelist
-          .filter(group => group !== '')
-          .concat(whitelist)
-      } else {
-        Config.groupBlacklist = groupBlacklist
-          .filter(group => group !== '')
-          .concat(blacklist)
-      }
+      Config.blacklist = Array.from(new Set(blacklist))
     }
-    let replyMsg = `群聊${listType}已更新，可通过\n'#chatgpt查看群聊${listType}'查看最新名单\n'#chatgpt移除群聊${listType}'管理名单`
+    let replyMsg = `${listType}已更新，可通过\n"#chatgpt查看${listType}" 查看最新名单\n"#chatgpt移除${listType}" 管理名单${wrongInput.length ? '\n检测到以下错误输入："' + wrongInput.join('，') + '"，已自动忽略。' : ''}`
     if (e.isPrivate) {
-      replyMsg += `\n当前群聊${listType}为：${listType === '白名单' ? Config.groupWhitelist : Config.groupBlacklist}`
+      replyMsg += `\n当前${listType}为：${listType === '对话白名单' ? Config.whitelist : Config.blacklist}`
     }
     await this.reply(replyMsg, e.isGroup)
     this.finish('saveList')
   }
 
-  async checkGroupList (e) {
+  async checkList (e) {
+    if (e.msg.includes('帮助')) {
+      await this.reply('默认设置为添加群号，需要拉黑QQ号时在前面添加^(例如：^123456)，可一次性混合输入多个配置号码，错误项会自动忽略。具体使用指令可通过 "#指令表搜索名单" 查看，白名单优先级高于黑名单。')
+      return true
+    }
     isWhiteList = e.msg.includes('白')
-    const list = isWhiteList ? Config.groupWhitelist : Config.groupBlacklist
+    const list = isWhiteList ? Config.whitelist : Config.blacklist
     const listType = isWhiteList ? '白名单' : '黑名单'
-    const replyMsg = list.length ? `当前群聊${listType}为：${list}` : `当前没有设置任何群聊${listType}`
+    const replyMsg = list.length ? `当前${listType}为：${list}` : `当前没有设置任何${listType}`
     await this.reply(replyMsg, e.isGroup)
     return false
   }
 
-  async delGroupList (e) {
+  async delList (e) {
     isWhiteList = e.msg.includes('白')
-    const listType = isWhiteList ? '白名单' : '黑名单'
+    const listType = isWhiteList ? '对话白名单' : '对话黑名单'
     let replyMsg = ''
-    if (Config.groupWhitelist.length === 0 && Config.groupBlacklist.length === 0) {
-      replyMsg = `当前群聊(白|黑)名单为空，请先添加${listType}吧~`
-    } else if ((listType === '白名单' && !Config.groupWhitelist.length) || (listType === '黑名单' && !Config.groupBlacklist.length)) {
-      replyMsg = `当前群聊${listType}为空，请先添加吧~`
+    if (Config.whitelist.length === 0 && Config.blacklist.length === 0) {
+      replyMsg = '当前对话(白|黑)名单都是空哒，请先添加吧~'
+    } else if ((listType === '对话白名单' && !Config.whitelist.length) || (listType === '对话黑名单' && !Config.blacklist.length)) {
+      replyMsg = `当前${listType}为空，请先添加吧~`
     }
     if (replyMsg) {
       await this.reply(replyMsg, e.isGroup)
       return false
     }
-    this.setContext('confirmDelGroup')
-    await this.reply(`请发送需要删除的群聊${listType}，群号间使用,隔开。输入‘全部删除’清空${listType}。`, e.isGroup)
+    this.setContext('confirmDelList')
+    await this.reply(`请发送需要删除的${listType}号码，号码间使用,隔开。输入‘全部删除’清空${listType}。${e.isPrivate ? '\n当前' + listType + '为：' + (listType === '对话白名单' ? Config.whitelist : Config.blacklist) : ''}`, e.isGroup)
     return false
   }
 
-  async confirmDelGroup (e) {
+  async confirmDelList (e) {
     if (!this.e.msg) return
     const isAllDeleted = this.e.msg.trim() === '全部删除'
-    const groupNumRegex = /^[1-9]\d{8,9}$/
-    const inputMatch = this.e.msg.match(/\d+/g)
-    const validGroups = Array.isArray(inputMatch) ? inputMatch.filter(groupNum => groupNumRegex.test(groupNum)) : []
-    let [groupWhitelist, groupBlacklist] = await this.processList(Config.groupWhitelist, Config.groupBlacklist)
+    const regex = /^\^?[1-9]\d{5,9}$/
+    const wrongInput = []
+    const inputSet = new Set()
+    const inputList = this.e.msg.split(/[,，]/).reduce((acc, value) => {
+      if (value.length > 11 || !regex.test(value)) {
+        wrongInput.push(value)
+      } else if (!inputSet.has(value)) {
+        inputSet.add(value)
+        acc.push(value)
+      }
+      return acc
+    }, [])
+    if (!inputList.length && !isAllDeleted) {
+      let replyMsg = '名单更新失败，请在检查输入是否正确后重新输入。'
+      if (wrongInput.length) replyMsg += `${wrongInput.length ? '\n检测到以下错误输入："' + wrongInput.join('，') + '"，已自动忽略。' : ''}`
+      await this.reply(replyMsg, e.isGroup)
+      return false
+    }
+    let [whitelist, blacklist] = processList(Config.whitelist, Config.blacklist)
     if (isAllDeleted) {
-      Config.groupWhitelist = isWhiteList ? [] : groupWhitelist
-      Config.groupBlacklist = !isWhiteList ? [] : groupBlacklist
+      Config.whitelist = isWhiteList ? [] : whitelist
+      Config.blacklist = !isWhiteList ? [] : blacklist
     } else {
-      if (!validGroups.length) {
-        await this.reply('无效输入，请在检查群号是否正确后重新输入', e.isGroup)
-        return false
-      } else {
-        for (const element of validGroups) {
-          if (isWhiteList) {
-            Config.groupWhitelist = groupWhitelist.filter(item => item !== element)
-          } else {
-            Config.groupBlacklist = groupBlacklist.filter(item => item !== element)
-          }
+      for (const element of inputList) {
+        if (isWhiteList) {
+          Config.whitelist = whitelist.filter(item => item !== element)
+        } else {
+          Config.blacklist = blacklist.filter(item => item !== element)
         }
       }
     }
-    const listType = isWhiteList ? '白名单' : '黑名单'
-    let replyMsg = `群聊${listType}已更新，可通过'#chatgpt查看群聊${listType}'命令查看最新名单`
+    const listType = isWhiteList ? '对话白名单' : '对话黑名单'
+    let replyMsg = `${listType}已更新，可通过 "#chatgpt查看${listType}" 命令查看最新名单${wrongInput.length ? '\n检测到以下错误输入："' + wrongInput.join('，') + '"，已自动忽略。' : ''}`
     if (e.isPrivate) {
-      replyMsg += `\n当前群聊${listType}为：${listType === '白名单' ? Config.groupWhitelist : Config.groupBlacklist}`
+      const list = isWhiteList ? Config.whitelist : Config.blacklist
+      replyMsg = list.length ? `\n当前${listType}为：${list}` : `当前没有设置任何${listType}`
     }
     await this.reply(replyMsg, e.isGroup)
-    this.finish('confirmDelGroup')
+    this.finish('confirmDelList')
   }
 
   async enablePrivateChat (e) {
@@ -542,10 +583,14 @@ export class ChatgptManagement extends plugin {
   }
 
   async setDefaultReplySetting (e) {
-    const reg = /^#chatgpt(打开|关闭|设置)?全局((文本模式|图片模式|语音模式|(语音角色|角色语音|角色).*)|回复帮助)/
+    const reg = /^#chatgpt(打开|关闭|设置)?全局((文本模式|图片模式|语音模式|((azure|vits|vox)?语音角色|角色语音|角色)(.*))|回复帮助)/
     const matchCommand = e.msg.match(reg)
     const settingType = matchCommand[2]
     let replyMsg = ''
+    let ttsSupportKinds = []
+    if (Config.azureTTSKey) ttsSupportKinds.push(1)
+    if (Config.ttsSpace) ttsSupportKinds.push(2)
+    if (Config.voicevoxSpace) ttsSupportKinds.push(3)
     switch (settingType) {
       case '图片模式':
         if (matchCommand[1] === '打开') {
@@ -580,8 +625,8 @@ export class ChatgptManagement extends plugin {
           replyMsg = '请使用“#chatgpt打开全局文本模式”或“#chatgpt关闭全局文本模式”命令来设置回复模式'
         } break
       case '语音模式':
-        if (!Config.ttsSpace) {
-          replyMsg = '您没有配置VITS API，请前往锅巴面板进行配置'
+        if (!ttsSupportKinds.length) {
+          replyMsg = '您没有配置任何语音服务，请前往锅巴面板进行配置'
           break
         }
         if (matchCommand[1] === '打开') {
@@ -599,25 +644,68 @@ export class ChatgptManagement extends plugin {
           replyMsg = '请使用“#chatgpt打开全局语音模式”或“#chatgpt关闭全局语音模式”命令来设置回复模式'
         } break
       case '回复帮助':
-        replyMsg = '可使用以下命令配置全局回复:\n#chatgpt(打开/关闭)全局(语音/图片/文本)模式\n#chatgpt设置全局(语音角色|角色语音|角色)+角色名称(留空则为随机)'
+        replyMsg = '可使用以下命令配置全局回复:\n#chatgpt(打开/关闭)全局(语音/图片/文本)模式\n#chatgpt设置全局(vox|azure|vits)语音角色+角色名称(留空则为随机)\n'
         break
       default:
-        if (!Config.ttsSpace) {
-          replyMsg = '您没有配置VITS API，请前往锅巴面板进行配置'
+        if (!ttsSupportKinds) {
+          replyMsg = '您没有配置任何语音服务，请前往锅巴面板进行配置'
           break
         }
         if (settingType.match(/(语音角色|角色语音|角色)/)) {
-          const speaker = matchCommand[2].replace(/(语音角色|角色语音|角色)/, '').trim() || ''
-          if (!speaker.length) {
-            replyMsg = 'ChatGpt将随机挑选角色回复'
-            Config.defaultTTSRole = ''
+          const voiceKind = matchCommand[5]
+          let speaker = matchCommand[6] || ''
+          if (voiceKind === undefined) {
+            await this.reply('请选择需要设置的语音类型。使用"#chatgpt语音服务"查看支持的语音类型')
+            return false
+          }
+          if (!speaker.length || speaker === '随机') {
+            replyMsg = `设置成功,ChatGpt将在${voiceKind}语音模式下随机挑选角色进行回复`
+            if (voiceKind === 'vits') Config.defaultTTSRole = '随机'
+            if (voiceKind === 'azure') Config.azureTTSSpeaker = '随机'
+            if (voiceKind === 'vox') Config.voicevoxTTSSpeaker = '随机'
           } else {
-            const ttsRole = convertSpeaker(speaker)
-            if (vitsRoleList.includes(ttsRole)) {
-              Config.defaultTTSRole = ttsRole
-              replyMsg = `ChatGPT默认语音角色已被设置为“${ttsRole}”`
+            if (ttsSupportKinds.includes(1) && voiceKind === 'azure') {
+              if (getAzureRoleList().includes(speaker)) {
+                Config.defaultUseTTS = azureRoleList.filter(s => s.name === speaker)[0].code
+                replyMsg = `ChatGPT默认语音角色已被设置为“${speaker}”`
+              } else {
+                await this.reply(`抱歉，没有"${speaker}"这个角色，目前azure模式下支持的角色有${azureRoleList.map(item => item.name).join('、')}`)
+                return false
+              }
+            } else if (ttsSupportKinds.includes(2) && voiceKind === 'vits') {
+              const ttsRole = convertSpeaker(speaker)
+              if (vitsRoleList.includes(ttsRole)) {
+                Config.defaultTTSRole = ttsRole
+                replyMsg = `ChatGPT默认语音角色已被设置为“${ttsRole}”`
+              } else {
+                replyMsg = `抱歉，我还不认识“${ttsRole}”这个语音角色,可使用'#vits角色列表'查看可配置的角色`
+              }
+            } else if (ttsSupportKinds.includes(3) && voiceKind === 'vox') {
+              if (getVoicevoxRoleList().includes(speaker)) {
+                let regex = /^(.*?)-(.*)$/
+                let match = regex.exec(speaker)
+                let style = null
+                if (match) {
+                  speaker = match[1]
+                  style = match[2]
+                }
+                let chosen = VoiceVoxTTS.supportConfigurations.filter(s => s.name === speaker)
+                if (chosen.length === 0) {
+                  await this.reply(`抱歉，没有"${speaker}"这个角色，目前voicevox模式下支持的角色有${VoiceVoxTTS.supportConfigurations.map(item => item.name).join('、')}`)
+                  break
+                }
+                if (style && !chosen[0].styles.find(item => item.name === style)) {
+                  await this.reply(`抱歉，"${speaker}"这个角色没有"${style}"这个风格，目前支持的风格有${chosen[0].styles.map(item => item.name).join('、')}`)
+                  break
+                }
+                Config.ttsRoleVoiceVox = chosen[0].name + (style ? `-${style}` : '')
+                replyMsg = `ChatGPT默认语音角色已被设置为“${speaker}”`
+              } else {
+                await this.reply(`抱歉，没有"${speaker}"这个角色，目前voicevox模式下支持的角色有${voxRoleList.map(item => item.name).join('、')}`)
+                return false
+              }
             } else {
-              replyMsg = `抱歉，我还不认识“${ttsRole}”这个语音角色`
+              replyMsg = `${voiceKind}语音角色设置错误,请检查语音配置~`
             }
           }
         } else {
@@ -920,62 +1008,6 @@ export class ChatgptManagement extends plugin {
     return true
   }
 
-  // modified from miao-plugin
-  async updateChatGPTPlugin (e) {
-    let timer
-    if (!await this.checkAuth(e)) {
-      return true
-    }
-    let isForce = e.msg.includes('强制')
-    let command = 'git  pull'
-    if (isForce) {
-      command = 'git  checkout . && git  pull'
-      e.reply('正在执行强制更新操作，请稍等')
-    } else {
-      e.reply('正在执行更新操作，请稍等')
-    }
-    const _path = process.cwd()
-    exec(command, { cwd: `${_path}/plugins/chatgpt-plugin/` }, async function (error, stdout, stderr) {
-      if (/(Already up[ -]to[ -]date|已经是最新的)/.test(stdout)) {
-        e.reply('目前已经是最新版ChatGPT了~')
-        return true
-      }
-      if (error) {
-        e.reply('ChatGPT更新失败！\nError code: ' + error.code + '\n' + error.stack + '\n 请稍后重试。')
-        return true
-      }
-      e.reply('ChatGPT更新成功，正在尝试重新启动Yunzai以应用更新...')
-      e.reply('更新日志：\n' + stdout)
-      timer && clearTimeout(timer)
-
-      let data = JSON.stringify({
-        isGroup: !!e.isGroup,
-        id: e.isGroup ? e.group_id : e.user_id,
-        time: new Date().getTime()
-      })
-      await redis.set('Yz:restart', data, { EX: 120 })
-      let npm = await checkPnpm()
-      timer = setTimeout(function () {
-        let command = `${npm} start`
-        if (process.argv[1].includes('pm2')) {
-          command = `${npm} run restart`
-        }
-        exec(command, function (error, stdout, stderr) {
-          if (error) {
-            e.reply('自动重启失败，请手动重启以应用新版ChatGPT。\nError code: ' + error.code + '\n' + error.stack + '\n')
-            Bot.logger.error(`重启失败\n${error.stack}`)
-            return true
-          } else if (stdout) {
-            Bot.logger.mark('重启成功，运行已转为后台，查看日志请用命令：npm run log')
-            Bot.logger.mark('停止后台运行命令：npm stop')
-            process.exit()
-          }
-        })
-      }, 1000)
-    })
-    return true
-  }
-
   async versionChatGPTPlugin (e) {
     await renderUrl(e, `http://127.0.0.1:${Config.serverPort || 3321}/version`, { Viewport: { width: 800, height: 600 } })
   }
@@ -993,27 +1025,27 @@ export class ChatgptManagement extends plugin {
       poe: 'Poe'
     }
     let modeText = modeMap[mode || 'api']
-    let message = `    API模式和浏览器模式如何选择？
+    let message = `API模式和浏览器模式如何选择？
 
-    // eslint-disable-next-line no-irregular-whitespace
-    API模式会调用OpenAI官方提供的gpt-3.5-turbo API，只需要提供API Key。一般情况下，该种方式响应速度更快，不会像chatGPT官网一样总出现不可用的现象，但注意gpt-3.5-turbo的API调用是收费的，新用户有18美元试用金可用于支付，价格为$0.0020/ 1K tokens.(问题和回答加起来算token)
-   
-    API3模式会调用官网反代API，他会帮你绕过CF防护，需要提供ChatGPT的Token。效果与官网和浏览器一致。设置token指令：#chatgpt设置token。
+API模式会调用 OpenAI 官方提供的 gpt-3.5-turbo API，只需要提供 API Key。一般情况下，该种方式响应速度更快，不会像 chatGPT 官网一样总出现不可用的现象，但要注意 gpt-3.5-turbo 的 API 调用是收费的，新用户有 $5 的试用金可用于支付，价格为 $0.0020/1K tokens。（问题和回答加起来算 token）
 
-    浏览器模式通过在本地启动Chrome等浏览器模拟用户访问ChatGPT网站，使得获得和官方以及API2模式一模一样的回复质量，同时保证安全性。缺点是本方法对环境要求较高，需要提供桌面环境和一个可用的代理（能够访问ChatGPT的IP地址），且响应速度不如API，而且高峰期容易无法使用。
+API3 模式会调用官网反代 API，它会帮你绕过 CF 防护，需要提供 ChatGPT 的 Token。效果与官网和浏览器一致。设置 Token 指令：#chatgpt设置token。
 
-    必应（Bing）将调用微软新必应接口进行对话。需要在必应网页能够正常使用新必应且设置有效的Bing 登录Cookie方可使用。#chatgpt设置必应token
-    
-    自建ChatGLM模式会调用自建的ChatGLM-6B服务器API进行对话，需要自建。参考https://github.com/ikechan8370/SimpleChatGLM6BAPI
-    
-    Claude模式会调用Slack中的Claude机器人进行对话，与其他模式不同的是全局共享一个对话。配置参考https://ikechan8370.com/archives/chatgpt-plugin-for-yunzaipei-zhi-slack-claude
-    
-    Poe模式会调用Poe中的Claude-instant进行对话。需要提供cookie：#chatgpt设置PoeToken
+浏览器模式通过在本地启动 Chrome 等浏览器模拟用户访问 ChatGPT 网站，使得获得和官方以及 API2 模式一模一样的回复质量，同时保证安全性。缺点是本方法对环境要求较高，需要提供桌面环境和一个可用的代理（能够访问 ChatGPT 的 IP 地址），且响应速度不如 API，而且高峰期容易无法使用。
 
-    您可以使用‘#chatgpt切换浏览器/API/API3/Bing/ChatGLM/Claude/Poe’来切换到指定模式。
+必应（Bing）将调用微软新必应接口进行对话。需要在必应网页能够正常使用新必应且设置有效的 Bing 登录 Cookie 方可使用。#chatgpt设置必应 Token。
 
-    当前为${modeText}模式。
-`
+自建 ChatGLM 模式会调用自建的 ChatGLM-6B 服务器 API 进行对话，需要自建。参考 https://github.com/ikechan8370/SimpleChatGLM6BAPI。
+
+Claude 模式会调用 Slack 中的 Claude 机器人进行对话，与其他模式不同的是全局共享一个对话。配置参考 https://ikechan8370.com/archives/chatgpt-plugin-for-yunzaipei-zhi-slack-claude。
+
+Poe 模式会调用 Poe 中的 Claude-instant 进行对话。需要提供 Cookie：#chatgpt设置 Poe Token。
+
+星火 模式会调用科大讯飞推出的新一代认知智能大模型 '星火认知大模型' 进行对话。需要提供Cookie：#chatgpt设置星火token。
+
+您可以使用 "#chatgpt切换浏览器/API/API3/Bing/ChatGLM/Claude/Poe/星火" 来切换到指定模式。
+
+当前为 ${modeText} 模式。`
     await this.reply(message)
   }
 
@@ -1334,5 +1366,125 @@ export class ChatgptManagement extends plugin {
     Config.OpenAiPlatformRefreshToken = token.replaceAll('\'', '')
     await this.e.reply('设置成功')
     this.finish('doSetOpenAIPlatformToken')
+  }
+
+  async exportConfig (e) {
+    if (e.isGroup || !e.isPrivate) {
+      await this.reply('请私聊发送命令', true)
+      return true
+    }
+    let redisConfig = {}
+    if (await redis.exists('CHATGPT:BING_TOKENS') != 0) {
+      let bingTokens = await redis.get('CHATGPT:BING_TOKENS')
+      if (bingTokens) { bingTokens = JSON.parse(bingTokens) } else bingTokens = []
+      redisConfig.bingTokens = bingTokens
+    } else {
+      redisConfig.bingTokens = []
+    }
+    if (await redis.exists('CHATGPT:CONFIRM') != 0) {
+      redisConfig.turnConfirm = await redis.get('CHATGPT:CONFIRM') === 'on'
+    }
+    if (await redis.exists('CHATGPT:USE') != 0) {
+      redisConfig.useMode = await redis.get('CHATGPT:USE')
+    }
+    const configJson = JSON.stringify({
+      chatConfig: Config,
+      redisConfig
+    })
+    console.log(configJson)
+    const buf = Buffer.from(configJson)
+    e.friend.sendFile(buf, `ChatGPT-Plugin Config ${new Date()}.json`)
+    return true
+  }
+
+  async importConfig (e) {
+    if (e.isGroup || !e.isPrivate) {
+      await this.reply('请私聊发送命令', true)
+      return true
+    }
+    this.setContext('doImportConfig')
+    await e.reply('请发送配置文件')
+  }
+
+  async doImportConfig (e) {
+    const file = this.e.message.find(item => item.type === 'file')
+    if (file) {
+      const fileUrl = await this.e.friend.getFileUrl(file.fid)
+      if (fileUrl) {
+        try {
+          let changeConfig = []
+          const response = await fetch(fileUrl)
+          const data = await response.json()
+          const chatdata = data.chatConfig || {}
+          for (let [keyPath, value] of Object.entries(chatdata)) {
+            if (keyPath === 'blockWords' || keyPath === 'promptBlockWords' || keyPath === 'initiativeChatGroups') { value = value.toString().split(/[,，;；\|]/) }
+            if (Config[keyPath] != value) {
+              changeConfig.push({
+                item: keyPath,
+                value: typeof (value) === 'object' ? JSON.stringify(value) : value,
+                old: typeof (Config[keyPath]) === 'object' ? JSON.stringify(Config[keyPath]) : Config[keyPath],
+                type: 'config'
+              })
+              Config[keyPath] = value
+            }
+          }
+          const redisConfig = data.redisConfig || {}
+          if (redisConfig.bingTokens != null) {
+            changeConfig.push({
+              item: 'bingTokens',
+              value: JSON.stringify(redisConfig.bingTokens),
+              old: await redis.get('CHATGPT:BING_TOKENS'),
+              type: 'redis'
+            })
+            await redis.set('CHATGPT:BING_TOKENS', JSON.stringify(redisConfig.bingTokens))
+          }
+          if (redisConfig.turnConfirm != null) {
+            changeConfig.push({
+              item: 'turnConfirm',
+              value: redisConfig.turnConfirm ? 'on' : 'off',
+              old: await redis.get('CHATGPT:CONFIRM'),
+              type: 'redis'
+            })
+            await redis.set('CHATGPT:CONFIRM', redisConfig.turnConfirm ? 'on' : 'off')
+          }
+          if (redisConfig.useMode != null) {
+            changeConfig.push({
+              item: 'useMode',
+              value: redisConfig.useMode,
+              old: await redis.get('CHATGPT:USE'),
+              type: 'redis'
+            })
+            await redis.set('CHATGPT:USE', redisConfig.useMode)
+          }
+          await this.reply(await makeForwardMsg(this.e, changeConfig.map(msg => `修改项:${msg.item}\n旧数据\n\n${msg.old}\n\n新数据\n ${msg.value}`)))
+        } catch (error) {
+          console.error(error)
+          await e.reply('配置文件错误')
+        }
+      }
+    } else {
+      await this.reply('未找到配置文件', false)
+      return false
+    }
+
+    this.finish('doImportConfig')
+  }
+
+  async switchSmartMode (e) {
+    if (e.msg.includes('开启')) {
+      if (Config.smartMode) {
+        await e.reply('已经开启了')
+        return
+      }
+      Config.smartMode = true
+      await e.reply('好的，已经打开智能模式，注意API额度哦。配合开启读取群聊上下文效果更佳！')
+    } else {
+      if (!Config.smartMode) {
+        await e.reply('已经是关闭得了')
+        return
+      }
+      Config.smartMode = false
+      await e.reply('好的，已经关闭智能模式')
+    }
   }
 }

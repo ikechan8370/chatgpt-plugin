@@ -210,6 +210,11 @@ let helpData = [
         icon: 'token',
         title: '#chatgpt设置后台刷新token',
         desc: '用于查看API余额。注意和配置的key保持同一账号。'
+      },
+      {
+        icon: 'token',
+        title: '#chatgpt(开启|关闭)智能模式',
+        desc: 'API模式下打开或关闭智能模式。'
       }
     ]
   },
@@ -331,7 +336,11 @@ export class help extends plugin {
   }
 
   async help (e) {
-    if (!Config.oldview) { await renderUrl(e, `http://127.0.0.1:${Config.serverPort || 3321}/help/`, { Viewport: { width: 800, height: 600 } }) } else { await render(e, 'chatgpt-plugin', 'help/index', { helpData, version }) }
+    if (Config.newhelp && !Config.oldview) { 
+      await renderUrl(e, `http://127.0.0.1:${Config.serverPort || 3321}/help/`, { Viewport: { width: 800, height: 600 } }) 
+    } else {
+      await render(e, 'chatgpt-plugin', 'help/index', { helpData, version }) 
+    }
   }
 
   async newHelp (e) {

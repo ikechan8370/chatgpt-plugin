@@ -1,5 +1,5 @@
 ![chatgpt-plugin](https://user-images.githubusercontent.com/21212372/232115814-de9a0633-371f-4733-8da0-dd6e912c8a1e.png)
-<div align=center> <h1>云崽QQ机器人的ChatGPT插件</h1> </div>
+<div align=center> <h1>云崽QQ机器人的ChatGPT插件(开发分支请勿使用)</h1> </div>
 <div align=center>
    
    <img src ="https://img.shields.io/github/issues/ikechan8370/chatgpt-plugin?logo=github"/>
@@ -18,6 +18,7 @@
 
 ### 推荐的相关文档和参考资料
 本README
+[手册](https://chatgptplugin.ikechan8370.com/)
 [文档1（建设中）](https://chatgpt-docs.err0r.top/) 
 [插件常见问题（鹤望兰版）](https://www.wolai.com/4FCxxWAdjbrHF29MCJmAQK) 
 [Yunzai常见问题（LUCK小运版）](https://www.wolai.com/oA43vuW71aBnv7UsEysn4T) 
@@ -25,11 +26,11 @@
 
 ## 特点
 
-* 支持单人连续对话Conversation，群聊中支持加入其他人的对话
-* API模式下，使用 gpt-3.5-turbo API，ChatGPT官网同款模型，仅需OpenAI Api Key，开箱即用。**注意收费**
+* 支持单人连续对话Conversation
+* API模式下，使用 gpt-3.5-turbo 或 gpt-4 API，仅需OpenAI Api Key，开箱即用。**注意收费**
 * 支持问答图片截图和聊天记录导出
-* 支持AI性格调教，强烈推荐Bing自定义模式
-* 支持对接vits回答直接转语音
+* 支持AI性格调教，角色扮演强烈推荐Bing自定义模式
+* 支持对接vits和Azure等回答直接转语音
 * API3模式下，绕过Cloudflare防护直接访问ChatGPT的SSE API，与官方体验一致，且保留对话记录，在官网可查。免费。
 * (已不再维护)提供基于浏览器的解决方案作为备选，API3不可用的情况下或担心账户安全的用户可以选择使用浏览器模式。
 * 支持新[必应](https://www.bing.com/new)（token负载均衡，限流降级）
@@ -37,6 +38,7 @@
 * 支持[ChatGLM](https://github.com/THUDM/ChatGLM-6B)模型。基于[自建API](https://github.com/ikechan8370/SimpleChatGLM6BAPI)
 * 2023-04-15 支持[Claude by Slack](https://www.anthropic.com/claude-in-slack )和Poe（WIP）。Claude配置参考[这里](https://ikechan8370.com/archives/chatgpt-plugin-for-yunzaipei-zhi-slack-claude)
 * 2023-05-12 支持星火大模型
+* 2023-05-29 支持gpt-4 API.必应无需cookie即可对话（Sydney和自定义模式）
 
 ### 如果觉得这个插件有趣或者对你有帮助，请点一个star吧！
 
@@ -124,7 +126,7 @@ pnpm i
 |        名称         |         含义         |                             解释                             |                           设置方式                           |
 | :-----------------: | :------------------: | :----------------------------------------------------------: |:--------------------------------------------------------:|
 | ChatGPT AccessToken | ChatGPT登录后的Token |                        具体解释见下方                        |                     \#chatgpt设置token                     |
-|      必应token      |  必应登录后的Token   | 必应（Bing）将调用微软新必应接口进行对话。需要在必应网页能够正常使用新必应且设置有效的Bing 登录Cookie方可使用 | \#chatgpt设置必应token/\#chatgpt删除必应token/\#chatgpt查看必应token |
+|      必应token      |  必应登录后的Token   | 必应（Bing）将调用微软必应AI接口进行对话。不填写token对话上限为5句，填写后为20句。无论填写与否插件都会无限续杯。 | \#chatgpt设置必应token/\#chatgpt删除必应token/\#chatgpt查看必应token |
 
 
 > #### 我没有注册openai账号？如何获取
@@ -142,12 +144,14 @@ pnpm i
 >   - **登录后**访问https://chat.openai.com/api/auth/session
 >   - 您会获得类似如下一串json字符串`{"user":{"id":"AAA","name":"BBB","email":"CCC","image":"DDD","picture":"EEE","groups":[]},"expires":"FFF","accessToken":"XXX"}`
 >   - 其中的XXX即为`ChatGPT AccessToken`
+>   - 如果是空的{}，说明没有登录，要登录chatgpt而不是openai。
 >
 > #### ChatGPT AccessToken 设置了有什么用？我为什么用不了API模式
 >
 > - 部分API需要在和机器人的聊天里输入`#chatgpt设置token`才可以使用
 >
 > #### 我有新必应的测试资格了，如何获取必应Token？
+> 2023/05/29 无需登录也可以使用了，要求不高可以不填
 >
 > 1. JS一键获取
 >
@@ -325,4 +329,13 @@ https://afdian.net/a/ikechan8370
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=ikechan8370/chatgpt-plugin&type=Date)](https://star-history.com/#ikechan8370/chatgpt-plugin&Date)
+
+## 工具支持
+<a href="https://jb.gg/OpenSourceSupport" >
+   <img style="width: 300px" src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_beam.png"/>
+</a>
+
+JetBrains for Open Source development license
+
+
 
