@@ -20,7 +20,7 @@ export class ProcessPictureTool extends AbstractTool {
         description: 'url of the picture'
       }
     },
-    required: []
+    required: ['type']
   }
 
   description = 'useful when you want to know what is inside a photo, such as user\'s avatar or other pictures'
@@ -31,7 +31,7 @@ export class ProcessPictureTool extends AbstractTool {
       url = `https://q1.qlogo.cn/g?b=qq&s=160&nk=${qq}`
     }
     if (!url) {
-      return 'you must give at least one parameter of imgUrl and qq'
+      return 'you must give at least one parameter of url and qq'
     }
     const imageResponse = await fetch(url)
     const blob = await imageResponse.blob()

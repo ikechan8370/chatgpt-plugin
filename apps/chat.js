@@ -2060,7 +2060,7 @@ export class chatgpt extends plugin {
               } catch (err) {
                 args.groupId = e.group_id || e.sender.user_id
               }
-              let functionResult = await fullFuncMap[name].exec(Object.assign({ isAdmin, sender }, ))
+              let functionResult = await fullFuncMap[name].exec(Object.assign({ isAdmin, sender }, args))
               logger.mark(`function ${name} execution result: ${functionResult}`)
               option.parentMessageId = msg.id
               option.name = name

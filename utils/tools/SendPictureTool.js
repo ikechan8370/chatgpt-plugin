@@ -25,7 +25,7 @@ export class SendPictureTool extends AbstractTool {
     let { picture, groupId, qq } = opt
     if (qq) {
       let avatar = `https://q1.qlogo.cn/g?b=qq&s=0&nk=${qq}`
-      picture += ' ' + avatar
+      picture += (' ' + avatar)
     }
     let pictures = picture.trim().split(' ')
     pictures = pictures.map(img => segment.image(img))
