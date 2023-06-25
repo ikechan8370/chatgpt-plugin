@@ -32,12 +32,6 @@ export class QueryStarRailTool extends AbstractTool {
       try {
         let { Panel } = await import('../../../StarRail-plugin/apps/panel.js')
         uid = await redis.get(`STAR_RAILWAY:UID:${qq}`)
-        e.msg = '#sr面板' + uid
-        e.user_id = qq
-        e.isSr = true
-        let panel = new Panel(e)
-        panel.e = e
-        panel.panel(e).catch(e => logger.warn(e))
         if (!uid) {
           return '用户没有绑定uid，无法查询。可以让用户主动提供uid进行查询'
         }
@@ -46,6 +40,13 @@ export class QueryStarRailTool extends AbstractTool {
       }
     }
     try {
+      let { Panel } = await import('../../../StarRail-plugin/apps/panel.js')
+      e.msg = '*面板' + uid
+      e.user_id = qq
+      e.isSr = true
+      let panel = new Panel(e)
+      panel.e = e
+      panel.panel(e).catch(e => logger.warn(e))
       let uidRes = await fetch('https://avocado.wiki/v1/info/' + uid)
       uidRes = await uidRes.json()
       let { assistAvatar, displayAvatars } = uidRes.playerDetailInfo
