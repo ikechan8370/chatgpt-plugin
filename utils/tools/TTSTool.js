@@ -45,6 +45,7 @@ export class TTSTool extends AbstractTool {
       if (sendable) {
         let group = await Bot.pickGroup(groupId)
         await group.sendMsg(sendable)
+        return 'audio has been sent successfully'
       } else {
         return 'audio generation failed'
       }
