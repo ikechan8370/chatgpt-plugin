@@ -10,6 +10,7 @@ async function routes(fastify, options) {
     fastify.get('/help/*', async (request, reply) => {
         const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
         reply.type('text/html').send(stream)
+        return reply
     })
     fastify.get('/version', async (request, reply) => {
         const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
@@ -19,6 +20,7 @@ async function routes(fastify, options) {
     fastify.get('/auth/*', async (request, reply) => {
         const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
         reply.type('text/html').send(stream)
+        return reply
     })
     fastify.get('/admin*', async (request, reply) => {
         const token = request.cookies.token || request.body?.token || 'unknown'

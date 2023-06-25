@@ -64,24 +64,23 @@ async function setUserData(qq, data) {
   fs.writeFileSync(filepath, JSON.stringify(data))
 }
 
-server.register(cors, {
+await server.register(cors, {
   origin: '*'
 })
-server.register(fstatic, {
+await server.register(fstatic, {
   root: path.join(__dirname, 'plugins/chatgpt-plugin/server/static/')
 })
-server.register(websocket, {
+await server.register(websocket, {
   cors: true,
   options: {
     maxPayload: 1048576
   }
 })
-server.register(fastifyCookie)
-server.register(webRoute)
-server.register(webUser)
+await server.register(fastifyCookie)
+await server.register(webRoute)
+await server.register(webUser)
 
 export async function createServer() {
-
   // 页面数据获取
   server.post('/page', async (request, reply) => {
     const body = request.body || {}
@@ -92,6 +91,7 @@ export async function createServer() {
       let data = fs.readFileSync(filepath, 'utf8')
       reply.send(data)
     }
+    return reply
   })
   // 帮助内容获取
   server.post('/help', async (request, reply) => {
@@ -104,6 +104,7 @@ export async function createServer() {
       data = JSON.parse(data)
       reply.send(data[body.use])
     }
+    return reply
   })
   // 创建页面缓存内容
   server.post('/cache', async (request, reply) => {
@@ -186,13 +187,14 @@ export async function createServer() {
         reply.send({ file: body.entry, cacheUrl: `http://${ip}:${Config.serverPort || 3321}/page/${body.entry}`, error: body.entry + '生成失败' })
       }
     }
+    return reply
   })
   // 获取系统状态
   server.post('/system-statistics', async (request, reply) => {
     Statistics.SystemLoad.count = await getLoad()
     reply.send(Statistics)
+    return reply
   })
-
 
   // 清除缓存数据
   server.post('/cleanCache', async (request, reply) => {
@@ -209,6 +211,7 @@ export async function createServer() {
     userData.chat = []
     await setUserData(user.user, userData)
     reply.send({ state: true })
+    return reply
   })
   let clients = []
   // 获取消息
@@ -265,6 +268,12 @@ export async function createServer() {
         await connection.socket.send(JSON.stringify({ "error": error.message }))
       }
     })
+    connection.socket.on('close', () => {
+      // 监听连接关闭事件
+      const response = { code: 403, data: 'Client disconnected', message: 'Client disconnected' }
+      connection.socket.send(JSON.stringify(response))
+    })
+    return request
   }
   Bot.on("message", e => {
     const messageData = {
@@ -341,6 +350,7 @@ export async function createServer() {
         userSetting
       })
     }
+    return reply
   })
 
   // 设置系统参数
@@ -426,6 +436,7 @@ export async function createServer() {
       }
       reply.send({ state: true })
     }
+    return reply
   })
 
   // 系统服务测试
@@ -447,6 +458,7 @@ export async function createServer() {
       }
     }
     reply.send(serverState)
+    return reply
   })
 
   server.addHook('onRequest', (request, reply, done) => {
