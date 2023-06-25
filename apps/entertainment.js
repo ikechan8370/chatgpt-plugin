@@ -203,7 +203,8 @@ ${translateLangLabels}
       await e.reply('请在群里发送此命令')
     }
   }
-  async wordcloud_latest(e) {
+
+  async wordcloud_latest (e) {
     if (e.isGroup) {
       let groupId = e.group_id
       let lock = await redis.get(`CHATGPT:WORDCLOUD:${groupId}`)
@@ -215,14 +216,14 @@ ${translateLangLabels}
       const regExp = /词云(\d{0,2})(|h)/
       const match = e.msg.trim().match(regExp)
       const duration = !match[1] ? 12 : parseInt(match[1])  // default 12h
-      
+
       if(duration > 24) {
         await e.reply('最多只能统计24小时内的记录哦')
         return false
       }
       await e.reply('在统计啦，请稍等...')
-      
-      await redis.set(`CHATGPT:WORDCLOUD:${groupId}`, '1', {EX: 600})
+
+      await redis.set(`CHATGPT:WORDCLOUD:${groupId}`, '1', { EX: 600 })
       try {
         await makeWordcloud(e, e.group_id, duration)
       } catch (err) {
@@ -471,28 +472,28 @@ ${translateLangLabels}
     await this.reply(replyMsg)
     return false
   }
-  
+
   async screenshotUrl (e) {
     let url = e.msg.replace(/^#url(：|:)/, '')
     if (url.length === 0) { return false }
     try {
-      if (!url.startsWith("http://") && !url.startsWith("https://")) {
-        url = "http://" + url
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'http://' + url
       }
       let urlLink = new URL(url)
       await e.reply(
         await renderUrl(
-            e, urlLink.href, 
-            { 
-              retType: 'base64',
-              Viewport: {
-                width: Config.chatViewWidth,
-                height: parseInt(Config.chatViewWidth * 0.56)
-              },
-              deviceScaleFactor: Config.cloudDPR 
-            }
+          e, urlLink.href,
+          {
+            retType: 'base64',
+            Viewport: {
+              width: Config.chatViewWidth,
+              height: parseInt(Config.chatViewWidth * 0.56)
+            },
+            deviceScaleFactor: Config.cloudDPR
+          }
         ),
-      e.isGroup && Config.quoteReply)
+        e.isGroup && Config.quoteReply)
     } catch (err) {
       this.reply('无效url:' + url)
     }

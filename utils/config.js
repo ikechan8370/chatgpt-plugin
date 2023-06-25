@@ -125,7 +125,12 @@ const defaultConfig = {
   enhanceAzureTTSEmotion: false,
   autoJapanese: false,
   enableGenerateContents: false,
-  version: 'v2.6.2'
+  amapKey: '',
+  azSerpKey: '',
+  serpSource: 'ikechan8370',
+  extraUrl: 'https://cpe.ikechan8370.com',
+  smartMode: false,
+  version: 'v2.7.0'
 }
 const _path = process.cwd()
 let config = {}
