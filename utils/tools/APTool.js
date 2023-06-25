@@ -13,7 +13,7 @@ export class APTool extends AbstractTool {
     required: ['prompt']
   }
 
-  description = 'Useful when you want to draw'
+  description = 'Useful when you want to draw picture'
 
   func = async function (opts, e) {
     let { prompt } = opts
@@ -23,7 +23,14 @@ export class APTool extends AbstractTool {
       let { Ai_Painting } = await import('../../../ap-plugin/apps/aiPainting.js')
       ap = new Ai_Painting(e)
     } catch (err) {
-      return 'the user didn\'t install ap-plugin'
+      try {
+        // ap的dev分支改名了
+        // eslint-disable-next-line camelcase
+        let { Ai_Painting } = await import('../../../ap-plugin/apps/ai_painting.js')
+        ap = new Ai_Painting(e)
+      } catch (err1) {
+        return 'the user didn\'t install ap-plugin. suggest him to install'
+      }
     }
     try {
       e.msg = '#绘图' + prompt
