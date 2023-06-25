@@ -34,6 +34,8 @@ export class QueryStarRailTool extends AbstractTool {
         uid = await redis.get(`STAR_RAILWAY:UID:${qq}`)
         let panel = new Panel(e)
         e.msg = '*面板' + uid
+        e.user_id = qq
+        e.isSr = true
         panel.panel(e).catch(e => logger.warn(e))
         if (!uid) {
           return '用户没有绑定uid，无法查询。可以让用户主动提供uid进行查询'
