@@ -1,5 +1,5 @@
 import { AbstractTool } from './AbstractTool.js'
-import {convertSpeaker, generateAudio} from '../tts.js'
+import { convertSpeaker, generateAudio } from '../tts.js'
 import uploadRecord from '../uploadRecord.js'
 import { Config } from '../config.js'
 

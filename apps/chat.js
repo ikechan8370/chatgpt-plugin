@@ -1989,7 +1989,6 @@ export class chatgpt extends plugin {
             new WeatherTool(),
             new SendPictureTool(),
             new TTSTool(),
-
             serpTool
           ]
           let img = []
@@ -2053,12 +2052,12 @@ export class chatgpt extends plugin {
               let { name, arguments: args } = msg.functionCall
               args = JSON.parse(args)
               if (!args.groupId) {
-                args.groupId = e.group_id || e.sender.user_id
+                args.groupId = e.group_id + '' || e.sender.user_id + ''
               }
               try {
                 parseInt(args.groupId)
               } catch (err) {
-                args.groupId = e.group_id || e.sender.user_id
+                args.groupId = e.group_id + '' || e.sender.user_id + ''
               }
               let functionResult = await fullFuncMap[name].exec(Object.assign({ isAdmin, sender }, args))
               logger.mark(`function ${name} execution result: ${functionResult}`)
