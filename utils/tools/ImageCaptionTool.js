@@ -12,7 +12,11 @@ export class ImageCaptionTool extends AbstractTool {
       },
       qq: {
         type: 'string',
-        description: 'if the picture is an avatar of a user, just give his qq number'
+        description: 'if the picture is avatar of a user, input his qq number'
+      },
+      question: {
+        type: 'string',
+        description: 'if you want to ask something about this picture, write your question in English here. If you just want to know what\'s in the photo, leave it blank'
       }
     },
     required: []
@@ -21,7 +25,7 @@ export class ImageCaptionTool extends AbstractTool {
   description = 'useful when you want to know what is inside a photo, such as user\'s avatar or other pictures'
 
   func = async function (opts) {
-    let { imgUrl, qq } = opts
+    let { imgUrl, qq, question } = opts
     if (qq) {
       imgUrl = `https://q1.qlogo.cn/g?b=qq&s=160&nk=${qq}`
     }
@@ -35,13 +39,17 @@ export class ImageCaptionTool extends AbstractTool {
     // await fs.writeFileSync(`data/chatgpt/${crypto.randomUUID()}`, buffer)
     let formData = new FormData()
     formData.append('file', new File([buffer], 'file.png', { type: 'image/png' }))
-    let captionRes = await fetch(`${Config.extraUrl}/image-captioning`, {
+    let endpoint = 'image-captioning'
+    if (question) {
+      endpoint = 'visual-qa?q=' + question
+    }
+    let captionRes = await fetch(`${Config.extraUrl}/${endpoint}`, {
       method: 'POST',
       body: formData
     })
     if (captionRes.status === 200) {
       let result = await captionRes.text()
-      return `the content of this picture is: ${result}`
+      return `${result}`
     } else {
       return 'error happened'
     }
