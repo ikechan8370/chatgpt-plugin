@@ -21,12 +21,20 @@ export class QueryStarRailTool extends AbstractTool {
     required: ['qq', 'groupId']
   }
 
-  func = async function (opts) {
+  func = async function (opts, e) {
     let { qq, groupId, uid } = opts
+    if (e.at === Bot.uin) {
+      e.at = null
+    }
+    e.atBot = false
+
     if (!uid) {
       try {
         let { Panel } = await import('../../../StarRail-plugin/apps/panel.js')
         uid = await redis.get(`STAR_RAILWAY:UID:${qq}`)
+        let panel = new Panel(e)
+        e.msg = '*面板' + uid
+        panel.panel(e).catch(e => logger.warn(e))
         if (!uid) {
           return '用户没有绑定uid，无法查询。可以让用户主动提供uid进行查询'
         }
