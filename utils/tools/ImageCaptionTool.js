@@ -16,7 +16,7 @@ export class ImageCaptionTool extends AbstractTool {
       },
       question: {
         type: 'string',
-        description: 'if you want to ask something about this picture, write your question in English here.'
+        description: 'when you need an answer for a question based on an image, write your question in English here.'
       }
     },
     required: []
