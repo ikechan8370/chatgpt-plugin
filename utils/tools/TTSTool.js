@@ -1,5 +1,5 @@
 import { AbstractTool } from './AbstractTool.js'
-import { generateAudio } from '../tts.js'
+import {convertSpeaker, generateAudio} from '../tts.js'
 import uploadRecord from '../uploadRecord.js'
 import { Config } from '../config.js'
 
@@ -40,7 +40,7 @@ export class TTSTool extends AbstractTool {
     let { text, role, groupId } = opts
     groupId = parseInt(groupId.trim())
     try {
-      let wav = await generateAudio(text, role, '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）')
+      let wav = await generateAudio(text, convertSpeaker(role), '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）')
       let sendable = await uploadRecord(wav, Config.ttsMode)
       if (sendable) {
         let group = await Bot.pickGroup(groupId)
