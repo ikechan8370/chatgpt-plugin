@@ -36,4 +36,5 @@ logger.info(`当前版本${Config.version}`)
 logger.info('仓库地址 https://github.com/ikechan8370/chatgpt-plugin')
 logger.info('插件群号 559567232')
 logger.info('**************************************')
+
 export { apps }
