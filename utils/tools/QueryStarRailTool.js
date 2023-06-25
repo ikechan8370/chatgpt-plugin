@@ -41,7 +41,7 @@ export class QueryStarRailTool extends AbstractTool {
     }
     try {
       let { Panel } = await import('../../../StarRail-plugin/apps/panel.js')
-      e.msg = '*面板' + uid
+      e.msg = '*更新面板' + uid
       e.user_id = qq
       e.isSr = true
       let panel = new Panel(e)
