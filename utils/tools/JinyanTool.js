@@ -29,7 +29,7 @@ export class JinyanTool extends AbstractTool {
     let { qq, groupId, time = '600', sender, isAdmin, isPunish } = opts
     let group = await Bot.pickGroup(groupId)
     time = parseInt(time.trim())
-    if (time < 60) {
+    if (time < 60 && time !== 0) {
       time = 60
     }
     if (time > 86400 * 30) {
@@ -49,7 +49,7 @@ export class JinyanTool extends AbstractTool {
         qq = parseInt(qq.trim())
         await group.muteMember(qq, time)
       } else {
-        return 'the user is not admin, he can\'t mute other people. the user should be punished'
+        return 'the user is not admin, he can\'t let you mute other people.'
       }
     }
     if (isPunish === 'true') {

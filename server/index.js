@@ -2,6 +2,7 @@ import fastify from 'fastify'
 import fastifyCookie from '@fastify/cookie'
 import cors from '@fastify/cors'
 import fstatic from '@fastify/static'
+import websocket from '@fastify/websocket'
 
 import fs from 'fs'
 import path from 'path'
@@ -9,14 +10,17 @@ import os from 'os'
 import schedule from 'node-schedule'
 
 import { Config } from '../utils/config.js'
-import { randomString, getPublicIP, getUserData } from '../utils/common.js'
+import { UserInfo, GetUser } from './modules/user_data.js'
+import { getPublicIP, getUserData } from '../utils/common.js'
+
+import webRoute from './modules/web_route.js'
+import webUser from './modules/user.js'
 
 const __dirname = path.resolve()
 const server = fastify({
   logger: Config.debug
 })
 
-let usertoken = []
 let Statistics = {
   SystemAccess: {
     count: 0,
@@ -60,99 +64,23 @@ async function setUserData(qq, data) {
   fs.writeFileSync(filepath, JSON.stringify(data))
 }
 
+await server.register(cors, {
+  origin: '*'
+})
+await server.register(fstatic, {
+  root: path.join(__dirname, 'plugins/chatgpt-plugin/server/static/')
+})
+await server.register(websocket, {
+  cors: true,
+  options: {
+    maxPayload: 1048576
+  }
+})
+await server.register(fastifyCookie)
+await server.register(webRoute)
+await server.register(webUser)
+
 export async function createServer() {
-  await server.register(cors, {
-    origin: '*'
-  })
-  await server.register(fstatic, {
-    root: path.join(__dirname, 'plugins/chatgpt-plugin/server/static/')
-  })
-  await server.register(fastifyCookie)
-  await server.get('/page/*', (request, reply) => {
-    const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
-    reply.type('text/html').send(stream)
-  })
-  await server.get('/help/*', (request, reply) => {
-    const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
-    reply.type('text/html').send(stream)
-  })
-  await server.get('/version', (request, reply) => {
-    const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
-    reply.type('text/html').send(stream)
-  })
-  await server.get('/auth/*', (request, reply) => {
-    const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
-    reply.type('text/html').send(stream)
-  })
-  await server.get('/admin*', (request, reply) => {
-    const token = request.cookies.token || request.body?.token || 'unknown'
-    const user = usertoken.find(user => user.token === token)
-    if (!user) {
-      reply.redirect(301, '/auth/login')
-    }
-    const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
-    reply.type('text/html').send(stream)
-  })
-  await server.get('/admin/dashboard', (request, reply) => {
-    const token = request.cookies.token || request.body?.token || 'unknown'
-    const user = usertoken.find(user => user.token === token)
-    if (!user) {
-      reply.redirect(301, '/auth/login')
-    }
-    if (user.autho === 'admin') {
-      reply.redirect(301, '/admin/settings')
-    }
-    const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
-    reply.type('text/html').send(stream)
-  })
-  await server.get('/admin/settings', (request, reply) => {
-    const token = request.cookies.token || request.body?.token || 'unknown'
-    const user = usertoken.find(user => user.token === token)
-    if (!user || user.autho != 'admin') {
-      reply.redirect(301, '/admin/')
-    }
-    const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
-    reply.type('text/html').send(stream)
-  })
-  // 登录
-  server.post('/login', async (request, reply) => {
-    const body = request.body || {}
-    if (body.qq && body.passwd) {
-      const token = randomString(32)
-      if (body.qq == Bot.uin && await redis.get('CHATGPT:ADMIN_PASSWD') == body.passwd) {
-        usertoken.push({ user: body.qq, token, autho: 'admin' })
-        reply.setCookie('token', token, { path: '/' })
-        reply.send({ login: true, autho: 'admin', token: token })
-      } else {
-        const user = await getUserData(body.qq)
-        if (user.passwd != '' && user.passwd === body.passwd) {
-          usertoken.push({ user: body.qq, token, autho: 'user' })
-          reply.setCookie('token', token, { path: '/' })
-          reply.send({ login: true, autho: 'user', token: token })
-        } else {
-          reply.send({ login: false, err: `用户名密码错误,如果忘记密码请私聊机器人输入 ${body.qq == Bot.uin ? '#修改管理密码' : '#修改用户密码'} 进行修改` })
-        }
-      }
-    } else {
-      reply.send({ login: false, err: '未输入用户名或密码' })
-    }
-  })
-  // 检查用户是否存在
-  server.post('/verify', async (request, reply) => {
-    const token = request.cookies.token || request.body?.token || 'unknown'
-    let user = usertoken.find(user => user.token === token)
-    if (!user || token === 'unknown') {
-      reply.send({
-        verify: false,
-      })
-      return
-    }
-    reply.send({
-      verify: true,
-      user: user.user,
-      autho: user.autho
-    })
-  })
   // 页面数据获取
   server.post('/page', async (request, reply) => {
     const body = request.body || {}
@@ -163,6 +91,7 @@ export async function createServer() {
       let data = fs.readFileSync(filepath, 'utf8')
       reply.send(data)
     }
+    return reply
   })
   // 帮助内容获取
   server.post('/help', async (request, reply) => {
@@ -175,6 +104,7 @@ export async function createServer() {
       data = JSON.parse(data)
       reply.send(data[body.use])
     }
+    return reply
   })
   // 创建页面缓存内容
   server.post('/cache', async (request, reply) => {
@@ -257,93 +187,19 @@ export async function createServer() {
         reply.send({ file: body.entry, cacheUrl: `http://${ip}:${Config.serverPort || 3321}/page/${body.entry}`, error: body.entry + '生成失败' })
       }
     }
+    return reply
   })
   // 获取系统状态
   server.post('/system-statistics', async (request, reply) => {
     Statistics.SystemLoad.count = await getLoad()
     reply.send(Statistics)
+    return reply
   })
 
-  // 获取用户数据
-  server.post('/userData', async (request, reply) => {
-    const token = request.cookies.token || request.body?.token || 'unknown'
-    let user = usertoken.find(user => user.token === token)
-    if (!user) user = { user: '' }
-    const userData = await getUserData(user.user)
-    reply.send({
-      chat: userData.chat || [],
-      mode: userData.mode || '',
-      cast: userData.cast || {
-        api: '', //API设定
-        bing: '', //必应设定
-        bing_resource: '', //必应扩展资料
-        slack: '', //Slack设定
-      }
-    })
-  })
-
-  // 删除用户
-  server.post('/deleteUser', async (request, reply) => {
-    const token = request.cookies.token || request.body?.token || 'unknown'
-    let user = usertoken.find(user => user.token === token)
-    if (!user || user === 'unknown') {
-      reply.send({ state: false, error: '无效token' })
-      return
-    }
-    const filepath = `resources/ChatGPTCache/user/${user.user}.json`
-    fs.unlinkSync(filepath)
-    reply.send({ state: true })
-  })
-  // 修改密码
-  server.post('/changePassword', async (request, reply) => {
-    const token = request.cookies.token || request.body?.token || 'unknown'
-    let user = usertoken.find(user => user.token === token)
-    if (!user || user === 'unknown') {
-      reply.send({ state: false, error: '无效的用户信息' })
-      return
-    }
-    const userData = await getUserData(user.user)
-    const body = request.body || {}
-    if (!body.newPasswd) {
-      reply.send({ state: false, error: '无效参数' })
-      return
-    }
-    if (body.passwd && body.passwd != userData.passwd) {
-      reply.send({ state: false, error: '原始密码错误' })
-      return
-    }
-    if (user.autho === 'admin') {
-      await redis.set('CHATGPT:ADMIN_PASSWD', body.newPasswd)
-    } else if (user.autho === 'user') {
-      const dir = 'resources/ChatGPTCache/user'
-      const filename = `${user.user}.json`
-      const filepath = path.join(dir, filename)
-      fs.mkdirSync(dir, { recursive: true })
-      if (fs.existsSync(filepath)) {
-        fs.readFile(filepath, 'utf8', (err, data) => {
-          if (err) {
-            console.error(err)
-            return
-          }
-          const config = JSON.parse(data)
-          config.passwd = body.newPasswd
-          fs.writeFile(filepath, JSON.stringify(config), 'utf8', (err) => {
-            if (err) {
-              console.error(err)
-            }
-          })
-        })
-      } else {
-        reply.send({ state: false, error: '错误的用户数据' })
-        return
-      }
-    }
-    reply.send({ state: true })
-  })
   // 清除缓存数据
   server.post('/cleanCache', async (request, reply) => {
     const token = request.cookies.token || request.body?.token || 'unknown'
-    let user = usertoken.find(user => user.token === token)
+    let user = UserInfo(token)
     if (!user) user = { user: '' }
     const userData = await getUserData(user.user)
     const dir = 'resources/ChatGPTCache/page'
@@ -355,12 +211,106 @@ export async function createServer() {
     userData.chat = []
     await setUserData(user.user, userData)
     reply.send({ state: true })
+    return reply
   })
+  let clients = []
+  // 获取消息
+  const wsFn = async (connection, request) => {
+    connection.socket.on('open', message => {
+      // 开始连接
+      console.log(`Received message: ${message}`)
+      const response = { data: 'hello, client' }
+      connection.socket.send(JSON.stringify(response))
+    })
+    connection.socket.on('message', async (message) => {
+      try {
+        const data = JSON.parse(message)
+
+        switch (data.command) {
+          case 'sendMsg': // 代理消息发送
+            if (!connection.login) {
+              await connection.socket.send(JSON.stringify({ command: data.command, state: false, error: '请先登录账号' }))
+              return
+            }
+            if (data.id && data.message) {
+              if (data.group) {
+                Bot.sendGroupMsg(parseInt(data.id), data.message, data.quotable)
+              } else {
+                Bot.sendPrivateMsg(parseInt(data.id), data.message, data.quotable)
+              }
+              await connection.socket.send(JSON.stringify({ command: data.command, state: true, }))
+            } else {
+              await connection.socket.send(JSON.stringify({ command: data.command, state: false, error: '参数不足' }))
+            }
+            break
+          case 'userInfo': // 获取用户信息
+            if (!connection.login) {
+              await connection.socket.send(JSON.stringify({ command: data.command, state: false, error: '请先登录账号' }))
+            } else {
+              await connection.socket.send(JSON.stringify({ command: data.command, state: true, user: { user: user.user, autho: user.autho } }))
+            }
+            break
+          case 'login': // 登录
+            const user = UserInfo(data.token)
+            if (user) {
+              clients[user.user] = connection.socket
+              connection.login = true
+              await connection.socket.send(JSON.stringify({ command: data.command, state: true }))
+            } else {
+              await connection.socket.send(JSON.stringify({ command: data.command, state: false, error: '权限验证失败' }))
+            }
+            break
+          default:
+            await connection.socket.send(JSON.stringify({ "data": data }))
+            break
+        }
+      } catch (error) {
+        await connection.socket.send(JSON.stringify({ "error": error.message }))
+      }
+    })
+    connection.socket.on('close', () => {
+      // 监听连接关闭事件
+      const response = { code: 403, data: 'Client disconnected', message: 'Client disconnected' }
+      connection.socket.send(JSON.stringify(response))
+    })
+    return request
+  }
+  Bot.on("message", e => {
+    const messageData = {
+      notice: 'clientMessage',
+      message: e.message,
+      sender: e.sender,
+      group: {
+        isGroup: e.isGroup,
+        group_id: e.group_id,
+        group_name: e.group_name
+      },
+      quotable: {
+        user_id: e.user_id,
+        time: e.time,
+        seq: e.seq,
+        rand: e.rand,
+        message: e.message,
+        user_name: e.sender.nickname,
+      }
+    }
+    if (clients) {
+      for (const index in clients) {
+        const user = GetUser(index)
+        if (user.autho == 'admin' || user.user == e.user_id) {
+          clients[index].send(JSON.stringify(messageData))
+        }
+      }
+    }
+  })
+  server.get('/ws', {
+    websocket: true
+  }, wsFn)
 
   // 获取系统参数
   server.post('/sysconfig', async (request, reply) => {
     const token = request.cookies.token || request.body?.token || 'unknown'
-    const user = usertoken.find(user => user.token === token)
+    const user = UserInfo(token)
     if (!user) {
       reply.send({ err: '未登录' })
     } else if (user.autho === 'admin') {
@@ -400,12 +350,13 @@ export async function createServer() {
         userSetting
       })
     }
+    return reply
   })
 
   // 设置系统参数
   server.post('/saveconfig', async (request, reply) => {
     const token = request.cookies.token || request.body?.token || 'unknown'
-    const user = usertoken.find(user => user.token === token)
+    const user = UserInfo(token)
     const body = request.body || {}
     let changeConfig = []
     if (!user) {
@@ -457,8 +408,18 @@ export async function createServer() {
       if (redisConfig.openAiPlatformAccessToken != null) {
         await redis.set('CHATGPT:TOKEN', redisConfig.openAiPlatformAccessToken)
       }
-      
       reply.send({ change: changeConfig, state: true })
+      // 通知所有WS客户端刷新数据
+      if (clients) {
+        for (const index in clients) {
+          const user = GetUser(index)
+          if (user.autho == 'admin') {
+            clients[index].send(JSON.stringify({
+              notice: 'updateConfig'
+            }))
+          }
+        }
+      }
     } else {
       if (body.userSetting) {
         await redis.set(`CHATGPT:USER:${user.user}`, JSON.stringify(body.userSetting))
@@ -475,6 +436,7 @@ export async function createServer() {
       }
       reply.send({ state: true })
     }
+    return reply
   })
 
   // 系统服务测试
@@ -490,12 +452,13 @@ export async function createServer() {
       }
     }
     if (Config.cloudTranscode) {
-      const checkCheckCloud= await fetch(Config.cloudTranscode, { method: 'GET' })
+      const checkCheckCloud = await fetch(Config.cloudTranscode, { method: 'GET' })
       if (checkCheckCloud.ok) {
         serverState.cloud = true
       }
     }
     reply.send(serverState)
+    return reply
   })
 
   server.addHook('onRequest', (request, reply, done) => {

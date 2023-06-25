@@ -58,8 +58,11 @@ import { WebsiteTool } from '../utils/tools/WebsiteTool.js'
 import { WeatherTool } from '../utils/tools/WeatherTool.js'
 import { SerpTool } from '../utils/tools/SerpTool.js'
 import { SerpIkechan8370Tool } from '../utils/tools/SerpIkechan8370Tool.js'
-import {SendPictureTool} from "../utils/tools/SendPictureTool.js";
-import {SerpImageTool} from "../utils/tools/SearchImageTool.js";
+import { SendPictureTool } from '../utils/tools/SendPictureTool.js'
+import { SerpImageTool } from '../utils/tools/SearchImageTool.js'
+import { ImageCaptionTool } from '../utils/tools/ImageCaptionTool.js'
+import {TTSTool} from "../utils/tools/TTSTool.js";
+import {ProcessPictureTool} from "../utils/tools/ProcessPictureTool.js";
 try {
   await import('emoji-strip')
 } catch (err) {
@@ -1556,6 +1559,9 @@ export class chatgpt extends plugin {
               if (bingToken?.indexOf('=') > -1) {
                 cookies = bingToken
               }
+              if (!bingAIClient.opts) {
+                bingAIClient.opts = {}
+              }
               bingAIClient.opts.userToken = bingToken
               bingAIClient.opts.cookies = cookies
               opt.messageType = allThrottled ? 'Chat' : 'SearchQuery'
@@ -1930,84 +1936,170 @@ export class chatgpt extends plugin {
         if (conversation) {
           option = Object.assign(option, conversation)
         }
-        let isAdmin = e.sender.role === 'admin' || e.sender.role === 'owner'
-        let sender = e.sender.user_id
-        let serpTool
-        switch (Config.serpSource) {
-          case 'ikechan8370': {
-            serpTool = new SerpIkechan8370Tool()
-            break
-          }
-          case 'azure': {
-            if (!Config.azSerpKey) {
-              logger.warn('未配置bing搜索密钥，转为使用ikechan8370搜索源')
+        if (Config.smartMode) {
+          let isAdmin = e.sender.role === 'admin' || e.sender.role === 'owner'
+          let sender = e.sender.user_id
+          let serpTool
+          switch (Config.serpSource) {
+            case 'ikechan8370': {
               serpTool = new SerpIkechan8370Tool()
-            } else {
-              serpTool = new SerpTool()
+              break
             }
-            break
+            case 'azure': {
+              if (!Config.azSerpKey) {
+                logger.warn('未配置bing搜索密钥，转为使用ikechan8370搜索源')
+                serpTool = new SerpIkechan8370Tool()
+              } else {
+                serpTool = new SerpTool()
+              }
+              break
+            }
+            default: {
+              serpTool = new SerpIkechan8370Tool()
+            }
           }
-          default: {
-            serpTool = new SerpIkechan8370Tool()
-          }
-        }
+          let fullTools = [
+            new EditCardTool(),
+            new QueryStarRailTool(),
+            new WebsiteTool(),
+            new JinyanTool(),
+            new KickOutTool(),
+            new WeatherTool(),
+            new SendPictureTool(),
+            new SendVideoTool(),
+            new SearchMusicTool(),
+            new SendMusicTool(),
+            new ImageCaptionTool(),
+            new SearchVideoTool(),
+            new SerpImageTool(),
+            new SerpIkechan8370Tool(),
+            new SerpTool(),
+            new TTSTool(),
+            new ProcessPictureTool()
+          ]
+          // todo 3.0再重构tool的插拔和管理
+          let tools = [
+            // new SendAvatarTool(),
+            // new SendDiceTool(),
+            new EditCardTool(),
+            new QueryStarRailTool(),
+            new WebsiteTool(),
+            new JinyanTool(),
+            new KickOutTool(),
+            new WeatherTool(),
+            new SendPictureTool(),
+            new TTSTool(),
 
-        let tools = [
-          new SearchVideoTool(),
-          new SendVideoTool(),
-          new SearchMusicTool(),
-          new SendMusicTool(),
-          new SendAvatarTool(),
-          // new SendDiceTool(),
-          new EditCardTool(),
-          new QueryStarRailTool(),
-          new WebsiteTool(),
-          new JinyanTool(),
-          new KickOutTool(),
-          new WeatherTool(),
-          new SendPictureTool(),
-          new SerpImageTool(),
-          serpTool
-        ]
-        // if (e.sender.role === 'admin' || e.sender.role === 'owner') {
-        //   tools.push(...[new JinyanTool(), new KickOutTool()])
-        // }
-        let funcMap = {}
-        tools.forEach(tool => {
-          funcMap[tool.name] = {
-            exec: tool.func,
-            function: tool.function()
+            serpTool
+          ]
+          let img = []
+          if (e.source) {
+            // 优先从回复找图
+            let reply
+            if (e.isGroup) {
+              reply = (await e.group.getChatHistory(e.source.seq, 1)).pop()?.message
+            } else {
+              reply = (await e.friend.getChatHistory(e.source.time, 1)).pop()?.message
+            }
+            if (reply) {
+              for (let val of reply) {
+                if (val.type === 'image') {
+                  console.log(val)
+                  img.push(val.url)
+                }
+              }
+            }
           }
-        })
-        if (!option.completionParams) {
-          option.completionParams = {}
-        }
-        option.completionParams.functions = Object.keys(funcMap).map(k => funcMap[k].function)
-        let msg
-        try {
-          msg = await this.chatGPTApi.sendMessage(prompt, option)
-          logger.info(msg)
-          while (msg.functionCall) {
-            let { name, arguments: args } = msg.functionCall
-            let functionResult = await funcMap[name].exec(Object.assign({ isAdmin, sender }, JSON.parse(args)))
-            logger.mark(`function ${name} execution result: ${functionResult}`)
-            option.parentMessageId = msg.id
-            option.name = name
-            msg = await this.chatGPTApi.sendMessage(functionResult, option, 'function')
-            logger.info(msg)
+          if (e.img) {
+            img.push(...e.img)
           }
-        } catch (err) {
-          if (err.message?.indexOf('context_length_exceeded') > 0) {
-            logger.warn(err)
-            await redis.del(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
-            await redis.del(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`)
-            await e.reply('字数超限啦，将为您自动结束本次对话。')
-            return null
+          if (img.length > 0 && Config.extraUrl) {
+            tools.push(new ImageCaptionTool())
+            tools.push(new ProcessPictureTool())
+            prompt += `\nthe url of the picture(s) above: ${img.join(', ')}`
           } else {
-            throw new Error(err)
+            tools.push(new SerpImageTool())
+            tools.push(...[new SearchVideoTool(),
+              new SendVideoTool(),
+              new SearchMusicTool(),
+              new SendMusicTool()])
           }
+          // if (e.sender.role === 'admin' || e.sender.role === 'owner') {
+          //   tools.push(...[new JinyanTool(), new KickOutTool()])
+          // }
+          let funcMap = {}
+          let fullFuncMap = {}
+          tools.forEach(tool => {
+            funcMap[tool.name] = {
+              exec: tool.func,
+              function: tool.function()
+            }
+          })
+          fullTools.forEach(tool => {
+            fullFuncMap[tool.name] = {
+              exec: tool.func,
+              function: tool.function()
+            }
+          })
+          if (!option.completionParams) {
+            option.completionParams = {}
+          }
+          option.completionParams.functions = Object.keys(funcMap).map(k => funcMap[k].function)
+          let msg
+          try {
+            msg = await this.chatGPTApi.sendMessage(prompt, option)
+            logger.info(msg)
+            while (msg.functionCall) {
+              let { name, arguments: args } = msg.functionCall
+              args = JSON.parse(args)
+              if (!args.groupId) {
+                args.groupId = e.group_id || e.sender.user_id
+              }
+              try {
+                parseInt(args.groupId)
+              } catch (err) {
+                args.groupId = e.group_id || e.sender.user_id
+              }
+              let functionResult = await fullFuncMap[name].exec(Object.assign({ isAdmin, sender }, args))
+              logger.mark(`function ${name} execution result: ${functionResult}`)
+              option.parentMessageId = msg.id
+              option.name = name
+              // 不然普通用户可能会被openai限速
+              await delay(300)
+              msg = await this.chatGPTApi.sendMessage(functionResult, option, 'function')
+              logger.info(msg)
+            }
+          } catch (err) {
+            if (err.message?.indexOf('context_length_exceeded') > 0) {
+              logger.warn(err)
+              await redis.del(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
+              await redis.del(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`)
+              await e.reply('字数超限啦，将为您自动结束本次对话。')
+              return null
+            } else {
+              logger.error(err)
+              throw new Error(err)
+            }
+          }
+          return msg
+        } else {
+          let msg
+          try {
+            msg = await this.chatGPTApi.sendMessage(prompt, option)
+          } catch (err) {
+            if (err.message?.indexOf('context_length_exceeded') > 0) {
+              logger.warn(err)
+              await redis.del(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
+              await redis.del(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`)
+              await e.reply('字数超限啦，将为您自动结束本次对话。')
+              return null
+            } else {
+              logger.error(err)
+              throw new Error(err)
+            }
+          }
+          return msg
         }
-        return msg
       }
     }
   }
