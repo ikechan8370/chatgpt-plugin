@@ -17,7 +17,10 @@ export class APTool extends AbstractTool {
 
   func = async function (opts, e) {
     let { prompt } = opts
-    e.message = e.message.filter(m => m.type !== 'at' || m.qq !== Bot.uin)
+    if (e.at === Bot.uin) {
+      e.at = null
+    }
+    e.atBot = false
     let ap
     try {
       // eslint-disable-next-line camelcase
