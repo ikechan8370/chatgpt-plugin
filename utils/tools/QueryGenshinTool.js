@@ -14,7 +14,7 @@ export class QueryGenshinTool extends AbstractTool {
         description: '游戏的uid，如果用户提供了则传入并优先使用'
       }
     },
-    required: ['qq', 'groupId']
+    required: ['qq']
   }
 
   func = async function (opts, e) {
