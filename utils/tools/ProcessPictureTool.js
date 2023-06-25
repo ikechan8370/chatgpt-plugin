@@ -26,14 +26,14 @@ export class ProcessPictureTool extends AbstractTool {
   description = 'useful when you want to know what is inside a photo, such as user\'s avatar or other pictures'
 
   func = async function (opts) {
-    let { imgUrl, qq, type } = opts
+    let { url, qq, type } = opts
     if (qq) {
-      imgUrl = `https://q1.qlogo.cn/g?b=qq&s=160&nk=${qq}`
+      url = `https://q1.qlogo.cn/g?b=qq&s=160&nk=${qq}`
     }
-    if (!imgUrl) {
+    if (!url) {
       return 'you must give at least one parameter of imgUrl and qq'
     }
-    const imageResponse = await fetch(imgUrl)
+    const imageResponse = await fetch(url)
     const blob = await imageResponse.blob()
     const arrayBuffer = await blob.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)

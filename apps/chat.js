@@ -1989,7 +1989,7 @@ export class chatgpt extends plugin {
             new WeatherTool(),
             new SendPictureTool(),
             new TTSTool(),
-            new ProcessPictureTool(),
+
             serpTool
           ]
           let img = []
@@ -2015,6 +2015,7 @@ export class chatgpt extends plugin {
           }
           if (img.length > 0 && Config.extraUrl) {
             tools.push(new ImageCaptionTool())
+            tools.push(new ProcessPictureTool())
             prompt += `\nthe url of the picture(s) above: ${img.join(', ')}`
           } else {
             tools.push(new SerpImageTool())
