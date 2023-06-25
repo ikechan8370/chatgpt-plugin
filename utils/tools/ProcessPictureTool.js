@@ -57,7 +57,7 @@ export class ProcessPictureTool extends AbstractTool {
     })
     if (captionRes.status === 200) {
       let result = await captionRes.text()
-      return `the processed image url is ${result}`
+      return `the processed image url is ${Config.extraUrl}${result}`
     } else {
       return 'error happened'
     }
