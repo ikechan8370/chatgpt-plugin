@@ -1978,7 +1978,8 @@ export class chatgpt extends plugin {
             new SerpTool(),
             new TTSTool(),
             new ProcessPictureTool(),
-            new APTool()
+            new APTool(),
+            new QueryGenshinTool()
           ]
           // todo 3.0再重构tool的插拔和管理
           let tools = [
