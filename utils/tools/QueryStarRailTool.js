@@ -33,6 +33,7 @@ export class QueryStarRailTool extends AbstractTool {
         let { Panel } = await import('../../../StarRail-plugin/apps/panel.js')
         uid = await redis.get(`STAR_RAILWAY:UID:${qq}`)
         let panel = new Panel(e)
+        panel.e = e
         e.msg = '*面板' + uid
         e.user_id = qq
         e.isSr = true
