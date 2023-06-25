@@ -1,6 +1,6 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import _ from 'lodash'
-import { Config, defaultOpenAIAPI, pureSydneyInstruction } from '../utils/config.js'
+import { Config, defaultOpenAIAPI } from '../utils/config.js'
 import { v4 as uuid } from 'uuid'
 import delay from 'delay'
 import { ChatGPTAPI } from '../utils/openai/chatgpt-api.js'
@@ -61,8 +61,9 @@ import { SerpIkechan8370Tool } from '../utils/tools/SerpIkechan8370Tool.js'
 import { SendPictureTool } from '../utils/tools/SendPictureTool.js'
 import { SerpImageTool } from '../utils/tools/SearchImageTool.js'
 import { ImageCaptionTool } from '../utils/tools/ImageCaptionTool.js'
-import {TTSTool} from "../utils/tools/TTSTool.js";
-import {ProcessPictureTool} from "../utils/tools/ProcessPictureTool.js";
+import { TTSTool } from '../utils/tools/TTSTool.js'
+import { ProcessPictureTool } from '../utils/tools/ProcessPictureTool.js'
+import { APTool } from '../utils/tools/APTool.js'
 try {
   await import('emoji-strip')
 } catch (err) {
@@ -1975,7 +1976,8 @@ export class chatgpt extends plugin {
             new SerpIkechan8370Tool(),
             new SerpTool(),
             new TTSTool(),
-            new ProcessPictureTool()
+            new ProcessPictureTool(),
+            new APTool()
           ]
           // todo 3.0再重构tool的插拔和管理
           let tools = [
@@ -1989,7 +1991,7 @@ export class chatgpt extends plugin {
             new WeatherTool(),
             new SendPictureTool(),
             new TTSTool(),
-
+            new APTool(),
             serpTool
           ]
           let img = []
@@ -2053,14 +2055,14 @@ export class chatgpt extends plugin {
               let { name, arguments: args } = msg.functionCall
               args = JSON.parse(args)
               if (!args.groupId) {
-                args.groupId = e.group_id || e.sender.user_id
+                args.groupId = e.group_id + '' || e.sender.user_id + ''
               }
               try {
                 parseInt(args.groupId)
               } catch (err) {
-                args.groupId = e.group_id || e.sender.user_id
+                args.groupId = e.group_id + '' || e.sender.user_id + ''
               }
-              let functionResult = await fullFuncMap[name].exec(Object.assign({ isAdmin, sender }, args))
+              let functionResult = await fullFuncMap[name].exec(Object.assign({ isAdmin, sender }, args), e)
               logger.mark(`function ${name} execution result: ${functionResult}`)
               option.parentMessageId = msg.id
               option.name = name
