@@ -2066,7 +2066,12 @@ export class chatgpt extends plugin {
                 args.groupId = e.group_id + '' || e.sender.user_id + ''
               }
               if (!args.qq) {
-                args.qq = e.sender.user_id
+                args.qq = e.sender.user_id + ''
+              }
+              try {
+                parseInt(args.qq)
+              } catch (err) {
+                args.qq = e.sender.user_id + ''
               }
               let functionResult = await fullFuncMap[name].exec(Object.assign({ isAdmin, sender }, args), e)
               logger.mark(`function ${name} execution result: ${functionResult}`)
