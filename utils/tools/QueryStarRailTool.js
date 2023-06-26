@@ -21,8 +21,13 @@ export class QueryStarRailTool extends AbstractTool {
     required: ['qq', 'groupId']
   }
 
-  func = async function (opts) {
+  func = async function (opts, e) {
     let { qq, groupId, uid } = opts
+    if (e.at === Bot.uin) {
+      e.at = null
+    }
+    e.atBot = false
+
     if (!uid) {
       try {
         let { Panel } = await import('../../../StarRail-plugin/apps/panel.js')
@@ -35,6 +40,13 @@ export class QueryStarRailTool extends AbstractTool {
       }
     }
     try {
+      let { Panel } = await import('../../../StarRail-plugin/apps/panel.js')
+      e.msg = '*更新面板' + uid
+      e.user_id = qq
+      e.isSr = true
+      let panel = new Panel(e)
+      panel.e = e
+      panel.panel(e).catch(e => logger.warn(e))
       let uidRes = await fetch('https://avocado.wiki/v1/info/' + uid)
       uidRes = await uidRes.json()
       let { assistAvatar, displayAvatars } = uidRes.playerDetailInfo
