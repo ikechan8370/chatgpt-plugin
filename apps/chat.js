@@ -2006,10 +2006,12 @@ export class chatgpt extends plugin {
               // 管理员才给这些工具
               tools.push(...[new EditCardTool(), new JinyanTool(), new KickOutTool(), new HandleMessageMsgTool()])
               // 用于撤回和加精的id
-              option.systemMessage += `\nthis last message id is ${e.message_id}. `
+
               if (e.source?.seq) {
                 let source = (await e.group.getChatHistory(e.source?.seq, 1)).pop()
-                option.systemMessage += `this message is replying to ${source.message_id}, the content is "${source?.raw_message}"\n`
+                option.systemMessage += `\nthe last message is replying to ${source.message_id}, the content is "${source?.raw_message}"\n`
+              } else {
+                option.systemMessage += `\nthe last message id is ${e.message_id}. `
               }
             }
           }
