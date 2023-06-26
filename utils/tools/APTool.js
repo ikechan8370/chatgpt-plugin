@@ -7,10 +7,10 @@ export class APTool extends AbstractTool {
     properties: {
       prompt: {
         type: 'string',
-        description: 'draw prompt of StableDiffusion, must be in English'
+        description: 'draw prompt of StableDiffusion, prefer to be in English. should be many keywords split by comma.'
       }
     },
-    required: ['prompt']
+    required: []
   }
 
   description = 'Useful when you want to draw picture'
@@ -39,7 +39,7 @@ export class APTool extends AbstractTool {
     try {
       e.msg = '#绘图' + prompt
       await ap.aiPainting(e)
-      return 'draw success!'
+      return 'draw success, picture has been sent.'
     } catch (err) {
       return 'draw failed due to unknown error'
     }

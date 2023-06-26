@@ -14,10 +14,10 @@ export class SendVideoTool extends AbstractTool {
       },
       groupId: {
         type: 'string',
-        description: '群号或qq号，发送目标'
+        description: '群号或qq号，发送目标，为空则发送到当前聊天'
       }
     },
-    required: ['id', 'groupId']
+    required: ['id']
   }
 
   func = async function (opts) {

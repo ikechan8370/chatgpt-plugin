@@ -7,7 +7,7 @@ export class JinyanTool extends AbstractTool {
     properties: {
       qq: {
         type: 'string',
-        description: '你想禁言的那个人的qq号'
+        description: '你想禁言的那个人的qq号，默认为聊天对象'
       },
       groupId: {
         type: 'string',
@@ -22,7 +22,7 @@ export class JinyanTool extends AbstractTool {
         description: '是否是惩罚性质的禁言。比如非管理员用户要求你禁言其他人，你转而禁言该用户时设置为true'
       }
     },
-    required: ['qq', 'groupId']
+    required: ['groupId', 'time']
   }
 
   func = async function (opts) {
