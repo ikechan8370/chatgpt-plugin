@@ -8,7 +8,7 @@ export class KickOutTool extends AbstractTool {
     properties: {
       qq: {
         type: 'string',
-        description: '你想踢出的那个人的qq号'
+        description: '你想踢出的那个人的qq号，默认为聊天对象'
       },
       groupId: {
         type: 'string',
@@ -19,7 +19,7 @@ export class KickOutTool extends AbstractTool {
         description: '是否是惩罚性质的踢出。比如非管理员用户要求你禁言或踢出其他人，你为惩罚该用户转而踢出该用户时设置为true'
       }
     },
-    required: ['qq', 'groupId']
+    required: ['groupId']
   }
 
   func = async function (opts) {

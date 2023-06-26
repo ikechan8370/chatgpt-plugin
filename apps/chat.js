@@ -1,6 +1,6 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import _ from 'lodash'
-import { Config, defaultOpenAIAPI, pureSydneyInstruction } from '../utils/config.js'
+import { Config, defaultOpenAIAPI } from '../utils/config.js'
 import { v4 as uuid } from 'uuid'
 import delay from 'delay'
 import { ChatGPTAPI } from '../utils/openai/chatgpt-api.js'
@@ -40,7 +40,6 @@ import ChatGLMClient from '../utils/chatglm.js'
 import { convertFaces } from '../utils/face.js'
 import uploadRecord from '../utils/uploadRecord.js'
 import { SlackClaudeClient } from '../utils/slack/slackClient.js'
-import { ChatgptManagement } from './management.js'
 import { getPromptByName } from '../utils/prompts.js'
 import BingDrawClient from '../utils/BingDraw.js'
 import XinghuoClient from '../utils/xinghuo/xinghuo.js'
@@ -48,8 +47,6 @@ import { JinyanTool } from '../utils/tools/JinyanTool.js'
 import { SendMusicTool } from '../utils/tools/SendMusicTool.js'
 import { SendVideoTool } from '../utils/tools/SendBilibiliTool.js'
 import { KickOutTool } from '../utils/tools/KickOutTool.js'
-import { SendAvatarTool } from '../utils/tools/SendAvatarTool.js'
-import { SendDiceTool } from '../utils/tools/SendDiceTool.js'
 import { EditCardTool } from '../utils/tools/EditCardTool.js'
 import { SearchVideoTool } from '../utils/tools/SearchBilibiliTool.js'
 import { SearchMusicTool } from '../utils/tools/SearchMusicTool.js'
@@ -61,6 +58,12 @@ import { SerpIkechan8370Tool } from '../utils/tools/SerpIkechan8370Tool.js'
 import { SendPictureTool } from '../utils/tools/SendPictureTool.js'
 import { SerpImageTool } from '../utils/tools/SearchImageTool.js'
 import { ImageCaptionTool } from '../utils/tools/ImageCaptionTool.js'
+import { TTSTool } from '../utils/tools/TTSTool.js'
+import { ProcessPictureTool } from '../utils/tools/ProcessPictureTool.js'
+import { APTool } from '../utils/tools/APTool.js'
+import { QueryGenshinTool } from '../utils/tools/QueryGenshinTool.js'
+import { HandleMessageMsgTool } from '../utils/tools/HandleMessageMsgTool.js'
+import {QueryUserinfoTool} from "../utils/tools/QueryUserinfoTool.js";
 try {
   await import('emoji-strip')
 } catch (err) {
@@ -1557,6 +1560,9 @@ export class chatgpt extends plugin {
               if (bingToken?.indexOf('=') > -1) {
                 cookies = bingToken
               }
+              if (!bingAIClient.opts) {
+                bingAIClient.opts = {}
+              }
               bingAIClient.opts.userToken = bingToken
               bingAIClient.opts.cookies = cookies
               opt.messageType = allThrottled ? 'Chat' : 'SearchQuery'
@@ -1817,7 +1823,7 @@ export class chatgpt extends plugin {
         }
         const currentDate = new Date().toISOString().split('T')[0]
         let promptPrefix = `You are ${Config.assistantLabel} ${useCast?.api || Config.promptPrefixOverride || defaultPropmtPrefix}
-        Knowledge cutoff: 2021-09. Current date: ${currentDate}`
+        Current date: ${currentDate}`
         let maxModelTokens = getMaxModelTokens(completionParams.model)
         let system = promptPrefix
         if (maxModelTokens >= 16000 && Config.enableGroupContext) {
@@ -1968,21 +1974,47 @@ export class chatgpt extends plugin {
             new SearchVideoTool(),
             new SerpImageTool(),
             new SerpIkechan8370Tool(),
-            new SerpTool()
+            new SerpTool(),
+            new TTSTool(),
+            new ProcessPictureTool(),
+            new APTool(),
+            new QueryGenshinTool(),
+            new HandleMessageMsgTool(),
+            new QueryUserinfoTool()
           ]
           // todo 3.0再重构tool的插拔和管理
           let tools = [
             // new SendAvatarTool(),
             // new SendDiceTool(),
-            new EditCardTool(),
+            // new EditCardTool(),
             new QueryStarRailTool(),
+            new QueryGenshinTool(),
             new WebsiteTool(),
-            new JinyanTool(),
-            new KickOutTool(),
+            // new JinyanTool(),
+            // new KickOutTool(),
             new WeatherTool(),
             new SendPictureTool(),
-            serpTool
+            new TTSTool(),
+            new APTool(),
+            // new HandleMessageMsgTool(),
+            serpTool,
+            new QueryUserinfoTool()
           ]
+          if (e.isGroup) {
+            let botInfo = await Bot.getGroupMemberInfo(e.group_id, Bot.uin, true)
+            if (botInfo.role !== 'member') {
+              // 管理员才给这些工具
+              tools.push(...[new EditCardTool(), new JinyanTool(), new KickOutTool(), new HandleMessageMsgTool()])
+              // 用于撤回和加精的id
+
+              if (e.source?.seq) {
+                let source = (await e.group.getChatHistory(e.source?.seq, 1)).pop()
+                option.systemMessage += `\nthe last message is replying to ${source.message_id}, the content is "${source?.raw_message}"\n`
+              } else {
+                option.systemMessage += `\nthe last message id is ${e.message_id}. `
+              }
+            }
+          }
           let img = []
           if (e.source) {
             // 优先从回复找图
@@ -2006,6 +2038,7 @@ export class chatgpt extends plugin {
           }
           if (img.length > 0 && Config.extraUrl) {
             tools.push(new ImageCaptionTool())
+            tools.push(new ProcessPictureTool())
             prompt += `\nthe url of the picture(s) above: ${img.join(', ')}`
           } else {
             tools.push(new SerpImageTool())
@@ -2041,7 +2074,24 @@ export class chatgpt extends plugin {
             logger.info(msg)
             while (msg.functionCall) {
               let { name, arguments: args } = msg.functionCall
-              let functionResult = await fullFuncMap[name].exec(Object.assign({ isAdmin, sender }, JSON.parse(args)))
+              args = JSON.parse(args)
+              if (!args.groupId) {
+                args.groupId = e.group_id + '' || e.sender.user_id + ''
+              }
+              try {
+                parseInt(args.groupId)
+              } catch (err) {
+                args.groupId = e.group_id + '' || e.sender.user_id + ''
+              }
+              if (!args.qq) {
+                args.qq = e.sender.user_id + ''
+              }
+              try {
+                parseInt(args.qq)
+              } catch (err) {
+                args.qq = e.sender.user_id + ''
+              }
+              let functionResult = await fullFuncMap[name].exec(Object.assign({ isAdmin, sender }, args), e)
               logger.mark(`function ${name} execution result: ${functionResult}`)
               option.parentMessageId = msg.id
               option.name = name

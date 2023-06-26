@@ -15,17 +15,17 @@ export class SendPictureTool extends AbstractTool {
       },
       groupId: {
         type: 'string',
-        description: '群号或qq号，发送目标'
+        description: '群号或qq号，发送目标，为空则发送到当前聊天'
       }
     },
-    required: ['picture', 'groupId']
+    required: ['picture']
   }
 
   func = async function (opt) {
     let { picture, groupId, qq } = opt
     if (qq) {
       let avatar = `https://q1.qlogo.cn/g?b=qq&s=0&nk=${qq}`
-      picture += ' ' + avatar
+      picture += (' ' + avatar)
     }
     let pictures = picture.trim().split(' ')
     pictures = pictures.map(img => segment.image(img))

@@ -81,8 +81,12 @@ export async function tryTimes (promiseFn, maxTries = 10) {
 export async function makeForwardMsg (e, msg = [], dec = '') {
   let nickname = Bot.nickname
   if (e.isGroup) {
-    let info = await Bot.getGroupMemberInfo(e.group_id, Bot.uin)
-    nickname = info.card || info.nickname
+    try {
+      let info = await Bot.getGroupMemberInfo(e.group_id, Bot.uin)
+      nickname = info.card || info.nickname
+    } catch (err) {
+      console.error(`Failed to get group member info: ${err}`)
+    }
   }
   let userInfo = {
     user_id: Bot.uin,
