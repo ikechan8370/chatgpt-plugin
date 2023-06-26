@@ -30,18 +30,19 @@ export class QueryGenshinTool extends AbstractTool {
     try {
       if (character) {
         let ProfileDetail = (await import('../../../miao-plugin/apps/profile/ProfileDetail.js')).default
-        e.msg = `#${character}面板${uid}`
+        // e.msg = `#${character}面板${uid}`
+        e.original_msg = `#${character}面板${uid}`
         e.user_id = qq
         e.isSr = false
         await ProfileDetail.detail(e)
-        return 'the character panel of genshin impact has been sent to group'
+        return 'the character panel of genshin impact has been sent to group. you don\'t need text version'
       } else {
         let ProfileList = (await import('../../../miao-plugin/apps/profile/ProfileList.js')).default
         e.msg = `#面板${uid}`
         e.user_id = qq
         e.isSr = false
         await ProfileList.render(e)
-        return 'the player panel of genshin impact has been sent to group'
+        return 'the player panel of genshin impact has been sent to group. you don\'t need text version'
       }
     } catch (err) {
       return `failed to query, error: ${err.toString()}`
