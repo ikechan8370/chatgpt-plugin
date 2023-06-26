@@ -15,6 +15,7 @@ import { getPublicIP, getUserData } from '../utils/common.js'
 
 import webRoute from './modules/web_route.js'
 import webUser from './modules/user.js'
+import SettingView from './modules/setting_view.js'
 
 const __dirname = path.resolve()
 const server = fastify({
@@ -79,6 +80,7 @@ await server.register(websocket, {
 await server.register(fastifyCookie)
 await server.register(webRoute)
 await server.register(webUser)
+await server.register(SettingView)
 
 export async function createServer() {
   // 页面数据获取
