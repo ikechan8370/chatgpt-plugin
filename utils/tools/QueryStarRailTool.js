@@ -7,22 +7,22 @@ export class QueryStarRailTool extends AbstractTool {
     properties: {
       qq: {
         type: 'string',
-        description: '要查询的用户的qq号，将使用该qq号绑定的uid进行查询'
-      },
-      groupId: {
-        type: 'string',
-        description: '群号'
+        description: '要查询的用户的qq号，将使用该qq号绑定的uid进行查询，默认为当前聊天对象'
       },
       uid: {
         type: 'string',
         description: '游戏的uid，如果用户提供了则传入并优先使用'
+      },
+      character: {
+        type: 'string',
+        description: '游戏角色名'
       }
     },
-    required: ['qq', 'groupId']
+    required: []
   }
 
   func = async function (opts, e) {
-    let { qq, groupId, uid } = opts
+    let { qq, uid, character } = opts
     if (e.at === Bot.uin) {
       e.at = null
     }
@@ -41,7 +41,7 @@ export class QueryStarRailTool extends AbstractTool {
     }
     try {
       let { Panel } = await import('../../../StarRail-plugin/apps/panel.js')
-      e.msg = '*更新面板' + uid
+      e.msg = character ? `*${character}面板${uid}` : '*更新面板' + uid
       e.user_id = qq
       e.isSr = true
       let panel = new Panel(e)

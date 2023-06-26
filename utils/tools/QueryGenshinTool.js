@@ -12,20 +12,24 @@ export class QueryGenshinTool extends AbstractTool {
       uid: {
         type: 'string',
         description: '游戏的uid，如果用户提供了则传入并优先使用'
+      },
+      character: {
+        type: 'string',
+        description: '游戏角色名'
       }
     },
     required: ['qq']
   }
 
   func = async function (opts, e) {
-    let { qq, uid } = opts
+    let { qq, uid, character = '' } = opts
     if (e.at === Bot.uin) {
       e.at = null
     }
     e.atBot = false
     try {
       let ProfileList = (await import('../../../miao-plugin/apps/profile/ProfileList.js')).default
-      e.msg = '#面板' + uid
+      e.msg = `#${character}面板${uid}`
       e.user_id = qq
       e.isSr = false
       await ProfileList.render(e)

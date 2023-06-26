@@ -11,10 +11,10 @@ export class SendMusicTool extends AbstractTool {
       },
       groupId: {
         type: 'string',
-        description: '群号或qq号，发送目标'
+        description: '群号或qq号，发送目标，为空则发送到当前聊天'
       }
     },
-    required: ['keyword', 'groupId']
+    required: ['keyword']
   }
 
   func = async function (opts) {
