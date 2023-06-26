@@ -28,12 +28,21 @@ export class QueryGenshinTool extends AbstractTool {
     }
     e.atBot = false
     try {
-      let ProfileList = (await import('../../../miao-plugin/apps/profile/ProfileList.js')).default
-      e.msg = `#${character}面板${uid}`
-      e.user_id = qq
-      e.isSr = false
-      await ProfileList.render(e)
-      return 'the player panel of genshin impact has been sent to group'
+      if (character) {
+        let ProfileDetail = (await import('../../../miao-plugin/apps/profile/ProfileDetail.js')).default
+        e.msg = `#${character}面板${uid}`
+        e.user_id = qq
+        e.isSr = false
+        await ProfileDetail.detail(e)
+        return 'the character panel of genshin impact has been sent to group'
+      } else {
+        let ProfileList = (await import('../../../miao-plugin/apps/profile/ProfileList.js')).default
+        e.msg = `#面板${uid}`
+        e.user_id = qq
+        e.isSr = false
+        await ProfileList.render(e)
+        return 'the player panel of genshin impact has been sent to group'
+      }
     } catch (err) {
       return `failed to query, error: ${err.toString()}`
     }

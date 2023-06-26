@@ -36,6 +36,7 @@ export class QueryStarRailTool extends AbstractTool {
           return '用户没有绑定uid，无法查询。可以让用户主动提供uid进行查询'
         }
       } catch (e) {
+        // todo support miao-plugin and sruid
         return '未安装StarRail-Plugin，无法查询'
       }
     }
