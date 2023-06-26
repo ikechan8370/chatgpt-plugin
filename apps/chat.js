@@ -1823,7 +1823,7 @@ export class chatgpt extends plugin {
         }
         const currentDate = new Date().toISOString().split('T')[0]
         let promptPrefix = `You are ${Config.assistantLabel} ${useCast?.api || Config.promptPrefixOverride || defaultPropmtPrefix}
-        Knowledge cutoff: 2021-09. Current date: ${currentDate}`
+        Current date: ${currentDate}`
         let maxModelTokens = getMaxModelTokens(completionParams.model)
         let system = promptPrefix
         if (maxModelTokens >= 16000 && Config.enableGroupContext) {
@@ -2006,10 +2006,10 @@ export class chatgpt extends plugin {
               // 管理员才给这些工具
               tools.push(...[new EditCardTool(), new JinyanTool(), new KickOutTool(), new HandleMessageMsgTool()])
               // 用于撤回和加精的id
-              option.systemMessage += `\nthis last message id is ${e.message_id}`
+              option.systemMessage += `\nthis last message id is ${e.message_id}. `
               if (e.source?.seq) {
                 let source = (await e.group.getChatHistory(e.source?.seq, 1)).pop()
-                option.systemMessage += `\nthis last message is replying to ${source.message_id}: ${source?.raw_message}`
+                option.systemMessage += `this message is replying to ${source.message_id}, the content is "${source?.raw_message}"\n`
               }
             }
           }
