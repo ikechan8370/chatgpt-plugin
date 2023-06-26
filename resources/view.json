@@ -1,390 +1,449 @@
 [
-    {
-      "id": "GeneralSettings",
-      "title": "通用设置",
-      "view": [
-        {
-          "type": "check",
-          "label": "图片识别OCR",
-          "data": "imgOcr"
-        },
-        {
-          "type": "check",
-          "label": "允许其他模式",
-          "data": "allowOtherMode"
-        },
-        {
-          "type": "check",
-          "label": "调试信息",
-          "data": "debug"
-        },
-        {
-          "type": "check",
-          "label": "是否允许私聊机器人",
-          "data": "enablePrivateChat"
-        },
-        {
-          "type": "check",
-          "label": "回复确认",
-          "data": "turnConfirm"
-        },
-        {
-          "type": "check",
-          "label": "新版帮助",
-          "data": "newhelp"
-        },
-        {
-          "type": "number",
-          "label": "对话保留时长",
-          "placeholder": "每个人发起的对话保留时长",
-          "data": "conversationPreserveTime",
-          "md": 12
-        },
-        {
-          "type": "url",
-          "label": "代理服务器地址",
-          "placeholder": "数据通过代理服务器发送，http或socks5代理",
-          "data": "proxy",
-          "md": 12
-        },
-        {
-          "type": "select",
-          "label": "对话模式",
-          "model": "redisConfig",
-          "data": "useMode",
-          "items": [
-            {
-              "label": "必应",
-              "value": "bing"
-            },
-            {
-              "label": "ChatGPT API",
-              "value": "api"
-            },
-            {
-              "label": "ChatGPT API3",
-              "value": "api3"
-            },
-            {
-              "label": "Slack Claude",
-              "value": "claude"
-            },
-            {
-              "label": "ChatGLM",
-              "value": "chatglm"
-            },
-            {
-              "label": "星火",
-              "value": "xh"
-            },
-            {
-              "label": "浏览器",
-              "value": "browser"
-            }
-          ],
-          "md": 12
-        }
-      ]
-    },
-    {
-      "id": "ChatSettings",
-      "title": "聊天设置",
-      "view": [
-        {
-          "type": "tabs",
-          "id": "ChatSetting",
-          "tabs": [
-            {
-              "title": "文本模式",
-              "icon": "mdi-format-text",
-              "tab": "text",
-              "view": [
-                {
-                  "type": "check",
-                  "label": "长文本自动转图片",
-                  "data": "autoUsePicture"
-                },
-                {
-                  "type": "check",
-                  "label": "是否允许机器人真AT",
-                  "data": "enableRobotAt"
-                },
-                {
-                  "type": "number",
-                  "label": "自动转图片阈值",
-                  "placeholder": "自动转图片的字数阈值",
-                  "data": "autoUsePictureThreshold"
-                }
-              ]
-            },
-            {
-              "title": "图片模式[基础参数]",
-              "icon": "mdi-image",
-              "tab": "image_base",
-              "view": [
-                {
-                  "type": "check",
-                  "label": "全局图片模式",
-                  "data": "defaultUsePicture"
-                },
-                {
-                  "type": "check",
-                  "label": "图片引用消息",
-                  "data": "quoteReply"
-                },
-                {
-                  "type": "check",
-                  "label": "启用二维码",
-                  "data": "showQRCode"
-                },
-                {
-                  "type": "text",
-                  "label": "BOT命名",
-                  "placeholder": "强制修改Bot命名",
-                  "data": "chatViewBotName"
-                },
-                {
-                  "type": "url",
-                  "label": "渲染服务器地址",
-                  "placeholder": "可选择第三方渲染服务器",
-                  "data": "viewHost",
-                  "md": 12
-                },
-                {
-                  "type": "number",
-                  "label": "图片渲染宽度",
-                  "placeholder": "图片渲染宽度",
-                  "data": "chatViewWidth"
-                },
-                {
-                  "type": "check",
-                  "label": "云渲染",
-                  "data": "cloudRender"
-                },
-                {
-                  "type": "number",
-                  "label": "云渲染DPR",
-                  "placeholder": "设置云渲染画面缩放，数值愈大越清晰",
-                  "data": "cloudDPR"
-                }
-              ]
-            },
-            {
-              "title": "图片模式[Live2D]",
-              "icon": "mdi-image",
-              "tab": "image_live2d",
-              "view": [
-                {
-                  "type": "check",
-                  "label": "Live2D",
-                  "data": "live2d"
-                },
-                {
-                  "type": "text",
-                  "label": "Live2D模型",
-                  "placeholder": "使用的Live2D模式文件",
-                  "data": "live2dModel"
-                },
-                {
-                  "type": "number",
-                  "label": "Live2D模型缩放",
-                  "placeholder": "渲染live2d的模型大小",
-                  "data": "live2dOption_scale"
-                },
-                {
-                  "type": "number",
-                  "label": "Live2D模型位置X",
-                  "placeholder": "Live2d模型在区域的位置X轴微调",
-                  "data": "live2dOption_positionX"
-                },
-                {
-                  "type": "number",
-                  "label": "Live2D模型位置Y",
-                  "placeholder": "Live2d模型在区域的位置Y轴微调",
-                  "data": "live2dOption_positionY"
-                },
-                {
-                  "type": "number",
-                  "label": "Live2D模型旋转",
-                  "placeholder": "Live2d模型在区域的旋转角度",
-                  "data": "live2dOption_rotation"
-                },
-                {
-                  "type": "number",
-                  "label": "Live2D模型透明度",
-                  "placeholder": "Live2d模型的透明度",
-                  "data": "live2dOption_alpha"
-                }
-              ]
-            },
-            {
-              "title": "图片模式[旧渲染]",
-              "icon": "mdi-image",
-              "tab": "image_old",
-              "view": [
-                {
-                  "type": "check",
-                  "label": "旧版本渲染",
-                  "data": "oldview"
-                },
-                {
-                  "type": "check",
-                  "label": "预制渲染服务器访问代码",
-                  "data": "cacheEntry"
-                },
-                {
-                  "type": "url",
-                  "label": "渲染服务器地址",
-                  "placeholder": "可选择第三方渲染服务器",
-                  "data": "cacheUrl"
-                }
-              ]
-            },
-            {
-              "title": "语音模式",
-              "icon": "mdi-microphone",
-              "tab": "voice",
-              "view": [
-                {
-                  "type": "check",
-                  "label": "全局语音模式",
-                  "data": "defaultUseTTS"
-                },
-                {
-                  "type": "check",
-                  "label": "语音同时发送文字",
-                  "data": "alsoSendText"
-                },
-                {
-                  "type": "number",
-                  "label": "语音转文字阈值",
-                  "placeholder": "语音模式下，字数超过这个阈值就降级为文字",
-                  "data": "ttsAutoFallbackThreshold"
-                },
-                {
-                  "type": "text",
-                  "label": "语音过滤正则表达式",
-                  "placeholder": "语音模式下，配置此项以过滤不想被读出来的内容",
-                  "data": "ttsRegex"
-                },
-                {
-                  "type": "select",
-                  "label": "语音模式源",
-                  "data": "ttsMode",
-                  "items": [
-                    {
-                      "label": "Vits",
-                      "value": "vits-uma-genshin-honkai"
-                    },
-                    {
-                      "label": "微软Azure",
-                      "value": "azure"
-                    },
-                    {
-                      "label": "VoiceVox",
-                      "value": "VoiceVox"
-                    }
-                  ]
-                },
-                {
-                  "type": "select",
-                  "label": "云转码模式",
-                  "data": "cloudMode",
-                  "items": [
-                    {
-                      "label": "文件",
-                      "value": "file"
-                    },
-                    {
-                      "label": "链接",
-                      "value": "url"
-                    }
-                  ]
-                }
-              ]
-            },
-            {
-              "title": "语音模式[vits]",
-              "icon": "mdi-microphone",
-              "tab": "vits",
-              "view": [
-                {
-                  "type": "url",
-                  "label": "语音转换API地址",
-                  "placeholder": "前往duplicate空间查看api地址",
-                  "data": "ttsSpace"
-                },
-                {
-                  "type": "url",
-                  "label": "语音转换huggingface反代",
-                  "data": "huggingFaceReverseProxy"
-                },
-                {
-                  "type": "number",
-                  "label": "控制情感变化程度",
-                  "data": "noiseScale"
-                },
-                {
-                  "type": "number",
-                  "label": "控制音素发音长度",
-                  "data": "noiseScaleW"
-                },
-                {
-                  "type": "number",
-                  "label": "控制整体语速",
-                  "data": "lengthScale"
-                },
-                {
-                  "type": "check",
-                  "label": "日语输出",
-                  "data": "autoJapanese"
-                }
-              ]
-            },
-            {
-              "title": "语音模式[Azure]",
-              "icon": "mdi-microphone",
-              "tab": "azure",
-              "view": [
-                {
-                  "type": "password",
-                  "label": "语音服务密钥",
-                  "placeholder": "Azure的语音服务密钥",
-                  "data": "azureTTSKey"
-                },
-                {
-                  "type": "text",
-                  "label": "语音服务区域",
-                  "placeholder": "Azure语音服务区域",
-                  "data": "azureTTSRegion"
-                },
-                {
-                  "type": "number",
-                  "label": "Azure情绪多样化",
-                  "data": "azureTTSEmotion"
-                },
-                {
-                  "type": "number",
-                  "label": "Azure情绪纠正",
-                  "data": "enhanceAzureTTSEmotion"
-                }
-              ]
-            },
-            {
-              "title": "语音模式[Voicevox]",
-              "icon": "mdi-microphone",
-              "tab": "voicevox",
-              "view": [
-                {
-                  "type": "url",
-                  "label": "语音转换API地址",
-                  "placeholder": "voicevox语音转换API地址",
-                  "data": "voicevoxSpace"
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    }
-  ]
+  {
+    "id": "GeneralSettings",
+    "title": "通用设置",
+    "view": [
+      {
+        "type": "check",
+        "label": "图片识别OCR",
+        "data": "imgOcr"
+      },
+      {
+        "type": "check",
+        "label": "允许其他模式",
+        "data": "allowOtherMode"
+      },
+      {
+        "type": "check",
+        "label": "调试信息",
+        "data": "debug"
+      },
+      {
+        "type": "check",
+        "label": "是否允许私聊机器人",
+        "data": "enablePrivateChat"
+      },
+      {
+        "type": "check",
+        "label": "回复确认",
+        "data": "turnConfirm"
+      },
+      {
+        "type": "check",
+        "label": "新版帮助",
+        "data": "newhelp"
+      },
+      {
+        "type": "number",
+        "label": "对话保留时长",
+        "placeholder": "每个人发起的对话保留时长",
+        "data": "conversationPreserveTime",
+        "md": 12
+      },
+      {
+        "type": "url",
+        "label": "代理服务器地址",
+        "placeholder": "数据通过代理服务器发送，http或socks5代理",
+        "data": "proxy",
+        "md": 12
+      },
+      {
+        "type": "select",
+        "label": "对话模式",
+        "model": "redisConfig",
+        "data": "useMode",
+        "items": [
+          {
+            "label": "必应",
+            "value": "bing"
+          },
+          {
+            "label": "ChatGPT API",
+            "value": "api"
+          },
+          {
+            "label": "ChatGPT API3",
+            "value": "api3"
+          },
+          {
+            "label": "Slack Claude",
+            "value": "claude"
+          },
+          {
+            "label": "ChatGLM",
+            "value": "chatglm"
+          },
+          {
+            "label": "星火",
+            "value": "xh"
+          },
+          {
+            "label": "浏览器",
+            "value": "browser"
+          }
+        ],
+        "md": 12
+      }
+    ]
+  },
+  {
+    "id": "ChatSettings",
+    "title": "聊天设置",
+    "view": [
+      {
+        "type": "tabs",
+        "id": "ChatSetting",
+        "tabs": [
+          {
+            "title": "文本模式",
+            "icon": "mdi-format-text",
+            "tab": "text",
+            "view": [
+              {
+                "type": "check",
+                "label": "长文本自动转图片",
+                "data": "autoUsePicture"
+              },
+              {
+                "type": "check",
+                "label": "是否允许机器人真AT",
+                "data": "enableRobotAt"
+              },
+              {
+                "type": "number",
+                "label": "自动转图片阈值",
+                "placeholder": "自动转图片的字数阈值",
+                "data": "autoUsePictureThreshold"
+              }
+            ]
+          },
+          {
+            "title": "图片模式[基础参数]",
+            "icon": "mdi-image",
+            "tab": "image_base",
+            "view": [
+              {
+                "type": "check",
+                "label": "全局图片模式",
+                "data": "defaultUsePicture"
+              },
+              {
+                "type": "check",
+                "label": "图片引用消息",
+                "data": "quoteReply"
+              },
+              {
+                "type": "check",
+                "label": "启用二维码",
+                "data": "showQRCode"
+              },
+              {
+                "type": "text",
+                "label": "BOT命名",
+                "placeholder": "强制修改Bot命名",
+                "data": "chatViewBotName"
+              },
+              {
+                "type": "url",
+                "label": "渲染服务器地址",
+                "placeholder": "可选择第三方渲染服务器",
+                "data": "viewHost",
+                "md": 12
+              },
+              {
+                "type": "number",
+                "label": "图片渲染宽度",
+                "placeholder": "图片渲染宽度",
+                "data": "chatViewWidth"
+              },
+              {
+                "type": "check",
+                "label": "云渲染",
+                "data": "cloudRender"
+              },
+              {
+                "type": "number",
+                "label": "云渲染DPR",
+                "placeholder": "设置云渲染画面缩放，数值愈大越清晰",
+                "data": "cloudDPR"
+              }
+            ]
+          },
+          {
+            "title": "图片模式[Live2D]",
+            "icon": "mdi-image",
+            "tab": "image_live2d",
+            "view": [
+              {
+                "type": "check",
+                "label": "Live2D",
+                "data": "live2d"
+              },
+              {
+                "type": "text",
+                "label": "Live2D模型",
+                "placeholder": "使用的Live2D模式文件",
+                "data": "live2dModel"
+              },
+              {
+                "type": "number",
+                "label": "Live2D模型缩放",
+                "placeholder": "渲染live2d的模型大小",
+                "data": "live2dOption_scale"
+              },
+              {
+                "type": "number",
+                "label": "Live2D模型位置X",
+                "placeholder": "Live2d模型在区域的位置X轴微调",
+                "data": "live2dOption_positionX"
+              },
+              {
+                "type": "number",
+                "label": "Live2D模型位置Y",
+                "placeholder": "Live2d模型在区域的位置Y轴微调",
+                "data": "live2dOption_positionY"
+              },
+              {
+                "type": "number",
+                "label": "Live2D模型旋转",
+                "placeholder": "Live2d模型在区域的旋转角度",
+                "data": "live2dOption_rotation"
+              },
+              {
+                "type": "number",
+                "label": "Live2D模型透明度",
+                "placeholder": "Live2d模型的透明度",
+                "data": "live2dOption_alpha"
+              }
+            ]
+          },
+          {
+            "title": "图片模式[旧渲染]",
+            "icon": "mdi-image",
+            "tab": "image_old",
+            "view": [
+              {
+                "type": "check",
+                "label": "旧版本渲染",
+                "data": "oldview"
+              },
+              {
+                "type": "check",
+                "label": "预制渲染服务器访问代码",
+                "data": "cacheEntry"
+              },
+              {
+                "type": "url",
+                "label": "渲染服务器地址",
+                "placeholder": "可选择第三方渲染服务器",
+                "data": "cacheUrl"
+              }
+            ]
+          },
+          {
+            "title": "语音模式",
+            "icon": "mdi-microphone",
+            "tab": "voice",
+            "view": [
+              {
+                "type": "check",
+                "label": "全局语音模式",
+                "data": "defaultUseTTS"
+              },
+              {
+                "type": "check",
+                "label": "语音同时发送文字",
+                "data": "alsoSendText"
+              },
+              {
+                "type": "number",
+                "label": "语音转文字阈值",
+                "placeholder": "语音模式下，字数超过这个阈值就降级为文字",
+                "data": "ttsAutoFallbackThreshold"
+              },
+              {
+                "type": "text",
+                "label": "语音过滤正则表达式",
+                "placeholder": "语音模式下，配置此项以过滤不想被读出来的内容",
+                "data": "ttsRegex"
+              },
+              {
+                "type": "select",
+                "label": "语音模式源",
+                "data": "ttsMode",
+                "items": [
+                  {
+                    "label": "Vits",
+                    "value": "vits-uma-genshin-honkai"
+                  },
+                  {
+                    "label": "微软Azure",
+                    "value": "azure"
+                  },
+                  {
+                    "label": "VoiceVox",
+                    "value": "VoiceVox"
+                  }
+                ]
+              },
+              {
+                "type": "select",
+                "label": "云转码模式",
+                "data": "cloudMode",
+                "items": [
+                  {
+                    "label": "文件",
+                    "value": "file"
+                  },
+                  {
+                    "label": "链接",
+                    "value": "url"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "title": "语音模式[vits]",
+            "icon": "mdi-microphone",
+            "tab": "vits",
+            "view": [
+              {
+                "type": "url",
+                "label": "语音转换API地址",
+                "placeholder": "前往duplicate空间查看api地址",
+                "data": "ttsSpace"
+              },
+              {
+                "type": "url",
+                "label": "语音转换huggingface反代",
+                "data": "huggingFaceReverseProxy"
+              },
+              {
+                "type": "number",
+                "label": "控制情感变化程度",
+                "data": "noiseScale"
+              },
+              {
+                "type": "number",
+                "label": "控制音素发音长度",
+                "data": "noiseScaleW"
+              },
+              {
+                "type": "number",
+                "label": "控制整体语速",
+                "data": "lengthScale"
+              },
+              {
+                "type": "check",
+                "label": "日语输出",
+                "data": "autoJapanese"
+              }
+            ]
+          },
+          {
+            "title": "语音模式[Azure]",
+            "icon": "mdi-microphone",
+            "tab": "azure",
+            "view": [
+              {
+                "type": "password",
+                "label": "语音服务密钥",
+                "placeholder": "Azure的语音服务密钥",
+                "data": "azureTTSKey"
+              },
+              {
+                "type": "text",
+                "label": "语音服务区域",
+                "placeholder": "Azure语音服务区域",
+                "data": "azureTTSRegion"
+              },
+              {
+                "type": "number",
+                "label": "Azure情绪多样化",
+                "data": "azureTTSEmotion"
+              },
+              {
+                "type": "number",
+                "label": "Azure情绪纠正",
+                "data": "enhanceAzureTTSEmotion"
+              }
+            ]
+          },
+          {
+            "title": "语音模式[Voicevox]",
+            "icon": "mdi-microphone",
+            "tab": "voicevox",
+            "view": [
+              {
+                "type": "url",
+                "label": "语音转换API地址",
+                "placeholder": "voicevox语音转换API地址",
+                "data": "voicevoxSpace"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ModelSettings",
+    "title": "模式设置",
+    "view": [
+      {
+        "type": "tabs",
+        "id": "ChatSetting",
+        "tabs": [
+          {
+            "title": "API",
+            "tab": "api",
+            "view": [
+              {
+                "type": "check",
+                "label": "强制使用OpenAI反代",
+                "data": "openAiForceUseReverse"
+              },
+              {
+                "type": "password",
+                "label": "OpenAI API Key",
+                "placeholder": "OpenAI的ApiKey，用于访问OpenAI的API接口",
+                "data": "apiKey"
+              },
+              {
+                "type": "text",
+                "label": "OpenAI 模型",
+                "placeholder": "gpt-4, gpt-4-0314, gpt-4-32k, gpt-4-32k-0314, gpt-3.5-turbo, gpt-3.5-turbo-0301",
+                "data": "model"
+              },
+              {
+                "type": "text",
+                "label": "AI名字",
+                "placeholder": "AI认为的自己的名字，当你问他你是谁是他会回答这里的名字",
+                "data": "model"
+              },
+              {
+                "type": "number",
+                "label": "temperature",
+                "placeholder": "用于控制回复内容的多样性，数值越大回复越加随机、多元化，数值越小回复越加保守",
+                "data": "temperature"
+              },
+              {
+                "type": "url",
+                "label": "OpenAI API服务器地址",
+                "placeholder": "OpenAI的API服务器地址，注意要带上/v1。",
+                "data": "openAiBaseUrl"
+              },
+              {
+                "type": "textarea",
+                "label": "AI风格",
+                "placeholder": "你可以在这里写入你希望AI回答的风格，比如希望优先回答中文，回答长一点等",
+                "data": "promptPrefixOverride"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]
