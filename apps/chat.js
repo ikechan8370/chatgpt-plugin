@@ -284,6 +284,8 @@ export class chatgpt extends plugin {
       return
     }
     let ats = e.message.filter(m => m.type === 'at')
+    const isAtMode = Config.toggleMode === 'at'
+    if (isAtMode) ats = ats.filter(item => item.qq !== Bot.uin)
     if (ats.length === 0) {
       if (use === 'api3') {
         await redis.del(`CHATGPT:QQ_CONVERSATION:${e.sender.user_id}`)
