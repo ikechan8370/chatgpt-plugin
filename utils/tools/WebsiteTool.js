@@ -43,14 +43,15 @@ export class WebsiteTool extends AbstractTool {
       if (origin) {
         Config.headless = false
       }
-      // text = text.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
-      //   .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      //   .replace(/<head\b[^<]*(?:(?!<\/head>)<[^<]*)*<\/head>/gi, '')
-      //   .replace(/<!--[\s\S]*?-->/gi, '')
-      text = text.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '') // 移除<style>标签及其内容
-        .replace(/<[^>]+style\s*=\s*(["'])(?:(?!\1).)*\1[^>]*>/gi, '') // 移除带有style属性的标签
-        .replace(/<[^>]+>/g, '')
-
+      text = text.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+        .replace(/<head\b[^<]*(?:(?!<\/head>)<[^<]*)*<\/head>/gi, '')
+        .replace(/<figure\b[^<]*(?:(?!<\/figure>)<[^<]*)*<\/figure>/gi, '')
+        .replace(/<path\b[^<]*(?:(?!<\/path>)<[^<]*)*<\/path>/gi, '')
+        .replace(/<img[^>]*>/gi, '')
+        .replace(/<!--[\s\S]*?-->/gi, '')
+        .replace(/<\w+\s+[^>]*>/gi, '')
+        .replace(/<\/[a-z][a-z0-9]*>/gi, '')
       let maxModelTokens = getMaxModelTokens(Config.model)
       text = text.slice(0, Math.min(text.length, maxModelTokens - 1600))
       let api = new ChatGPTAPI({
