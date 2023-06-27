@@ -95,5 +95,5 @@ export class QueryStarRailTool extends AbstractTool {
       return `failed to query, error: ${err.toString()}`
     }
   }
-  description = 'Useful when you want to query player information of Honkai Star Rail(崩坏：星穹铁道). '
+  description = 'Useful when you want to query player information of Honkai Star Rail(崩坏：星穹铁道 或者 星铁). '
 }
