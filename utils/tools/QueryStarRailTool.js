@@ -18,7 +18,7 @@ export class QueryStarRailTool extends AbstractTool {
         description: '游戏角色名'
       }
     },
-    required: []
+    required: ['character']
   }
 
   func = async function (opts, e) {
@@ -37,7 +37,7 @@ export class QueryStarRailTool extends AbstractTool {
         }
       } catch (e) {
         // todo support miao-plugin and sruid
-        return await api(uid)
+        return '没有安装StarRail-plugin插件，这次使用鳄梨API查询' + await api(uid)
       }
     }
     try {
@@ -58,7 +58,7 @@ export class QueryStarRailTool extends AbstractTool {
 }
 
 
-export async function api(uid) {
+async function api(uid) {
   let uidRes = await fetch('https://avocado.wiki/v1/info/' + uid)
   uidRes = await uidRes.json()
   let { assistAvatar, displayAvatars } = uidRes.playerDetailInfo
