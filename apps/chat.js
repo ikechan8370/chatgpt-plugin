@@ -63,7 +63,6 @@ import { APTool } from '../utils/tools/APTool.js'
 import { QueryGenshinTool } from '../utils/tools/QueryGenshinTool.js'
 import { HandleMessageMsgTool } from '../utils/tools/HandleMessageMsgTool.js'
 import {QueryUserinfoTool} from "../utils/tools/QueryUserinfoTool.js";
-import { QueryGenshinTool } from '../utils/tools/QueryGenshinTool.js'
 import { EliMovieTool } from '../utils/tools/eliMovieTool.js'
 import { EliMusicTool } from '../utils/tools/EliMusicTool.js'
 
@@ -1970,7 +1969,6 @@ export class chatgpt extends plugin {
             new WeatherTool(),
             new SendPictureTool(),
             new SendVideoTool(),
-            new EliMusicTool(),
             new ImageCaptionTool(),
             new SearchVideoTool(),
             new SerpImageTool(),
@@ -1979,9 +1977,9 @@ export class chatgpt extends plugin {
             new TTSTool(),
             new ProcessPictureTool(),
             new APTool(),
-            new QueryGenshinTool(),
             new HandleMessageMsgTool(),
-            new QueryUserinfoTool()
+            new QueryUserinfoTool(),
+            new EliMusicTool(),
             new EliMovieTool(),
             new QueryGenshinTool()
           ]
@@ -2000,7 +1998,6 @@ export class chatgpt extends plugin {
             new TTSTool(),
             new APTool(),
             new EliMovieTool(),
-            serpTool
             // new HandleMessageMsgTool(),
             serpTool,
             new QueryUserinfoTool()
@@ -2079,6 +2076,7 @@ export class chatgpt extends plugin {
             while (msg.functionCall) {
               let { name, arguments: args } = msg.functionCall
               args = JSON.parse(args)
+              // 感觉换成targetGroupIdOrUserQQNumber这种表意比较清楚的变量名，效果会好一丢丢
               if (!args.groupId) {
                 args.groupId = e.group_id + '' || e.sender.user_id + ''
               }
