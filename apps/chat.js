@@ -62,9 +62,10 @@ import { ProcessPictureTool } from '../utils/tools/ProcessPictureTool.js'
 import { APTool } from '../utils/tools/APTool.js'
 import { QueryGenshinTool } from '../utils/tools/QueryGenshinTool.js'
 import { HandleMessageMsgTool } from '../utils/tools/HandleMessageMsgTool.js'
-import {QueryUserinfoTool} from "../utils/tools/QueryUserinfoTool.js";
-import { EliMovieTool } from '../utils/tools/eliMovieTool.js'
+import { QueryUserinfoTool } from '../utils/tools/QueryUserinfoTool.js'
+import { EliMovieTool } from '../utils/tools/EliMovieTool.js'
 import { EliMusicTool } from '../utils/tools/EliMusicTool.js'
+import { SendMusicTool } from '../utils/tools/SendMusicTool.js'
 
 try {
   await import('emoji-strip')
@@ -1972,6 +1973,8 @@ export class chatgpt extends plugin {
             new ImageCaptionTool(),
             new SearchVideoTool(),
             new SerpImageTool(),
+            new SearchMusicTool(),
+            new SendMusicTool(),
             new SerpIkechan8370Tool(),
             new SerpTool(),
             new TTSTool(),
@@ -1997,18 +2000,23 @@ export class chatgpt extends plugin {
             new SendPictureTool(),
             new TTSTool(),
             new APTool(),
-            new EliMovieTool(),
             // new HandleMessageMsgTool(),
             serpTool,
             new QueryUserinfoTool()
           ]
+          try {
+            await import('../../avocado-plugin/apps/avocado.js')
+            tools.push(...[new EliMusicTool(), new EliMovieTool()])
+          } catch (err) {
+            tools.push(...[new SendMusicTool(), new SearchMusicTool()])
+            logger.mark(logger.green('【ChatGPT-Plugin】插件avocado-plugin未安装') + '，安装后可查看最近热映电影与体验可玩性更高的点歌工具。\n可前往 https://github.com/Qz-Sean/avocado-plugin 获取')
+          }
           if (e.isGroup) {
             let botInfo = await Bot.getGroupMemberInfo(e.group_id, Bot.uin, true)
             if (botInfo.role !== 'member') {
               // 管理员才给这些工具
               tools.push(...[new EditCardTool(), new JinyanTool(), new KickOutTool(), new HandleMessageMsgTool()])
               // 用于撤回和加精的id
-
               if (e.source?.seq) {
                 let source = (await e.group.getChatHistory(e.source?.seq, 1)).pop()
                 option.systemMessage += `\nthe last message is replying to ${source.message_id}, the content is "${source?.raw_message}"\n`
