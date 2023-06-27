@@ -7,7 +7,7 @@ export class HandleMessageMsgTool extends AbstractTool {
     properties: {
       type: {
         type: 'string',
-        enum: ['recall', 'essence'],
+        enum: ['recall', 'essence', 'un-essence'],
         description: 'what do you want to do with the message'
       },
       messageId: {
@@ -28,6 +28,10 @@ export class HandleMessageMsgTool extends AbstractTool {
         }
         case 'essence': {
           await Bot.setEssenceMessage(messageId)
+          break
+        }
+        case 'un-essence': {
+          await Bot.removeEssenceMessage(messageId)
           break
         }
       }
