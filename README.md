@@ -1,5 +1,5 @@
 ![chatgpt-plugin](https://user-images.githubusercontent.com/21212372/232115814-de9a0633-371f-4733-8da0-dd6e912c8a1e.png)
-<div align=center> <h1>云崽QQ机器人的ChatGPT插件(开发分支请勿使用)</h1> </div>
+<div align=center> <h1>云崽QQ机器人的ChatGPT插件</h1> </div>
 <div align=center>
    
    <img src ="https://img.shields.io/github/issues/ikechan8370/chatgpt-plugin?logo=github"/>
