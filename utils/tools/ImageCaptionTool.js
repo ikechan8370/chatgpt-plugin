@@ -26,7 +26,7 @@ export class ImageCaptionTool extends AbstractTool {
 
   func = async function (opts) {
     let { imgUrl, qq, question } = opts
-    if (qq) {
+    if (!imgUrl && qq) {
       imgUrl = `https://q1.qlogo.cn/g?b=qq&s=160&nk=${qq}`
     }
     if (!imgUrl) {

@@ -7,7 +7,7 @@ export class EditCardTool extends AbstractTool {
     properties: {
       qq: {
         type: 'string',
-        description: '你想改名片的那个人的qq号'
+        description: '你想改名片的那个人的qq号，默认为聊天对象'
       },
       card: {
         type: 'string',
@@ -18,7 +18,7 @@ export class EditCardTool extends AbstractTool {
         description: '群号'
       }
     },
-    required: ['qq', 'card', 'groupId']
+    required: ['card', 'groupId']
   }
 
   description = '当你想要修改某个群员的群名片时有用。输入应该是群号、qq号和群名片，用空格隔开。'

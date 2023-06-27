@@ -40,15 +40,12 @@ import ChatGLMClient from '../utils/chatglm.js'
 import { convertFaces } from '../utils/face.js'
 import uploadRecord from '../utils/uploadRecord.js'
 import { SlackClaudeClient } from '../utils/slack/slackClient.js'
-import { ChatgptManagement } from './management.js'
 import { getPromptByName } from '../utils/prompts.js'
 import BingDrawClient from '../utils/BingDraw.js'
 import XinghuoClient from '../utils/xinghuo/xinghuo.js'
 import { JinyanTool } from '../utils/tools/JinyanTool.js'
 import { SendVideoTool } from '../utils/tools/SendBilibiliTool.js'
 import { KickOutTool } from '../utils/tools/KickOutTool.js'
-import { SendAvatarTool } from '../utils/tools/SendAvatarTool.js'
-import { SendDiceTool } from '../utils/tools/SendDiceTool.js'
 import { EditCardTool } from '../utils/tools/EditCardTool.js'
 import { SearchVideoTool } from '../utils/tools/SearchBilibiliTool.js'
 import { SearchMusicTool } from '../utils/tools/SearchMusicTool.js'
@@ -63,6 +60,9 @@ import { ImageCaptionTool } from '../utils/tools/ImageCaptionTool.js'
 import { TTSTool } from '../utils/tools/TTSTool.js'
 import { ProcessPictureTool } from '../utils/tools/ProcessPictureTool.js'
 import { APTool } from '../utils/tools/APTool.js'
+import { QueryGenshinTool } from '../utils/tools/QueryGenshinTool.js'
+import { HandleMessageMsgTool } from '../utils/tools/HandleMessageMsgTool.js'
+import {QueryUserinfoTool} from "../utils/tools/QueryUserinfoTool.js";
 import { QueryGenshinTool } from '../utils/tools/QueryGenshinTool.js'
 import { EliMovieTool } from '../utils/tools/eliMovieTool.js'
 import { EliMusicTool } from '../utils/tools/EliMusicTool.js'
@@ -1828,7 +1828,7 @@ export class chatgpt extends plugin {
         }
         const currentDate = new Date().toISOString().split('T')[0]
         let promptPrefix = `You are ${Config.assistantLabel} ${useCast?.api || Config.promptPrefixOverride || defaultPropmtPrefix}
-        Knowledge cutoff: 2021-09. Current date: ${currentDate}`
+        Current date: ${currentDate}`
         let maxModelTokens = getMaxModelTokens(completionParams.model)
         let system = promptPrefix
         if (maxModelTokens >= 16000 && Config.enableGroupContext) {
@@ -1979,6 +1979,9 @@ export class chatgpt extends plugin {
             new TTSTool(),
             new ProcessPictureTool(),
             new APTool(),
+            new QueryGenshinTool(),
+            new HandleMessageMsgTool(),
+            new QueryUserinfoTool()
             new EliMovieTool(),
             new QueryGenshinTool()
           ]
@@ -1986,19 +1989,37 @@ export class chatgpt extends plugin {
           let tools = [
             // new SendAvatarTool(),
             // new SendDiceTool(),
-            new EditCardTool(),
+            // new EditCardTool(),
             new QueryStarRailTool(),
             new QueryGenshinTool(),
             new WebsiteTool(),
-            new JinyanTool(),
-            new KickOutTool(),
+            // new JinyanTool(),
+            // new KickOutTool(),
             new WeatherTool(),
             new SendPictureTool(),
             new TTSTool(),
             new APTool(),
             new EliMovieTool(),
             serpTool
+            // new HandleMessageMsgTool(),
+            serpTool,
+            new QueryUserinfoTool()
           ]
+          if (e.isGroup) {
+            let botInfo = await Bot.getGroupMemberInfo(e.group_id, Bot.uin, true)
+            if (botInfo.role !== 'member') {
+              // 管理员才给这些工具
+              tools.push(...[new EditCardTool(), new JinyanTool(), new KickOutTool(), new HandleMessageMsgTool()])
+              // 用于撤回和加精的id
+
+              if (e.source?.seq) {
+                let source = (await e.group.getChatHistory(e.source?.seq, 1)).pop()
+                option.systemMessage += `\nthe last message is replying to ${source.message_id}, the content is "${source?.raw_message}"\n`
+              } else {
+                option.systemMessage += `\nthe last message id is ${e.message_id}. `
+              }
+            }
+          }
           let img = []
           if (e.source) {
             // 优先从回复找图
@@ -2066,9 +2087,14 @@ export class chatgpt extends plugin {
               } catch (err) {
                 args.groupId = e.group_id + '' || e.sender.user_id + ''
               }
-              // if (parseInt(args.groupId) !== e.group_id || args.groupId !== e.sender.user_id) {
-              //   args.groupId = e.group_id + '' || e.sender.user_id + ''
-              // }
+              if (!args.qq) {
+                args.qq = e.sender.user_id + ''
+              }
+              try {
+                parseInt(args.qq)
+              } catch (err) {
+                args.qq = e.sender.user_id + ''
+              }
               let functionResult = await fullFuncMap[name].exec(Object.assign({ isAdmin, sender }, args), e)
               logger.mark(`function ${name} execution result: ${functionResult}`)
               option.parentMessageId = msg.id
