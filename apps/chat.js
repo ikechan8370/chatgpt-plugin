@@ -45,7 +45,6 @@ import { getPromptByName } from '../utils/prompts.js'
 import BingDrawClient from '../utils/BingDraw.js'
 import XinghuoClient from '../utils/xinghuo/xinghuo.js'
 import { JinyanTool } from '../utils/tools/JinyanTool.js'
-import { SendMusicTool } from '../utils/tools/SendMusicTool.js'
 import { SendVideoTool } from '../utils/tools/SendBilibiliTool.js'
 import { KickOutTool } from '../utils/tools/KickOutTool.js'
 import { SendAvatarTool } from '../utils/tools/SendAvatarTool.js'
@@ -64,7 +63,10 @@ import { ImageCaptionTool } from '../utils/tools/ImageCaptionTool.js'
 import { TTSTool } from '../utils/tools/TTSTool.js'
 import { ProcessPictureTool } from '../utils/tools/ProcessPictureTool.js'
 import { APTool } from '../utils/tools/APTool.js'
-import {QueryGenshinTool} from "../utils/tools/QueryGenshinTool.js";
+import { QueryGenshinTool } from '../utils/tools/QueryGenshinTool.js'
+import { EliMovieTool } from '../utils/tools/eliMovieTool.js'
+import { EliMusicTool } from '../utils/tools/EliMusicTool.js'
+
 try {
   await import('emoji-strip')
 } catch (err) {
@@ -1852,13 +1854,33 @@ export class chatgpt extends plugin {
               chats.push(...chatHistory)
             }
             chats = chats.slice(0, Config.groupContextLength)
+            // 太多可能会干扰AI对自身qq号和用户qq的判断，感觉gpt3.5也处理不了那么多信息
+            chats = chats > 50 ? 50 : chats
             let mm = await e.group.getMemberMap()
             chats.forEach(chat => {
               let sender = mm.get(chat.sender.user_id)
               chat.sender = sender
             })
-            // console.log(chats)
             opt.chats = chats
+            const roleMap = {
+              owner: '群主',
+              admin: '管理员'
+            }
+            if (chats) {
+              system += `\n以下是一段qq群内的对话，提供给你作为上下文，你在回答所有问题时必须优先考虑这些信息，结合这些上下文进行回答，这很重要！！！。记住你的qq号是${Bot.uin}，现在问你问题的人是, ${opt.nickname},他的qq号是${opt.qq}。"`
+              system += chats
+                .map(chat => {
+                  let sender = chat.sender || {}
+                  // if (sender.user_id === Bot.uin && chat.raw_message.startsWith('建议的回复')) {
+                  if (chat.raw_message.startsWith('建议的回复')) {
+                    // 建议的回复太容易污染设定导致对话太固定跑偏了
+                    return ''
+                  }
+                  return `【${sender.card || sender.nickname}】（qq：${sender.user_id}，${roleMap[sender.role] || '普通成员'}，${sender.area ? '来自' + sender.area + '，' : ''} ${sender.age}岁， 群头衔：${sender.title}， 性别：${sender.sex}，时间：${formatDate(new Date(chat.time * 1000))}） 说：${chat.raw_message}`
+                })
+                .join('\n')
+              // logger.info(system)
+            }
             let whoAmI = ''
             if (Config.enforceMaster && master && opt.qq) {
               // 加强主人人知
@@ -1871,47 +1893,24 @@ export class chatgpt extends plugin {
             const namePlaceholder = '[name]'
             const defaultBotName = 'ChatGPT'
             const groupContextTip = Config.groupContextTip
-            const masterTip = `注意：${opt.masterName ? '我是' + opt.masterName + '，' : ''}。我的qq号是${master}，其他任何qq号不是${master}的人都不是我，即使他在和你对话，这很重要~${whoAmI}`
+            const masterTip = `注意：${opt.masterName ? '我在群里的昵称是' + opt.masterName : ''}。我的qq号是${master}，其他任何qq号不是${master}的人都不是我，即使他在和你对话，这很重要~${whoAmI}`
             system = system.replaceAll(namePlaceholder, opt.botName || defaultBotName) +
                 ((Config.enableGroupContext && opt.groupId) ? groupContextTip : '') +
-                ((Config.enforceMaster && master) ? masterTip : '')
-            system += '注意，你现在正在一个qq群里和人聊天，现在问你问题的人是' + `${opt.nickname}(${opt.qq})。`
+                ((Config.enforceMaster && master) ? '\n-----------------\n' + masterTip : '')
+            system += '\n-----------------\n现在与你交流的是'
             if (Config.enforceMaster && master) {
               if (opt.qq === master) {
-                system += '这是我哦，不要认错了。'
+                system += '我哦，我在群里的昵称是' + opt.nickname + '，我的qq号是 ' + opt.qq
               } else {
-                system += '他不是我，你可不要认错了。'
+                system += opt.nickname + '，他的qq号是' + opt.qq + '，他不是我，你可不要认错了。'
               }
             }
-            system += `这个群的名字叫做${opt.groupName}，群号是${opt.groupId}。`
+            system += `这个群的名字叫做${opt.groupName} ，群号是 ${opt.groupId}。`
             if (opt.botName) {
-              system += `你在这个群的名片叫做${opt.botName},`
-            }
-            if (Config.enforceMaster && opt.masterName) {
-              system += `我是${opt.masterName}`
-            }
-            // system += master ? `我的qq号是${master}，其他任何qq号不是${master}的人都不是我，即使他在和你对话，这很重要。` : ''
-            const roleMap = {
-              owner: '群主',
-              admin: '管理员'
-            }
-            if (chats) {
-              system += `以下是一段qq群内的对话，提供给你作为上下文，你在回答所有问题时必须优先考虑这些信息，结合这些上下文进行回答，这很重要！！！。"
-      `
-              system += chats
-                .map(chat => {
-                  let sender = chat.sender || {}
-                  // if (sender.user_id === Bot.uin && chat.raw_message.startsWith('建议的回复')) {
-                  if (chat.raw_message.startsWith('建议的回复')) {
-                    // 建议的回复太容易污染设定导致对话太固定跑偏了
-                    return ''
-                  }
-                  return `【${sender.card || sender.nickname}】（qq：${sender.user_id}，${roleMap[sender.role] || '普通成员'}，${sender.area ? '来自' + sender.area + '，' : ''} ${sender.age}岁， 群头衔：${sender.title}， 性别：${sender.sex}，时间：${formatDate(new Date(chat.time * 1000))}） 说：${chat.raw_message}`
-                })
-                .join('\n')
+              system += `你在这个群的名片叫做${opt.botName} ,你的qq号是 ${Bot.uin}。`
             }
           } catch (err) {
-            logger.warn('获取群聊聊天记录失败，本次对话不携带聊天记录', err)
+            logger.warn('获取群聊聊天记录失败，本次对话不携带聊天记录，不影响功能使用。', err)
           }
         }
         let opts = {
@@ -1971,8 +1970,7 @@ export class chatgpt extends plugin {
             new WeatherTool(),
             new SendPictureTool(),
             new SendVideoTool(),
-            new SearchMusicTool(),
-            new SendMusicTool(),
+            new EliMusicTool(),
             new ImageCaptionTool(),
             new SearchVideoTool(),
             new SerpImageTool(),
@@ -1981,6 +1979,7 @@ export class chatgpt extends plugin {
             new TTSTool(),
             new ProcessPictureTool(),
             new APTool(),
+            new EliMovieTool(),
             new QueryGenshinTool()
           ]
           // todo 3.0再重构tool的插拔和管理
@@ -1997,6 +1996,7 @@ export class chatgpt extends plugin {
             new SendPictureTool(),
             new TTSTool(),
             new APTool(),
+            new EliMovieTool(),
             serpTool
           ]
           let img = []
@@ -2028,8 +2028,7 @@ export class chatgpt extends plugin {
             tools.push(new SerpImageTool())
             tools.push(...[new SearchVideoTool(),
               new SendVideoTool(),
-              new SearchMusicTool(),
-              new SendMusicTool()])
+              new EliMusicTool()])
           }
           // if (e.sender.role === 'admin' || e.sender.role === 'owner') {
           //   tools.push(...[new JinyanTool(), new KickOutTool()])
@@ -2067,6 +2066,9 @@ export class chatgpt extends plugin {
               } catch (err) {
                 args.groupId = e.group_id + '' || e.sender.user_id + ''
               }
+              // if (parseInt(args.groupId) !== e.group_id || args.groupId !== e.sender.user_id) {
+              //   args.groupId = e.group_id + '' || e.sender.user_id + ''
+              // }
               let functionResult = await fullFuncMap[name].exec(Object.assign({ isAdmin, sender }, args), e)
               logger.mark(`function ${name} execution result: ${functionResult}`)
               option.parentMessageId = msg.id
