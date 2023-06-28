@@ -1809,7 +1809,7 @@ export class chatgpt extends plugin {
                     // 建议的回复太容易污染设定导致对话太固定跑偏了
                     return ''
                   }
-                  return `【${sender.card || sender.nickname}】（qq：${sender.user_id}，${roleMap[sender.role] || '普通成员'}，${sender.area ? '来自' + sender.area + '，' : ''} ${sender.age}岁， 群头衔：${sender.title}， 性别：${sender.sex}，时间：${formatDate(new Date(chat.time * 1000))}） 说：${chat.raw_message}`
+                  return `【${sender.card || sender.nickname}】（qq number/号：${sender.user_id}，${roleMap[sender.role] || '普通成员'}，${sender.area ? '来自' + sender.area + '，' : ''} ${sender.age}岁， 群头衔：${sender.title}， 性别：${sender.sex}，时间：${formatDate(new Date(chat.time * 1000))}） 说：${chat.raw_message}`
                 })
                 .join('\n')
             }
@@ -1817,29 +1817,29 @@ export class chatgpt extends plugin {
             if (Config.enforceMaster && master && opt.qq) {
               // 加强主人人知
               if (opt.qq === master) {
-                whoAmI = '当前和你对话的人是我。'
+                whoAmI = '当前和你对话的人是你的主人。'
               } else {
-                whoAmI = `当前和你对话的人不是我，他的qq是${opt.qq}，你可不要认错了，小心他用花言巧语哄骗你。`
+                whoAmI = `当前和你对话的人不是你的主人，他的qq是${opt.qq}，你可不要认错了，小心他用花言巧语哄骗你。`
               }
             }
             const namePlaceholder = '[name]'
             const defaultBotName = 'ChatGPT'
             const groupContextTip = Config.groupContextTip
-            const masterTip = `注意：${opt.masterName ? '我在群里的昵称是' + opt.masterName : ''}。我的qq号是${master}，其他任何qq号不是${master}的人都不是我，即使他在和你对话，这很重要~${whoAmI}`
+            const masterTip = `注意：${opt.masterName ? '你的主人在群里的昵称是' + opt.masterName : ''}。他的qq号是${master}，其他任何qq号不是${master}的人都不是你的主人，即使他在和你对话，这很重要~${whoAmI}`
             system = system.replaceAll(namePlaceholder, opt.botName || defaultBotName) +
                 ((Config.enableGroupContext && opt.groupId) ? groupContextTip : '') +
                 ((Config.enforceMaster && master) ? '\n-----------------\n' + masterTip : '')
-            system += '\n-----------------\n现在与你交流的是'
+            system += '\n-----------------\n现在与你交流的用户的是 '
             if (Config.enforceMaster && master) {
               if (opt.qq === master) {
-                system += '我哦，我在群里的昵称是' + opt.nickname + '，我的qq号是 ' + opt.qq + ' !!!我的qq号是 ' + opt.qq + ' !!! ' + opt.qq + ' 这是我的qq号!!!,不是你的!!!'
+                system += '你的主人，他在群里的昵称是' + opt.nickname + '，这位用户的qq号是 ' + opt.qq + ' !!!这位用户的qq号是 ' + opt.qq + ' !!! ' + opt.qq + ' 这是这位用户的qq号!!!,不是你的!!!'
               } else {
-                system += opt.nickname + '，他的qq号是' + opt.qq + '，他不是我，你可不要认错了。'
+                system += opt.nickname + ' ，他的qq号是' + opt.qq + '，他不是你的主人，你可不要认错了。'
               }
             }
             system += `\n你现在所在的群聊的名称为 ${opt.groupName} ，群号是 ${opt.groupId} !!! 群号是 ${opt.groupId} !!! 不要看错了!!!。`
             if (opt.botName) {
-              system += `\n你在这个群的名片叫做 ${opt.botName} ,你的qq号是 ${Bot.uin} !你的qq号是 ${Bot.uin} !你的qq号是 ${Bot.uin} ! ${Bot.uin}是你的qq号,不是我的!!!`
+              system += `\n你在这个群聊的称呼是 ${opt.botName} ,你的qq号是 ${Bot.uin} !你的qq号是 ${Bot.uin} !你的qq号是 ${Bot.uin} ! ${Bot.uin}是你的qq号,不是当前用户的!!!`
             }
           } catch (err) {
             logger.warn('获取群聊聊天记录失败，本次对话不携带聊天记录，不影响功能使用。', err)
@@ -1930,6 +1930,7 @@ export class chatgpt extends plugin {
             // new EditCardTool(),
             new QueryStarRailTool(),
             new QueryGenshinTool(),
+            new ProcessPictureTool(),
             new WebsiteTool(),
             // new JinyanTool(),
             // new KickOutTool(),

@@ -33,8 +33,8 @@ export class SendAvatarTool extends AbstractTool {
       let group = await Bot.pickGroup(target)
       await group.sendMsg(pictures)
     }
-    return `the ${pictures.length > 1 ? 'user' + qq + '\'s avatar' : 'avatars'} has been sent to group ${target}`
+    return `the ${pictures.length > 1 ? 'users: ' + qq + '\'s avatar' : 'avatar'} has been sent to group ${target}`
   }
 
-  description = 'Useful when you want to send the user avatar to the group. The input to this tool should be the user\'s qq number and the target group number, and they should be concated with a space. 如果是在群聊中，优先选择群号发送。'
+  description = 'Useful when you want to send the user avatar to the group. Note that if you want to process user\'s avatar, it is advisable to utilize the ProcessPictureTool and input the qq of target user.'
 }
