@@ -23,6 +23,7 @@ export class QueryStarRailTool extends AbstractTool {
 
   func = async function (opts, e) {
     let { qq, uid, character } = opts
+    qq = isNaN(qq) || !qq ? e.sender.user_id : parseInt(qq.trim())
     if (e.at === Bot.uin) {
       e.at = null
     }

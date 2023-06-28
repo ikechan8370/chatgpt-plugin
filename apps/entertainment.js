@@ -1,7 +1,7 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import { Config } from '../utils/config.js'
 import { generateHello } from '../utils/randomMessage.js'
-import { generateAudio } from '../utils/tts.js'
+import { generateVitsAudio } from '../utils/tts.js'
 import fs from 'fs'
 import { emojiRegex, googleRequestUrl } from '../utils/emoj/index.js'
 import fetch from 'node-fetch'
@@ -304,7 +304,7 @@ ${translateLangLabels}
     let sendable = message
     logger.info(`打招呼给群聊${groupId}：` + message)
     if (Config.defaultUseTTS) {
-      let audio = await generateAudio(message, Config.defaultTTSRole)
+      let audio = await generateVitsAudio(message, Config.defaultTTSRole)
       sendable = segment.record(audio)
     }
     if (!groupId) {
@@ -362,7 +362,7 @@ ${translateLangLabels}
                   }
                 }
                 try {
-                  audio = await generateAudio(message, defaultVitsTTSRole, '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）')
+                  audio = await generateVitsAudio(message, defaultVitsTTSRole, '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）')
                 } catch (err) {
                   logger.error(err)
                 }

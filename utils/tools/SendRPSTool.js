@@ -1,4 +1,4 @@
-import {AbstractTool} from "./AbstractTool.js";
+import { AbstractTool } from './AbstractTool.js'
 
 export class SendRPSTool extends AbstractTool {
   name = 'sendRPS'
@@ -8,20 +8,24 @@ export class SendRPSTool extends AbstractTool {
       type: 'number',
       description: '石头剪刀布的代号'
     },
-    groupId: {
+    targetGroupIdOrQQNumber: {
       type: 'string',
-      description: '群号或qq号，发送目标'
+      description: 'Fill in the target user_id or groupId when you need to send RPS to specific group or user'
     },
-    required: ['num', 'groupId']
+    required: ['num', 'targetGroupIdOrUserQQNumber']
   }
 
-  func = async function (num, groupId) {
+  func = async function (num, targetGroupIdOrQQNumber, e) {
+    const target = isNaN(targetGroupIdOrQQNumber) || !targetGroupIdOrQQNumber
+      ? e.isGroup ? e.group_id : e.sender.user_id
+      : parseInt(targetGroupIdOrQQNumber.trim())
+
     let groupList = await Bot.getGroupList()
-    if (groupList.get(groupId)) {
-      let group = await Bot.pickGroup(groupId, true)
+    if (groupList.get(target)) {
+      let group = await Bot.pickGroup(target, true)
       await group.sendMsg(segment.rps(num))
     } else {
-      let friend = await Bot.pickFriend(groupId)
+      let friend = await Bot.pickFriend(target)
       await friend.sendMsg(segment.rps(num))
     }
   }
