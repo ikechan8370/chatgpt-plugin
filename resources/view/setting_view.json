@@ -455,7 +455,7 @@
                 "type": "text",
                 "label": "AI名字",
                 "placeholder": "AI认为的自己的名字，当你问他你是谁是他会回答这里的名字",
-                "data": "model"
+                "data": "assistantLabel"
               },
               {
                 "type": "number",
