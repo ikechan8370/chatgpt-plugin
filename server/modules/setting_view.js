@@ -10,7 +10,7 @@ async function SettingView(fastify, options) {
         if (!user) {
             reply.send({ err: '未登录' })
         } else if (user.autho === 'admin') {
-            const filepath = path.join('plugins/chatgpt-plugin/resources', 'view.json')
+            const filepath = path.join('plugins/chatgpt-plugin/resources/view', 'setting_view.json')
             const configView = JSON.parse(fs.readFileSync(filepath, 'utf8'))
             reply.send(configView)
         } else {
