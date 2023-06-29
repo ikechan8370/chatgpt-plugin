@@ -780,18 +780,6 @@ export async function getImageOcrText (e) {
     return false
   }
 }
-// 对原始黑白名单进行去重和去除无效群号处理，并处理通过锅巴面板添加错误配置时可能导致的问题
-export function processList (whitelist, blacklist) {
-  whitelist = Array.isArray(whitelist)
-    ? whitelist
-    : String(whitelist).split(/[,，]/)
-  blacklist = !Array.isArray(blacklist)
-    ? blacklist
-    : String(blacklist).split(/[,，]/)
-  whitelist = Array.from(new Set(whitelist)).filter(value => /^\^?[1-9]\d{5,9}$/.test(value))
-  blacklist = Array.from(new Set(blacklist)).filter(value => /^\^?[1-9]\d{5,9}$/.test(value))
-  return [whitelist, blacklist]
-}
 
 export function getMaxModelTokens (model = 'gpt-3.5-turbo') {
   if (model.startsWith('gpt-3.5-turbo')) {

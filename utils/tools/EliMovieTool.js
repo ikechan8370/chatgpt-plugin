@@ -34,6 +34,7 @@ export class EliMovieTool extends AbstractTool {
     }
     try {
       // eslint-disable-next-line new-cap
+      e.senderFromChatGpt = e.sender.user_id
       await avocado.avocadoMovie(e)
       return 'notify the user that the movie has been sent to them and they can obtain more information by sending commands displayed in the picture. you don’t need to search for additional information to reply! just simply inform them that you have completed your task!!!'
     } catch (err) {

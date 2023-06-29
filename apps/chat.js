@@ -27,7 +27,6 @@ import {
   getUserReplySetting,
   getImageOcrText,
   getImg,
-  processList,
   getMaxModelTokens, formatDate, generateAudio
 } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
@@ -35,10 +34,9 @@ import { KeyvFile } from 'keyv-file'
 import { OfficialChatGPTClient } from '../utils/message.js'
 import fetch from 'node-fetch'
 import { deleteConversation, getConversations, getLatestMessageIdByConversationId } from '../utils/conversation.js'
-import { convertSpeaker, generateVitsAudio, speakers } from '../utils/tts.js'
+import { convertSpeaker, speakers } from '../utils/tts.js'
 import ChatGLMClient from '../utils/chatglm.js'
 import { convertFaces } from '../utils/face.js'
-import uploadRecord from '../utils/uploadRecord.js'
 import { SlackClaudeClient } from '../utils/slack/slackClient.js'
 import { getPromptByName } from '../utils/prompts.js'
 import BingDrawClient from '../utils/BingDraw.js'
@@ -791,16 +789,37 @@ export class chatgpt extends plugin {
       return false
     }
     // 黑白名单过滤对话
-    let [whitelist, blacklist] = processList(Config.whitelist, Config.blacklist)
+    let [whitelist, blacklist] = [Config.whitelist, Config.blacklist]
+    let chatPermission = false // 对话许可
     if (whitelist.join('').length > 0) {
-      if (e.isGroup && !whitelist.includes(e.group_id.toString())) return false
-      const list = whitelist.filter(elem => elem.startsWith('^')).map(elem => elem.slice(1))
-      if (!list.includes(e.sender.user_id.toString())) return false
+      for (const item of whitelist) {
+        if (item.length > 11) {
+          const [group, qq] = item.split('^')
+          if (e.isGroup && group === e.group_id.toString() && qq === e.sender.user_id.toString()) {
+            chatPermission = true
+            break
+          }
+        } else if (item.startsWith('^') && item.slice(1) === e.sender.user_id.toString()) {
+          chatPermission = true
+          break
+        } else if (e.isGroup && !item.startsWith('^') && item === e.group_id.toString()) {
+          chatPermission = true
+          break
+        }
+      }
     }
-    if (blacklist.join('').length > 0) {
-      if (e.isGroup && blacklist.includes(e.group_id.toString())) return false
-      const list = blacklist.filter(elem => elem.startsWith('^')).map(elem => elem.slice(1))
-      if (list.includes(e.sender.user_id.toString())) return false
+    // 当前用户有对话许可则不再判断黑名单
+    if (!chatPermission) {
+      if (blacklist.join('').length > 0) {
+        for (const item of blacklist) {
+          if (e.isGroup && !item.startsWith('^') && item === e.group_id.toString()) return false
+          if (item.startsWith('^') && item.slice(1) === e.sender.user_id.toString()) return false
+          if (item.length > 11) {
+            const [group, qq] = item.split('^')
+            if (e.isGroup && group === e.group_id.toString() && qq === e.sender.user_id.toString()) return false
+          }
+        }
+      }
     }
 
     let userSetting = await getUserReplySetting(this.e)

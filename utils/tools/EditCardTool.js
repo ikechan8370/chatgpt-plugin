@@ -29,11 +29,11 @@ export class EditCardTool extends AbstractTool {
     qq = isNaN(qq) || !qq ? e.sender.user_id : parseInt(qq.trim())
     groupId = isNaN(groupId) || !groupId ? e.group_id : parseInt(groupId.trim())
     let group = await Bot.pickGroup(groupId)
-    let m = await group.getMemberMap()
-    if (!m.has(qq)) {
+    let mm = await group.getMemberMap()
+    if (!mm.has(qq)) {
       return `failed, the user ${qq} is not in group ${groupId}`
     }
-    if (m.get(Bot.uin).role === 'member') {
+    if (mm.get(Bot.uin).role === 'member') {
       return `failed, you, not user, don't have permission to edit card in group ${groupId}`
     }
     logger.info('edit card: ', groupId, qq)

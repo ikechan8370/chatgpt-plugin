@@ -68,8 +68,7 @@ export class EliMusicTool extends AbstractTool {
       } else {
         e.msg = '#鳄梨酱#' + (isRandom ? '随机' : '') + (isHot ? '热门' : '') + (singer ? singer + (keyword ? ',' + keyword : '') : keyword)
       }
-
-      logger.warn(e.msg)
+      e.senderFromChatGpt = e.sender.user_id
       await avocado.pickMusic(e)
       if (isRandom2) {
         return 'tell the user that a random song by his favorite artist has been sent to him! you don\'t need to find other info!'
