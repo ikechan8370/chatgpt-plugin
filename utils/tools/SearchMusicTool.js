@@ -8,7 +8,7 @@ export class SearchMusicTool extends AbstractTool {
     properties: {
       keyword: {
         type: 'string',
-        description: '音乐的标题或关键词'
+        description: '音乐的标题或关键词, 可以是歌曲名或歌曲名+歌手名的组合'
       }
     },
     required: ['keyword']

@@ -42,13 +42,17 @@ export function supportGuoba () {
         {
           field: 'whitelist',
           label: '对话白名单',
-          bottomHelpMessage: '只有在白名单内的QQ号或群组才能使用本插件进行对话。如果需要添加QQ号，请在号码前面加上^符号（例如：^123456），多个号码之间请用英文逗号(,)隔开。白名单优先级高于黑名单。',
+          bottomHelpMessage: '默认设置为添加群号。优先级高于黑名单。\n' +
+              '注意：需要添加QQ号时在前面添加^(例如：^123456)，此全局添加白名单，即除白名单以外的所有人都不能使用插件对话。\n' +
+              '如果需要在某个群里独享moment，即群聊中只有白名单上的qq号能用，则使用（群号^qq）的格式(例如：123456^123456)。\n' +
+              '白名单优先级：混合制 > qq > 群号。\n' +
+              '黑名单优先级: 群号 > qq > 混合制。',
           component: 'Input'
         },
         {
           field: 'blacklist',
           label: '对话黑名单',
-          bottomHelpMessage: '名单内的群或QQ号将无法使用本插件进行对话。如果需要添加QQ号，请在QQ号前面加上^符号（例如：^123456），并用英文逗号（,）将各个号码分隔开。',
+          bottomHelpMessage: '参考白名单设置规则。',
           component: 'Input'
         },
         {
@@ -834,7 +838,22 @@ export function supportGuoba () {
       setConfigData (data, { Result }) {
         for (let [keyPath, value] of Object.entries(data)) {
           // 处理黑名单
-          if (keyPath === 'blacklist' || keyPath === 'whitelist' || keyPath === 'blockWords' || keyPath === 'promptBlockWords' || keyPath === 'initiativeChatGroups') { value = value.toString().split(/[,，;；\|]/) }
+          if (keyPath === 'blockWords' || keyPath === 'promptBlockWords' || keyPath === 'initiativeChatGroups') { value = value.toString().split(/[,，;；\|]/) }
+          if (keyPath === 'blacklist' || keyPath === 'whitelist') {
+            // 6-10位数的群号或qq
+            const regex = /^\^?[1-9]\d{5,9}(\^[1-9]\d{5,9})?$/
+            const inputSet = new Set()
+            value = value.toString().split(/[,，;；|\s]/).reduce((acc, item) => {
+              item = item.trim()
+              if (!inputSet.has(item) && regex.test(item)) {
+                if (item.length <= 11 || (item.length <= 21 && item.length > 11 && !item.startsWith('^'))) {
+                  inputSet.add(item)
+                  acc.push(item)
+                }
+              }
+              return acc
+            }, [])
+          }
           if (Config[keyPath] !== value) { Config[keyPath] = value }
         }
         // 正确储存azureRoleSelect结果

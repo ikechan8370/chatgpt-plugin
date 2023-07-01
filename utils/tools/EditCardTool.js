@@ -1,4 +1,5 @@
 import { AbstractTool } from './AbstractTool.js'
+import cfg from '../../../../lib/config/config.js'
 
 export class EditCardTool extends AbstractTool {
   name = 'editCard'
@@ -23,12 +24,20 @@ export class EditCardTool extends AbstractTool {
 
   description = 'Useful when you want to edit someone\'s card in the group(群名片)'
 
-  func = async function (opts) {
+  func = async function (opts, e) {
     let { qq, card, groupId } = opts
-    groupId = parseInt(groupId.trim())
-    qq = parseInt(qq.trim())
-    logger.info('edit card: ', groupId, qq)
+    qq = isNaN(qq) || !qq ? e.sender.user_id : parseInt(qq.trim())
+    groupId = isNaN(groupId) || !groupId ? e.group_id : parseInt(groupId.trim())
+
     let group = await Bot.pickGroup(groupId)
+    let mm = await group.getMemberMap()
+    if (!mm.has(qq)) {
+      return `failed, the user ${qq} is not in group ${groupId}`
+    }
+    if (mm.get(Bot.uin).role === 'member') {
+      return `failed, you, not user, don't have permission to edit card in group ${groupId}`
+    }
+    logger.info('edit card: ', groupId, qq)
     await group.setCard(qq, card)
     return `the user ${qq}'s card has been changed into ${card}`
   }

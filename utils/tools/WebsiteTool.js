@@ -43,14 +43,21 @@ export class WebsiteTool extends AbstractTool {
       if (origin) {
         Config.headless = false
       }
-      // text = text.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
-      //   .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      //   .replace(/<head\b[^<]*(?:(?!<\/head>)<[^<]*)*<\/head>/gi, '')
-      //   .replace(/<!--[\s\S]*?-->/gi, '')
-      text = text.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '') // 移除<style>标签及其内容
-        .replace(/<[^>]+style\s*=\s*(["'])(?:(?!\1).)*\1[^>]*>/gi, '') // 移除带有style属性的标签
-        .replace(/<[^>]+>/g, '')
-
+      text = text.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+        .replace(/<head\b[^<]*(?:(?!<\/head>)<[^<]*)*<\/head>/gi, '')
+        .replace(/<figure\b[^<]*(?:(?!<\/figure>)<[^<]*)*<\/figure>/gi, '')
+        .replace(/<path\b[^<]*(?:(?!<\/path>)<[^<]*)*<\/path>/gi, '')
+        .replace(/<video\b[^<]*(?:(?!<\/video>)<[^<]*)*<\/video>/gi, '')
+        .replace(/<audio\b[^<]*(?:(?!<\/audio>)<[^<]*)*<\/audio>/gi, '')
+        .replace(/<img[^>]*>/gi, '')
+        .replace(/<!--[\s\S]*?-->/gi, '') // 去除注释
+        .replace(/<(?!\/?(title|ul|li|td|tr|thead|tbody|blockquote|h[1-6]|H[1-6])[^>]*)\w+\s+[^>]*>/gi, '') // 去除常见语音标签外的含属性标签
+        .replace(/<(\w+)(\s[^>]*)?>/gi, '<$1>') // 进一步去除剩余标签的属性
+        .replace(/<\/(?!\/?(title|ul|li|td|tr|thead|tbody|blockquote|h[1-6]|H[1-6])[^>]*)[a-z][a-z0-9]*>/gi, '') // 去除常见语音标签外的含属性结束标签
+        .replace(/[\n\r]/gi, '') // 去除回车换行
+        .replace(/\s{2}/g, '') // 多个空格只保留一个空格
+        .replace('<!DOCTYPE html>', '') // 去除<!DOCTYPE>声明
       let maxModelTokens = getMaxModelTokens(Config.model)
       text = text.slice(0, Math.min(text.length, maxModelTokens - 1600))
       let api = new ChatGPTAPI({
@@ -74,7 +81,7 @@ export class WebsiteTool extends AbstractTool {
         },
         maxModelTokens
       })
-      const htmlContentSummaryRes = await api.sendMessage(`这是一个网页html经过筛选的内容，请你进一步去掉其中的标签、样式、script等无用信息，并从中提取出其中的主体内容转换成自然语言告诉我，不需要主观描述性的语言。${text}`)
+      const htmlContentSummaryRes = await api.sendMessage(`去除与主体内容无关的部分，从中整理出主体内容并转换成md格式，不需要主观描述性的语言与冗余的空白行。${text}`)
       let htmlContentSummary = htmlContentSummaryRes.text
       return `this is the main content of website:\n ${htmlContentSummary}`
     } catch (err) {

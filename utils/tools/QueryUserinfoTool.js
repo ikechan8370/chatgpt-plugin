@@ -2,7 +2,7 @@ import { AbstractTool } from './AbstractTool.js'
 import { getMasterQQ } from '../common.js'
 
 export class QueryUserinfoTool extends AbstractTool {
-  name = 'queryUser'
+  name = 'queryUserinfo'
 
   parameters = {
     properties: {
@@ -16,9 +16,10 @@ export class QueryUserinfoTool extends AbstractTool {
 
   func = async function (opts, e) {
     let { qq } = opts
-    if (e.is_group && typeof e.group.getMemberMap === 'function') {
-      let mm = e.group.getMemberMap()
-      let user = mm.get(parseInt(qq) || e.sender.user_id)
+    qq = isNaN(qq) || !qq ? e.sender.user_id : parseInt(qq.trim())
+    if (e.isGroup && typeof e.group.getMemberMap === 'function') {
+      let mm = await e.group.getMemberMap()
+      let user = mm.get(qq) || e.sender.user_id
       let master = (await getMasterQQ())[0]
       let prefix = ''
       if (qq != master) {

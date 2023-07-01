@@ -7,27 +7,34 @@ export class SendAvatarTool extends AbstractTool {
     properties: {
       qq: {
         type: 'string',
-        description: '要发头像的人的qq号'
+        description: 'if you need to send avatar of a user, input his qq.If there are multiple qq, separate them with a space'
       },
-      groupId: {
+      targetGroupIdOrQQNumber: {
         type: 'string',
-        description: '群号或qq号，发送目标'
+        description: 'Fill in the target user\'s qq number or groupId when you need to send avatar to specific user or group, otherwise leave blank'
       }
     },
-    required: ['qq', 'groupId']
+    required: ['qq', 'targetGroupIdOrQQNumber']
   }
 
-  func = async function (opts) {
-    let { qq, groupId } = opts
-    let groupList = await Bot.getGroupList()
-    groupId = parseInt(groupId.trim())
-    console.log('sendAvatar', groupId, qq)
-    if (groupList.get(groupId)) {
-      let group = await Bot.pickGroup(groupId)
-      await group.sendMsg(segment.image('https://q1.qlogo.cn/g?b=qq&s=0&nk=' + qq))
+  func = async function (opts, e) {
+    let { qq, targetGroupIdOrQQNumber } = opts
+    const pictures = qq.split(/[,，\s]/).filter(qq => !isNaN(qq.trim()) && qq.trim()).map(qq => segment.image('https://q1.qlogo.cn/g?b=qq&s=0&nk=' + parseInt(qq.trim())))
+    if (!pictures.length) {
+      return 'there is no valid qq'
     }
-    return `the user ${qq}'s avatar has been sent to group ${groupId}`
+    const target = isNaN(targetGroupIdOrQQNumber) || !targetGroupIdOrQQNumber
+      ? e.isGroup ? e.group_id : e.sender.user_id
+      : parseInt(targetGroupIdOrQQNumber.trim())
+
+    let groupList = await Bot.getGroupList()
+    console.log('sendAvatar', target, pictures)
+    if (groupList.get(target)) {
+      let group = await Bot.pickGroup(target)
+      await group.sendMsg(pictures)
+    }
+    return `the ${pictures.length > 1 ? 'users: ' + qq + '\'s avatar' : 'avatar'} has been sent to group ${target}`
   }
 
-  description = 'Useful when you want to send the user avatar picture to the group. The input to this tool should be the user\'s qq number and the target group number, and they should be concated with a space. 如果是在群聊中，优先选择群号发送。'
+  description = 'Useful when you want to send the user avatar to the group. Note that if you want to process user\'s avatar, it is advisable to utilize the ProcessPictureTool and input the qq of target user.'
 }

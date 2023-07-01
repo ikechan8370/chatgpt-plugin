@@ -5,46 +5,47 @@ export class SendPictureTool extends AbstractTool {
 
   parameters = {
     properties: {
-      picture: {
+      urlOfPicture: {
         type: 'string',
-        description: 'the url of the pictures, split with space if more than one.'
+        description: 'the url of the pictures, not text, split with space if more than one. can be left blank.'
       },
-      qq: {
+      targetGroupIdOrQQNumber: {
         type: 'string',
-        description: 'if you want to send avatar of a user, input his qq number.'
-      },
-      groupId: {
-        type: 'string',
-        description: 'the group number or qq number, will send to current conversation if leave blank'
+        description: 'Fill in the target user\'s qq number or groupId when you need to send picture to specific user or group, otherwise leave blank'
       }
     },
-    required: ['picture']
+    required: ['urlOfPicture', 'targetGroupIdOrQQNumber']
   }
 
-  func = async function (opt) {
-    let { picture, groupId, qq } = opt
-    if (qq) {
-      let avatar = `https://q1.qlogo.cn/g?b=qq&s=0&nk=${qq}`
-      picture += (' ' + avatar)
+  func = async function (opt, e) {
+    let { urlOfPicture, targetGroupIdOrQQNumber } = opt
+    const target = isNaN(targetGroupIdOrQQNumber) || !targetGroupIdOrQQNumber
+      ? e.isGroup ? e.group_id : e.sender.user_id
+      : parseInt(targetGroupIdOrQQNumber.trim())
+    // 处理错误url和picture留空的情况
+    const urlRegex = /(?:(?:https?|ftp):\/\/)?(?:\S+(?::\S*)?@)?(?:((?:(?:[a-z0-9\u00a1-\u4dff\u9fd0-\uffff][a-z0-9\u00a1-\u4dff\u9fd0-\uffff_-]{0,62})?[a-z0-9\u00a1-\u4dff\u9fd0-\uffff]\.)+(?:[a-z\u00a1-\u4dff\u9fd0-\uffff]{2,}\.?))(?::\d{2,5})?)(?:\/[\w\u00a1-\u4dff\u9fd0-\uffff$-_.+!*'(),%]+)*(?:\?(?:[\w\u00a1-\u4dff\u9fd0-\uffff$-_.+!*(),%:@&=]|(?:[\[\]])|(?:[\u00a1-\u4dff\u9fd0-\uffff]))*)?(?:#(?:[\w\u00a1-\u4dff\u9fd0-\uffff$-_.+!*'(),;:@&=]|(?:[\[\]]))*)?\/?/i
+    if (/https:\/\/example.com/.test(urlOfPicture) || !urlOfPicture || !urlRegex.test(urlOfPicture)) urlOfPicture = ''
+    if (!urlOfPicture) {
+      return 'Because there is no correct URL for the picture ,tell user the reason and ask user if he want to use SearchImageTool'
     }
-    let pictures = picture.trim().split(' ')
+    let pictures = urlOfPicture.trim().split(' ')
+    logger.mark('pictures to send: ', pictures)
     pictures = pictures.map(img => segment.image(img))
     let groupList = await Bot.getGroupList()
-    groupId = parseInt(groupId)
     try {
-      if (groupList.get(groupId)) {
-        let group = await Bot.pickGroup(groupId)
+      if (groupList.get(target)) {
+        let group = await Bot.pickGroup(target)
         await group.sendMsg(pictures)
-        return `picture has been sent to group ${groupId}`
+        return 'picture has been sent to group' + target
       } else {
-        let user = await Bot.pickFriend(groupId)
+        let user = await Bot.pickFriend(target)
         await user.sendMsg(pictures)
-        return `picture has been sent to user ${groupId}`
+        return 'picture has been sent to user' + target
       }
     } catch (err) {
       return `failed to send pictures, error: ${JSON.stringify(err)}`
     }
   }
 
-  description = 'Useful when you want to send one or more pictures. '
+  description = 'Useful when you want to send one or more pictures.'
 }
