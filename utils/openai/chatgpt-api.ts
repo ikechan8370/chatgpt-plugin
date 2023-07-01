@@ -415,44 +415,47 @@ export class ChatGPTAPI {
         let functionToken = 0
 
         let numTokens = functionToken
-        for (const func of completionParams.functions) {
-            functionToken += await this._getTokenCount(func.name)
-            functionToken += await this._getTokenCount(func.description)
-            if (func.parameters.properties) {
-                for (let key of Object.keys(func.parameters.properties)) {
-                    functionToken += await this._getTokenCount(key)
-                    let property = func.parameters.properties[key]
-                    for (let field of Object.keys(property)) {
-                        switch (field) {
-                            case 'type': {
-                                functionToken += 2
-                                functionToken += await this._getTokenCount(property.type)
-                                break
-                            }
-                            case 'description': {
-                                functionToken += 2
-                                functionToken += await this._getTokenCount(property.description)
-                                break
-                            }
-                            case 'field': {
-                                functionToken -= 3
-                                for (let enumElement of property.enum) {
-                                    functionToken += 3
-                                    functionToken += await this._getTokenCount(enumElement)
+        if (completionParams.functions) {
+            for (const func of completionParams.functions) {
+                functionToken += await this._getTokenCount(func?.name)
+                functionToken += await this._getTokenCount(func?.description)
+                if (func?.parameters?.properties) {
+                    for (let key of Object.keys(func.parameters.properties)) {
+                        functionToken += await this._getTokenCount(key)
+                        let property = func.parameters.properties[key]
+                        for (let field of Object.keys(property)) {
+                            switch (field) {
+                                case 'type': {
+                                    functionToken += 2
+                                    functionToken += await this._getTokenCount(property?.type)
+                                    break
                                 }
-                                break
+                                case 'description': {
+                                    functionToken += 2
+                                    functionToken += await this._getTokenCount(property?.description)
+                                    break
+                                }
+                                case 'enum': {
+                                    functionToken -= 3
+                                    for (let enumElement of property?.enum) {
+                                        functionToken += 3
+                                        functionToken += await this._getTokenCount(enumElement)
+                                    }
+                                    break
+                                }
                             }
                         }
                     }
                 }
-            }
-            if (func.parameters.required) {
-                for (let string of func.parameters.required) {
-                    functionToken += 2
-                    functionToken += await this._getTokenCount(string)
+                if (func?.parameters?.required) {
+                    for (let string of func.parameters.required) {
+                        functionToken += 2
+                        functionToken += await this._getTokenCount(string)
+                    }
                 }
             }
         }
+
         do {
             const prompt = nextMessages
                 .reduce((prompt, message) => {
