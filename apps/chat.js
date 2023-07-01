@@ -1867,7 +1867,8 @@ export class chatgpt extends plugin {
         }
         this.chatGPTApi = new ChatGPTAPI(opts)
         let option = {
-          timeoutMs: 120000
+          timeoutMs: 120000,
+          completionParams
           // systemMessage: promptPrefix
         }
         option.systemMessage = system
