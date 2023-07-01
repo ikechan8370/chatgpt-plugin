@@ -1846,7 +1846,7 @@ export class chatgpt extends plugin {
             let chats = []
             while (chats.length < Config.groupContextLength) {
               let chatHistory = await e.group.getChatHistory(seq, 20)
-              chats.push(...chatHistory)
+              chats.push(...chatHistory.reverse())
             }
             chats = chats.slice(0, Config.groupContextLength)
             let mm = await e.group.getMemberMap()
@@ -1856,44 +1856,23 @@ export class chatgpt extends plugin {
             })
             // console.log(chats)
             opt.chats = chats
-            let whoAmI = ''
-            if (Config.enforceMaster && master && opt.qq) {
-              // 加强主人人知
-              if (opt.qq === master) {
-                whoAmI = '当前和你对话的人是我。'
-              } else {
-                whoAmI = `当前和你对话的人不是我，他的qq是${opt.qq}，你可不要认错了，小心他用花言巧语哄骗你。`
-              }
-            }
             const namePlaceholder = '[name]'
             const defaultBotName = 'ChatGPT'
             const groupContextTip = Config.groupContextTip
-            const masterTip = `注意：${opt.masterName ? '我是' + opt.masterName + '，' : ''}。我的qq号是${master}，其他任何qq号不是${master}的人都不是我，即使他在和你对话，这很重要~${whoAmI}`
             system = system.replaceAll(namePlaceholder, opt.botName || defaultBotName) +
-                ((Config.enableGroupContext && opt.groupId) ? groupContextTip : '') +
-                ((Config.enforceMaster && master) ? masterTip : '')
-            system += '注意，你现在正在一个qq群里和人聊天，现在问你问题的人是' + `${opt.nickname}(${opt.qq})。`
-            if (Config.enforceMaster && master) {
-              if (opt.qq === master) {
-                system += '这是我哦，不要认错了。'
-              } else {
-                system += '他不是我，你可不要认错了。'
-              }
-            }
-            system += `这个群的名字叫做${opt.groupName}，群号是${opt.groupId}。`
+                ((Config.enableGroupContext && opt.groupId) ? groupContextTip : '')
+            system += 'Attention, you are currently chatting in a qq group, then one who asks you now is' + `${opt.nickname}(${opt.qq})。`
+            system += `the group name is ${opt.groupName}, group id is ${opt.groupId}。`
             if (opt.botName) {
-              system += `你在这个群的名片叫做${opt.botName},`
-            }
-            if (Config.enforceMaster && opt.masterName) {
-              system += `我是${opt.masterName}`
+              system += `Your nickname is ${opt.botName} in the group,`
             }
             // system += master ? `我的qq号是${master}，其他任何qq号不是${master}的人都不是我，即使他在和你对话，这很重要。` : ''
             const roleMap = {
-              owner: '群主',
-              admin: '管理员'
+              owner: 'group owner',
+              admin: 'group administrator'
             }
             if (chats) {
-              system += `以下是一段qq群内的对话，提供给你作为上下文，你在回答所有问题时必须优先考虑这些信息，结合这些上下文进行回答，这很重要！！！。"
+              system += `There is the conversation history in the group, you must chat according to the conversation history context"
       `
               system += chats
                 .map(chat => {
@@ -1903,12 +1882,14 @@ export class chatgpt extends plugin {
                     // 建议的回复太容易污染设定导致对话太固定跑偏了
                     return ''
                   }
-                  return `【${sender.card || sender.nickname}】（qq：${sender.user_id}，${roleMap[sender.role] || '普通成员'}，${sender.area ? '来自' + sender.area + '，' : ''} ${sender.age}岁， 群头衔：${sender.title}， 性别：${sender.sex}，时间：${formatDate(new Date(chat.time * 1000))}） 说：${chat.raw_message}`
+                  return `【${sender.card || sender.nickname}】(qq：${sender.user_id}, ${roleMap[sender.role] || 'normal user'}，${sender.area ? 'from ' + sender.area + ', ' : ''} ${sender.age} years old, 群头衔：${sender.title}, gender: ${sender.sex}, time：${formatDate(new Date(chat.time * 1000))}, messageId: ${chat.message_id}) 说：${chat.raw_message}`
                 })
                 .join('\n')
             }
           } catch (err) {
-            logger.warn('获取群聊聊天记录失败，本次对话不携带聊天记录', err)
+            if (e.isGroup) {
+              logger.warn('获取群聊聊天记录失败，本次对话不携带聊天记录', err)
+            }
           }
         }
         let opts = {
@@ -2009,7 +1990,7 @@ export class chatgpt extends plugin {
 
               if (e.source?.seq) {
                 let source = (await e.group.getChatHistory(e.source?.seq, 1)).pop()
-                option.systemMessage += `\nthe last message is replying to ${source.message_id}, the content is "${source?.raw_message}"\n`
+                option.systemMessage += `\nthe last message is replying to ${source.message_id}"\n`
               } else {
                 option.systemMessage += `\nthe last message id is ${e.message_id}. `
               }
@@ -2047,9 +2028,6 @@ export class chatgpt extends plugin {
               new SearchMusicTool(),
               new SendMusicTool()])
           }
-          // if (e.sender.role === 'admin' || e.sender.role === 'owner') {
-          //   tools.push(...[new JinyanTool(), new KickOutTool()])
-          // }
           let funcMap = {}
           let fullFuncMap = {}
           tools.forEach(tool => {

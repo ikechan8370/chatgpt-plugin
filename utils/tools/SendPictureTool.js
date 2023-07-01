@@ -15,7 +15,7 @@ export class SendPictureTool extends AbstractTool {
       },
       groupId: {
         type: 'string',
-        description: '群号或qq号，发送目标，为空则发送到当前聊天'
+        description: 'the group number or qq number, will send to current conversation if leave blank'
       }
     },
     required: ['picture']

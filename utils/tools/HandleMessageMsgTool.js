@@ -12,7 +12,7 @@ export class HandleMessageMsgTool extends AbstractTool {
       },
       messageId: {
         type: 'string',
-        description: 'which message, current one by default'
+        description: 'which message to handle, current one by default'
       }
     },
     required: ['type']

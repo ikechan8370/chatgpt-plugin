@@ -2,7 +2,7 @@ import { AbstractTool } from './AbstractTool.js'
 import { getMasterQQ } from '../common.js'
 
 export class QueryUserinfoTool extends AbstractTool {
-  name = 'sendDice'
+  name = 'queryUser'
 
   parameters = {
     properties: {
