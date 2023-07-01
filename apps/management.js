@@ -19,6 +19,7 @@ import fs from 'fs'
 import loader from '../../../lib/plugins/loader.js'
 import VoiceVoxTTS, { supportConfigurations as voxRoleList } from '../utils/tts/voicevox.js'
 import { supportConfigurations as azureRoleList } from '../utils/tts/microsoft-azure.js'
+import { getBots } from '../utils/poe/index.js'
 
 let isWhiteList = true
 let isSetGroup = true
@@ -48,6 +49,11 @@ export class ChatgptManagement extends plugin {
         {
           reg: '#chatgpt(设置|绑定)(Poe|POE)(token|Token)',
           fnc: 'setPoeCookie',
+          permission: 'master'
+        },
+        {
+          reg: '#chatgpt(Poe|POE)切换(模式)',
+          fnc: 'setPoeBot',
           permission: 'master'
         },
         {
@@ -742,14 +748,28 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
   async savePoeToken (e) {
     if (!this.e.msg) return
     let token = this.e.msg
-    if (!token.startsWith('p-b=')) {
-      await this.reply('Poe cookie格式错误', true)
-      this.finish('savePoeToken')
-      return
-    }
+    // if (!token.startsWith('p-b=')) {
+    //   await this.reply('Poe cookie格式错误', true)
+    //   this.finish('savePoeToken')
+    //   return
+    // }
     await redis.set('CHATGPT:POE_TOKEN', token)
     await this.reply('Poe cookie设置成功', true)
     this.finish('savePoeToken')
+  }
+
+  async setPoeBot (e) {
+    let bot = e.msg.replace(/#chatgpt(Poe|POE)切换(模式)/, '')
+    let bots = getBots()
+    let reversed = {}
+    Object.keys(bots).forEach(k => {
+      reversed[bots[k]] = k
+    })
+    if (reversed[bot]) {
+      await redis.set('CHATGPT:POE_BOT', reversed[bot])
+    } else {
+      await e.reply('目前poe模式仅支持' + Object.keys(reversed).join(', '))
+    }
   }
 
   async setBingAccessToken (e) {

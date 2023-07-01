@@ -63,7 +63,7 @@ import { ProcessPictureTool } from '../utils/tools/ProcessPictureTool.js'
 import { APTool } from '../utils/tools/APTool.js'
 import { QueryGenshinTool } from '../utils/tools/QueryGenshinTool.js'
 import { HandleMessageMsgTool } from '../utils/tools/HandleMessageMsgTool.js'
-import {QueryUserinfoTool} from "../utils/tools/QueryUserinfoTool.js";
+import { QueryUserinfoTool } from '../utils/tools/QueryUserinfoTool.js'
 try {
   await import('emoji-strip')
 } catch (err) {
@@ -268,11 +268,6 @@ export class chatgpt extends plugin {
     const use = (userData.mode === 'default' ? null : userData.mode) || await redis.get('CHATGPT:USE')
     await redis.del(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`)
     if (use === 'claude') {
-      // let client = new SlackClaudeClient({
-      //   slackUserToken: Config.slackUserToken,
-      //   slackChannelId: Config.slackChannelId
-      // })
-      // await client.endConversation()
       await redis.del(`CHATGPT:SLACK_CONVERSATION:${e.sender.user_id}`)
       await e.reply('claude对话已结束')
       return
@@ -347,6 +342,29 @@ export class chatgpt extends plugin {
         } else {
           await redis.del(`CHATGPT:CONVERSATIONS_BROWSER:${e.sender.user_id}`)
           await this.reply('已结束当前对话，请@我进行聊天以开启新的对话', true)
+        }
+      } else if (use === 'poe') {
+        let cookie = await redis.get('CHATGPT:POE_TOKEN')
+        if (!cookie) {
+          throw new Error('未绑定Poe Cookie，请使用#chatgpt设置Poe token命令绑定cookie')
+        }
+        if (!cookie.startsWith('p-b=')) {
+          cookie = 'p-b=' + cookie
+        }
+        let client = new PoeClient({
+          quora_cookie: cookie,
+          proxy: Config.proxy,
+          debug: Config.debug
+        })
+        try {
+          await client.setCredentials()
+          await client.getChatId()
+          let ai = await redis.get('CHATGPT:POE_BOT') || 'a2'
+          await client.clearContext(ai)
+          await this.reply('已结束当前对话，请@我进行聊天以开启新的对话', true)
+        } catch (err) {
+          logger.error(err)
+          await this.reply('结束对话失败，请查看日志', true)
         }
       }
     } else {
@@ -1764,17 +1782,21 @@ export class chatgpt extends plugin {
         return sendMessageResult
       }
       case 'poe': {
-        const cookie = await redis.get('CHATGPT:POE_TOKEN')
+        let cookie = await redis.get('CHATGPT:POE_TOKEN')
         if (!cookie) {
           throw new Error('未绑定Poe Cookie，请使用#chatgpt设置Poe token命令绑定cookie')
         }
+        if (!cookie.startsWith('p-b=')) {
+          cookie = 'p-b=' + cookie
+        }
         let client = new PoeClient({
           quora_cookie: cookie,
-          proxy: Config.proxy
+          proxy: Config.proxy,
+          debug: Config.debug
         })
         await client.setCredentials()
         await client.getChatId()
-        let ai = 'a2' // todo
+        let ai = await redis.get('CHATGPT:POE_BOT') || 'a2'
         await client.sendMsg(ai, prompt)
         const response = await client.getResponse(ai)
         return {

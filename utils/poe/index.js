@@ -1,20 +1,13 @@
-import { readFileSync } from 'fs'
+import fs, { readFileSync } from 'fs'
 import { scrape } from './credential.js'
 import fetch from 'node-fetch'
 import crypto from 'crypto'
 import { Config } from '../config.js'
-
-let proxy
-if (Config.proxy) {
-  try {
-    proxy = (await import('https-proxy-agent')).default
-  } catch (e) {
-    console.warn('未安装https-proxy-agent，请在插件目录下执行pnpm add https-proxy-agent')
-  }
-}
+import HttpsProxyAgent from 'https-proxy-agent'
 // used when test as a single file
 // const _path = process.cwd()
-const _path = process.cwd() + '/plugins/chatgpt-plugin/utils/poe'
+let _path = process.cwd() + '/plugins/chatgpt-plugin/utils/poe'
+_path = '.'
 const gqlDir = `${_path}/graphql`
 const queries = {
   // chatViewQuery: readFileSync(gqlDir + '/ChatViewQuery.graphql', 'utf8'),
@@ -25,17 +18,26 @@ const queries = {
   signUpWithVerificationCodeMutation: readFileSync(gqlDir + '/SignupWithVerificationCodeMutation.graphql', 'utf8'),
   sendVerificationCodeMutation: readFileSync(gqlDir + '/SendVerificationCodeForLoginMutation.graphql', 'utf8')
 }
-const optionMap = [
-  { title: 'Claude (Powered by Anthropic)', value: 'a2' },
-  { title: 'Sage (Powered by OpenAI - logical)', value: 'capybara' },
-  { title: 'Dragonfly (Powered by OpenAI - simpler)', value: 'nutria' },
-  { title: 'ChatGPT (Powered by OpenAI - current)', value: 'chinchilla' },
-  { title: 'Claude+', value: 'a2_2' },
-  { title: 'GPT-4', value: 'beaver' }
-]
+let optionMap = {
+  capybara: 'Sage',
+  beaver: 'GPT-4',
+  a2_2: 'Claude+',
+  a2_100k: 'Claude-instant-100k',
+  a2: 'Claude-instant',
+  chinchilla: 'ChatGPT',
+  acouchy: 'Google-PaLM'
+}
+if (fs.existsSync('data/chatgpt/poeMap.json')) {
+  optionMap = fs.readFileSync('data/chatgpt/poeMap.json')
+  optionMap = JSON.parse(optionMap)
+}
+export function getBots () {
+  return optionMap
+}
 export class PoeClient {
-  constructor (props) {
+  constructor (props = {}) {
     this.config = props
+    this.debug = props.debug
   }
 
   headers = {
@@ -51,7 +53,7 @@ export class PoeClient {
   reConnectWs = false
 
   async setCredentials () {
-    let result = await scrape(this.config.quora_cookie, this.config.proxy ? proxy(Config.proxy) : null)
+    let result = await scrape(this.config.quora_cookie, this.config.proxy ? HttpsProxyAgent(this.config.proxy) : null)
     console.log(result)
     this.config.quora_formkey = result.appSettings.formkey
     this.config.channel_name = result.channelName
@@ -98,7 +100,7 @@ export class PoeClient {
       body: payload
     }
     if (this.config.proxy) {
-      option.agent = proxy(Config.proxy)
+      option.agent = HttpsProxyAgent(this.config.proxy)
     }
     const response = await fetch('https://poe.com/api/gql_POST', option)
     let text = await response.text()
@@ -121,12 +123,12 @@ export class PoeClient {
         headers: this.headers
       }
       if (this.config.proxy) {
-        option.agent = proxy(Config.proxy)
+        option.agent = HttpsProxyAgent(this.config.proxy)
       }
       let r = await fetch(url, option)
       let res = await r.text()
       try {
-        let chatData = (JSON.parse(res)).pageProps.payload.chatOfBotDisplayName
+        let chatData = (JSON.parse(res)).pageProps.payload?.chatOfBotDisplayName || (JSON.parse(res)).pageProps.data?.chatOfBotDisplayName
         return chatData
       } catch (e) {
         r = res
@@ -141,7 +143,7 @@ export class PoeClient {
       headers: this.headers
     }
     if (this.config.proxy) {
-      option.agent = proxy(Config.proxy)
+      option.agent = HttpsProxyAgent(this.config.proxy)
     }
     let r = await fetch('https://poe.com', option)
     let text = await r.text()
@@ -149,18 +151,28 @@ export class PoeClient {
     const jsonText = text.match(jsonRegex)[1]
     const nextData = JSON.parse(jsonText)
     this.nextData = nextData
-    this.viewer = nextData.props.pageProps.payload.viewer
+    this.viewer = nextData.props.pageProps.payload?.viewer || nextData.props.pageProps.data?.viewer
 
     this.formkey = this.extract_formkey(text)
     this.headers['poe-formkey'] = this.formkey
-    let bots = this.viewer.availableBots
+    let bots = this.viewer.availableBotsConnection.edges
     this.bots = {}
     for (let i = 0; i < bots.length; i++) {
       let bot = bots[i]
-      let chatData = await this.getBot(bot.displayName)
+      let chatData = await this.getBot(bot.node.displayName)
       this.bots[chatData.defaultBotObject.nickname] = chatData
+      // if (this.debug) {
+      //   console.log(`${chatData.defaultBotObject.nickname}: ${chatData.defaultBotObject.baseModelDisplayName}, ${chatData.defaultBotObject.description}`)
+      // }
     }
-    console.log(this.bots)
+    let botsData = {}
+    Object.keys(this.bots).forEach(k => {
+      botsData[k] = this.bots[k].defaultBotObject.baseModelDisplayName
+    })
+    fs.writeFileSync('data/chatgpt/poeMap.json', JSON.stringify(botsData))
+    if (this.debug) {
+      console.log(botsData)
+    }
   }
 
   extract_formkey (html) {
@@ -185,22 +197,27 @@ export class PoeClient {
     try {
       const data = await this.makeRequest({
         query: `${queries.addMessageBreakMutation}`,
-        variables: { chatId: this.config.chat_ids[bot] }
+        variables: { chatId: this.bots[bot].chatId }
       })
 
       if (!data.data) {
+        console.error(data)
         this.reConnectWs = true // for websocket purpose
-        console.log('ON TRY! Could not clear context! Trying to reLogin..')
+        console.log('ON TRY! Could not clear context! T')
       }
       return data
     } catch (e) {
+      console.error(e)
       this.reConnectWs = true // for websocket purpose
-      console.log('ON CATCH! Could not clear context! Trying to reLogin..')
+      console.log('ON CATCH! Could not clear context! ')
       return e
     }
   }
 
   async sendMsg (bot, query) {
+    if (!optionMap[bot]) {
+      throw new Error('no such bot')
+    }
     try {
       const data = await this.makeRequest({
         query: `${queries.addHumanMessageMutation}`,
