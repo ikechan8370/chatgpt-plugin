@@ -517,7 +517,7 @@ var ChatGPTAPI = /** @class */ (function () {
                             return [3 /*break*/, 27];
                         }
                         messages = nextMessages;
-                        numTokens = nextNumTokensEstimate;
+                        numTokens = nextNumTokensEstimate + functionToken;
                         if (!isValidPrompt) {
                             return [3 /*break*/, 27];
                         }

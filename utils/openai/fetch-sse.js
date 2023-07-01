@@ -53,19 +53,19 @@ var __asyncValues = (this && this.__asyncValues) || function (o) {
     function settle(resolve, reject, d, v) { Promise.resolve(v).then(function(v) { resolve({ value: v, done: d }); }, reject); }
 };
 import { createParser } from 'eventsource-parser';
-import * as types from './types.js';
-import fetch  from 'node-fetch';
-import { streamAsyncIterable } from './stream-async-iterable.js';
-export function fetchSSE(url, options, fetchFn) {
+import * as types from './types';
+import { fetch as nodefetch } from 'node-fetch';
+import { streamAsyncIterable } from './stream-async-iterable';
+export function fetchSSE(url, options, fetch) {
     var _a, e_1, _b, _c;
-    if (fetchFn === void 0) { fetchFn = fetch; }
+    if (fetch === void 0) { fetch = nodefetch; }
     return __awaiter(this, void 0, void 0, function () {
         var onMessage, onError, fetchOptions, res, reason, err_1, msg, error, parser, feed, body_1, _d, _e, _f, chunk, str, e_1_1;
         return __generator(this, function (_g) {
             switch (_g.label) {
                 case 0:
                     onMessage = options.onMessage, onError = options.onError, fetchOptions = __rest(options, ["onMessage", "onError"]);
-                    return [4 /*yield*/, fetchFn(url, fetchOptions)];
+                    return [4 /*yield*/, fetch(url, fetchOptions)];
                 case 1:
                     res = _g.sent();
                     if (!!res.ok) return [3 /*break*/, 6];

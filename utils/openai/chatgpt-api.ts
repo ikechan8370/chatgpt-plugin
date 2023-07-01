@@ -477,7 +477,7 @@ export class ChatGPTAPI {
                 break
             }
             messages = nextMessages
-            numTokens = nextNumTokensEstimate
+            numTokens = nextNumTokensEstimate + functionToken
 
             if (!isValidPrompt) {
                 break
