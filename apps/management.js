@@ -8,7 +8,7 @@ import {
   getVitsRoleList,
   getVoicevoxRoleList,
   makeForwardMsg,
-  parseDuration, processList,
+  parseDuration,
   renderUrl
 } from '../utils/common.js'
 import SydneyAIClient from '../utils/SydneyAIClient.js'
@@ -20,8 +20,6 @@ import loader from '../../../lib/plugins/loader.js'
 import VoiceVoxTTS, { supportConfigurations as voxRoleList } from '../utils/tts/voicevox.js'
 import { supportConfigurations as azureRoleList } from '../utils/tts/microsoft-azure.js'
 
-let isWhiteList = true
-let isSetGroup = true
 export class ChatgptManagement extends plugin {
   constructor(e) {
     super({
@@ -193,21 +191,6 @@ export class ChatgptManagement extends plugin {
         {
           reg: '^#chatgpt(允许|禁止|打开|关闭|同意)私聊$',
           fnc: 'enablePrivateChat',
-          permission: 'master'
-        },
-        {
-          reg: '^#chatgpt(设置|添加)对话[白黑]名单$',
-          fnc: 'setList',
-          permission: 'master'
-        },
-        {
-          reg: '^#chatgpt(查看)?对话[白黑]名单(帮助)?$',
-          fnc: 'checkList',
-          permission: 'master'
-        },
-        {
-          reg: '^#chatgpt(删除|移除)对话[白黑]名单$',
-          fnc: 'delList',
           permission: 'master'
         },
         {
