@@ -1,0 +1,867 @@
+[
+  {
+    "id": "GeneralSettings",
+    "title": "通用设置",
+    "view": [
+      {
+        "type": "check",
+        "label": "图片识别OCR",
+        "data": "imgOcr"
+      },
+      {
+        "type": "check",
+        "label": "允许其他模式",
+        "data": "allowOtherMode"
+      },
+      {
+        "type": "check",
+        "label": "调试信息",
+        "data": "debug"
+      },
+      {
+        "type": "check",
+        "label": "是否允许私聊机器人",
+        "data": "enablePrivateChat"
+      },
+      {
+        "type": "check",
+        "label": "回复确认",
+        "model": "redisConfig",
+        "data": "turnConfirm"
+      },
+      {
+        "type": "check",
+        "label": "新版帮助",
+        "data": "newhelp"
+      },
+      {
+        "type": "number",
+        "label": "对话保留时长",
+        "placeholder": "每个人发起的对话保留时长",
+        "data": "conversationPreserveTime"
+      },
+      {
+        "type": "url",
+        "label": "代理服务器地址",
+        "placeholder": "数据通过代理服务器发送，http或socks5代理",
+        "data": "proxy"
+      },
+      {
+        "type": "select",
+        "label": "对话模式",
+        "model": "redisConfig",
+        "data": "useMode",
+        "items": [
+          {
+            "label": "必应",
+            "value": "bing"
+          },
+          {
+            "label": "ChatGPT API",
+            "value": "api"
+          },
+          {
+            "label": "ChatGPT API3",
+            "value": "api3"
+          },
+          {
+            "label": "Slack Claude",
+            "value": "claude"
+          },
+          {
+            "label": "ChatGLM",
+            "value": "chatglm"
+          },
+          {
+            "label": "星火",
+            "value": "xh"
+          },
+          {
+            "label": "浏览器",
+            "value": "browser"
+          }
+        ]
+      },
+      {
+        "type": "password",
+        "label": "高德APIKey",
+        "placeholder": "用于查询天气",
+        "data": "amapKey"
+      },
+      {
+        "type": "url",
+        "label": "Azure search key",
+        "placeholder": "https://www.microsoft.com/en-us/bing/apis/bing-web-search-api",
+        "data": "azSerpKey"
+      },
+      {
+        "type": "select",
+        "label": "搜索来源",
+        "data": "serpSource",
+        "items": [
+          {
+            "label": "Azure",
+            "value": "azure"
+          },
+          {
+            "label": "ikechan8370",
+            "value": "ikechan8370"
+          }
+        ]
+      },
+      {
+        "type": "url",
+        "label": "额外工具url",
+        "placeholder": "测试期间提供一个公益接口，一段时间后撤掉",
+        "data": "extraUrl"
+      }
+    ]
+  },
+  {
+    "id": "ChatSettings",
+    "title": "聊天设置",
+    "view": [
+      {
+        "type": "tabs",
+        "id": "ChatSetting",
+        "tabs": [
+          {
+            "title": "文本模式",
+            "icon": "mdi-format-text",
+            "tab": "text",
+            "view": [
+              {
+                "type": "check",
+                "label": "长文本自动转图片",
+                "data": "autoUsePicture"
+              },
+              {
+                "type": "check",
+                "label": "是否允许机器人真AT",
+                "data": "enableRobotAt"
+              },
+              {
+                "type": "number",
+                "label": "自动转图片阈值",
+                "placeholder": "自动转图片的字数阈值",
+                "data": "autoUsePictureThreshold"
+              }
+            ]
+          },
+          {
+            "title": "图片模式[基础参数]",
+            "icon": "mdi-image",
+            "tab": "image_base",
+            "view": [
+              {
+                "type": "check",
+                "label": "全局图片模式",
+                "data": "defaultUsePicture"
+              },
+              {
+                "type": "check",
+                "label": "图片引用消息",
+                "data": "quoteReply"
+              },
+              {
+                "type": "check",
+                "label": "启用二维码",
+                "data": "showQRCode"
+              },
+              {
+                "type": "text",
+                "label": "BOT命名",
+                "placeholder": "强制修改Bot命名",
+                "data": "chatViewBotName"
+              },
+              {
+                "type": "url",
+                "label": "渲染服务器地址",
+                "placeholder": "可选择第三方渲染服务器",
+                "data": "viewHost"
+              },
+              {
+                "type": "number",
+                "label": "图片渲染宽度",
+                "placeholder": "图片渲染宽度",
+                "data": "chatViewWidth"
+              },
+              {
+                "type": "check",
+                "label": "云渲染",
+                "data": "cloudRender"
+              },
+              {
+                "type": "number",
+                "label": "云渲染DPR",
+                "placeholder": "设置云渲染画面缩放，数值愈大越清晰",
+                "data": "cloudDPR"
+              }
+            ]
+          },
+          {
+            "title": "图片模式[Live2D]",
+            "icon": "mdi-image",
+            "tab": "image_live2d",
+            "view": [
+              {
+                "type": "check",
+                "label": "Live2D",
+                "data": "live2d"
+              },
+              {
+                "type": "text",
+                "label": "Live2D模型",
+                "placeholder": "使用的Live2D模式文件",
+                "data": "live2dModel"
+              },
+              {
+                "type": "number",
+                "label": "Live2D模型缩放",
+                "placeholder": "渲染live2d的模型大小",
+                "data": "live2dOption_scale"
+              },
+              {
+                "type": "number",
+                "label": "Live2D模型位置X",
+                "placeholder": "Live2d模型在区域的位置X轴微调",
+                "data": "live2dOption_positionX"
+              },
+              {
+                "type": "number",
+                "label": "Live2D模型位置Y",
+                "placeholder": "Live2d模型在区域的位置Y轴微调",
+                "data": "live2dOption_positionY"
+              },
+              {
+                "type": "number",
+                "label": "Live2D模型旋转",
+                "placeholder": "Live2d模型在区域的旋转角度",
+                "data": "live2dOption_rotation"
+              },
+              {
+                "type": "number",
+                "label": "Live2D模型透明度",
+                "placeholder": "Live2d模型的透明度",
+                "data": "live2dOption_alpha"
+              }
+            ]
+          },
+          {
+            "title": "图片模式[旧渲染]",
+            "icon": "mdi-image",
+            "tab": "image_old",
+            "view": [
+              {
+                "type": "check",
+                "label": "旧版本渲染",
+                "data": "oldview"
+              },
+              {
+                "type": "check",
+                "label": "预制渲染服务器访问代码",
+                "data": "cacheEntry"
+              },
+              {
+                "type": "url",
+                "label": "渲染服务器地址",
+                "placeholder": "可选择第三方渲染服务器",
+                "data": "cacheUrl"
+              }
+            ]
+          },
+          {
+            "title": "语音模式",
+            "icon": "mdi-microphone",
+            "tab": "voice",
+            "view": [
+              {
+                "type": "check",
+                "label": "全局语音模式",
+                "data": "defaultUseTTS"
+              },
+              {
+                "type": "check",
+                "label": "语音同时发送文字",
+                "data": "alsoSendText"
+              },
+              {
+                "type": "number",
+                "label": "语音转文字阈值",
+                "placeholder": "语音模式下，字数超过这个阈值就降级为文字",
+                "data": "ttsAutoFallbackThreshold"
+              },
+              {
+                "type": "text",
+                "label": "语音过滤正则表达式",
+                "placeholder": "语音模式下，配置此项以过滤不想被读出来的内容",
+                "data": "ttsRegex"
+              },
+              {
+                "type": "select",
+                "label": "语音模式源",
+                "data": "ttsMode",
+                "items": [
+                  {
+                    "label": "Vits",
+                    "value": "vits-uma-genshin-honkai"
+                  },
+                  {
+                    "label": "微软Azure",
+                    "value": "azure"
+                  },
+                  {
+                    "label": "VoiceVox",
+                    "value": "VoiceVox"
+                  }
+                ]
+              },
+              {
+                "type": "select",
+                "label": "云转码模式",
+                "data": "cloudMode",
+                "items": [
+                  {
+                    "label": "文件",
+                    "value": "file"
+                  },
+                  {
+                    "label": "链接",
+                    "value": "url"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "title": "语音模式[vits]",
+            "icon": "mdi-microphone",
+            "tab": "vits",
+            "view": [
+              {
+                "type": "url",
+                "label": "语音转换API地址",
+                "placeholder": "前往duplicate空间查看api地址",
+                "data": "ttsSpace"
+              },
+              {
+                "type": "url",
+                "label": "语音转换huggingface反代",
+                "data": "huggingFaceReverseProxy"
+              },
+              {
+                "type": "number",
+                "label": "控制情感变化程度",
+                "data": "noiseScale"
+              },
+              {
+                "type": "number",
+                "label": "控制音素发音长度",
+                "data": "noiseScaleW"
+              },
+              {
+                "type": "number",
+                "label": "控制整体语速",
+                "data": "lengthScale"
+              },
+              {
+                "type": "check",
+                "label": "日语输出",
+                "data": "autoJapanese"
+              }
+            ]
+          },
+          {
+            "title": "语音模式[Azure]",
+            "icon": "mdi-microphone",
+            "tab": "azure",
+            "view": [
+              {
+                "type": "password",
+                "label": "语音服务密钥",
+                "placeholder": "Azure的语音服务密钥",
+                "data": "azureTTSKey"
+              },
+              {
+                "type": "text",
+                "label": "语音服务区域",
+                "placeholder": "Azure语音服务区域",
+                "data": "azureTTSRegion"
+              },
+              {
+                "type": "number",
+                "label": "Azure情绪多样化",
+                "data": "azureTTSEmotion"
+              },
+              {
+                "type": "number",
+                "label": "Azure情绪纠正",
+                "data": "enhanceAzureTTSEmotion"
+              }
+            ]
+          },
+          {
+            "title": "语音模式[Voicevox]",
+            "icon": "mdi-microphone",
+            "tab": "voicevox",
+            "view": [
+              {
+                "type": "url",
+                "label": "语音转换API地址",
+                "placeholder": "voicevox语音转换API地址",
+                "data": "voicevoxSpace"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "ModelSettings",
+    "title": "模式设置",
+    "view": [
+      {
+        "type": "tabs",
+        "id": "ChatSetting",
+        "tabs": [
+          {
+            "title": "API",
+            "tab": "api",
+            "view": [
+              {
+                "type": "check",
+                "label": "强制使用OpenAI反代",
+                "data": "openAiForceUseReverse"
+              },
+              {
+                "type": "check",
+                "label": "智能模式",
+                "data": "smartMode"
+              },
+              {
+                "type": "password",
+                "label": "OpenAI API Key",
+                "placeholder": "OpenAI的ApiKey，用于访问OpenAI的API接口",
+                "data": "apiKey"
+              },
+              {
+                "type": "text",
+                "label": "OpenAI 模型",
+                "placeholder": "gpt-4, gpt-4-0314, gpt-4-32k, gpt-4-32k-0314, gpt-3.5-turbo, gpt-3.5-turbo-0301",
+                "data": "model"
+              },
+              {
+                "type": "text",
+                "label": "AI名字",
+                "placeholder": "AI认为的自己的名字，当你问他你是谁是他会回答这里的名字",
+                "data": "assistantLabel"
+              },
+              {
+                "type": "number",
+                "label": "temperature",
+                "placeholder": "用于控制回复内容的多样性，数值越大回复越加随机、多元化，数值越小回复越加保守",
+                "data": "temperature"
+              },
+              {
+                "type": "url",
+                "label": "OpenAI API服务器地址",
+                "placeholder": "OpenAI的API服务器地址，注意要带上/v1。",
+                "data": "openAiBaseUrl"
+              },
+              {
+                "type": "textarea",
+                "label": "AI风格",
+                "placeholder": "你可以在这里写入你希望AI回答的风格，比如希望优先回答中文，回答长一点等",
+                "data": "promptPrefixOverride"
+              }
+            ]
+          },
+          {
+            "title": "API3",
+            "tab": "api3",
+            "view": [
+              {
+                "type": "url",
+                "label": "ChatGPT API反代服务器地址",
+                "placeholder": "ChatGPT的API反代服务器，用于绕过Cloudflare访问ChatGPT API。",
+                "data": "api"
+              },
+              {
+                "type": "url",
+                "label": "apiBaseUrl地址",
+                "data": "apiBaseUrl"
+              },
+              {
+                "type": "password",
+                "label": "OpenAI refreshToken",
+                "placeholder": "OpenAI的refreshToken，用于刷新Access Token",
+                "data": "OpenAiPlatformRefreshToken"
+              },
+              {
+                "type": "password",
+                "label": "OpenAI AccessToken",
+                "model": "redisConfig",
+                "data": "openAiPlatformAccessToken"
+              },
+              {
+                "type": "check",
+                "label": "强制使用ChatGPT反代",
+                "data": "apiForceUseReverse"
+              },
+              {
+                "type": "check",
+                "label": "使用GPT-4",
+                "data": "useGPT4"
+              }
+            ]
+          },
+          {
+            "title": "浏览器",
+            "tab": "browser",
+            "view": [
+              {
+                "type": "check",
+                "label": "无头模式",
+                "data": "headless"
+              },
+              {
+                "type": "text",
+                "label": "用户名",
+                "placeholder": "OpenAI用户名",
+                "data": "username"
+              },
+              {
+                "type": "password",
+                "label": "密码",
+                "placeholder": "OpenAI密码",
+                "data": "password"
+              },
+              {
+                "type": "text",
+                "label": "Chrome路径",
+                "placeholder": "为空使用默认puppeteer的chromium，也可以传递自己本机安装的Chrome可执行文件地址，提高通过率。",
+                "data": "chromePath"
+              },
+              {
+                "type": "textarea",
+                "label": "浏览器UA",
+                "placeholder": "模拟浏览器UA，无特殊需求保持默认即可",
+                "data": "UA"
+              },
+              {
+                "type": "password",
+                "label": "验证码平台Token",
+                "placeholder": "可注册2captcha实现跳过验证码",
+                "data": "2captchaToken"
+              }
+            ]
+          },
+          {
+            "title": "必应",
+            "tab": "bing",
+            "view": [
+              {
+                "type": "select",
+                "label": "Bing模式",
+                "data": "toneStyle",
+                "items": [
+                  {
+                    "label": "均衡",
+                    "value": "balanced"
+                  },
+                  {
+                    "label": "创意",
+                    "value": "creative"
+                  },
+                  {
+                    "label": "精确",
+                    "value": "precise"
+                  },
+                  {
+                    "label": "Sydney(可能存在风险)",
+                    "value": "Sydney"
+                  },
+                  {
+                    "label": "自设定(可能存在风险)",
+                    "value": "Custom"
+                  }
+                ]
+              },
+              {
+                "type": "check",
+                "label": "是否开启建议回复",
+                "data": "enableSuggestedResponses"
+              },
+              {
+                "type": "check",
+                "label": "是否允许机器人读取近期的群聊聊天记录",
+                "data": "enableGroupContext"
+              },
+              {
+                "type": "number",
+                "label": "允许机器人读取近期的最多群聊聊天记录条数",
+                "placeholder": "允许机器人读取近期的最多群聊聊天记录条数。太多可能会超。",
+                "data": "groupContextLength"
+              },
+              {
+                "type": "text",
+                "label": "机器人读取聊天记录时的后台prompt",
+                "data": "groupContextTip"
+              },
+              {
+                "type": "check",
+                "label": "加强主人认知",
+                "data": "enforceMaster"
+              },
+              {
+                "type": "check",
+                "label": "Bing抱歉是否不计入聊天记录",
+                "data": "sydneyApologyIgnored"
+              },
+              {
+                "type": "check",
+                "label": "情感显示",
+                "data": "sydneyMood"
+              },
+              {
+                "type": "textarea",
+                "label": "Custom的设定",
+                "placeholder": "仅自设定模式下有效。你可以自己改写设定，让Sydney变成你希望的样子",
+                "data": "sydney"
+              },
+              {
+                "type": "textarea",
+                "label": "Bing的扩展资料",
+                "placeholder": "AI将会从你提供的扩展资料中学习到一些知识，帮助它更好地回答你的问题",
+                "data": "sydneyContext"
+              },
+              {
+                "type": "textarea",
+                "label": "情感模式设定",
+                "placeholder": "情感显示开启的情况下AI将根据设定在正文中体现情感内容",
+                "data": "sydneyMoodTip"
+              },
+              {
+                "type": "url",
+                "label": "sydney反代",
+                "placeholder": "仅悉尼和自设定模式下有效，用于创建对话（默认不用于正式对话）",
+                "data": "sydneyReverseProxy"
+              },
+              {
+                "type": "check",
+                "label": "强制使用sydney反代",
+                "data": "sydneyReverseProxy"
+              },
+              {
+                "type": "check",
+                "label": "对话使用sydney反代",
+                "data": "sydneyForceUseReverse"
+              },
+              {
+                "type": "check",
+                "label": "允许生成图像等内容",
+                "data": "enableGenerateContents"
+              }
+            ]
+          },
+          {
+            "title": "ChatGLM",
+            "tab": "chatglm",
+            "view": [
+              {
+                "type": "url",
+                "label": "ChatGLM API地址",
+                "data": "chatglmBaseUrl"
+              }
+            ]
+          },
+          {
+            "title": "Slack Claude",
+            "tab": "claude",
+            "view": [
+              {
+                "type": "password",
+                "label": "Slack用户Token",
+                "placeholder": "slackUserToken，在OAuth&Permissions页面获取",
+                "data": "slackUserToken"
+              },
+              {
+                "type": "password",
+                "label": "Slack Bot Token",
+                "placeholder": "slackBotUserToken，在OAuth&Permissions页面获取",
+                "data": "slackBotUserToken"
+              },
+              {
+                "type": "text",
+                "label": "Slack成员id",
+                "placeholder": "在Slack中点击Claude头像查看详情，其中的成员ID复制过来",
+                "data": "slackClaudeUserId"
+              },
+              {
+                "type": "password",
+                "label": "Slack签名密钥",
+                "placeholder": "Signing Secret。在Basic Information页面获取",
+                "data": "slackSigningSecret"
+              },
+              {
+                "type": "check",
+                "label": "Claude使用全局设定",
+                "data": "slackClaudeEnableGlobalPreset"
+              },
+              {
+                "type": "textarea",
+                "label": "Slack全局设定",
+                "placeholder": "若启用全局设定，每个人都会默认使用这里的设定",
+                "data": "slackClaudeGlobalPreset"
+              }
+            ]
+          },
+          {
+            "title": "星火",
+            "tab": "xh",
+            "view": [
+              {
+                "type": "password",
+                "label": "星火Cookie",
+                "data": "xinghuoToken"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "DrawSettings",
+    "title": "绘图设置",
+    "view": [
+      {
+        "type": "check",
+        "label": "绘图功能开关",
+        "data": "enableDraw"
+      },
+      {
+        "type": "number",
+        "label": "绘图CD",
+        "placeholder": "绘图指令的CD时间",
+        "data": "drawCD"
+      },
+      {
+        "type": "url",
+        "label": "emojiAPI地址",
+        "placeholder": "合成emoji的API地址",
+        "data": "emojiBaseURL"
+      }
+    ]
+  },
+  {
+    "id": "GroupSettings",
+    "title": "群聊设置",
+    "view": [
+      {
+        "type": "textarea",
+        "label": "打招呼prompt",
+        "placeholder": "将会用这段文字询问ChatGPT，由ChatGPT给出随机的打招呼文字",
+        "data": "helloPrompt"
+      },
+      {
+        "type": "number",
+        "label": "打招呼间隔(小时)",
+        "data": "helloInterval"
+      },
+      {
+        "type": "number",
+        "label": "打招呼的触发概率(%)",
+        "placeholder": "设置为100则每次经过间隔时间必定触发主动打招呼事件。",
+        "data": "helloProbability"
+      },
+      {
+        "type": "select",
+        "label": "触发方式",
+        "data": "toggleMode",
+        "items": [
+          {
+            "label": "at",
+            "value": "at"
+          },
+          {
+            "label": "#chat",
+            "value": "prefix"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "TimeoutSettings",
+    "title": "服务超时配置",
+    "view": [
+      {
+        "type": "number",
+        "label": "默认超时时间",
+        "placeholder": "各个地方的默认超时时间",
+        "data": "defaultTimeoutMs"
+      },
+      {
+        "type": "number",
+        "label": "浏览器超时时间",
+        "placeholder": "浏览器默认超时，浏览器可能需要更高的超时时间",
+        "data": "chromeTimeoutMS"
+      },
+      {
+        "type": "number",
+        "label": "Sydney模式接受首条信息超时时间",
+        "placeholder": "超过该时间阈值未收到Bing的任何消息，则断开本次连接并重试",
+        "data": "sydneyFirstMessageTimeout"
+      }
+    ]
+  },
+  {
+    "id": "ReviewSettings",
+    "title": "违禁内容核查",
+    "view": [
+      {
+        "type": "textarea",
+        "label": "输出黑名单",
+        "placeholder": "检查输出结果中是否有违禁词，如果存在黑名单中的违禁词则不输出。英文逗号隔开",
+        "data": "blockWords"
+      },
+      {
+        "type": "textarea",
+        "label": "输入黑名单",
+        "placeholder": "检查输入结果中是否有违禁词，如果存在黑名单中的违禁词则不输出。英文逗号隔开",
+        "data": "promptBlockWords"
+      }
+    ]
+  },
+  {
+    "id": "GroupSettings",
+    "title": "群聊设置",
+    "view": [
+      {
+        "type": "number",
+        "label": "系统Api服务端口",
+        "placeholder": "系统Api服务开启的端口号，如需外网访问请将系统防火墙和服务器防火墙对应端口开放",
+        "data": "ServerSettings"
+      },
+      {
+        "type": "text",
+        "label": "系统服务访问域名",
+        "placeholder": "使用域名代替公网ip，适用于有服务器和域名的朋友避免暴露ip使用",
+        "data": "serverHost"
+      },
+      {
+        "type": "url",
+        "label": "云服务API地址",
+        "placeholder": "目前支持node-silk语音转码、云图片渲染和页面生成缓存",
+        "data": "cloudTranscode"
+      },
+      {
+        "type": "check",
+        "label": "允许群获取后台地址",
+        "data": "groupAdminPage"
+      }
+    ]
+  }
+]

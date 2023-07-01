@@ -40,7 +40,8 @@ async function User(fastify, options) {
         reply.send({
             verify: true,
             user: user.user,
-            autho: user.autho
+            autho: user.autho,
+            version: 10010,
         })
         return reply
     })
