@@ -175,7 +175,7 @@ export class ChatGPTAPI {
             opts,
             completionParams
         )
-
+        console.log(`maxTokens: ${maxTokens}, numTokens: ${numTokens}`)
         const result: types.ChatMessage = {
             role: 'assistant',
             id: uuidv4(),
@@ -199,7 +199,9 @@ export class ChatGPTAPI {
                     messages,
                     stream
                 }
-
+                if (this._debug) {
+                    console.log(JSON.stringify(body))
+                }
                 // Support multiple organizations
                 // See https://platform.openai.com/docs/api-reference/authentication
                 if (this._apiOrg) {

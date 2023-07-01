@@ -166,6 +166,7 @@ var ChatGPTAPI = /** @class */ (function () {
                         return [4 /*yield*/, this._buildMessages(text, role, opts, completionParams)];
                     case 1:
                         _c = _d.sent(), messages = _c.messages, maxTokens = _c.maxTokens, numTokens = _c.numTokens;
+                        console.log("maxTokens: ".concat(maxTokens, ", numTokens: ").concat(numTokens));
                         result = {
                             role: 'assistant',
                             id: uuidv4(),
@@ -186,13 +187,15 @@ var ChatGPTAPI = /** @class */ (function () {
                                             Authorization: "Bearer ".concat(this._apiKey)
                                         };
                                         body = __assign(__assign(__assign({ max_tokens: maxTokens }, this._completionParams), completionParams), { messages: messages, stream: stream });
+                                        if (this._debug) {
+                                            console.log(JSON.stringify(body));
+                                        }
                                         // Support multiple organizations
                                         // See https://platform.openai.com/docs/api-reference/authentication
                                         if (this._apiOrg) {
                                             headers['OpenAI-Organization'] = this._apiOrg;
                                         }
                                         if (this._debug) {
-                                            // console.log(JSON.stringify(body))
                                             console.log("sendMessage (".concat(numTokens, " tokens)"), body);
                                         }
                                         if (!stream) return [3 /*break*/, 1];
@@ -286,7 +289,7 @@ var ChatGPTAPI = /** @class */ (function () {
                                         }
                                         else {
                                             res_1 = response;
-                                            console.error(res_1)
+                                            console.error(res_1);
                                             return [2 /*return*/, reject(new Error("OpenAI error: ".concat(((_b = res_1 === null || res_1 === void 0 ? void 0 : res_1.detail) === null || _b === void 0 ? void 0 : _b.message) || (res_1 === null || res_1 === void 0 ? void 0 : res_1.detail) || 'unknown')))];
                                         }
                                         result.detail = response;
@@ -549,9 +552,11 @@ var ChatGPTAPI = /** @class */ (function () {
         });
     };
     ChatGPTAPI.prototype._getTokenCount = function (text) {
-        if (!text) return 0;
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
+                if (!text) {
+                    return [2 /*return*/, 0];
+                }
                 // TODO: use a better fix in the tokenizer
                 text = text.replace(/<\|endoftext\|>/g, '');
                 return [2 /*return*/, tokenizer.encode(text).length];

@@ -2,27 +2,27 @@ import { AbstractTool } from './AbstractTool.js'
 import { convertFaces } from '../face.js'
 
 export class SendMessageToSpecificGroupOrUserTool extends AbstractTool {
-  name = 'sendMessageToSpecificGroupOrUser'
+  name = 'sendMessage'
 
   parameters = {
     properties: {
       msg: {
         type: 'string',
-        description: 'Message text to be sent'
+        description: 'text to be sent'
       },
-      targetGroupIdOrQQNumber: {
+      target: {
         type: 'string',
-        description: 'Fill in the target user\'s qq number or groupId when you need to send specific message to specific user or group, otherwise leave blank'
+        description: 'target qq or group number'
       }
     },
-    required: ['msg', 'msgType', 'targetGroupIdOrQQNumber']
+    required: ['msg', 'target']
   }
 
   func = async function (opt, e) {
-    let { msg, targetGroupIdOrQQNumber } = opt
-    const target = isNaN(targetGroupIdOrQQNumber) || !targetGroupIdOrQQNumber
+    let { msg, target } = opt
+    target = isNaN(target) || !target
       ? e.isGroup ? e.group_id : e.sender.user_id
-      : parseInt(targetGroupIdOrQQNumber.trim())
+      : parseInt(target.trim())
 
     let groupList = await Bot.getGroupList()
     try {
