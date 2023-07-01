@@ -446,6 +446,12 @@ export class ChatGPTAPI {
                     }
                 }
             }
+            if (func.parameters.required) {
+                for (let string of func.parameters.required) {
+                    functionToken += 2
+                    functionToken += await this._getTokenCount(string)
+                }
+            }
         }
         do {
             const prompt = nextMessages

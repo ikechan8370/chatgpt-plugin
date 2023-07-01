@@ -1,5 +1,4 @@
 import { AbstractTool } from './AbstractTool.js'
-import cfg from '../../../../lib/config/config.js'
 
 export class EditCardTool extends AbstractTool {
   name = 'editCard'
