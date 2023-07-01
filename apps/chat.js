@@ -7,10 +7,8 @@ import { ChatGPTAPI } from '../utils/openai/chatgpt-api.js'
 import { BingAIClient } from '@waylaidwanderer/chatgpt-api'
 import SydneyAIClient from '../utils/SydneyAIClient.js'
 import { PoeClient } from '../utils/poe/index.js'
-import AzureTTS, { supportConfigurations } from '../utils/tts/microsoft-azure.js'
+import AzureTTS from '../utils/tts/microsoft-azure.js'
 import VoiceVoxTTS from '../utils/tts/voicevox.js'
-import { translate } from '../utils/translate.js'
-import fs from 'fs'
 import {
   render,
   renderUrl,
@@ -1803,7 +1801,7 @@ export class chatgpt extends plugin {
             let chats = []
             while (chats.length < Config.groupContextLength) {
               let chatHistory = await e.group.getChatHistory(seq, 20)
-              chats.push(...chatHistory)
+              chats.push(...chatHistory.reverse())
             }
             chats = chats.slice(0, Config.groupContextLength)
             // 太多可能会干扰AI对自身qq号和用户qq的判断，感觉gpt3.5也处理不了那么多信息
@@ -1814,12 +1812,23 @@ export class chatgpt extends plugin {
               chat.sender = sender
             })
             opt.chats = chats
+            const namePlaceholder = '[name]'
+            const defaultBotName = 'ChatGPT'
+            const groupContextTip = Config.groupContextTip
+            system = system.replaceAll(namePlaceholder, opt.botName || defaultBotName) +
+                ((Config.enableGroupContext && opt.groupId) ? groupContextTip : '')
+            system += 'Attention, you are currently chatting in a qq group, then one who asks you now is' + `${opt.nickname}(${opt.qq})。`
+            system += `the group name is ${opt.groupName}, group id is ${opt.groupId}。`
+            if (opt.botName) {
+              system += `Your nickname is ${opt.botName} in the group,`
+            }
+            // system += master ? `我的qq号是${master}，其他任何qq号不是${master}的人都不是我，即使他在和你对话，这很重要。` : ''
             const roleMap = {
-              owner: '群主',
-              admin: '管理员'
+              owner: 'group owner',
+              admin: 'group administrator'
             }
             if (chats) {
-              system += `\n以下是一段qq群内的对话，提供给你作为上下文，你在回答所有问题时必须优先考虑这些信息，结合这些上下文进行回答，这很重要！！！。记住你的qq号是${Bot.uin}，现在问你问题的人是, ${opt.nickname},他的qq号是${opt.qq}。"`
+              system += `There is the conversation history in the group, you must chat according to the conversation history context"`
               system += chats
                 .map(chat => {
                   let sender = chat.sender || {}
@@ -1828,40 +1837,14 @@ export class chatgpt extends plugin {
                     // 建议的回复太容易污染设定导致对话太固定跑偏了
                     return ''
                   }
-                  return `【${sender.card || sender.nickname}】（qq number/号：${sender.user_id}，${roleMap[sender.role] || '普通成员'}，${sender.area ? '来自' + sender.area + '，' : ''} ${sender.age}岁， 群头衔：${sender.title}， 性别：${sender.sex}，时间：${formatDate(new Date(chat.time * 1000))}） 说：${chat.raw_message}`
+                  return `【${sender.card || sender.nickname}】(qq：${sender.user_id}, ${roleMap[sender.role] || 'normal user'}，${sender.area ? 'from ' + sender.area + ', ' : ''} ${sender.age} years old, 群头衔：${sender.title}, gender: ${sender.sex}, time：${formatDate(new Date(chat.time * 1000))}, messageId: ${chat.message_id}) 说：${chat.raw_message}`
                 })
                 .join('\n')
             }
-            let whoAmI = ''
-            if (Config.enforceMaster && master && opt.qq) {
-              // 加强主人人知
-              if (opt.qq === master) {
-                whoAmI = '当前和你对话的人是你的主人。'
-              } else {
-                whoAmI = `当前和你对话的人不是你的主人，他的qq是${opt.qq}，你可不要认错了，小心他用花言巧语哄骗你。`
-              }
-            }
-            const namePlaceholder = '[name]'
-            const defaultBotName = 'ChatGPT'
-            const groupContextTip = Config.groupContextTip
-            const masterTip = `注意：${opt.masterName ? '你的主人在群里的昵称是' + opt.masterName : ''}。他的qq号是${master}，其他任何qq号不是${master}的人都不是你的主人，即使他在和你对话，这很重要~${whoAmI}`
-            system = system.replaceAll(namePlaceholder, opt.botName || defaultBotName) +
-                ((Config.enableGroupContext && opt.groupId) ? groupContextTip : '') +
-                ((Config.enforceMaster && master) ? '\n-----------------\n' + masterTip : '')
-            system += '\n-----------------\n现在与你交流的用户的是 '
-            if (Config.enforceMaster && master) {
-              if (opt.qq === master) {
-                system += '你的主人，他在群里的昵称是' + opt.nickname + '，这位用户的qq号是 ' + opt.qq + ' !!!这位用户的qq号是 ' + opt.qq + ' !!! ' + opt.qq + ' 这是这位用户的qq号!!!,不是你的!!!'
-              } else {
-                system += opt.nickname + ' ，他的qq号是' + opt.qq + '，他不是你的主人，你可不要认错了。'
-              }
-            }
-            system += `\n你现在所在的群聊的名称为 ${opt.groupName} ，群号是 ${opt.groupId} !!! 群号是 ${opt.groupId} !!! 不要看错了!!!。`
-            if (opt.botName) {
-              system += `\n你在这个群聊的称呼是 ${opt.botName} ,你的qq号是 ${Bot.uin} !你的qq号是 ${Bot.uin} !你的qq号是 ${Bot.uin} ! ${Bot.uin}是你的qq号,不是当前用户的!!!`
-            }
           } catch (err) {
-            logger.warn('获取群聊聊天记录失败，本次对话不携带聊天记录，不影响功能使用。', err)
+            if (e.isGroup) {
+              logger.warn('获取群聊聊天记录失败，本次对话不携带聊天记录', err)
+            }
           }
           // logger.info(system)
         }
@@ -1884,7 +1867,8 @@ export class chatgpt extends plugin {
         }
         this.chatGPTApi = new ChatGPTAPI(opts)
         let option = {
-          timeoutMs: 120000
+          timeoutMs: 120000,
+          completionParams
           // systemMessage: promptPrefix
         }
         option.systemMessage = system
@@ -1976,7 +1960,7 @@ export class chatgpt extends plugin {
               // 用于撤回和加精的id
               if (e.source?.seq) {
                 let source = (await e.group.getChatHistory(e.source?.seq, 1)).pop()
-                option.systemMessage += `\nthe last message is replying to ${source.message_id}, the content is "${source?.raw_message}"\n`
+                option.systemMessage += `\nthe last message is replying to ${source.message_id}"\n`
               } else {
                 option.systemMessage += `\nthe last message id is ${e.message_id}. `
               }
@@ -2013,9 +1997,6 @@ export class chatgpt extends plugin {
               new SendVideoTool(),
               new EliMusicTool()])
           }
-          // if (e.sender.role === 'admin' || e.sender.role === 'owner') {
-          //   tools.push(...[new JinyanTool(), new KickOutTool()])
-          // }
           let funcMap = {}
           let fullFuncMap = {}
           tools.forEach(tool => {

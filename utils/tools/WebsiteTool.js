@@ -60,13 +60,14 @@ export class WebsiteTool extends AbstractTool {
         .replace('<!DOCTYPE html>', '') // 去除<!DOCTYPE>声明
       let maxModelTokens = getMaxModelTokens(Config.model)
       text = text.slice(0, Math.min(text.length, maxModelTokens - 1600))
+      let completionParams = {
+        model: Config.model
+      }
       let api = new ChatGPTAPI({
         apiBaseUrl: Config.openAiBaseUrl,
         apiKey: Config.apiKey,
         debug: false,
-        completionParams: {
-          model: Config.model
-        },
+        completionParams,
         fetch: (url, options = {}) => {
           const defaultOptions = Config.proxy
             ? {
@@ -81,7 +82,7 @@ export class WebsiteTool extends AbstractTool {
         },
         maxModelTokens
       })
-      const htmlContentSummaryRes = await api.sendMessage(`去除与主体内容无关的部分，从中整理出主体内容并转换成md格式，不需要主观描述性的语言与冗余的空白行。${text}`)
+      const htmlContentSummaryRes = await api.sendMessage(`去除与主体内容无关的部分，从中整理出主体内容并转换成md格式，不需要主观描述性的语言与冗余的空白行。${text}`, { completionParams })
       let htmlContentSummary = htmlContentSummaryRes.text
       return `this is the main content of website:\n ${htmlContentSummary}`
     } catch (err) {

@@ -1,5 +1,5 @@
 import { AbstractTool } from './AbstractTool.js'
-import {Config} from "../config.js";
+import {Config} from '../config.js';
 
 export class WeatherTool extends AbstractTool {
   name = 'weather'
@@ -17,7 +17,9 @@ export class WeatherTool extends AbstractTool {
   func = async function (opts) {
     let { city } = opts
     let key = Config.amapKey
-
+    if (!key) {
+      return 'query failed: you don\'t provide API key of 高德'
+    }
     let adcodeRes = await fetch(`https://restapi.amap.com/v3/config/district?keywords=${city}&subdistrict=1&key=${key}`)
     adcodeRes = await adcodeRes.json()
     let adcode = adcodeRes.districts[0]?.adcode

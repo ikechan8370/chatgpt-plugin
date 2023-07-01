@@ -7,7 +7,7 @@ export class EliMovieTool extends AbstractTool {
     properties: {
       yesOrNo: {
         type: 'string',
-        description: 'do you want to check?'
+        description: 'check or not'
       }
     },
     required: ['yesOrNo']
