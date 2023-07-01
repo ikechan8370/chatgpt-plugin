@@ -61,7 +61,8 @@ export class WebsiteTool extends AbstractTool {
       let maxModelTokens = getMaxModelTokens(Config.model)
       text = text.slice(0, Math.min(text.length, maxModelTokens - 1600))
       let completionParams = {
-        model: Config.model
+        // model: Config.model
+        model: 'gpt-3.5-turbo-16k'
       }
       let api = new ChatGPTAPI({
         apiBaseUrl: Config.openAiBaseUrl,
