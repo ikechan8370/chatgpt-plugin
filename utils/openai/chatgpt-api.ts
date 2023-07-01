@@ -7,7 +7,7 @@ import * as tokenizer from './tokenizer'
 import * as types from './types'
 import globalFetch from 'node-fetch'
 import { fetchSSE } from './fetch-sse'
-import {Role} from "./types";
+import {openai, Role} from "./types";
 
 const CHATGPT_MODEL = 'gpt-3.5-turbo-0613'
 
@@ -172,7 +172,8 @@ export class ChatGPTAPI {
         const { messages, maxTokens, numTokens } = await this._buildMessages(
             text,
             role,
-            opts
+            opts,
+            completionParams
         )
 
         const result: types.ChatMessage = {
@@ -378,7 +379,9 @@ export class ChatGPTAPI {
         this._apiOrg = apiOrg
     }
 
-    protected async _buildMessages(text: string, role: Role, opts: types.SendMessageOptions) {
+    protected async _buildMessages(text: string, role: Role, opts: types.SendMessageOptions, completionParams: Partial<
+        Omit<openai.CreateChatCompletionRequest, 'messages' | 'n' | 'stream'>
+    >) {
         const { systemMessage = this._systemMessage } = opts
         let { parentMessageId } = opts
 
@@ -405,8 +408,42 @@ export class ChatGPTAPI {
                 }
             ])
             : messages
-        let numTokens = 0
 
+        let functionToken = 0
+
+        let numTokens = functionToken
+        for (const func of completionParams.functions) {
+            functionToken += await this._getTokenCount(func.name)
+            functionToken += await this._getTokenCount(func.description)
+            if (func.parameters.properties) {
+                for (let key of Object.keys(func.parameters.properties)) {
+                    functionToken += await this._getTokenCount(key)
+                    let property = func.parameters.properties[key]
+                    for (let field of Object.keys(property)) {
+                        switch (field) {
+                            case 'type': {
+                                functionToken += 2
+                                functionToken += await this._getTokenCount(property.type)
+                                break
+                            }
+                            case 'description': {
+                                functionToken += 2
+                                functionToken += await this._getTokenCount(property.description)
+                                break
+                            }
+                            case 'field': {
+                                functionToken -= 3
+                                for (let enumElement of property.enum) {
+                                    functionToken += 3
+                                    functionToken += await this._getTokenCount(enumElement)
+                                }
+                                break
+                            }
+                        }
+                    }
+                }
+            }
+        }
         do {
             const prompt = nextMessages
                 .reduce((prompt, message) => {
@@ -416,20 +453,26 @@ export class ChatGPTAPI {
                         case 'user':
                             return prompt.concat([`${userLabel}:\n${message.content}`])
                         case 'function':
-                            return prompt.concat([`Function:\n${message.content}`])
+                            // leave befind
+                            return prompt
                         default:
                             return message.content ? prompt.concat([`${assistantLabel}:\n${message.content}`]) : prompt
                     }
                 }, [] as string[])
                 .join('\n\n')
 
-            const nextNumTokensEstimate = await this._getTokenCount(prompt)
-            const isValidPrompt = nextNumTokensEstimate <= maxNumTokens
+            let nextNumTokensEstimate = await this._getTokenCount(prompt)
+
+            for (const m1 of nextMessages
+                .filter(m => m.function_call)) {
+                nextNumTokensEstimate += await this._getTokenCount(JSON.stringify(m1.function_call) || '')
+            }
+
+            const isValidPrompt = nextNumTokensEstimate + functionToken <= maxNumTokens
 
             if (prompt && !isValidPrompt) {
                 break
             }
-
             messages = nextMessages
             numTokens = nextNumTokensEstimate
 
@@ -472,6 +515,9 @@ export class ChatGPTAPI {
     }
 
     protected async _getTokenCount(text: string) {
+        if (!text) {
+            return 0
+        }
         // TODO: use a better fix in the tokenizer
         text = text.replace(/<\|endoftext\|>/g, '')
 
