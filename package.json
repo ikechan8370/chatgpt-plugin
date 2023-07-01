@@ -30,8 +30,7 @@
     "random": "^4.1.0",
     "undici": "^5.21.0",
     "uuid": "^9.0.0",
-    "ws": "^8.13.0",
-
+    "ws": "^8.13.0"
   },
   "optionalDependencies": {
     "@node-rs/jieba": "^1.6.2",
