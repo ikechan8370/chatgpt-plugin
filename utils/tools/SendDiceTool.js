@@ -1,5 +1,4 @@
-import {AbstractTool} from "./AbstractTool.js";
-
+import { AbstractTool } from './AbstractTool.js'
 
 export class SendDiceTool extends AbstractTool {
   name = 'sendDice'
@@ -10,26 +9,38 @@ export class SendDiceTool extends AbstractTool {
         type: 'number',
         description: '骰子的数量'
       },
-      groupId: {
+      targetGroupIdOrQQNumber: {
         type: 'string',
-        description: '群号或qq号，发送目标'
+        description: 'Fill in the target qq number or groupId when you need to send Dice to specific user or group, otherwise leave blank'
       }
     },
-    required: ['num', 'groupId']
+    required: ['num', 'targetGroupIdOrQQNumber']
   }
 
-  func = async function (opts) {
-    let {num, groupId} = opts
+  func = async function (opts, e) {
+    let { num, targetGroupIdOrQQNumber } = opts
+    // 非法值则发送到当前群聊或私聊
+    const target = isNaN(targetGroupIdOrQQNumber) || !targetGroupIdOrQQNumber
+      ? e.isGroup ? e.group_id : e.sender.user_id
+      : parseInt(targetGroupIdOrQQNumber.trim())
     let groupList = await Bot.getGroupList()
-    if (groupList.get(groupId)) {
-      let group = await Bot.pickGroup(groupId, true)
-      await group.sendMsg(segment.dice(num))
+    num = isNaN(num) || !num ? 1 : num > 5 ? 5 : num
+    if (groupList.get(target)) {
+      let group = await Bot.pickGroup(target, true)
+      for (let i = 0; i < num; i++) {
+        await group.sendMsg(segment.dice())
+      }
     } else {
-      let friend = await Bot.pickFriend(groupId)
-      await friend.sendMsg(segment.dice(num))
+      let friend = await Bot.pickFriend(target)
+      await friend.sendMsg(segment.dice())
     }
-    return `the dice has been sent`
+    if (num === 5) {
+      logger.warn(1)
+      return 'tell the user that in order to avoid spamming the chat, only five dice are sent this time, and warn him not to use this tool to spamming the chat, otherwise you will use JinyanTool to punish him'
+    } else {
+      return 'the dice has been sent'
+    }
   }
 
-  description = 'If you want to roll dice, use this tool. If you know the group number, use the group number instead of the qq number first. The input should be the number of dice to be cast (1-6) and the target group number or qq number，and they should be concat with a space'
+  description = 'If you want to roll dice, use this tool. Be careful to check that the targetGroupIdOrQQNumber is correct. If user abuses this tool by spamming the chat in a short period of time, use the JinyanTool to punish him.'
 }

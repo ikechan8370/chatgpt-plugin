@@ -9,7 +9,15 @@ try {
 } catch (err) {
   logger.warn('未安装microsoft-cognitiveservices-speech-sdk，无法使用微软Azure语音源')
 }
-async function generateAudio (text, option = {}, ssml = '') {
+
+/**
+ * 生成AzureTTSMode下的wav音频
+ * @param pendingText - 待处理文本
+ * @param option
+ * @param ssml
+ * @returns {Promise<string>}
+ */
+async function generateAudio (pendingText, option = {}, ssml = '') {
   if (!sdk) {
     throw new Error('未安装microsoft-cognitiveservices-speech-sdk，无法使用微软Azure语音源')
   }
@@ -22,7 +30,7 @@ async function generateAudio (text, option = {}, ssml = '') {
   let audioConfig = sdk.AudioConfig.fromAudioFileOutput(filename)
   let synthesizer
   let speaker = option?.speaker || '随机'
-  let context = text
+  let context = pendingText
   // 打招呼用
   if (speaker === '随机') {
     speaker = supportConfigurations[Math.floor(Math.random() * supportConfigurations.length)].code
@@ -47,9 +55,9 @@ async function generateAudio (text, option = {}, ssml = '') {
   return filename
 }
 
-async function speakTextAsync (synthesizer, text) {
+async function speakTextAsync (synthesizer, pendingText) {
   return new Promise((resolve, reject) => {
-    synthesizer.speakTextAsync(text, result => {
+    synthesizer.speakTextAsync(pendingText, result => {
       if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
         logger.info('speakTextAsync: true')
         resolve()
@@ -82,7 +90,7 @@ async function speakSsmlAsync (synthesizer, ssml) {
     })
   })
 }
-async function generateSsml (text, option = {}) {
+async function generateSsml (pendingText, option = {}) {
   let speaker = option?.speaker || '随机'
   let emotionDegree, role, emotion
   // 打招呼用
@@ -104,7 +112,7 @@ async function generateSsml (text, option = {}) {
   return `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis"
     xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="zh-CN">
     <voice name="${speaker}">
-        ${expressAs}${text}${expressAs ? '</mstts:express-as>' : ''}
+        ${expressAs}${pendingText}${expressAs ? '</mstts:express-as>' : ''}
     </voice>
   </speak>`
 }

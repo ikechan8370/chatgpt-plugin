@@ -24,8 +24,9 @@ export class ImageCaptionTool extends AbstractTool {
 
   description = 'useful when you want to know what is inside a photo, such as user\'s avatar or other pictures'
 
-  func = async function (opts) {
+  func = async function (opts, e) {
     let { imgUrl, qq, question } = opts
+    if (isNaN(qq) || !qq) qq = e.sender.user_id
     if (!imgUrl && qq) {
       imgUrl = `https://q1.qlogo.cn/g?b=qq&s=160&nk=${qq}`
     }

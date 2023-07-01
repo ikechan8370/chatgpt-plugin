@@ -11,24 +11,32 @@ export class EditCardTool extends AbstractTool {
       },
       card: {
         type: 'string',
-        description: '你想给他改的新名片'
+        description: 'the new card'
       },
       groupId: {
         type: 'string',
-        description: '群号'
+        description: 'group number'
       }
     },
     required: ['card', 'groupId']
   }
 
-  description = '当你想要修改某个群员的群名片时有用。输入应该是群号、qq号和群名片，用空格隔开。'
+  description = 'Useful when you want to edit someone\'s card in the group(群名片)'
 
-  func = async function (opts) {
-    let {qq, card, groupId} = opts
-    groupId = parseInt(groupId.trim())
-    qq = parseInt(qq.trim())
-    logger.info('edit card: ', groupId, qq)
+  func = async function (opts, e) {
+    let { qq, card, groupId } = opts
+    qq = isNaN(qq) || !qq ? e.sender.user_id : parseInt(qq.trim())
+    groupId = isNaN(groupId) || !groupId ? e.group_id : parseInt(groupId.trim())
+
     let group = await Bot.pickGroup(groupId)
+    let mm = await group.getMemberMap()
+    if (!mm.has(qq)) {
+      return `failed, the user ${qq} is not in group ${groupId}`
+    }
+    if (mm.get(Bot.uin).role === 'member') {
+      return `failed, you, not user, don't have permission to edit card in group ${groupId}`
+    }
+    logger.info('edit card: ', groupId, qq)
     await group.setCard(qq, card)
     return `the user ${qq}'s card has been changed into ${card}`
   }

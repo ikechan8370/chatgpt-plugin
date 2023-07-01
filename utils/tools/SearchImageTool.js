@@ -26,5 +26,5 @@ export class SerpImageTool extends AbstractTool {
     return `the images search results are here in json format:\n${JSON.stringify(res)}. the murl field is real picture url. You should use sendPicture to send them`
   }
 
-  description = 'Useful when you want to search images from the internet.  '
+  description = 'Useful when you want to search images from the internet.'
 }
