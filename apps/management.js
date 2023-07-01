@@ -767,6 +767,7 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
     })
     if (reversed[bot]) {
       await redis.set('CHATGPT:POE_BOT', reversed[bot])
+      await e.reply(`poe已切换至${bot}(${reversed[bot]})模式`)
     } else {
       await e.reply('目前poe模式仅支持' + Object.keys(reversed).join(', '))
     }
