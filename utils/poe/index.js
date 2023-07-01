@@ -7,7 +7,7 @@ import HttpsProxyAgent from 'https-proxy-agent'
 // used when test as a single file
 // const _path = process.cwd()
 let _path = process.cwd() + '/plugins/chatgpt-plugin/utils/poe'
-_path = '.'
+// _path = '.'
 const gqlDir = `${_path}/graphql`
 const queries = {
   // chatViewQuery: readFileSync(gqlDir + '/ChatViewQuery.graphql', 'utf8'),
