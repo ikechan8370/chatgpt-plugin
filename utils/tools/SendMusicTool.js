@@ -9,21 +9,25 @@ export class SendMusicTool extends AbstractTool {
         type: 'string',
         description: '音乐的id'
       },
-      groupId: {
+      targetGroupIdOrQQNumber: {
         type: 'string',
-        description: '群号或qq号，发送目标，为空则发送到当前聊天'
+        description: 'Fill in the target user_id or groupId when you need to send music to specific group or user, otherwise leave blank'
       }
     },
     required: ['keyword']
   }
 
-  func = async function (opts) {
-    let { id, groupId } = opts
-    groupId = parseInt(groupId.trim())
+  func = async function (opts, e) {
+    let { id, targetGroupIdOrQQNumber } = opts
+    // 非法值则发送到当前群聊
+    const target = isNaN(targetGroupIdOrQQNumber) || !targetGroupIdOrQQNumber
+      ? e.group_id
+      : parseInt(targetGroupIdOrQQNumber.trim())
+
     try {
-      let group = await Bot.pickGroup(groupId)
+      let group = await Bot.pickGroup(target)
       await group.shareMusic('163', id)
-      return `the music has been shared to ${groupId}`
+      return `the music has been shared to ${target}`
     } catch (e) {
       return `music share failed: ${e}`
     }

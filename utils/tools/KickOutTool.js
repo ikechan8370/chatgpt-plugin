@@ -22,10 +22,10 @@ export class KickOutTool extends AbstractTool {
     required: ['groupId']
   }
 
-  func = async function (opts) {
+  func = async function (opts, e) {
     let { qq, groupId, sender, isAdmin, isPunish } = opts
-    groupId = parseInt(groupId.trim())
-    qq = parseInt(qq.trim())
+    qq = isNaN(qq) || !qq ? e.sender.user_id : parseInt(qq.trim())
+    groupId = isNaN(groupId) || !groupId ? e.group_id : parseInt(groupId.trim())
     if (!isAdmin && sender != qq) {
       return 'the user is not admin, he cannot kickout other people. he should be punished'
     }

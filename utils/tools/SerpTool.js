@@ -36,5 +36,5 @@ export class SerpTool extends AbstractTool {
     return `the search results are here in json format:\n${JSON.stringify(res)}`
   }
 
-  description = 'Useful when you want to search something from the internet. If you don\'t know much about the user\'s question, just search about it! If you want to know details of a result, you can use website tool'
+  description = 'Useful when you want to search something from the internet. If you don\'t know much about the user\'s question, just search about it! If you want to know details of a result, you can use website tool! use it as much as you can!'
 }
