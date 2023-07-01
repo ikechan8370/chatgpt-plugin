@@ -286,6 +286,7 @@ var ChatGPTAPI = /** @class */ (function () {
                                         }
                                         else {
                                             res_1 = response;
+                                            console.error(res_1)
                                             return [2 /*return*/, reject(new Error("OpenAI error: ".concat(((_b = res_1 === null || res_1 === void 0 ? void 0 : res_1.detail) === null || _b === void 0 ? void 0 : _b.message) || (res_1 === null || res_1 === void 0 ? void 0 : res_1.detail) || 'unknown')))];
                                         }
                                         result.detail = response;

@@ -305,6 +305,7 @@ export class ChatGPTAPI {
                             }
                         } else {
                             const res = response as any
+                            console.error(res)
                             return reject(
                                 new Error(
                                     `OpenAI error: ${
