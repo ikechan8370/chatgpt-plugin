@@ -87,9 +87,7 @@ pnpm i
 3. 修改配置
 **本插件配置项比较多，强烈建议使用后台面板或[锅巴面板](https://github.com/guoba-yunzai/Guoba-Plugin)修改**
 
-   复制`plugins/chatgpt-plugin/config/config.example.json`并将其改名为`config.json`\
-   编辑`plugins/chatgpt-plugin/config/config.json`文件，修改必要配置项 \
-   **请勿直接修改config.example.json**
+   或者创建和编辑config/config.json文件。
 
 4. 后台面板使用
    初次使用请先私聊机器人 `#设置管理密码` 进登录密码设置
