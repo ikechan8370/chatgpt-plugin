@@ -50,7 +50,7 @@ export class JinyanTool extends AbstractTool {
       if (qq === 'all') {
         return 'you cannot mute all because the master doesn\'t allow it'
       } else {
-        qq = isNaN(qq) || !qq ? e.sender.user_id : parseInt(qq.trim())
+        // qq = isNaN(qq) || !qq ? e.sender.user_id : parseInt(qq.trim())
         await group.muteMember(qq, time)
       }
     } else {
