@@ -65,6 +65,7 @@ import { SendMusicTool } from '../utils/tools/SendMusicTool.js'
 import { SendDiceTool } from '../utils/tools/SendDiceTool.js'
 import { SendAvatarTool } from '../utils/tools/SendAvatarTool.js'
 import { SendMessageToSpecificGroupOrUserTool } from '../utils/tools/SendMessageToSpecificGroupOrUserTool.js'
+import {SetTitleTool} from "../utils/tools/SetTitleTool.js";
 
 try {
   await import('emoji-strip')
@@ -1511,6 +1512,7 @@ export class chatgpt extends plugin {
             let abtrs = await getAvailableBingToken(conversation, throttledTokens)
             if (Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom') {
               bingToken = abtrs.bingToken
+              // eslint-disable-next-line no-unused-vars
               allThrottled = abtrs.allThrottled
               if (bingToken?.indexOf('=') > -1) {
                 cookies = bingToken
@@ -1520,7 +1522,7 @@ export class chatgpt extends plugin {
               }
               bingAIClient.opts.userToken = bingToken
               bingAIClient.opts.cookies = cookies
-              opt.messageType = allThrottled ? 'Chat' : 'SearchQuery'
+              // opt.messageType = allThrottled ? 'Chat' : 'SearchQuery'
               if (Config.enableGroupContext && e.isGroup && typeof e.group.getMemberMap === 'function') {
                 try {
                   opt.groupId = e.group_id
@@ -1828,7 +1830,7 @@ export class chatgpt extends plugin {
               admin: 'group administrator'
             }
             if (chats) {
-              system += `There is the conversation history in the group, you must chat according to the conversation history context"`
+              system += 'There is the conversation history in the group, you must chat according to the conversation history context"'
               system += chats
                 .map(chat => {
                   let sender = chat.sender || {}
@@ -1923,7 +1925,8 @@ export class chatgpt extends plugin {
             new EliMovieTool(),
             new SendMessageToSpecificGroupOrUserTool(),
             new SendDiceTool(),
-            new QueryGenshinTool()
+            new QueryGenshinTool(),
+            new SetTitleTool()
           ]
           // todo 3.0再重构tool的插拔和管理
           let tools = [
@@ -1956,7 +1959,7 @@ export class chatgpt extends plugin {
             let botInfo = await Bot.getGroupMemberInfo(e.group_id, Bot.uin, true)
             if (botInfo.role !== 'member') {
               // 管理员才给这些工具
-              tools.push(...[new EditCardTool(), new JinyanTool(), new KickOutTool(), new HandleMessageMsgTool()])
+              tools.push(...[new EditCardTool(), new JinyanTool(), new KickOutTool(), new HandleMessageMsgTool(), new SetTitleTool()])
               // 用于撤回和加精的id
               if (e.source?.seq) {
                 let source = (await e.group.getChatHistory(e.source?.seq, 1)).pop()

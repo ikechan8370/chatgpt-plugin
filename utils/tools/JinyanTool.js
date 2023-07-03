@@ -32,12 +32,14 @@ export class JinyanTool extends AbstractTool {
       ? isNaN(qq) || !qq ? e.sender.user_id : parseInt(qq.trim())
       : 'all'
     let group = await Bot.pickGroup(groupId)
-    let m = await group.getMemberMap()
-    if (!m.has(qq)) {
-      return `failed, the user ${qq} is not in group ${groupId}`
-    }
-    if (m.get(Bot.uin).role === 'member') {
-      return `failed, you, not user, don't have permission to edit card in group ${groupId}`
+    if (qq !== 'all') {
+      let m = await group.getMemberMap()
+      if (!m.has(qq)) {
+        return `failed, the user ${qq} is not in group ${groupId}`
+      }
+      if (m.get(Bot.uin).role === 'member') {
+        return `failed, you, not user, don't have permission to mute other in group ${groupId}`
+      }
     }
     time = parseInt(time.trim())
     if (time < 60 && time !== 0) {
@@ -50,7 +52,7 @@ export class JinyanTool extends AbstractTool {
       if (qq === 'all') {
         return 'you cannot mute all because the master doesn\'t allow it'
       } else {
-        qq = isNaN(qq) || !qq ? e.sender.user_id : parseInt(qq.trim())
+        // qq = isNaN(qq) || !qq ? e.sender.user_id : parseInt(qq.trim())
         await group.muteMember(qq, time)
       }
     } else {
