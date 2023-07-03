@@ -31,8 +31,8 @@ export class JinyanTool extends AbstractTool {
     qq = qq !== 'all'
       ? isNaN(qq) || !qq ? e.sender.user_id : parseInt(qq.trim())
       : 'all'
+    let group = await Bot.pickGroup(groupId)
     if (qq !== 'all') {
-      let group = await Bot.pickGroup(groupId)
       let m = await group.getMemberMap()
       if (!m.has(qq)) {
         return `failed, the user ${qq} is not in group ${groupId}`
