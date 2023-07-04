@@ -7,7 +7,7 @@ export class EliMusicTool extends AbstractTool {
     properties: {
       keywordOrSongName: {
         type: 'string',
-        description: 'Not necessarily a songName, it can be some descriptive word.'
+        description: 'Not necessarily a songName, it can be some descriptive words.'
       },
       singer: {
         type: 'string',
@@ -15,11 +15,11 @@ export class EliMusicTool extends AbstractTool {
       },
       isRandom: {
         type: 'boolean',
-        description: 'Whether to randomly select songs, default is false'
+        description: 'true when randomly select songs'
       },
       isHot: {
         type: 'boolean',
-        description: 'Whether it\'s related to \'hot\', fill in this item when there is no keywordOrSongName'
+        description: 'true when user\'s needs related to \'hot\''
       },
       singerTypeOrRegion: {
         type: 'string',
