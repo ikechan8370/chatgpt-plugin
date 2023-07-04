@@ -25,7 +25,7 @@ import {
   getUserReplySetting,
   getImageOcrText,
   getImg,
-  getMaxModelTokens, formatDate, generateAudio
+  getMaxModelTokens, formatDate, generateAudio, formatDate2
 } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
@@ -65,7 +65,7 @@ import { SendMusicTool } from '../utils/tools/SendMusicTool.js'
 import { SendDiceTool } from '../utils/tools/SendDiceTool.js'
 import { SendAvatarTool } from '../utils/tools/SendAvatarTool.js'
 import { SendMessageToSpecificGroupOrUserTool } from '../utils/tools/SendMessageToSpecificGroupOrUserTool.js'
-import {SetTitleTool} from "../utils/tools/SetTitleTool.js";
+import { SetTitleTool } from '../utils/tools/SetTitleTool.js'
 
 try {
   await import('emoji-strip')
@@ -2200,97 +2200,44 @@ export class chatgpt extends plugin {
   }
 
   async totalAvailable (e) {
-    if (!Config.OpenAiPlatformRefreshToken) {
-      this.reply('当前未配置platform.openai.com的刷新token，请发送【#chatgpt设置后台刷新token】进行配置。温馨提示：仅API模式需要关心计费。')
-      return false
-    }
-    let refreshRes = await newFetch('https://auth0.openai.com/oauth/token', {
-      method: 'POST',
-      body: JSON.stringify({
-        refresh_token: Config.OpenAiPlatformRefreshToken,
-        client_id: 'DRivsnm2Mu42T3KOpqdtwB3NYviHYzwD',
-        grant_type: 'refresh_token'
-      }),
+    // 查询OpenAI API剩余试用额度
+    let subscriptionRes = await newFetch(`${Config.openAiBaseUrl}/dashboard/billing/subscription`, {
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/json'
+        Authorization: 'Bearer ' + Config.apiKey
       }
     })
-    if (refreshRes.status !== 200) {
-      let errMsg = await refreshRes.json()
-      if (errMsg.error === 'access_denied') {
-        await e.reply('刷新令牌失效，请重新发送【#chatgpt设置后台刷新token】进行配置。建议退出platform.openai.com重新登录后再获取和配置')
-      } else {
-        await e.reply('获取失败')
-      }
-      return false
-    }
-    let newToken = await refreshRes.json()
-    // eslint-disable-next-line camelcase
-    const { access_token, refresh_token } = newToken
-    // eslint-disable-next-line camelcase
-    Config.OpenAiPlatformRefreshToken = refresh_token
-    let res = await newFetch(`${Config.openAiBaseUrl}/dashboard/onboarding/login`, {
-      headers: {
-        // eslint-disable-next-line camelcase
-        Authorization: `Bearer ${access_token}`
-      },
-      method: 'POST'
-    })
-    if (res.status === 200) {
-      let authRes = await res.json()
-      let sess = authRes.user.session.sensitive_id
-      newFetch(`${Config.openAiBaseUrl}/dashboard/billing/credit_grants`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer ' + sess
-        }
-      })
-        .then(response => response.json())
-        .then(data => {
-          if (data.error) {
-            this.reply('获取失败：' + data.error.code)
-            return false
-          } else {
-            // eslint-disable-next-line camelcase
-            let total_granted = data.total_granted.toFixed(2)
-            // eslint-disable-next-line camelcase
-            let total_used = data.total_used.toFixed(2)
-            // eslint-disable-next-line camelcase
-            let total_available = data.total_available.toFixed(2)
-            // eslint-disable-next-line camelcase
-            let expires_at = new Date(data.grants.data[0].expires_at * 1000).toLocaleDateString().replace(/\//g, '-')
-            // eslint-disable-next-line camelcase
-            this.reply('总额度：$' + total_granted + '\n已经使用额度：$' + total_used + '\n当前剩余额度：$' + total_available + '\n到期日期(UTC)：' + expires_at)
-          }
-        })
-    } else {
-      let errorMsg = await res.text()
-      logger.error(errorMsg)
-      await e.reply(errorMsg)
-    }
 
-    // // 查询OpenAI API剩余试用额度
-    // newFetch(`${Config.openAiBaseUrl}/dashboard/billing/credit_grants`, {
-    //   method: 'GET',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //     Authorization: 'Bearer ' + Config.apiKey
-    //   }
-    // })
-    //   .then(response => response.json())
-    //   .then(data => {
-    //     if (data.error) {
-    //       this.reply('获取失败：' + data.error.code)
-    //       return false
-    //     } else {
-    //       let total_granted = data.total_granted.toFixed(2)
-    //       let total_used = data.total_used.toFixed(2)
-    //       let total_available = data.total_available.toFixed(2)
-    //       let expires_at = new Date(data.grants.data[0].expires_at * 1000).toLocaleDateString().replace(/\//g, '-')
-    //       this.reply('总额度：$' + total_granted + '\n已经使用额度：$' + total_used + '\n当前剩余额度：$' + total_available + '\n到期日期(UTC)：' + expires_at)
-    //     }
-    //   })
+    function getDates () {
+      const today = new Date()
+      const tomorrow = new Date(today)
+      tomorrow.setDate(tomorrow.getDate() + 1)
+
+      const beforeTomorrow = new Date(tomorrow)
+      beforeTomorrow.setDate(beforeTomorrow.getDate() - 100)
+
+      const tomorrowFormatted = formatDate2(tomorrow)
+      const beforeTomorrowFormatted = formatDate2(beforeTomorrow)
+
+      return {
+        end: tomorrowFormatted,
+        start: beforeTomorrowFormatted
+      }
+    }
+    let subscription = await subscriptionRes.json()
+    let { hard_limit_usd: hardLimit, access_until: expiresAt } = subscription
+    const { end, start } = getDates()
+    let usageRes = await newFetch(`${Config.openAiBaseUrl}/dashboard/billing/usage?start_date=${start}&end_date=${end}`, {
+      method: 'GET',
+      headers: {
+        Authorization: 'Bearer ' + Config.apiKey
+      }
+    })
+    let usage = await usageRes.json()
+    const { total_usage: totalUsage } = usage
+    expiresAt = formatDate(new Date(expiresAt * 1000))
+    let left = hardLimit - totalUsage / 100
+    this.reply('总额度：$' + hardLimit + '\n已经使用额度：$' + totalUsage / 100 + '\n当前剩余额度：$' + left + '\n到期日期(UTC)：' + expiresAt)
   }
 
   /**
