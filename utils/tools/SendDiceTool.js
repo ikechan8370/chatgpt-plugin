@@ -20,9 +20,10 @@ export class SendDiceTool extends AbstractTool {
   func = async function (opts, e) {
     let { num, targetGroupIdOrQQNumber } = opts
     // 非法值则发送到当前群聊或私聊
+    const defaultTarget = e.isGroup ? e.group_id : e.sender.user_id
     const target = isNaN(targetGroupIdOrQQNumber) || !targetGroupIdOrQQNumber
-      ? e.isGroup ? e.group_id : e.sender.user_id
-      : parseInt(targetGroupIdOrQQNumber.trim())
+      ? defaultTarget
+      : parseInt(targetGroupIdOrQQNumber) === Bot.uin ? defaultTarget : parseInt(targetGroupIdOrQQNumber)
     let groupList = await Bot.getGroupList()
     num = isNaN(num) || !num ? 1 : num > 5 ? 5 : num
     if (groupList.get(target)) {
