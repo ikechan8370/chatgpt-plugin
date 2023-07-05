@@ -37,42 +37,50 @@ export class EliMusicTool extends AbstractTool {
 
   func = async function (opts, e) {
     let { keywordOrSongName, singer, isRandom, isHot, singerTypeOrRegion, isRelax } = opts
-    let avocado
+    let avocado, songDetail, musicUtils
     try {
       let { AvocadoMusic } = await import('../../../avocado-plugin/apps/avocadoMusic.js')
+      musicUtils = await import('../../../avocado-plugin/utils/music.js')
       avocado = new AvocadoMusic(e)
     } catch (err) {
       return 'the user didn\'t install avocado-plugin. suggest him to install'
     }
     try {
-      const isRandom2 = !keywordOrSongName && isRandom && !singer
-      if (isRandom2) {
+      // 条件成立则随机播放最爱歌手的音乐
+      const orderFavSinger = !keywordOrSongName && isRandom && !singer
+
+      if (orderFavSinger) { // 随机播放最爱歌手的音乐, 需要通过指令设置
         try {
           singer = await redis.get(`AVOCADO:MUSIC_${e.sender.user_id}_FAVSINGER`)
           if (!singer) throw new Error('no favorite singer')
-          singer = JSON.parse(singer).singer
-          logger.warn(singer)
+          singer = JSON.parse(singer).singerName
         } catch (err) {
           return 'the user didn\'t set a favorite singer. Suggest setting it through the command \'#设置歌手+歌手名称\'!'
         }
         e.msg = '#鳄梨酱#随机' + singer
-      } else if (isRelax) {
+      } else if (isRelax) { // 随机发送放松音乐
         const arr = ['安静', '放松', '宁静', '白噪音']
         e.msg = `#鳄梨酱#随机${arr[Math.floor(Math.random() * arr.length)]}`
-      } else if (singerTypeOrRegion) {
+      } else if (singerTypeOrRegion) { // 查看热门歌手榜单
         if (['华语', '中国', '欧美', '韩国', '日本'].includes(singerTypeOrRegion)) {
           e.msg = '#鳄梨酱#' + (isRandom ? '随机' : '') + (!keywordOrSongName && isHot ? '热门' : '') + singerTypeOrRegion + '歌手'
         }
-        return
-      } else {
+      } else { // 正常点歌
+        if (singer && keywordOrSongName) {
+          isRandom = false // 有时候ai会随意设置这个参数,降低权重
+          songDetail = await musicUtils.getOrderSongList(e.sender.user_id, singer + ',' + keywordOrSongName, 1)
+        }
         e.msg = '#鳄梨酱#' + (isRandom ? '随机' : '') + (!keywordOrSongName && isHot ? '热门' : '') + (singer ? singer + (keywordOrSongName ? ',' + keywordOrSongName : '') : keywordOrSongName)
       }
-      e.senderFromChatGpt = e.sender.user_id
       await avocado.pickMusic(e)
-      if (isRandom2) {
-        return 'tell the user that a random song by his favorite artist has been sent to him! you don\'t need to find other info!'
+      if (orderFavSinger) {
+        return 'tell the user that a random song by his favorite artist has been sent to him!'
       } else {
-        return 'tell user that the response of his request has been sent to the user! you don\'t need to find other info!'
+        return 'tell user that the response of his request has been sent to the him!' +
+            (songDetail
+              ? 'song detail is: ' + JSON.stringify(songDetail) + ' and send album picture to user'
+              : ''
+            )
       }
     } catch (e) {
       return `music share failed: ${e}`
