@@ -2003,8 +2003,7 @@ export class chatgpt extends plugin {
           } else {
             tools.push(new SerpImageTool())
             tools.push(...[new SearchVideoTool(),
-              new SendVideoTool(),
-              new EliMusicTool()])
+              new SendVideoTool()])
           }
           let funcMap = {}
           let fullFuncMap = {}
