@@ -57,20 +57,20 @@ export class EliMusicTool extends AbstractTool {
         } catch (err) {
           return 'the user didn\'t set a favorite singer. Suggest setting it through the command \'#设置歌手+歌手名称\'!'
         }
-        e.msg = '#鳄梨酱#随机' + singer
+        e.msg = '#鳄梨酱音乐#随机' + singer
       } else if (isRelax) { // 随机发送放松音乐
         const arr = ['安静', '放松', '宁静', '白噪音']
-        e.msg = `#鳄梨酱#随机${arr[Math.floor(Math.random() * arr.length)]}`
+        e.msg = `#鳄梨酱音乐#随机${arr[Math.floor(Math.random() * arr.length)]}`
       } else if (singerTypeOrRegion) { // 查看热门歌手榜单
         if (['华语', '中国', '欧美', '韩国', '日本'].includes(singerTypeOrRegion)) {
-          e.msg = '#鳄梨酱#' + (isRandom ? '随机' : '') + (!keywordOrSongName && isHot ? '热门' : '') + singerTypeOrRegion + '歌手'
+          e.msg = '#鳄梨酱音乐#' + (isRandom ? '随机' : '') + (!keywordOrSongName && isHot ? '热门' : '') + singerTypeOrRegion + '歌手'
         }
       } else { // 正常点歌
         if (singer && keywordOrSongName) {
           isRandom = false // 有时候ai会随意设置这个参数,降低权重
           songDetail = await musicUtils.getOrderSongList(e.sender.user_id, singer + ',' + keywordOrSongName, 1)
         }
-        e.msg = '#鳄梨酱#' + (isRandom ? '随机' : '') + (!keywordOrSongName && isHot ? '热门' : '') + (singer ? singer + (keywordOrSongName ? ',' + keywordOrSongName : '') : keywordOrSongName)
+        e.msg = '#鳄梨酱音乐#' + (isRandom ? '随机' : '') + (!keywordOrSongName && isHot ? '热门' : '') + (singer ? singer + (keywordOrSongName ? ',' + keywordOrSongName : '') : keywordOrSongName)
       }
       await avocado.pickMusic(e)
       if (orderFavSinger) {
