@@ -23,9 +23,10 @@ export class SendAvatarTool extends AbstractTool {
     if (!pictures.length) {
       return 'there is no valid qq'
     }
+    const defaultTarget = e.isGroup ? e.group_id : e.sender.user_id
     const target = isNaN(targetGroupIdOrQQNumber) || !targetGroupIdOrQQNumber
-      ? e.isGroup ? e.group_id : e.sender.user_id
-      : parseInt(targetGroupIdOrQQNumber.trim())
+      ? defaultTarget
+      : parseInt(targetGroupIdOrQQNumber) === Bot.uin ? defaultTarget : parseInt(targetGroupIdOrQQNumber)
 
     let groupList = await Bot.getGroupList()
     console.log('sendAvatar', target, pictures)

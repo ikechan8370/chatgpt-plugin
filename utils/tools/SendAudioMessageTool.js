@@ -67,9 +67,10 @@ export class SendAudioMessageTool extends AbstractTool {
     let { pendingText, ttsMode, vitsModeRole, azureModeRole, voxModeRole, speakingEmotion, speakingEmotionDegree, targetGroupIdOrQQNumber } = opts
     let sendable
     ttsMode = isNaN(ttsMode) || !ttsMode ? 1 : ttsMode
+    const defaultTarget = e.isGroup ? e.group_id : e.sender.user_id
     const target = isNaN(targetGroupIdOrQQNumber) || !targetGroupIdOrQQNumber
-      ? e.isGroup ? e.group_id : e.sender.user_id
-      : parseInt(targetGroupIdOrQQNumber.trim())
+      ? defaultTarget
+      : parseInt(targetGroupIdOrQQNumber) === Bot.uin ? defaultTarget : parseInt(targetGroupIdOrQQNumber)
     try {
       switch (ttsMode) {
         case 1:
