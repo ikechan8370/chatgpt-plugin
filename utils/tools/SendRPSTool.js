@@ -16,10 +16,10 @@ export class SendRPSTool extends AbstractTool {
   }
 
   func = async function (num, targetGroupIdOrQQNumber, e) {
+    const defaultTarget = e.isGroup ? e.group_id : e.sender.user_id
     const target = isNaN(targetGroupIdOrQQNumber) || !targetGroupIdOrQQNumber
-      ? e.isGroup ? e.group_id : e.sender.user_id
-      : parseInt(targetGroupIdOrQQNumber.trim())
-
+      ? defaultTarget
+      : parseInt(targetGroupIdOrQQNumber) === Bot.uin ? defaultTarget : parseInt(targetGroupIdOrQQNumber)
     let groupList = await Bot.getGroupList()
     if (groupList.get(target)) {
       let group = await Bot.pickGroup(target, true)

@@ -5,75 +5,82 @@ export class EliMusicTool extends AbstractTool {
 
   parameters = {
     properties: {
-      keyword: {
+      keywordOrSongName: {
         type: 'string',
-        description: 'Not necessarily a songName, it can be some descriptive words, but does not include the singer\'s name! can be left blank!'
+        description: 'Not necessarily a songName, it can be some descriptive words.'
       },
       singer: {
         type: 'string',
-        description: 'Singer name, multiple singers are separated by \',\'! can be left blank!'
+        description: 'Singer name, multiple singers are separated by \',\'!'
       },
       isRandom: {
         type: 'boolean',
-        description: 'Whether to randomly select songs, default is false'
-      },
-      isRandom2: {
-        type: 'boolean',
-        description: 'when isRandom is true and neither singer nor songName is specified!!!, this value is true; otherwise, it is false. The default value is false.'
+        description: 'true when randomly select songs'
       },
       isHot: {
         type: 'boolean',
-        description: 'Whether it\'s related to \'hot\', consider filling in this item when there is no song name, can be left blank'
+        description: 'true when user\'s needs related to \'hot\''
       },
-      singerRegion: {
+      singerTypeOrRegion: {
         type: 'string',
-        description: 'Whether it\'s related to \'hot\', consider filling in this item when there is no song name, can be left blank'
+        description: 'Choose from [华语|中国|欧美|韩国|日本] when seeking the latest ranking of popular vocalists.'
       },
       isRelax: {
         type: 'boolean',
-        description: 'Fill in when the user wants to sleep or rest, leave others blank when filling in this item, default is false'
+        description: 'Complete whenever you wish to discover the renowned vocalist in a particular locale.'
       }
     },
-    required: ['keyword', 'singer', 'isRandom', 'singerRegion, isRelax', 'isRandom2']
+    required: ['keywordOrSongName', 'singer', 'isRandom', 'singerTypeOrRegion, isRelax']
   }
 
-  description = 'It is very useful when you want to meet the music needs or of users or when users want to sleep or unwind., so you should use this tool as much as possible, regardless of whether I asked you before!'
+  description = 'It is very useful when you want to meet the music needs of user or when user want to sleep or unwind(give him a relax music).'
 
   func = async function (opts, e) {
-    let { keyword, singer, isRandom, isHot, singerRegion, isRelax, isRandom2 } = opts
-    let avocado
+    let { keywordOrSongName, singer, isRandom, isHot, singerTypeOrRegion, isRelax } = opts
+    let avocado, songDetail, musicUtils
     try {
       let { AvocadoMusic } = await import('../../../avocado-plugin/apps/avocadoMusic.js')
+      musicUtils = await import('../../../avocado-plugin/utils/music.js')
       avocado = new AvocadoMusic(e)
     } catch (err) {
       return 'the user didn\'t install avocado-plugin. suggest him to install'
     }
     try {
-      // 不听话的gpt
-      isRandom2 = !keyword && isRandom && !isRandom2 && !singer
-      if (isRandom2) {
+      // 条件成立则随机播放最爱歌手的音乐
+      const orderFavSinger = !keywordOrSongName && isRandom && !singer
+
+      if (orderFavSinger) { // 随机播放最爱歌手的音乐, 需要通过指令设置
         try {
           singer = await redis.get(`AVOCADO:MUSIC_${e.sender.user_id}_FAVSINGER`)
           if (!singer) throw new Error('no favorite singer')
-          singer = JSON.parse(singer).singer
-          logger.warn(singer)
+          singer = JSON.parse(singer).singerName
         } catch (err) {
           return 'the user didn\'t set a favorite singer. Suggest setting it through the command \'#设置歌手+歌手名称\'!'
         }
-        e.msg = '#鳄梨酱#随机' + singer
-      } else if (isRelax) {
-        e.msg = '#鳄梨酱#随机放松'
-      } else if (singerRegion) {
-        e.msg = '#鳄梨酱#' + (isRandom ? '随机' : '') + (isHot ? '热门' : '') + singerRegion + '歌手'
-      } else {
-        e.msg = '#鳄梨酱#' + (isRandom ? '随机' : '') + (isHot ? '热门' : '') + (singer ? singer + (keyword ? ',' + keyword : '') : keyword)
+        e.msg = '#鳄梨酱音乐#随机' + singer
+      } else if (isRelax) { // 随机发送放松音乐
+        const arr = ['安静', '放松', '宁静', '白噪音']
+        e.msg = `#鳄梨酱音乐#随机${arr[Math.floor(Math.random() * arr.length)]}`
+      } else if (singerTypeOrRegion) { // 查看热门歌手榜单
+        if (['华语', '中国', '欧美', '韩国', '日本'].includes(singerTypeOrRegion)) {
+          e.msg = '#鳄梨酱音乐#' + (isRandom ? '随机' : '') + (!keywordOrSongName && isHot ? '热门' : '') + singerTypeOrRegion + '歌手'
+        }
+      } else { // 正常点歌
+        if (singer && keywordOrSongName) {
+          isRandom = false // 有时候ai会随意设置这个参数,降低权重
+          songDetail = await musicUtils.getOrderSongList(e.sender.user_id, singer + ',' + keywordOrSongName, 1)
+        }
+        e.msg = '#鳄梨酱音乐#' + (isRandom ? '随机' : '') + (!keywordOrSongName && isHot ? '热门' : '') + (singer ? singer + (keywordOrSongName ? ',' + keywordOrSongName : '') : keywordOrSongName)
       }
-      e.senderFromChatGpt = e.sender.user_id
       await avocado.pickMusic(e)
-      if (isRandom2) {
-        return 'tell the user that a random song by his favorite artist has been sent to him! you don\'t need to find other info!'
+      if (orderFavSinger) {
+        return 'tell the user that a random song by his favorite artist has been sent to him!'
       } else {
-        return 'tell user that the response of his request has been sent to the user! you don\'t need to find other info!'
+        return 'tell user that the response of his request has been sent to the him!' +
+            (songDetail
+              ? 'song detail is: ' + JSON.stringify(songDetail) + ' and send album picture to user'
+              : ''
+            )
       }
     } catch (e) {
       return `music share failed: ${e}`

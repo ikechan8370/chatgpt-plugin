@@ -30,7 +30,10 @@
     "random": "^4.1.0",
     "undici": "^5.21.0",
     "uuid": "^9.0.0",
-    "ws": "^8.13.0"
+    "ws": "^8.13.0",
+    "js-tiktoken": "^1.0.5",
+    "quick-lru": "6.1.1"
+
   },
   "optionalDependencies": {
     "@node-rs/jieba": "^1.6.2",

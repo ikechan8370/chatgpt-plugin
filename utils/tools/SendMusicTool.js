@@ -20,9 +20,10 @@ export class SendMusicTool extends AbstractTool {
   func = async function (opts, e) {
     let { id, targetGroupIdOrQQNumber } = opts
     // 非法值则发送到当前群聊
+    const defaultTarget = e.isGroup ? e.group_id : e.sender.user_id
     const target = isNaN(targetGroupIdOrQQNumber) || !targetGroupIdOrQQNumber
-      ? e.group_id
-      : parseInt(targetGroupIdOrQQNumber.trim())
+      ? defaultTarget
+      : parseInt(targetGroupIdOrQQNumber) === Bot.uin ? defaultTarget : parseInt(targetGroupIdOrQQNumber)
 
     try {
       let group = await Bot.pickGroup(target)
