@@ -1876,7 +1876,13 @@ export class chatgpt extends plugin {
         this.chatGPTApi = new ChatGPTAPI(opts)
         let option = {
           timeoutMs: 120000,
-          completionParams
+          completionParams,
+          stream: true,
+          onProgress: (data) => {
+            if (Config.debug) {
+              logger.info(data?.text || data.functionCall || data)
+            }
+          }
           // systemMessage: promptPrefix
         }
         option.systemMessage = system

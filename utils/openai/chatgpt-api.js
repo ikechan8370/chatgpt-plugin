@@ -225,7 +225,7 @@ var ChatGPTAPI = /** @class */ (function () {
                                                                 };
                                                             }
                                                             else {
-                                                                result.functionCall.arguments = result.functionCall.arguments || '' + delta.function_call.arguments;
+                                                                result.functionCall.arguments = (result.functionCall.arguments || '') + delta.function_call.arguments;
                                                             }
                                                         }
                                                         else {

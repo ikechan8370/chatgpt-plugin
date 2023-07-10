@@ -243,7 +243,7 @@ export class ChatGPTAPI {
                                                     arguments: delta.function_call.arguments
                                                 }
                                             } else {
-                                                result.functionCall.arguments = result.functionCall.arguments || '' + delta.function_call.arguments
+                                                result.functionCall.arguments = (result.functionCall.arguments || '') + delta.function_call.arguments
                                             }
 
                                         } else {
