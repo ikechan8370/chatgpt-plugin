@@ -1763,7 +1763,14 @@ export class chatgpt extends plugin {
             logger.info('claudeFirst:', prompt)
           }
         }
-        let text = await client.sendMessage(prompt, e)
+
+        // 添加一下用户标识
+        const { user_id: qq, card: nickName } = e.sender || {};
+        const masterQQ = (await getMasterQQ())?.[0];
+        const isMaster = qq === masterQQ;
+        let message = `【${nickName}】(qq: ${qq}, ${isMaster ? '主人' : '普通成员'})说: ${prompt}`;
+
+        let text = await client.sendMessage(message, e)
         return {
           text
         }
