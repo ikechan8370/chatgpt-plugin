@@ -1030,7 +1030,7 @@ export class chatgpt extends plugin {
           await redis.set(key, JSON.stringify(previousConversation), Config.conversationPreserveTime > 0 ? { EX: Config.conversationPreserveTime } : {})
         }
       }
-      let response = chatMessage?.text
+      let response = chatMessage?.text?.replace('\n\n\n', '\n')
       // 过滤无法正常显示的emoji
       if (use === 'claude') response = response.replace(/:[a-zA-Z_]+:/g, '')
       let mood = 'blandness'
@@ -2035,7 +2035,7 @@ export class chatgpt extends plugin {
             logger.info(msg)
             while (msg.functionCall) {
               if (msg.text) {
-                await e.reply(msg.text)
+                await e.reply(msg.text.replace('\n\n\n', '\n'))
               }
               let { name, arguments: args } = msg.functionCall
               args = JSON.parse(args)
@@ -2048,7 +2048,7 @@ export class chatgpt extends plugin {
               } catch (err) {
                 args.groupId = e.group_id + '' || e.sender.user_id + ''
               }
-              let functionResult = await fullFuncMap[name].exec(Object.assign({ isAdmin, sender }, args), e)
+              let functionResult = await fullFuncMap[name.trim()].exec(Object.assign({ isAdmin, sender }, args), e)
               logger.mark(`function ${name} execution result: ${functionResult}`)
               option.parentMessageId = msg.id
               option.name = name
