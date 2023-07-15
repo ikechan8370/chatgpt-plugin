@@ -1875,7 +1875,7 @@ export class chatgpt extends plugin {
         }
         this.chatGPTApi = new ChatGPTAPI(opts)
         let option = {
-          timeoutMs: 120000,
+          timeoutMs: 600000,
           completionParams,
           stream: true,
           onProgress: (data) => {
@@ -2034,6 +2034,9 @@ export class chatgpt extends plugin {
             msg = await this.chatGPTApi.sendMessage(prompt, option)
             logger.info(msg)
             while (msg.functionCall) {
+              if (msg.text) {
+                await e.reply(msg.text)
+              }
               let { name, arguments: args } = msg.functionCall
               args = JSON.parse(args)
               // 感觉换成targetGroupIdOrUserQQNumber这种表意比较清楚的变量名，效果会好一丢丢
