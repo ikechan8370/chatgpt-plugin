@@ -423,7 +423,127 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
     return true
   }
 
-  async enablePrivateChat (e) {
+  async setList(e) {
+    this.setContext('saveList')
+    isWhiteList = e.msg.includes('白')
+    const listType = isWhiteList ? '对话白名单' : '对话黑名单'
+    await this.reply(`请发送需要添加的${listType}号码，默认设置为添加群号，需要添加QQ号时在前面添加^(例如：^123456)。`, e.isGroup)
+    return false
+  }
+
+  async saveList(e) {
+    if (!this.e.msg) return
+    const listType = isWhiteList ? '对话白名单' : '对话黑名单'
+    const regex = /^\^?[1-9]\d{5,9}$/
+    const wrongInput = []
+    const inputSet = new Set()
+    const inputList = this.e.msg.split(/[,，]/).reduce((acc, value) => {
+      if (value.length > 11 || !regex.test(value)) {
+        wrongInput.push(value)
+      } else if (!inputSet.has(value)) {
+        inputSet.add(value)
+        acc.push(value)
+      }
+      return acc
+    }, [])
+    if (!inputList.length) {
+      let replyMsg = '名单更新失败，请在检查输入是否正确后重新输入。'
+      if (wrongInput.length) replyMsg += `\n${wrongInput.length ? '检测到以下错误输入："' + wrongInput.join('，') + '"，已自动忽略。' : ''}`
+      await this.reply(replyMsg, e.isGroup)
+      return false
+    }
+    let [whitelist, blacklist] = processList(Config.whitelist, Config.blacklist)
+    whitelist = [...inputList, ...whitelist]
+    blacklist = [...inputList, ...blacklist]
+    if (listType === '对话白名单') {
+      Config.whitelist = Array.from(new Set(whitelist))
+    } else {
+      Config.blacklist = Array.from(new Set(blacklist))
+    }
+    let replyMsg = `${listType}已更新，可通过\n"#chatgpt查看${listType}" 查看最新名单\n"#chatgpt移除${listType}" 管理名单${wrongInput.length ? '\n检测到以下错误输入："' + wrongInput.join('，') + '"，已自动忽略。' : ''}`
+    if (e.isPrivate) {
+      replyMsg += `\n当前${listType}为：${listType === '对话白名单' ? Config.whitelist : Config.blacklist}`
+    }
+    await this.reply(replyMsg, e.isGroup)
+    this.finish('saveList')
+  }
+
+  async checkList(e) {
+    if (e.msg.includes('帮助')) {
+      await this.reply('默认设置为添加群号，需要拉黑QQ号时在前面添加^(例如：^123456)，可一次性混合输入多个配置号码，错误项会自动忽略。具体使用指令可通过 "#指令表搜索名单" 查看，白名单优先级高于黑名单。')
+      return true
+    }
+    isWhiteList = e.msg.includes('白')
+    const list = isWhiteList ? Config.whitelist : Config.blacklist
+    const listType = isWhiteList ? '白名单' : '黑名单'
+    const replyMsg = list.length ? `当前${listType}为：${list}` : `当前没有设置任何${listType}`
+    await this.reply(replyMsg, e.isGroup)
+    return false
+  }
+
+  async delList(e) {
+    isWhiteList = e.msg.includes('白')
+    const listType = isWhiteList ? '对话白名单' : '对话黑名单'
+    let replyMsg = ''
+    if (Config.whitelist.length === 0 && Config.blacklist.length === 0) {
+      replyMsg = '当前对话(白|黑)名单都是空哒，请先添加吧~'
+    } else if ((listType === '对话白名单' && !Config.whitelist.length) || (listType === '对话黑名单' && !Config.blacklist.length)) {
+      replyMsg = `当前${listType}为空，请先添加吧~`
+    }
+    if (replyMsg) {
+      await this.reply(replyMsg, e.isGroup)
+      return false
+    }
+    this.setContext('confirmDelList')
+    await this.reply(`请发送需要删除的${listType}号码，号码间使用,隔开。输入‘全部删除’清空${listType}。${e.isPrivate ? '\n当前' + listType + '为：' + (listType === '对话白名单' ? Config.whitelist : Config.blacklist) : ''}`, e.isGroup)
+    return false
+  }
+
+  async confirmDelList(e) {
+    if (!this.e.msg) return
+    const isAllDeleted = this.e.msg.trim() === '全部删除'
+    const regex = /^\^?[1-9]\d{5,9}$/
+    const wrongInput = []
+    const inputSet = new Set()
+    const inputList = this.e.msg.split(/[,，]/).reduce((acc, value) => {
+      if (value.length > 11 || !regex.test(value)) {
+        wrongInput.push(value)
+      } else if (!inputSet.has(value)) {
+        inputSet.add(value)
+        acc.push(value)
+      }
+      return acc
+    }, [])
+    if (!inputList.length && !isAllDeleted) {
+      let replyMsg = '名单更新失败，请在检查输入是否正确后重新输入。'
+      if (wrongInput.length) replyMsg += `${wrongInput.length ? '\n检测到以下错误输入："' + wrongInput.join('，') + '"，已自动忽略。' : ''}`
+      await this.reply(replyMsg, e.isGroup)
+      return false
+    }
+    let [whitelist, blacklist] = processList(Config.whitelist, Config.blacklist)
+    if (isAllDeleted) {
+      Config.whitelist = isWhiteList ? [] : whitelist
+      Config.blacklist = !isWhiteList ? [] : blacklist
+    } else {
+      for (const element of inputList) {
+        if (isWhiteList) {
+          Config.whitelist = whitelist.filter(item => item !== element)
+        } else {
+          Config.blacklist = blacklist.filter(item => item !== element)
+        }
+      }
+    }
+    const listType = isWhiteList ? '对话白名单' : '对话黑名单'
+    let replyMsg = `${listType}已更新，可通过 "#chatgpt查看${listType}" 命令查看最新名单${wrongInput.length ? '\n检测到以下错误输入："' + wrongInput.join('，') + '"，已自动忽略。' : ''}`
+    if (e.isPrivate) {
+      const list = isWhiteList ? Config.whitelist : Config.blacklist
+      replyMsg = list.length ? `\n当前${listType}为：${list}` : `当前没有设置任何${listType}`
+    }
+    await this.reply(replyMsg, e.isGroup)
+    this.finish('confirmDelList')
+  }
+
+  async enablePrivateChat(e) {
     Config.enablePrivateChat = !!e.msg.match(/(允许|打开|同意)/)
     await this.reply('设置成功', e.isGroup)
     return false
