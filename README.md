@@ -34,11 +34,12 @@
 * API3模式下，绕过Cloudflare防护直接访问ChatGPT的SSE API，与官方体验一致，且保留对话记录，在官网可查。免费。
 * (已不再维护)提供基于浏览器的解决方案作为备选，API3不可用的情况下或担心账户安全的用户可以选择使用浏览器模式。
 * 支持新[必应](https://www.bing.com/new)（token负载均衡，限流降级）
-* 2023-03-15 API3支持GPT-4尝鲜，需要Plus用户
+* 2023-03-15 API3支持GPT-4尝鲜，需要Plus用户（疑似被官方阻断暂不支持api3的gpt4）
 * 支持[ChatGLM](https://github.com/THUDM/ChatGLM-6B)模型。基于[自建API](https://github.com/ikechan8370/SimpleChatGLM6BAPI)
 * 2023-04-15 支持[Claude by Slack](https://www.anthropic.com/claude-in-slack )和Poe（WIP）。Claude配置参考[这里](https://ikechan8370.com/archives/chatgpt-plugin-for-yunzaipei-zhi-slack-claude)
 * 2023-05-12 支持星火大模型
 * 2023-05-29 支持gpt-4 API.必应无需cookie即可对话（Sydney和自定义模式）
+* 2023-07 支持智能模式，机器人可以实现禁言、群名片/头衔（需给机器人管理员/群主）、分享音乐视频、主动发音频、对接ap,sr和喵喵等插件、联网搜索等，需api模式0613系列模型。智能模式所需的额外api和搜索api分别可以参考[chatgpt-plugin-extras](https://github.com/ikechan8370/chatgpt-plugin-extras) 和 [search-api](https://github.com/ikechan8370/search-api) 自行搭建，其中后者提供了一个公益版本，前者可使用[huggingface](https://huggingface.co/spaces/ikechan8370/cp-extra)部署
 
 ### 如果觉得这个插件有趣或者对你有帮助，请点一个star吧！
 
@@ -87,9 +88,7 @@ pnpm i
 3. 修改配置
 **本插件配置项比较多，强烈建议使用后台面板或[锅巴面板](https://github.com/guoba-yunzai/Guoba-Plugin)修改**
 
-   复制`plugins/chatgpt-plugin/config/config.example.json`并将其改名为`config.json`\
-   编辑`plugins/chatgpt-plugin/config/config.json`文件，修改必要配置项 \
-   **请勿直接修改config.example.json**
+   或者创建和编辑config/config.json文件。
 
 4. 后台面板使用
    初次使用请先私聊机器人 `#设置管理密码` 进登录密码设置

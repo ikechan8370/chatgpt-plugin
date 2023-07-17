@@ -12,21 +12,26 @@ export class SendVideoTool extends AbstractTool {
         type: 'string',
         description: '要发的视频的id'
       },
-      groupId: {
+      targetGroupIdOrQQNumber: {
         type: 'string',
-        description: '群号或qq号，发送目标，为空则发送到当前聊天'
+        description: 'Fill in the target user\'s qq number or groupId when you need to send video to specific user or group, otherwise leave blank'
       }
     },
     required: ['id']
   }
 
-  func = async function (opts) {
-    let { id, groupId } = opts
-    groupId = parseInt(groupId.trim())
+  func = async function (opts, e) {
+    let { id, targetGroupIdOrQQNumber } = opts
+    // 非法值则发送到当前群聊或私聊
+    const defaultTarget = e.isGroup ? e.group_id : e.sender.user_id
+    const target = isNaN(targetGroupIdOrQQNumber) || !targetGroupIdOrQQNumber
+      ? defaultTarget
+      : parseInt(targetGroupIdOrQQNumber) === Bot.uin ? defaultTarget : parseInt(targetGroupIdOrQQNumber)
+
     let msg = []
     try {
       let { arcurl, title, pic, description, videoUrl, headers, bvid, author, play, pubdate, like, honor } = await getBilibili(id)
-      let group = await Bot.pickGroup(groupId)
+      let group = await Bot.pickGroup(target)
       msg.push(title.replace(/(<([^>]+)>)/ig, '') + '\n')
       msg.push(`UP主：${author} 发布日期：${formatDate(new Date(pubdate * 1000))} 播放量：${play} 点赞：${like}\n`)
       msg.push(arcurl + '\n')
@@ -47,7 +52,7 @@ export class SendVideoTool extends AbstractTool {
         await fs.writeFileSync(fileLoc, buffer)
         await group.sendMsg(segment.video(fileLoc))
       })
-      return `the video ${title.replace(/(<([^>]+)>)/ig, '')} was shared to ${groupId}. the video information: ${msg}`
+      return `the video ${title.replace(/(<([^>]+)>)/ig, '')} was shared to ${target}. the video information: ${msg}`
     } catch (err) {
       logger.error(err)
       if (msg.length > 0) {
@@ -58,7 +63,7 @@ export class SendVideoTool extends AbstractTool {
     }
   }
 
-  description = 'Useful when you want to share a video. You must use searchVideo to get search result and choose one video and get its id'
+  description = 'Useful when you are allowed to send a video. You must use searchVideo to get search result and choose one video and get its id'
 }
 
 export async function getBilibili (bvid) {
@@ -103,7 +108,7 @@ export async function getBilibili (bvid) {
     let pubdate = videoInfo.data.pubdate
     let like = videoInfo.data.stat.like
     let honor = videoInfo.data.honor_reply?.honor?.map(h => h.desc)?.join('、')
-    let downloadInfo = await fetch(`https://api.bilibili.com/x/player/playurl?bvid=${bvid}&cid=${cid}`, {headers})
+    let downloadInfo = await fetch(`https://api.bilibili.com/x/player/playurl?bvid=${bvid}&cid=${cid}`, { headers })
     let videoUrl = (await downloadInfo.json()).data.durl[0].url
     return {
       arcurl, title, pic, description, videoUrl, headers, bvid, author, play, pubdate, like, honor
@@ -133,4 +138,4 @@ function randomIndex () {
   }
 }
 
-console.log('send bilibili')
+// console.log('send bilibili')

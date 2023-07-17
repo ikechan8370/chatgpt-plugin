@@ -1,30 +1,30 @@
 import { AbstractTool } from './AbstractTool.js'
 
-export class EditCardTool extends AbstractTool {
-  name = 'editCard'
+export class SetTitleTool extends AbstractTool {
+  name = 'setTitle'
 
   parameters = {
     properties: {
       qq: {
         type: 'string',
-        description: '你想改名片的那个人的qq号，默认为聊天对象'
+        description: '你想给予群头衔的那个人的qq号，默认为聊天对象'
       },
-      card: {
+      title: {
         type: 'string',
-        description: 'the new card'
+        description: '群头衔'
       },
       groupId: {
         type: 'string',
         description: 'group number'
       }
     },
-    required: ['card', 'groupId']
+    required: ['title', 'groupId']
   }
 
-  description = 'Useful when you want to edit someone\'s card in the group(群名片)'
+  description = 'Useful when you want to give someone a title in the group(群头衔)'
 
   func = async function (opts, e) {
-    let { qq, card, groupId } = opts
+    let { qq, title, groupId } = opts
     qq = isNaN(qq) || !qq ? e.sender.user_id : parseInt(qq.trim())
     groupId = isNaN(groupId) || !groupId ? e.group_id : parseInt(groupId.trim())
 
@@ -33,11 +33,15 @@ export class EditCardTool extends AbstractTool {
     if (!mm.has(qq)) {
       return `failed, the user ${qq} is not in group ${groupId}`
     }
-    if (mm.get(Bot.uin).role === 'member') {
-      return `failed, you, not user, don't have permission to edit card in group ${groupId}`
+    if (mm.get(Bot.uin).role !== 'owner') {
+      return 'on group owner can give title'
     }
     logger.info('edit card: ', groupId, qq)
-    await group.setCard(qq, card)
-    return `the user ${qq}'s card has been changed into ${card}`
+    let result = await group.setTitle(qq, title)
+    if (result) {
+      return `the user ${qq}'s title has been changed into ${title}`
+    } else {
+      return 'failed'
+    }
   }
 }

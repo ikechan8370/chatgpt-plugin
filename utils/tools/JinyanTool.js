@@ -25,9 +25,22 @@ export class JinyanTool extends AbstractTool {
     required: ['groupId', 'time']
   }
 
-  func = async function (opts) {
+  func = async function (opts, e) {
     let { qq, groupId, time = '600', sender, isAdmin, isPunish } = opts
+    groupId = isNaN(groupId) || !groupId ? e.group_id : parseInt(groupId.trim())
+    qq = qq !== 'all'
+      ? isNaN(qq) || !qq ? e.sender.user_id : parseInt(qq.trim())
+      : 'all'
     let group = await Bot.pickGroup(groupId)
+    if (qq !== 'all') {
+      let m = await group.getMemberMap()
+      if (!m.has(qq)) {
+        return `failed, the user ${qq} is not in group ${groupId}`
+      }
+      if (m.get(Bot.uin).role === 'member') {
+        return `failed, you, not user, don't have permission to mute other in group ${groupId}`
+      }
+    }
     time = parseInt(time.trim())
     if (time < 60 && time !== 0) {
       time = 60
@@ -36,17 +49,16 @@ export class JinyanTool extends AbstractTool {
       time = 86400 * 30
     }
     if (isAdmin) {
-      if (qq.trim() === 'all') {
+      if (qq === 'all') {
         return 'you cannot mute all because the master doesn\'t allow it'
       } else {
-        qq = parseInt(qq.trim())
+        // qq = isNaN(qq) || !qq ? e.sender.user_id : parseInt(qq.trim())
         await group.muteMember(qq, time)
       }
     } else {
-      if (qq.trim() === 'all') {
+      if (qq === 'all') {
         return 'the user is not admin, he can\'t mute all. the user should be punished'
       } else if (qq == sender) {
-        qq = parseInt(qq.trim())
         await group.muteMember(qq, time)
       } else {
         return 'the user is not admin, he can\'t let you mute other people.'

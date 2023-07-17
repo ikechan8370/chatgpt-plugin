@@ -9,7 +9,7 @@ export class ProcessPictureTool extends AbstractTool {
       type: {
         type: 'string',
         enum: ['Image2Hed', 'Image2Scribble'],
-        description: 'how to process it. Image2Hed: useful when you want to detect the soft hed boundary of the image; Image2Scribble: useful when you want to generate a scribble of the image'
+        description: 'how to process it. Image2Hed: useful when you want to detect the soft hed boundary of the picture; Image2Scribble: useful when you want to generate a scribble of the picture'
       },
       qq: {
         type: 'string',
@@ -23,9 +23,9 @@ export class ProcessPictureTool extends AbstractTool {
     required: ['type']
   }
 
-  description = 'useful when you want to know what is inside a photo, such as user\'s avatar or other pictures'
+  description = 'useful when you want to process a picture or user\'s avatar.'
 
-  func = async function (opts) {
+  func = async function (opts, e) {
     let { url, qq, type } = opts
     if (qq) {
       url = `https://q1.qlogo.cn/g?b=qq&s=160&nk=${qq}`
@@ -57,7 +57,7 @@ export class ProcessPictureTool extends AbstractTool {
     })
     if (captionRes.status === 200) {
       let result = await captionRes.text()
-      return `the processed image url is ${Config.extraUrl}${result}`
+      return `the processed image url is ${Config.extraUrl}${result}${qq ? ' and ' + url : ''}. you should send it with SendPictureTool.`
     } else {
       return 'error happened'
     }
