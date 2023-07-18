@@ -268,11 +268,15 @@ pnpm i
    
    能。参考[这里](https://ikechan8370.com/archives/da-jian-chatgpt-guan-fang-fan-xiang-dai-li)
 
-5. vit API能本地搭建吗？
+   必应可以用[azure](https://ikechan8370.com/archives/ji-yu-azure-container-web-applicationda-jian-mian-fei-bi-ying-fan-dai)或~cloudflare workers~的serverless服务：
+
+   (202307 Cloudflare亡了！)
+
+6. vit API能本地搭建吗？
 
    能。克隆下来安装依赖直接运行即可。
 
-6. 系统后台无法进入怎么办？
+7. 系统后台无法进入怎么办？
 
    多数情况下是由于服务器未开放3321端口导致，请根据服务器系统和服务器供应商配置，开放3321端口后再试。
    
