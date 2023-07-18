@@ -651,12 +651,12 @@
               {
                 "type": "check",
                 "label": "强制使用sydney反代",
-                "data": "sydneyReverseProxy"
+                "data": "sydneyForceUseReverse"
               },
               {
                 "type": "check",
                 "label": "对话使用sydney反代",
-                "data": "sydneyForceUseReverse"
+                "data": "sydneyWebsocketUseProxy"
               },
               {
                 "type": "check",
