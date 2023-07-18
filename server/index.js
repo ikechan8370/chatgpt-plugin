@@ -365,7 +365,7 @@ export async function createServer() {
                   group: {
                     isGroup: true,
                     group_id: e.group_id,
-                    group_name: e.group_name
+                    group_name: e.group_name || item.group_name
                   },
                   quotable: {
                     user_id: e.user_id,
