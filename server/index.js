@@ -348,7 +348,7 @@ export async function createServer() {
               await connection.socket.send(JSON.stringify({ command: data.command, state: false, error: '权限验证失败' }))
             }
             break
-          case 'initQQMessageInfo': // 登录
+          case 'initQQMessageInfo': // qq消息模块初始化信息
             if (!connection.login) {
               await connection.socket.send(JSON.stringify({ command: data.command, state: false, error: '请先登录账号' }))
               return
