@@ -376,7 +376,6 @@ export async function createServer() {
                     user_name: e.sender.nickname,
                   }
                 }
-                console.log(messageData)
                 await connection.socket.send(JSON.stringify(messageData))
               })
             })

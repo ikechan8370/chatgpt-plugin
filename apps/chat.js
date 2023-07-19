@@ -98,8 +98,8 @@ const defaultPropmtPrefix = ', a large language model trained by OpenAI. You ans
 const newFetch = (url, options = {}) => {
   const defaultOptions = Config.proxy
     ? {
-        agent: proxy(Config.proxy)
-      }
+      agent: proxy(Config.proxy)
+    }
     : {}
   const mergedOptions = {
     ...defaultOptions,
@@ -109,7 +109,7 @@ const newFetch = (url, options = {}) => {
   return fetch(url, mergedOptions)
 }
 export class chatgpt extends plugin {
-  constructor () {
+  constructor() {
     let toggleMode = Config.toggleMode
     super({
       /** 功能名称 */
@@ -243,7 +243,7 @@ export class chatgpt extends plugin {
    * @param e
    * @returns {Promise<void>}
    */
-  async getConversations (e) {
+  async getConversations(e) {
     // todo 根据use返回不同的对话列表
     let keys = await redis.keys('CHATGPT:CONVERSATIONS:*')
     if (!keys || keys.length === 0) {
@@ -266,7 +266,7 @@ export class chatgpt extends plugin {
    * @param e
    * @returns {Promise<void>}
    */
-  async destroyConversations (e) {
+  async destroyConversations(e) {
     const userData = await getUserData(e.user_id)
     const use = (userData.mode === 'default' ? null : userData.mode) || await redis.get('CHATGPT:USE')
     await redis.del(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`)
@@ -418,7 +418,7 @@ export class chatgpt extends plugin {
     }
   }
 
-  async endAllConversations (e) {
+  async endAllConversations(e) {
     let use = await redis.get('CHATGPT:USE') || 'api'
     let deleted = 0
     switch (use) {
@@ -502,7 +502,7 @@ export class chatgpt extends plugin {
     await this.reply(`结束了${deleted}个用户的对话。`, true)
   }
 
-  async deleteConversation (e) {
+  async deleteConversation(e) {
     let ats = e.message.filter(m => m.type === 'at')
     let use = await redis.get('CHATGPT:USE') || 'api'
     if (use !== 'api3') {
@@ -560,7 +560,7 @@ export class chatgpt extends plugin {
     }
   }
 
-  async switch2Picture (e) {
+  async switch2Picture(e) {
     let userReplySetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
     if (!userReplySetting) {
       userReplySetting = getDefaultReplySetting()
@@ -573,7 +573,7 @@ export class chatgpt extends plugin {
     await this.reply('ChatGPT回复已转换为图片模式')
   }
 
-  async switch2Text (e) {
+  async switch2Text(e) {
     let userSetting = await getUserReplySetting(this.e)
     userSetting.usePicture = false
     userSetting.useTTS = false
@@ -581,7 +581,7 @@ export class chatgpt extends plugin {
     await this.reply('ChatGPT回复已转换为文字模式')
   }
 
-  async switch2Audio (e) {
+  async switch2Audio(e) {
     switch (Config.ttsMode) {
       case 'vits-uma-genshin-honkai':
         if (!Config.ttsSpace) {
@@ -609,7 +609,7 @@ export class chatgpt extends plugin {
     await this.reply('ChatGPT回复已转换为语音模式')
   }
 
-  async switchTTSSource (e) {
+  async switchTTSSource(e) {
     let target = e.msg.replace(/^#chatgpt语音换源/, '')
     switch (target.trim()) {
       case '1': {
@@ -632,7 +632,7 @@ export class chatgpt extends plugin {
     await e.reply('语音转换源已切换为' + Config.ttsMode)
   }
 
-  async setDefaultRole (e) {
+  async setDefaultRole(e) {
     if (Config.ttsMode === 'vits-uma-genshin-honkai' && !Config.ttsSpace) {
       await this.reply('您没有配置vits-uma-genshin-honkai API，请前往后台管理或锅巴面板进行配置')
       return
@@ -716,7 +716,7 @@ export class chatgpt extends plugin {
   /**
    * #chatgpt
    */
-  async chatgpt (e) {
+  async chatgpt(e) {
     let prompt
     if (this.toggleMode === 'at') {
       if (!e.raw_message || e.msg?.startsWith('#')) {
@@ -782,7 +782,7 @@ export class chatgpt extends plugin {
     await this.abstractChat(e, prompt, use)
   }
 
-  async abstractChat (e, prompt, use) {
+  async abstractChat(e, prompt, use) {
     // 关闭私聊通道后不回复
     if (!e.isMaster && e.isPrivate && !Config.enablePrivateChat) {
       return false
@@ -1050,12 +1050,12 @@ export class chatgpt extends plugin {
             emotionMatch.index + emotionMatch[0].length - 1
           ]
           const ttsArr =
-              response.length / 2 < endIndex
-                ? [response.substring(startIndex), response.substring(0, startIndex)]
-                : [
-                    response.substring(0, endIndex + 1),
-                    response.substring(endIndex + 1)
-                  ]
+            response.length / 2 < endIndex
+              ? [response.substring(startIndex), response.substring(0, startIndex)]
+              : [
+                response.substring(0, endIndex + 1),
+                response.substring(endIndex + 1)
+              ]
           const match = ttsArr[0].match(emotionReg)
           response = ttsArr[1].replace(/\n/, '').trim()
           if (match) {
@@ -1064,7 +1064,7 @@ export class chatgpt extends plugin {
               (config) => config.code === ttsRoleAzure
             )
             const supportedEmotions =
-                configuration.emotion && Object.keys(configuration.emotion)
+              configuration.emotion && Object.keys(configuration.emotion)
             if (supportedEmotions && supportedEmotions.includes(emotion)) {
               logger.warn(`角色 ${ttsRoleAzure} 支持 ${emotion} 情绪.`)
               await redis.set(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`, '0')
@@ -1245,7 +1245,7 @@ export class chatgpt extends plugin {
     }
   }
 
-  async chatgpt1 (e) {
+  async chatgpt1(e) {
     if (!Config.allowOtherMode) {
       return false
     }
@@ -1264,7 +1264,7 @@ export class chatgpt extends plugin {
     return true
   }
 
-  async chatgpt3 (e) {
+  async chatgpt3(e) {
     if (!Config.allowOtherMode) {
       return false
     }
@@ -1283,7 +1283,7 @@ export class chatgpt extends plugin {
     return true
   }
 
-  async chatglm (e) {
+  async chatglm(e) {
     if (!Config.allowOtherMode) {
       return false
     }
@@ -1302,7 +1302,7 @@ export class chatgpt extends plugin {
     return true
   }
 
-  async bing (e) {
+  async bing(e) {
     if (!Config.allowOtherMode) {
       return false
     }
@@ -1321,7 +1321,7 @@ export class chatgpt extends plugin {
     return true
   }
 
-  async claude (e) {
+  async claude(e) {
     if (!Config.allowOtherMode) {
       return false
     }
@@ -1340,7 +1340,7 @@ export class chatgpt extends plugin {
     return true
   }
 
-  async xh (e) {
+  async xh(e) {
     if (!Config.allowOtherMode) {
       return false
     }
@@ -1359,7 +1359,7 @@ export class chatgpt extends plugin {
     return true
   }
 
-  async cacheContent (e, use, content, prompt, quote = [], mood = '', suggest = '', imgUrls = []) {
+  async cacheContent(e, use, content, prompt, quote = [], mood = '', suggest = '', imgUrls = []) {
     let cacheData = { file: '', cacheUrl: Config.cacheUrl, status: '' }
     cacheData.file = randomString()
     const cacheresOption = {
@@ -1399,7 +1399,7 @@ export class chatgpt extends plugin {
     return cacheData
   }
 
-  async renderImage (e, use, content, prompt, quote = [], mood = '', suggest = '', imgUrls = []) {
+  async renderImage(e, use, content, prompt, quote = [], mood = '', suggest = '', imgUrls = []) {
     let cacheData = await this.cacheContent(e, use, content, prompt, quote, mood, suggest, imgUrls)
     const template = use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index'
     if (!Config.oldview) {
@@ -1447,7 +1447,7 @@ export class chatgpt extends plugin {
     }
   }
 
-  async sendMessage (prompt, conversation = {}, use, e) {
+  async sendMessage(prompt, conversation = {}, use, e) {
     if (!conversation) {
       conversation = {
         timeoutMs: Config.defaultTimeoutMs
@@ -1578,6 +1578,11 @@ export class chatgpt extends plugin {
                 delete bingOption.host
               }
               bingAIClient = new BingAIClient(bingOption)
+            }
+            // 写入图片数据
+            if (Config.sydneyImageRecognition) {
+              const image = await getImg(e)
+              opt.imageUrl = image ? image[0] : undefined
             }
             response = await bingAIClient.sendMessage(prompt, opt, (token) => {
               reply += token
@@ -1824,7 +1829,7 @@ export class chatgpt extends plugin {
             const defaultBotName = 'ChatGPT'
             const groupContextTip = Config.groupContextTip
             system = system.replaceAll(namePlaceholder, opt.botName || defaultBotName) +
-                ((Config.enableGroupContext && opt.groupId) ? groupContextTip : '')
+              ((Config.enableGroupContext && opt.groupId) ? groupContextTip : '')
             system += 'Attention, you are currently chatting in a qq group, then one who asks you now is' + `${opt.nickname}(${opt.qq})。`
             system += `the group name is ${opt.groupName}, group id is ${opt.groupId}。`
             if (opt.botName) {
@@ -2009,7 +2014,7 @@ export class chatgpt extends plugin {
           } else {
             tools.push(new SerpImageTool())
             tools.push(...[new SearchVideoTool(),
-              new SendVideoTool()])
+            new SendVideoTool()])
           }
           let funcMap = {}
           let fullFuncMap = {}
@@ -2092,7 +2097,7 @@ export class chatgpt extends plugin {
     }
   }
 
-  async newClaudeConversation (e) {
+  async newClaudeConversation(e) {
     let presetName = e.msg.replace(/^#claude开启新对话/, '').trim()
     let client = new SlackClaudeClient({
       slackUserToken: Config.slackUserToken,
@@ -2123,19 +2128,19 @@ export class chatgpt extends plugin {
         }
         logger.info('send preset: ' + preset.content)
         response = await client.sendMessage(preset.content, e) +
-                  await client.sendMessage(await AzureTTS.getEmotionPrompt(e), e)
+          await client.sendMessage(await AzureTTS.getEmotionPrompt(e), e)
         await e.reply(response, true)
       }
     }
     return true
   }
 
-  async emptyQueue (e) {
+  async emptyQueue(e) {
     await redis.lTrim('CHATGPT:CHAT_QUEUE', 1, 0)
     await this.reply('已清空当前等待队列')
   }
 
-  async removeQueueFirst (e) {
+  async removeQueueFirst(e) {
     let uid = await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
     if (!uid) {
       await this.reply('当前等待队列为空')
@@ -2144,7 +2149,7 @@ export class chatgpt extends plugin {
     }
   }
 
-  async getAllConversations (e) {
+  async getAllConversations(e) {
     const use = await redis.get('CHATGPT:USE')
     if (use === 'api3') {
       let conversations = await getConversations(e.sender.user_id, newFetch)
@@ -2165,7 +2170,7 @@ export class chatgpt extends plugin {
     }
   }
 
-  async joinConversation (e) {
+  async joinConversation(e) {
     let ats = e.message.filter(m => m.type === 'at')
     let use = await redis.get('CHATGPT:USE') || 'api'
     // if (use !== 'api3') {
@@ -2196,7 +2201,7 @@ export class chatgpt extends plugin {
     }
   }
 
-  async attachConversation (e) {
+  async attachConversation(e) {
     const use = await redis.get('CHATGPT:USE')
     if (use !== 'api3') {
       await this.reply('该功能目前仅支持API3模式')
@@ -2213,7 +2218,7 @@ export class chatgpt extends plugin {
     }
   }
 
-  async totalAvailable (e) {
+  async totalAvailable(e) {
     // 查询OpenAI API剩余试用额度
     let subscriptionRes = await newFetch(`${Config.openAiBaseUrl}/dashboard/billing/subscription`, {
       method: 'GET',
@@ -2222,7 +2227,7 @@ export class chatgpt extends plugin {
       }
     })
 
-    function getDates () {
+    function getDates() {
       const today = new Date()
       const tomorrow = new Date(today)
       tomorrow.setDate(tomorrow.getDate() + 1)
@@ -2259,7 +2264,7 @@ export class chatgpt extends plugin {
    * @param prompt 问题
    * @param conversation 对话
    */
-  async chatgptBrowserBased (prompt, conversation) {
+  async chatgptBrowserBased(prompt, conversation) {
     let option = { markdown: true }
     if (Config['2captchaToken']) {
       option.captchaToken = Config['2captchaToken']
@@ -2279,7 +2284,7 @@ export class chatgpt extends plugin {
   }
 }
 
-async function getAvailableBingToken (conversation, throttled = []) {
+async function getAvailableBingToken(conversation, throttled = []) {
   let allThrottled = false
   if (!await redis.get('CHATGPT:BING_TOKENS')) {
     return {

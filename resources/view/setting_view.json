@@ -625,6 +625,11 @@
                 "data": "sydneyMood"
               },
               {
+                "type": "check",
+                "label": "图片识别",
+                "data": "sydneyImageRecognition"
+              },
+              {
                 "type": "textarea",
                 "label": "Custom的设定",
                 "placeholder": "仅自设定模式下有效。你可以自己改写设定，让Sydney变成你希望的样子",
