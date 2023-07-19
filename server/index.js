@@ -348,6 +348,38 @@ export async function createServer() {
               await connection.socket.send(JSON.stringify({ command: data.command, state: false, error: '权限验证失败' }))
             }
             break
+          case 'initQQMessageInfo': // qq消息模块初始化信息
+            if (!connection.login) {
+              await connection.socket.send(JSON.stringify({ command: data.command, state: false, error: '请先登录账号' }))
+              return
+            }
+            const groupList = Bot.getGroupList()
+            groupList.forEach(async (item) => {
+              const group = Bot.pickGroup(item.group_id)
+              const groupMessages = await group.getChatHistory()
+              groupMessages.forEach(async (e) => {
+                const messageData = {
+                  notice: 'clientMessage',
+                  message: e.message,
+                  sender: e.sender,
+                  group: {
+                    isGroup: true,
+                    group_id: e.group_id,
+                    group_name: e.group_name || item.group_name
+                  },
+                  quotable: {
+                    user_id: e.user_id,
+                    time: e.time,
+                    seq: e.seq,
+                    rand: e.rand,
+                    message: e.message,
+                    user_name: e.sender.nickname,
+                  }
+                }
+                await connection.socket.send(JSON.stringify(messageData))
+              })
+            })
+            break
           default:
             await connection.socket.send(JSON.stringify({ "data": data }))
             break
