@@ -1,7 +1,8 @@
 import fetch, {
   Headers,
   Request,
-  Response
+  Response,
+  FormData
 } from 'node-fetch'
 import crypto from 'crypto'
 import WebSocket from 'ws'
@@ -798,7 +799,7 @@ export default class SydneyAIClient {
     if (this.opts.proxy) {
       fetchOptions.agent = proxy(Config.proxy)
     }
-    let response = await fetch(`https://www.bing.com/images/kblob`, fetchOptions)
+    let response = await fetch(`${this.opts.host}/images/kblob`, fetchOptions)
     if (response.ok){
       let text = await response.text()
       return JSON.parse(text)

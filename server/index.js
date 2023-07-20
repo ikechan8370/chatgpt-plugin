@@ -11,7 +11,7 @@ import schedule from 'node-schedule'
 import websocketclient from 'ws'
 
 import { Config } from '../utils/config.js'
-import { UserInfo, GetUser } from './modules/user_data.js'
+import { UserInfo, GetUser, AddUser } from './modules/user_data.js'
 import { getPublicIP, getUserData, getMasterQQ, randomString } from '../utils/common.js'
 
 import webRoute from './modules/web_route.js'
