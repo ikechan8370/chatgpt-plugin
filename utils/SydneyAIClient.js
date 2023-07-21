@@ -41,7 +41,7 @@ if (Config.proxy) {
 //   }
 //   return WebSocket
 // }
-async function getKeyv() {
+async function getKeyv () {
   let Keyv
   try {
     Keyv = (await import('keyv')).default
@@ -58,7 +58,7 @@ async function getKeyv() {
 const genRanHex = (size) => [...Array(size)].map(() => Math.floor(Math.random() * 16).toString(16)).join('')
 
 export default class SydneyAIClient {
-  constructor(opts) {
+  constructor (opts) {
     this.opts = {
       ...opts,
       host: opts.host || Config.sydneyReverseProxy || 'https://edgeservices.bing.com/edgesvc'
@@ -69,7 +69,7 @@ export default class SydneyAIClient {
     this.debug = opts.debug
   }
 
-  async initCache() {
+  async initCache () {
     if (!this.conversationsCache) {
       const cacheOptions = this.opts.cache || {}
       cacheOptions.namespace = cacheOptions.namespace || 'bing'
@@ -78,7 +78,7 @@ export default class SydneyAIClient {
     }
   }
 
-  async createNewConversation() {
+  async createNewConversation () {
     await this.initCache()
     const fetchOptions = {
       headers: {
@@ -143,7 +143,7 @@ export default class SydneyAIClient {
     }
   }
 
-  async createWebSocketConnection() {
+  async createWebSocketConnection () {
     await this.initCache()
     // let WebSocket = await getWebSocket()
     return new Promise((resolve, reject) => {
@@ -207,13 +207,13 @@ export default class SydneyAIClient {
     })
   }
 
-  async cleanupWebSocketConnection(ws) {
+  async cleanupWebSocketConnection (ws) {
     clearInterval(ws.bingPingInterval)
     ws.close()
     ws.removeAllListeners()
   }
 
-  async sendMessage(
+  async sendMessage (
     message,
     opts = {}
   ) {
@@ -234,6 +234,7 @@ export default class SydneyAIClient {
       firstMessageTimeout = Config.sydneyFirstMessageTimeout,
       groupId, nickname, qq, groupName, chats, botName, masterName,
       messageType = 'Chat'
+
     } = opts
     // if (messageType === 'Chat') {
     //   logger.warn('该Bing账户token已被限流，降级至使用非搜索模式。本次对话AI将无法使用Bing搜索返回的内容')
@@ -317,30 +318,30 @@ export default class SydneyAIClient {
     if (pureSydney) {
       previousMessages = invocationId === 0
         ? [
-          {
-            text,
-            author: 'bot'
-          },
-          {
-            text: `好的，我是${botName || 'Sydney'}，你的AI助手。`,
-            author: 'bot'
-          },
-          ...pm
-        ]
+            {
+              text,
+              author: 'bot'
+            },
+            {
+              text: `好的，我是${botName || 'Sydney'}，你的AI助手。`,
+              author: 'bot'
+            },
+            ...pm
+          ]
         : undefined
     } else {
       previousMessages = invocationId === 0
         ? [
-          {
-            text,
-            author: 'bot'
-          },
-          {
-            text: `好的，我是${Config.sydneyBrainWashName}。`,
-            author: 'bot'
-          },
-          ...pm
-        ]
+            {
+              text,
+              author: 'bot'
+            },
+            {
+              text: `好的，我是${Config.sydneyBrainWashName}。`,
+              author: 'bot'
+            },
+            ...pm
+          ]
         : undefined
     }
 
@@ -371,8 +372,8 @@ export default class SydneyAIClient {
       // 'cricinfov2',
       'dv3sugg',
       'gencontentv3',
-      "iycapbing",
-      "iyxapbing"
+      'iycapbing',
+      'iyxapbing'
     ]
     if (Config.enableGenerateContents) {
       optionsSets.push(...['gencontentv3'])
@@ -582,9 +583,9 @@ export default class SydneyAIClient {
             const message = messages.length
               ? messages[messages.length - 1]
               : {
-                adaptiveCards: adaptiveCardsSoFar,
-                text: replySoFar.join('')
-              }
+                  adaptiveCards: adaptiveCardsSoFar,
+                  text: replySoFar.join('')
+                }
             if (messages[0].contentOrigin === 'Apology') {
               console.log('Apology found')
               if (!replySoFar[0]) {
@@ -649,9 +650,9 @@ export default class SydneyAIClient {
             const message = messages.length
               ? messages[messages.length - 1]
               : {
-                adaptiveCards: adaptiveCardsSoFar,
-                text: replySoFar.join('')
-              }
+                  adaptiveCards: adaptiveCardsSoFar,
+                  text: replySoFar.join('')
+                }
             // 获取到图片内容
             if (message.contentType === 'IMAGE') {
               message.imageTag = messages.filter(m => m.contentType === 'IMAGE').map(m => m.text).join('')
@@ -771,29 +772,34 @@ export default class SydneyAIClient {
       }
     } catch (err) {
       await this.conversationsCache.set(conversationKey, conversation)
+      err.conversation = {
+        conversationSignature,
+        conversationId,
+        clientId
+      }
       throw err
     }
   }
 
-  async kblobImage(url) {
+  async kblobImage (url) {
     if (!url) return false
     const formData = new FormData()
     formData.append('knowledgeRequest', JSON.stringify({
-      "imageInfo": {
-        "url": url
+      imageInfo: {
+        url
       },
-      "knowledgeRequest": {
-        "invokedSkills": ["ImageById"],
-        "subscriptionId": "Bing.Chat.Multimodal",
-        "invokedSkillsRequestData": { "enableFaceBlur": true },
-        "convoData": { "convoid": "", "convotone": "Creative" }
+      knowledgeRequest: {
+        invokedSkills: ['ImageById'],
+        subscriptionId: 'Bing.Chat.Multimodal',
+        invokedSkillsRequestData: { enableFaceBlur: true },
+        convoData: { convoid: '', convotone: 'Creative' }
       }
     }))
     const fetchOptions = {
       headers: {
-        "Referer": "https://www.bing.com/search?q=Bing+AI&showconv=1&FORM=hpcodx"
+        Referer: 'https://www.bing.com/search?q=Bing+AI&showconv=1&FORM=hpcodx'
       },
-      method: "POST",
+      method: 'POST',
       body: formData
     }
     if (this.opts.proxy) {
@@ -801,13 +807,14 @@ export default class SydneyAIClient {
     }
     let accessible = !(await isCN()) || this.opts.proxy
     let response = await fetch(`${accessible ? 'https://www.bing.com' : this.opts.host}/images/kblob`, fetchOptions)
-    if (response.ok){
+    if (response.ok) {
       let text = await response.text()
       return JSON.parse(text)
     } else {
       return false
     }
   }
+
   /**
      * Iterate through messages, building an array based on the parentMessageId.
      * Each message has an id and a parentMessageId. The parentMessageId is the id of the message that this message is a reply to.
@@ -815,7 +822,7 @@ export default class SydneyAIClient {
      * @param parentMessageId
      * @returns {*[]} An array containing the messages in the order they should be displayed, starting with the root message.
      */
-  static getMessagesForConversation(messages, parentMessageId) {
+  static getMessagesForConversation (messages, parentMessageId) {
     const orderedMessages = []
     let currentMessageId = parentMessageId
     while (currentMessageId) {
@@ -831,7 +838,7 @@ export default class SydneyAIClient {
   }
 }
 
-async function generateRandomIP() {
+async function generateRandomIP () {
   let ip = await redis.get('CHATGPT:BING_IP')
   if (ip) {
     return ip

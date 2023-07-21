@@ -1676,6 +1676,16 @@ export class chatgpt extends plugin {
               let { id, image } = await createCaptcha(e, bingToken)
               e.bingCaptchaId = id
               e.token = bingToken
+              const {
+                conversationSignature,
+                conversationId,
+                clientId
+              } = error?.data
+              e.bingConversation = {
+                conversationSignature,
+                conversationId,
+                clientId
+              }
               return {
                 text: '请崽60秒内输入下面图片以通过必应人机验证',
                 image,
@@ -2330,7 +2340,23 @@ export class chatgpt extends plugin {
     let text = this.e.msg
     let solveResult = await solveCaptcha(id, text, e.token)
     if (solveResult.result) {
-      await e.reply('验证码已通过')
+      const cacheOptions = {
+        namespace: Config.toneStyle,
+        store: new KeyvFile({ filename: 'chatgpt:bing:temp.json' })
+      }
+      const bingAIClient = new SydneyAIClient({
+        userToken: e.token, // "_U" cookie from bing.com
+        debug: false,
+        cache: cacheOptions,
+        user: e.sender.user_id,
+        proxy: Config.proxy
+      })
+      let response = await bingAIClient.sendMessage('hello', e.bingConversation)
+      if (response.response) {
+        await e.reply('验证码已通过')
+      } else {
+        await e.reply('验证码正确，但账户未解决验证码')
+      }
     } else {
       await e.reply('验证码失败：' + JSON.stringify(solveResult.detail))
     }
