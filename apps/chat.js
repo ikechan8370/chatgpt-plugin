@@ -261,7 +261,8 @@ export class chatgpt extends plugin {
     e.bingCaptchaId = id
     e.token = bingToken
     await e.reply(['请崽60秒内输入下面图片以通过必应人机验证', segment.image(`base64://${image}`)])
-    this.setContext('solveBingCaptcha', e.isGroup, 60)
+    this.setContext('solveBingCaptcha', false, 60)
+    return false
   }
 
   /**
@@ -1027,9 +1028,9 @@ export class chatgpt extends plugin {
       }
       let chatMessage = await this.sendMessage(prompt, conversation, use, e)
       if (chatMessage.image) {
-        this.setContext('solveBingCaptcha', e.isGroup, 60)
+        this.setContext('solveBingCaptcha', false, 60)
         await e.reply([chatMessage.text, segment.image(`base64://${chatMessage.image}`)])
-        return
+        return false
       }
       if (use === 'api' && !chatMessage) {
         // 字数超限直接返回
