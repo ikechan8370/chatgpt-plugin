@@ -66,6 +66,7 @@ import { SendDiceTool } from '../utils/tools/SendDiceTool.js'
 import { SendAvatarTool } from '../utils/tools/SendAvatarTool.js'
 import { SendMessageToSpecificGroupOrUserTool } from '../utils/tools/SendMessageToSpecificGroupOrUserTool.js'
 import { SetTitleTool } from '../utils/tools/SetTitleTool.js'
+import { createCaptcha, solveCaptcha } from '../utils/bingCaptcha.js'
 
 try {
   await import('emoji-strip')
@@ -98,8 +99,8 @@ const defaultPropmtPrefix = ', a large language model trained by OpenAI. You ans
 const newFetch = (url, options = {}) => {
   const defaultOptions = Config.proxy
     ? {
-      agent: proxy(Config.proxy)
-    }
+        agent: proxy(Config.proxy)
+      }
     : {}
   const mergedOptions = {
     ...defaultOptions,
@@ -109,7 +110,7 @@ const newFetch = (url, options = {}) => {
   return fetch(url, mergedOptions)
 }
 export class chatgpt extends plugin {
-  constructor() {
+  constructor () {
     let toggleMode = Config.toggleMode
     super({
       /** 功能名称 */
@@ -232,10 +233,35 @@ export class chatgpt extends plugin {
           reg: '^#chatgpt删除对话',
           fnc: 'deleteConversation',
           permission: 'master'
+        },
+        {
+          reg: '^#chatgpt必应验证码',
+          fnc: 'bingCaptcha'
         }
       ]
     })
     this.toggleMode = toggleMode
+  }
+
+  async bingCaptcha (e) {
+    let bingTokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
+    if (!bingTokens) {
+      await e.reply('尚未绑定必应token:必应过码必须绑定token')
+      return
+    }
+    bingTokens = bingTokens.map(token => token.Token)
+    let index = e.msg.replace(/^#chatgpt必应验证码/, '')
+    if (!index) {
+      await e.reply('指令不完整：请输入#chatgpt必应验证码+token序号（从1开始），如#chatgpt必应验证码1')
+      return
+    }
+    index = parseInt(index) - 1
+    let bingToken = bingTokens[index]
+    let { id, image } = await createCaptcha(e, bingToken)
+    e.bingCaptchaId = id
+    e.token = bingToken
+    await e.reply(['请崽60秒内输入下面图片以通过必应人机验证', segment.image(`base64://${image}`)])
+    this.setContext('solveBingCaptcha', e.isGroup, 60)
   }
 
   /**
@@ -243,7 +269,7 @@ export class chatgpt extends plugin {
    * @param e
    * @returns {Promise<void>}
    */
-  async getConversations(e) {
+  async getConversations (e) {
     // todo 根据use返回不同的对话列表
     let keys = await redis.keys('CHATGPT:CONVERSATIONS:*')
     if (!keys || keys.length === 0) {
@@ -266,7 +292,7 @@ export class chatgpt extends plugin {
    * @param e
    * @returns {Promise<void>}
    */
-  async destroyConversations(e) {
+  async destroyConversations (e) {
     const userData = await getUserData(e.user_id)
     const use = (userData.mode === 'default' ? null : userData.mode) || await redis.get('CHATGPT:USE')
     await redis.del(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`)
@@ -418,7 +444,7 @@ export class chatgpt extends plugin {
     }
   }
 
-  async endAllConversations(e) {
+  async endAllConversations (e) {
     let use = await redis.get('CHATGPT:USE') || 'api'
     let deleted = 0
     switch (use) {
@@ -502,7 +528,7 @@ export class chatgpt extends plugin {
     await this.reply(`结束了${deleted}个用户的对话。`, true)
   }
 
-  async deleteConversation(e) {
+  async deleteConversation (e) {
     let ats = e.message.filter(m => m.type === 'at')
     let use = await redis.get('CHATGPT:USE') || 'api'
     if (use !== 'api3') {
@@ -560,7 +586,7 @@ export class chatgpt extends plugin {
     }
   }
 
-  async switch2Picture(e) {
+  async switch2Picture (e) {
     let userReplySetting = await redis.get(`CHATGPT:USER:${e.sender.user_id}`)
     if (!userReplySetting) {
       userReplySetting = getDefaultReplySetting()
@@ -573,7 +599,7 @@ export class chatgpt extends plugin {
     await this.reply('ChatGPT回复已转换为图片模式')
   }
 
-  async switch2Text(e) {
+  async switch2Text (e) {
     let userSetting = await getUserReplySetting(this.e)
     userSetting.usePicture = false
     userSetting.useTTS = false
@@ -581,7 +607,7 @@ export class chatgpt extends plugin {
     await this.reply('ChatGPT回复已转换为文字模式')
   }
 
-  async switch2Audio(e) {
+  async switch2Audio (e) {
     switch (Config.ttsMode) {
       case 'vits-uma-genshin-honkai':
         if (!Config.ttsSpace) {
@@ -609,7 +635,7 @@ export class chatgpt extends plugin {
     await this.reply('ChatGPT回复已转换为语音模式')
   }
 
-  async switchTTSSource(e) {
+  async switchTTSSource (e) {
     let target = e.msg.replace(/^#chatgpt语音换源/, '')
     switch (target.trim()) {
       case '1': {
@@ -632,7 +658,7 @@ export class chatgpt extends plugin {
     await e.reply('语音转换源已切换为' + Config.ttsMode)
   }
 
-  async setDefaultRole(e) {
+  async setDefaultRole (e) {
     if (Config.ttsMode === 'vits-uma-genshin-honkai' && !Config.ttsSpace) {
       await this.reply('您没有配置vits-uma-genshin-honkai API，请前往后台管理或锅巴面板进行配置')
       return
@@ -716,7 +742,7 @@ export class chatgpt extends plugin {
   /**
    * #chatgpt
    */
-  async chatgpt(e) {
+  async chatgpt (e) {
     let prompt
     if (this.toggleMode === 'at') {
       if (!e.raw_message || e.msg?.startsWith('#')) {
@@ -782,7 +808,7 @@ export class chatgpt extends plugin {
     await this.abstractChat(e, prompt, use)
   }
 
-  async abstractChat(e, prompt, use) {
+  async abstractChat (e, prompt, use) {
     // 关闭私聊通道后不回复
     if (!e.isMaster && e.isPrivate && !Config.enablePrivateChat) {
       return false
@@ -1000,6 +1026,11 @@ export class chatgpt extends plugin {
         logger.mark({ conversation })
       }
       let chatMessage = await this.sendMessage(prompt, conversation, use, e)
+      if (chatMessage.image) {
+        this.setContext('solveBingCaptcha', e.isGroup, 60)
+        await e.reply([chatMessage.text, segment.image(`base64://${chatMessage.image}`)])
+        return
+      }
       if (use === 'api' && !chatMessage) {
         // 字数超限直接返回
         return false
@@ -1053,9 +1084,9 @@ export class chatgpt extends plugin {
             response.length / 2 < endIndex
               ? [response.substring(startIndex), response.substring(0, startIndex)]
               : [
-                response.substring(0, endIndex + 1),
-                response.substring(endIndex + 1)
-              ]
+                  response.substring(0, endIndex + 1),
+                  response.substring(endIndex + 1)
+                ]
           const match = ttsArr[0].match(emotionReg)
           response = ttsArr[1].replace(/\n/, '').trim()
           if (match) {
@@ -1245,7 +1276,7 @@ export class chatgpt extends plugin {
     }
   }
 
-  async chatgpt1(e) {
+  async chatgpt1 (e) {
     if (!Config.allowOtherMode) {
       return false
     }
@@ -1264,7 +1295,7 @@ export class chatgpt extends plugin {
     return true
   }
 
-  async chatgpt3(e) {
+  async chatgpt3 (e) {
     if (!Config.allowOtherMode) {
       return false
     }
@@ -1283,7 +1314,7 @@ export class chatgpt extends plugin {
     return true
   }
 
-  async chatglm(e) {
+  async chatglm (e) {
     if (!Config.allowOtherMode) {
       return false
     }
@@ -1302,7 +1333,7 @@ export class chatgpt extends plugin {
     return true
   }
 
-  async bing(e) {
+  async bing (e) {
     if (!Config.allowOtherMode) {
       return false
     }
@@ -1321,7 +1352,7 @@ export class chatgpt extends plugin {
     return true
   }
 
-  async claude(e) {
+  async claude (e) {
     if (!Config.allowOtherMode) {
       return false
     }
@@ -1340,7 +1371,7 @@ export class chatgpt extends plugin {
     return true
   }
 
-  async xh(e) {
+  async xh (e) {
     if (!Config.allowOtherMode) {
       return false
     }
@@ -1359,7 +1390,7 @@ export class chatgpt extends plugin {
     return true
   }
 
-  async cacheContent(e, use, content, prompt, quote = [], mood = '', suggest = '', imgUrls = []) {
+  async cacheContent (e, use, content, prompt, quote = [], mood = '', suggest = '', imgUrls = []) {
     let cacheData = { file: '', cacheUrl: Config.cacheUrl, status: '' }
     cacheData.file = randomString()
     const cacheresOption = {
@@ -1399,7 +1430,7 @@ export class chatgpt extends plugin {
     return cacheData
   }
 
-  async renderImage(e, use, content, prompt, quote = [], mood = '', suggest = '', imgUrls = []) {
+  async renderImage (e, use, content, prompt, quote = [], mood = '', suggest = '', imgUrls = []) {
     let cacheData = await this.cacheContent(e, use, content, prompt, quote, mood, suggest, imgUrls)
     const template = use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index'
     if (!Config.oldview) {
@@ -1447,7 +1478,7 @@ export class chatgpt extends plugin {
     }
   }
 
-  async sendMessage(prompt, conversation = {}, use, e) {
+  async sendMessage (prompt, conversation = {}, use, e) {
     if (!conversation) {
       conversation = {
         timeoutMs: Config.defaultTimeoutMs
@@ -1640,7 +1671,17 @@ export class chatgpt extends plugin {
           } catch (error) {
             logger.error(error)
             const message = error?.message || error?.data?.message || error || '出错了'
-            if (message && typeof message === 'string' && message.indexOf('限流') > -1) {
+            if (message && typeof message === 'string' && message.indexOf('CaptchaChallenge') > -1) {
+              let { id, image } = await createCaptcha(e, bingToken)
+              e.bingCaptchaId = id
+              e.token = bingToken
+              return {
+                text: '请崽60秒内输入下面图片以通过必应人机验证',
+                image,
+                error: true,
+                token: bingToken
+              }
+            } else if (message && typeof message === 'string' && message.indexOf('限流') > -1) {
               throttledTokens.push(bingToken)
               let bingTokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
               const badBingToken = bingTokens.findIndex(element => element.Token === bingToken)
@@ -2014,7 +2055,7 @@ export class chatgpt extends plugin {
           } else {
             tools.push(new SerpImageTool())
             tools.push(...[new SearchVideoTool(),
-            new SendVideoTool()])
+              new SendVideoTool()])
           }
           let funcMap = {}
           let fullFuncMap = {}
@@ -2097,7 +2138,7 @@ export class chatgpt extends plugin {
     }
   }
 
-  async newClaudeConversation(e) {
+  async newClaudeConversation (e) {
     let presetName = e.msg.replace(/^#claude开启新对话/, '').trim()
     let client = new SlackClaudeClient({
       slackUserToken: Config.slackUserToken,
@@ -2135,12 +2176,12 @@ export class chatgpt extends plugin {
     return true
   }
 
-  async emptyQueue(e) {
+  async emptyQueue (e) {
     await redis.lTrim('CHATGPT:CHAT_QUEUE', 1, 0)
     await this.reply('已清空当前等待队列')
   }
 
-  async removeQueueFirst(e) {
+  async removeQueueFirst (e) {
     let uid = await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
     if (!uid) {
       await this.reply('当前等待队列为空')
@@ -2149,7 +2190,7 @@ export class chatgpt extends plugin {
     }
   }
 
-  async getAllConversations(e) {
+  async getAllConversations (e) {
     const use = await redis.get('CHATGPT:USE')
     if (use === 'api3') {
       let conversations = await getConversations(e.sender.user_id, newFetch)
@@ -2170,7 +2211,7 @@ export class chatgpt extends plugin {
     }
   }
 
-  async joinConversation(e) {
+  async joinConversation (e) {
     let ats = e.message.filter(m => m.type === 'at')
     let use = await redis.get('CHATGPT:USE') || 'api'
     // if (use !== 'api3') {
@@ -2201,7 +2242,7 @@ export class chatgpt extends plugin {
     }
   }
 
-  async attachConversation(e) {
+  async attachConversation (e) {
     const use = await redis.get('CHATGPT:USE')
     if (use !== 'api3') {
       await this.reply('该功能目前仅支持API3模式')
@@ -2218,7 +2259,7 @@ export class chatgpt extends plugin {
     }
   }
 
-  async totalAvailable(e) {
+  async totalAvailable (e) {
     // 查询OpenAI API剩余试用额度
     let subscriptionRes = await newFetch(`${Config.openAiBaseUrl}/dashboard/billing/subscription`, {
       method: 'GET',
@@ -2227,7 +2268,7 @@ export class chatgpt extends plugin {
       }
     })
 
-    function getDates() {
+    function getDates () {
       const today = new Date()
       const tomorrow = new Date(today)
       tomorrow.setDate(tomorrow.getDate() + 1)
@@ -2264,7 +2305,7 @@ export class chatgpt extends plugin {
    * @param prompt 问题
    * @param conversation 对话
    */
-  async chatgptBrowserBased(prompt, conversation) {
+  async chatgptBrowserBased (prompt, conversation) {
     let option = { markdown: true }
     if (Config['2captchaToken']) {
       option.captchaToken = Config['2captchaToken']
@@ -2282,9 +2323,21 @@ export class chatgpt extends plugin {
     }
     return await this.chatGPTApi.sendMessage(prompt, sendMessageOption)
   }
+
+  async solveBingCaptcha (e) {
+    let id = e.bingCaptchaId
+    let text = this.e.msg
+    let solveResult = await solveCaptcha(id, text, e.token)
+    if (solveResult.result) {
+      await e.reply('验证码已通过')
+    } else {
+      await e.reply('验证码失败：' + JSON.stringify(solveResult.detail))
+    }
+    this.finish('solveBingCaptcha')
+  }
 }
 
-async function getAvailableBingToken(conversation, throttled = []) {
+async function getAvailableBingToken (conversation, throttled = []) {
   let allThrottled = false
   if (!await redis.get('CHATGPT:BING_TOKENS')) {
     return {

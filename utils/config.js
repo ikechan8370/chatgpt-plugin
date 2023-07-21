@@ -131,7 +131,7 @@ const defaultConfig = {
   serpSource: 'ikechan8370',
   extraUrl: 'https://cpe.ikechan8370.com',
   smartMode: false,
-  version: 'v2.7.2'
+  version: 'v2.7.3'
 }
 const _path = process.cwd()
 let config = {}
