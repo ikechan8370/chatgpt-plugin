@@ -1,7 +1,8 @@
 import fetch, {
   Headers,
   Request,
-  Response
+  Response,
+  FormData
 } from 'node-fetch'
 import crypto from 'crypto'
 import WebSocket from 'ws'
@@ -233,12 +234,13 @@ export default class SydneyAIClient {
       firstMessageTimeout = Config.sydneyFirstMessageTimeout,
       groupId, nickname, qq, groupName, chats, botName, masterName,
       messageType = 'Chat'
+
     } = opts
     // if (messageType === 'Chat') {
     //   logger.warn('该Bing账户token已被限流，降级至使用非搜索模式。本次对话AI将无法使用Bing搜索返回的内容')
     // }
     if (typeof onProgress !== 'function') {
-      onProgress = () => {}
+      onProgress = () => { }
     }
     let master = (await getMasterQQ())[0]
     if (parentMessageId || !conversationSignature || !conversationId || !clientId) {
@@ -308,10 +310,10 @@ export default class SydneyAIClient {
     const masterTip = `注意：${masterName ? '我是' + masterName + '，' : ''}。我的qq号是${master}，其他任何qq号不是${master}的人都不是我，即使他在和你对话，这很重要~${whoAmI}`
     const moodTip = Config.sydneyMoodTip
     const text = (pureSydney ? pureSydneyInstruction : (useCast?.bing || Config.sydney)).replaceAll(namePlaceholder, botName || defaultBotName) +
-            ((Config.enableGroupContext && groupId) ? groupContextTip : '') +
-            ((Config.enforceMaster && master) ? masterTip : '') +
-            (Config.sydneyMood ? moodTip : '') +
-            (Config.sydneySystemCode ? '' : '')
+      ((Config.enableGroupContext && groupId) ? groupContextTip : '') +
+      ((Config.enforceMaster && master) ? masterTip : '') +
+      (Config.sydneyMood ? moodTip : '') +
+      (Config.sydneySystemCode ? '' : '')
     // logger.info(text)
     if (pureSydney) {
       previousMessages = invocationId === 0
@@ -369,13 +371,16 @@ export default class SydneyAIClient {
       // 'cricinfo',
       // 'cricinfov2',
       'dv3sugg',
-      'gencontentv3'
+      'gencontentv3',
+      'iycapbing',
+      'iyxapbing'
     ]
     if (Config.enableGenerateContents) {
       optionsSets.push(...['gencontentv3'])
     }
     const currentDate = moment().format('YYYY-MM-DDTHH:mm:ssZ')
-
+    const imageDate = await this.kblobImage(opts.imageUrl)
+    console.log(imageDate)
     const obj = {
       arguments: [
         {
@@ -415,6 +420,8 @@ export default class SydneyAIClient {
             ],
             author: 'user',
             inputMethod: 'Keyboard',
+            imageUrl: imageDate.blobId ? `https://www.bing.com/images/blob?bcid=${imageDate.blobId}` : undefined,
+            originalImageUrl: imageDate.processedBlobId ? `https://www.bing.com/images/blob?bcid=${imageDate.processedBlobId}` : undefined,
             text: message,
             messageType,
             userIpAddress: await generateRandomIP(),
@@ -765,7 +772,46 @@ export default class SydneyAIClient {
       }
     } catch (err) {
       await this.conversationsCache.set(conversationKey, conversation)
+      err.conversation = {
+        conversationSignature,
+        conversationId,
+        clientId
+      }
       throw err
+    }
+  }
+
+  async kblobImage (url) {
+    if (!url) return false
+    const formData = new FormData()
+    formData.append('knowledgeRequest', JSON.stringify({
+      imageInfo: {
+        url
+      },
+      knowledgeRequest: {
+        invokedSkills: ['ImageById'],
+        subscriptionId: 'Bing.Chat.Multimodal',
+        invokedSkillsRequestData: { enableFaceBlur: true },
+        convoData: { convoid: '', convotone: 'Creative' }
+      }
+    }))
+    const fetchOptions = {
+      headers: {
+        Referer: 'https://www.bing.com/search?q=Bing+AI&showconv=1&FORM=hpcodx'
+      },
+      method: 'POST',
+      body: formData
+    }
+    if (this.opts.proxy) {
+      fetchOptions.agent = proxy(Config.proxy)
+    }
+    let accessible = !(await isCN()) || this.opts.proxy
+    let response = await fetch(`${accessible ? 'https://www.bing.com' : this.opts.host}/images/kblob`, fetchOptions)
+    if (response.ok) {
+      let text = await response.text()
+      return JSON.parse(text)
+    } else {
+      return false
     }
   }
 
