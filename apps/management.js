@@ -29,42 +29,42 @@ export class ChatgptManagement extends plugin {
       priority: 500,
       rule: [
         {
-          reg: '#chatgpt开启(问题)?(回复)?确认',
+          reg: '^#chatgpt开启(问题)?(回复)?确认',
           fnc: 'turnOnConfirm',
           permission: 'master'
         },
         {
-          reg: '#chatgpt关闭(问题)?(回复)?确认',
+          reg: '^#chatgpt关闭(问题)?(回复)?确认',
           fnc: 'turnOffConfirm',
           permission: 'master'
         },
         {
-          reg: '#chatgpt(设置|绑定)(token|Token)',
+          reg: '^#chatgpt(设置|绑定)(token|Token)',
           fnc: 'setAccessToken',
           permission: 'master'
         },
         {
-          reg: '#chatgpt(设置|绑定)(Poe|POE)(token|Token)',
+          reg: '^#chatgpt(设置|绑定)(Poe|POE)(token|Token)',
           fnc: 'setPoeCookie',
           permission: 'master'
         },
         {
-          reg: '#chatgpt(设置|绑定|添加)(必应|Bing |bing )(token|Token)',
+          reg: '^#chatgpt(设置|绑定|添加)(必应|Bing |bing )(token|Token)',
           fnc: 'setBingAccessToken',
           permission: 'master'
         },
         {
-          reg: '#chatgpt(删除|移除)(必应|Bing |bing )(token|Token)',
+          reg: '^#chatgpt(删除|移除)(必应|Bing |bing )(token|Token)',
           fnc: 'delBingAccessToken',
           permission: 'master'
         },
         {
-          reg: '#chatgpt(查看|浏览)(必应|Bing |bing )(token|Token)',
+          reg: '^#chatgpt(查看|浏览)(必应|Bing |bing )(token|Token)',
           fnc: 'getBingAccessToken',
           permission: 'master'
         },
         {
-          reg: '#chatgpt(迁移|恢复)(必应|Bing |bing )(token|Token)',
+          reg: '^#chatgpt(迁移|恢复)(必应|Bing |bing )(token|Token)',
           fnc: 'migrateBingAccessToken',
           permission: 'master'
         },
