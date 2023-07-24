@@ -896,7 +896,6 @@ export async function generateAzureAudio (pendingText, role = '随机', speaking
       }
       let languagePrefix = azureRoleList.find(config => config.code === speaker).languageDetail.charAt(0)
       languagePrefix = languagePrefix.startsWith('E') ? '英' : languagePrefix
-      logger.warn(pendingText)
       pendingText = (await translate(pendingText, languagePrefix)).replace('\n', '')
 
     } else {
