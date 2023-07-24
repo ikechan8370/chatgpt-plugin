@@ -10,7 +10,7 @@ export class SendMessageToSpecificGroupOrUserTool extends AbstractTool {
         type: 'string',
         description: 'text to be sent'
       },
-      target: {
+      targetGroupIdOrQQNumber: {
         type: 'string',
         description: 'target qq or group number'
       }
@@ -19,10 +19,11 @@ export class SendMessageToSpecificGroupOrUserTool extends AbstractTool {
   }
 
   func = async function (opt, e) {
-    let { msg, target } = opt
-    target = isNaN(target) || !target
-      ? e.isGroup ? e.group_id : e.sender.user_id
-      : parseInt(target.trim())
+    let { msg, targetGroupIdOrQQNumber } = opt
+    const defaultTarget = e.isGroup ? e.group_id : e.sender.user_id
+    const target = isNaN(targetGroupIdOrQQNumber) || !targetGroupIdOrQQNumber
+      ? defaultTarget
+      : parseInt(targetGroupIdOrQQNumber) === Bot.uin ? defaultTarget : parseInt(targetGroupIdOrQQNumber)
 
     let groupList = await Bot.getGroupList()
     try {

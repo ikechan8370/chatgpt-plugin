@@ -472,6 +472,12 @@ export function supportGuoba () {
           component: 'Switch'
         },
         {
+          field: 'sydneyImageRecognition',
+          label: '图片识别',
+          bottomHelpMessage: '开启Sydney的图片识别功能，建议和OCR只保留一个开启',
+          component: 'Switch'
+        },
+        {
           label: '以下为API3方式的配置',
           component: 'Divider'
         },
