@@ -844,9 +844,7 @@ export async function generateAudio (e, pendingText, speakingEmotion, emotionDeg
   try {
     try {
       sendable = await uploadRecord(wav, Config.ttsMode)
-      if (sendable) {
-        await e.reply(sendable)
-      } else {
+      if (!sendable) {
         // 如果合成失败，尝试使用ffmpeg合成
         sendable = segment.record(wav)
       }
