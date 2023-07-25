@@ -66,6 +66,7 @@ import { SendDiceTool } from '../utils/tools/SendDiceTool.js'
 import { SendAvatarTool } from '../utils/tools/SendAvatarTool.js'
 import { SendMessageToSpecificGroupOrUserTool } from '../utils/tools/SendMessageToSpecificGroupOrUserTool.js'
 import { SetTitleTool } from '../utils/tools/SetTitleTool.js'
+import { createCaptcha, solveCaptcha } from '../utils/bingCaptcha.js'
 
 try {
   await import('emoji-strip')
@@ -232,10 +233,42 @@ export class chatgpt extends plugin {
           reg: '^#chatgpt删除对话',
           fnc: 'deleteConversation',
           permission: 'master'
-        }
+        },
+        // {
+        //   reg: '^#chatgpt必应验证码',
+        //   fnc: 'bingCaptcha'
+        // }
       ]
     })
     this.toggleMode = toggleMode
+  }
+
+  /**
+   * deprecated
+   * @param e
+   * @returns {Promise<boolean>}
+   */
+  async bingCaptcha (e) {
+    let bingTokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
+    if (!bingTokens) {
+      await e.reply('尚未绑定必应token:必应过码必须绑定token')
+      return
+    }
+    bingTokens = bingTokens.map(token => token.Token)
+    let index = e.msg.replace(/^#chatgpt必应验证码/, '')
+    if (!index) {
+      await e.reply('指令不完整：请输入#chatgpt必应验证码+token序号（从1开始），如#chatgpt必应验证码1')
+      return
+    }
+    index = parseInt(index) - 1
+    let bingToken = bingTokens[index]
+    let { id, regionId, image } = await createCaptcha(e, bingToken)
+    e.bingCaptchaId = id
+    e.regionId = regionId
+    e.token = bingToken
+    await e.reply(['请崽60秒内输入下面图片以通过必应人机验证', segment.image(`base64://${image}`)])
+    this.setContext('solveBingCaptcha', false, 60)
+    return false
   }
 
   /**
@@ -1000,6 +1033,11 @@ export class chatgpt extends plugin {
         logger.mark({ conversation })
       }
       let chatMessage = await this.sendMessage(prompt, conversation, use, e)
+      if (chatMessage.image) {
+        this.setContext('solveBingCaptcha', false, 60)
+        await e.reply([chatMessage.text, segment.image(`base64://${chatMessage.image}`)])
+        return false
+      }
       if (use === 'api' && !chatMessage) {
         // 字数超限直接返回
         return false
@@ -1030,7 +1068,7 @@ export class chatgpt extends plugin {
           await redis.set(key, JSON.stringify(previousConversation), Config.conversationPreserveTime > 0 ? { EX: Config.conversationPreserveTime } : {})
         }
       }
-      let response = chatMessage?.text
+      let response = chatMessage?.text?.replace('\n\n\n', '\n')
       // 过滤无法正常显示的emoji
       if (use === 'claude') response = response.replace(/:[a-zA-Z_]+:/g, '')
       let mood = 'blandness'
@@ -1050,12 +1088,12 @@ export class chatgpt extends plugin {
             emotionMatch.index + emotionMatch[0].length - 1
           ]
           const ttsArr =
-              response.length / 2 < endIndex
-                ? [response.substring(startIndex), response.substring(0, startIndex)]
-                : [
-                    response.substring(0, endIndex + 1),
-                    response.substring(endIndex + 1)
-                  ]
+            response.length / 2 < endIndex
+              ? [response.substring(startIndex), response.substring(0, startIndex)]
+              : [
+                  response.substring(0, endIndex + 1),
+                  response.substring(endIndex + 1)
+                ]
           const match = ttsArr[0].match(emotionReg)
           response = ttsArr[1].replace(/\n/, '').trim()
           if (match) {
@@ -1064,7 +1102,7 @@ export class chatgpt extends plugin {
               (config) => config.code === ttsRoleAzure
             )
             const supportedEmotions =
-                configuration.emotion && Object.keys(configuration.emotion)
+              configuration.emotion && Object.keys(configuration.emotion)
             if (supportedEmotions && supportedEmotions.includes(emotion)) {
               logger.warn(`角色 ${ttsRoleAzure} 支持 ${emotion} 情绪.`)
               await redis.set(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`, '0')
@@ -1579,6 +1617,11 @@ export class chatgpt extends plugin {
               }
               bingAIClient = new BingAIClient(bingOption)
             }
+            // 写入图片数据
+            if (Config.sydneyImageRecognition) {
+              const image = await getImg(e)
+              opt.imageUrl = image ? image[0] : undefined
+            }
             response = await bingAIClient.sendMessage(prompt, opt, (token) => {
               reply += token
             })
@@ -1635,6 +1678,30 @@ export class chatgpt extends plugin {
           } catch (error) {
             logger.error(error)
             const message = error?.message || error?.data?.message || error || '出错了'
+            // if (message && typeof message === 'string' && message.indexOf('CaptchaChallenge') > -1) {
+            //   if (bingToken) {
+            //     // let { id, regionId, image } = await createCaptcha(e, bingToken)
+            //     // e.bingCaptchaId = id
+            //     // e.token = bingToken
+            //     // e.regionId = regionId
+            //     // const {
+            //     //   conversationSignature,
+            //     //   conversationId,
+            //     //   clientId
+            //     // } = error?.conversation
+            //     // e.bingConversation = {
+            //     //   conversationSignature,
+            //     //   conversationId,
+            //     //   clientId
+            //     // }
+            //     return {
+            //       text: '请在60秒内输入下面图片以通过必应人机验证',
+            //       image,
+            //       error: true,
+            //       token: bingToken
+            //     }
+            //   }
+            // } else
             if (message && typeof message === 'string' && message.indexOf('限流') > -1) {
               throttledTokens.push(bingToken)
               let bingTokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
@@ -1672,6 +1739,13 @@ export class chatgpt extends plugin {
         } while (retry > 0)
         if (errorMessage) {
           response = response || {}
+          if (errorMessage.includes('CaptchaChallenge')) {
+            if (bingToken) {
+              errorMessage = '出现验证码，请使用当前账户前往https://www.bing.com/chat或Edge侧边栏手动解除验证码'
+            } else {
+              errorMessage = '出现验证码，且未配置必应账户，请尝试更换代理/反代或绑定必应账户以解除验证码'
+            }
+          }
           return {
             text: errorMessage,
             error: true
@@ -1831,7 +1905,7 @@ export class chatgpt extends plugin {
             const defaultBotName = 'ChatGPT'
             const groupContextTip = Config.groupContextTip
             system = system.replaceAll(namePlaceholder, opt.botName || defaultBotName) +
-                ((Config.enableGroupContext && opt.groupId) ? groupContextTip : '')
+              ((Config.enableGroupContext && opt.groupId) ? groupContextTip : '')
             system += 'Attention, you are currently chatting in a qq group, then one who asks you now is' + `${opt.nickname}(${opt.qq})。`
             system += `the group name is ${opt.groupName}, group id is ${opt.groupId}。`
             if (opt.botName) {
@@ -1882,7 +1956,7 @@ export class chatgpt extends plugin {
         }
         this.chatGPTApi = new ChatGPTAPI(opts)
         let option = {
-          timeoutMs: 120000,
+          timeoutMs: 600000,
           completionParams,
           stream: true,
           onProgress: (data) => {
@@ -2041,6 +2115,9 @@ export class chatgpt extends plugin {
             msg = await this.chatGPTApi.sendMessage(prompt, option)
             logger.info(msg)
             while (msg.functionCall) {
+              if (msg.text) {
+                await e.reply(msg.text.replace('\n\n\n', '\n'))
+              }
               let { name, arguments: args } = msg.functionCall
               args = JSON.parse(args)
               // 感觉换成targetGroupIdOrUserQQNumber这种表意比较清楚的变量名，效果会好一丢丢
@@ -2052,7 +2129,7 @@ export class chatgpt extends plugin {
               } catch (err) {
                 args.groupId = e.group_id + '' || e.sender.user_id + ''
               }
-              let functionResult = await fullFuncMap[name].exec(Object.assign({ isAdmin, sender }, args), e)
+              let functionResult = await fullFuncMap[name.trim()].exec(Object.assign({ isAdmin, sender }, args), e)
               logger.mark(`function ${name} execution result: ${functionResult}`)
               option.parentMessageId = msg.id
               option.name = name
@@ -2127,7 +2204,7 @@ export class chatgpt extends plugin {
         }
         logger.info('send preset: ' + preset.content)
         response = await client.sendMessage(preset.content, e) +
-                  await client.sendMessage(await AzureTTS.getEmotionPrompt(e), e)
+          await client.sendMessage(await AzureTTS.getEmotionPrompt(e), e)
         await e.reply(response, true)
       }
     }
@@ -2280,6 +2357,45 @@ export class chatgpt extends plugin {
       sendMessageOption = Object.assign(sendMessageOption, conversation)
     }
     return await this.chatGPTApi.sendMessage(prompt, sendMessageOption)
+  }
+
+  async solveBingCaptcha (e) {
+    try {
+      let id = e.bingCaptchaId
+      let regionId = e.regionId
+      let text = this.e.msg
+      let solveResult = await solveCaptcha(id, regionId, text, e.token)
+      if (solveResult.result) {
+        logger.mark('验证码正确：' + JSON.stringify(solveResult.detail))
+        const cacheOptions = {
+          namespace: Config.toneStyle,
+          store: new KeyvFile({ filename: 'cache.json' })
+        }
+        const bingAIClient = new SydneyAIClient({
+          userToken: e.token, // "_U" cookie from bing.com
+          debug: Config.debug,
+          cache: cacheOptions,
+          user: e.sender.user_id,
+          proxy: Config.proxy
+        })
+        try {
+          let response = await bingAIClient.sendMessage('hello', Object.assign({ invocationId: '1' }, e.bingConversation))
+          if (response.response) {
+            await e.reply('验证码已通过')
+          } else {
+            await e.reply('验证码正确，但账户未解决验证码')
+          }
+        } catch (err) {
+          logger.error(err)
+          await e.reply('验证码正确，但账户未解决验证码')
+        }
+      } else {
+        await e.reply('验证码失败：' + JSON.stringify(solveResult.detail))
+      }
+    } catch (err) {
+      this.finish('solveBingCaptcha')
+    }
+    this.finish('solveBingCaptcha')
   }
 }
 
