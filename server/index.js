@@ -313,7 +313,7 @@ export async function createServer() {
     connection.socket.on('message', async (message) => {
       try {
         const data = JSON.parse(message)
-
+        const user = UserInfo(data.token)
         switch (data.command) {
           case 'sendMsg': // 代理消息发送
             if (!connection.login) {
@@ -339,7 +339,7 @@ export async function createServer() {
             }
             break
           case 'login': // 登录
-            const user = UserInfo(data.token)
+            
             if (user) {
               clients[user.user] = connection.socket
               connection.login = true
@@ -351,6 +351,10 @@ export async function createServer() {
           case 'initQQMessageInfo': // qq消息模块初始化信息
             if (!connection.login) {
               await connection.socket.send(JSON.stringify({ command: data.command, state: false, error: '请先登录账号' }))
+              return
+            }
+            if (user.autho != 'admin') {
+              await connection.socket.send(JSON.stringify({ command: data.command, state: true, error: '普通用户无需进行初始化' }))
               return
             }
             const groupList = Bot.getGroupList()
