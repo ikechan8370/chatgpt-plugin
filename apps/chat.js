@@ -1687,11 +1687,13 @@ export class chatgpt extends plugin {
                     await e.reply('验证码已解决')
                   } else {
                     logger.error(captchaResolveResult)
-                    await e.reply('验证码解决失败')
+                    await e.reply('验证码解决失败: ' + captchaResolveResult.error)
+                    retry = 0
                   }
                 } catch (err) {
                   logger.error(err)
-                  await e.reply('验证码解决失败')
+                  await e.reply('验证码解决失败: ' + err)
+                  retry = 0
                 }
               }
             } else
