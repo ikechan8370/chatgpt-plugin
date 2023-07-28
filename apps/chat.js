@@ -1686,6 +1686,7 @@ export class chatgpt extends plugin {
                   if (captchaResolveResult?.success) {
                     await e.reply('验证码已解决')
                   } else {
+                    logger.error(captchaResolveResult)
                     await e.reply('验证码解决失败')
                   }
                 } catch (err) {
