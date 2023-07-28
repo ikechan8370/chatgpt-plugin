@@ -66,7 +66,7 @@ import { SendDiceTool } from '../utils/tools/SendDiceTool.js'
 import { SendAvatarTool } from '../utils/tools/SendAvatarTool.js'
 import { SendMessageToSpecificGroupOrUserTool } from '../utils/tools/SendMessageToSpecificGroupOrUserTool.js'
 import { SetTitleTool } from '../utils/tools/SetTitleTool.js'
-import { createCaptcha, solveCaptcha } from '../utils/bingCaptcha.js'
+import { createCaptcha, solveCaptcha, solveCaptchaOneShot } from '../utils/bingCaptcha.js'
 
 try {
   await import('emoji-strip')
@@ -233,7 +233,7 @@ export class chatgpt extends plugin {
           reg: '^#chatgpt删除对话',
           fnc: 'deleteConversation',
           permission: 'master'
-        },
+        }
         // {
         //   reg: '^#chatgpt必应验证码',
         //   fnc: 'bingCaptcha'
@@ -1678,42 +1678,37 @@ export class chatgpt extends plugin {
           } catch (error) {
             logger.error(error)
             const message = error?.message || error?.data?.message || error || '出错了'
-            // if (message && typeof message === 'string' && message.indexOf('CaptchaChallenge') > -1) {
-            //   if (bingToken) {
-            //     // let { id, regionId, image } = await createCaptcha(e, bingToken)
-            //     // e.bingCaptchaId = id
-            //     // e.token = bingToken
-            //     // e.regionId = regionId
-            //     // const {
-            //     //   conversationSignature,
-            //     //   conversationId,
-            //     //   clientId
-            //     // } = error?.conversation
-            //     // e.bingConversation = {
-            //     //   conversationSignature,
-            //     //   conversationId,
-            //     //   clientId
-            //     // }
-            //     return {
-            //       text: '请在60秒内输入下面图片以通过必应人机验证',
-            //       image,
-            //       error: true,
-            //       token: bingToken
-            //     }
-            //   }
-            // } else
-            if (message && typeof message === 'string' && message.indexOf('限流') > -1) {
-              throttledTokens.push(bingToken)
-              let bingTokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
-              const badBingToken = bingTokens.findIndex(element => element.Token === bingToken)
-              const now = new Date()
-              const hours = now.getHours()
-              now.setHours(hours + 6)
-              bingTokens[badBingToken].State = '受限'
-              bingTokens[badBingToken].DisactivationTime = now
-              await redis.set('CHATGPT:BING_TOKENS', JSON.stringify(bingTokens))
+            if (message && typeof message === 'string' && message.indexOf('CaptchaChallenge') > -1) {
+              if (bingToken) {
+                await e.reply('出现必应验证码，尝试解决中')
+                try {
+                  let captchaResolveResult = await solveCaptchaOneShot(bingToken)
+                  if (captchaResolveResult?.success) {
+                    await e.reply('验证码已解决')
+                  } else {
+                    logger.error(captchaResolveResult)
+                    await e.reply('验证码解决失败: ' + captchaResolveResult.error)
+                    retry = 0
+                  }
+                } catch (err) {
+                  logger.error(err)
+                  await e.reply('验证码解决失败: ' + err)
+                  retry = 0
+                }
+              }
+            } else
+              if (message && typeof message === 'string' && message.indexOf('限流') > -1) {
+                throttledTokens.push(bingToken)
+                let bingTokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
+                const badBingToken = bingTokens.findIndex(element => element.Token === bingToken)
+                const now = new Date()
+                const hours = now.getHours()
+                now.setHours(hours + 6)
+                bingTokens[badBingToken].State = '受限'
+                bingTokens[badBingToken].DisactivationTime = now
+                await redis.set('CHATGPT:BING_TOKENS', JSON.stringify(bingTokens))
               // 不减次数
-            } else if (message && typeof message === 'string' && message.indexOf('UnauthorizedRequest') > -1) {
+              } else if (message && typeof message === 'string' && message.indexOf('UnauthorizedRequest') > -1) {
               // token过期了
               // let bingTokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
               // const badBingToken = bingTokens.findIndex(element => element.Token === bingToken)
@@ -1729,12 +1724,12 @@ export class chatgpt extends plugin {
               //   bingTokens[badBingToken].exception = 1
               // }
               // await redis.set('CHATGPT:BING_TOKENS', JSON.stringify(bingTokens))
-              logger.warn(`token${bingToken}疑似不存在或已过期，再试试`)
-              retry = retry - 0.1
-            } else {
-              retry--
-              errorMessage = message === 'Timed out waiting for response. Try enabling debug mode to see more information.' ? (reply ? `${reply}\n不行了，我的大脑过载了，处理不过来了!` : '必应的小脑瓜不好使了，不知道怎么回答！') : message
-            }
+                logger.warn(`token${bingToken}疑似不存在或已过期，再试试`)
+                retry = retry - 0.1
+              } else {
+                retry--
+                errorMessage = message === 'Timed out waiting for response. Try enabling debug mode to see more information.' ? (reply ? `${reply}\n不行了，我的大脑过载了，处理不过来了!` : '必应的小脑瓜不好使了，不知道怎么回答！') : message
+              }
           }
         } while (retry > 0)
         if (errorMessage) {

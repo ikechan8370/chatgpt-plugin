@@ -131,6 +131,7 @@ const defaultConfig = {
   serpSource: 'ikechan8370',
   extraUrl: 'https://cpe.ikechan8370.com',
   smartMode: false,
+  bingCaptchaOneShotUrl: 'http://bingcaptcha.ikechan8370.com/bing',
   version: 'v2.7.3'
 }
 const _path = process.cwd()
