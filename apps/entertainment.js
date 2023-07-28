@@ -490,7 +490,7 @@ ${translateLangLabels}
               width: Config.chatViewWidth,
               height: parseInt(Config.chatViewWidth * 0.56)
             },
-            deviceScaleFactor: parseInt(Config.cloudDPR)
+            deviceScaleFactor: parseFloat(Config.cloudDPR)
           }
         ),
         e.isGroup && Config.quoteReply)
