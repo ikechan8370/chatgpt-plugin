@@ -346,7 +346,8 @@ export async function renderUrl (e, url, renderCfg = {}) {
   // 云渲染
   if (Config.cloudRender) {
     url = url.replace(`127.0.0.1:${Config.serverPort || 3321}`, Config.serverHost || `${await getPublicIP()}:${Config.serverPort || 3321}`)
-    const resultres = await fetch(`${Config.cloudTranscode}/screenshot`, {
+    const cloudUrl = new URL(Config.cloudTranscode)
+    const resultres = await fetch(`${cloudUrl.href}screenshot`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -844,9 +845,7 @@ export async function generateAudio (e, pendingText, speakingEmotion, emotionDeg
   try {
     try {
       sendable = await uploadRecord(wav, Config.ttsMode)
-      if (sendable) {
-        await e.reply(sendable)
-      } else {
+      if (!sendable) {
         // 如果合成失败，尝试使用ffmpeg合成
         sendable = segment.record(wav)
       }

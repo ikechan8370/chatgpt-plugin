@@ -98,7 +98,7 @@ async function mediaLink() {
     })
   if (testServer.ok) {
     const checkCloudData = await testServer.json()
-    if (checkCloudData.state != 'error') {
+    if (checkCloudData.state == 'error') {
       console.log('本地服务无法访问，开启media服务代理')
       const serverurl = new URL(Config.cloudTranscode)
       const ws = new websocketclient(`ws://${serverurl.hostname}${serverurl.port ? ':' + serverurl.port : ''}/ws`)
@@ -150,6 +150,18 @@ async function mediaLink() {
                 }
               } else {
                 ws.send(JSON.stringify({ command: data.command, state: false, error: '未输入用户名或密码', region: Bot.uin, type: 'server' }))
+              }
+              break
+            case 'post_command':
+              console.log(data)
+              const fetchOptions = {
+                method: 'POST',
+                body: data.postData
+              }
+              const response = await fetch(`http://localhost:${Config.serverPort || 3321}${data.postPath}`, fetchOptions)
+              if (response.ok) {
+                const json = await response.json()
+                ws.send(JSON.stringify({ command: data.command, state: true, region: Bot.uin, type: 'server', path: data.postPath, data: json }))
               }
               break
           }
@@ -313,7 +325,7 @@ export async function createServer() {
     connection.socket.on('message', async (message) => {
       try {
         const data = JSON.parse(message)
-
+        const user = UserInfo(data.token)
         switch (data.command) {
           case 'sendMsg': // 代理消息发送
             if (!connection.login) {
@@ -339,7 +351,7 @@ export async function createServer() {
             }
             break
           case 'login': // 登录
-            const user = UserInfo(data.token)
+
             if (user) {
               clients[user.user] = connection.socket
               connection.login = true
@@ -351,6 +363,10 @@ export async function createServer() {
           case 'initQQMessageInfo': // qq消息模块初始化信息
             if (!connection.login) {
               await connection.socket.send(JSON.stringify({ command: data.command, state: false, error: '请先登录账号' }))
+              return
+            }
+            if (user.autho != 'admin') {
+              await connection.socket.send(JSON.stringify({ command: data.command, state: true, error: '普通用户无需进行初始化' }))
               return
             }
             const groupList = Bot.getGroupList()
