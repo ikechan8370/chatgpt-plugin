@@ -47,7 +47,7 @@ function randomNum (minNum, maxNum) {
  * @param lengthScale
  * @returns {Promise<string>}
  */
-export async function generateVitsAudio (text, speaker = '随机', language = '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）', noiseScale = Config.noiseScale, noiseScaleW = Config.noiseScaleW, lengthScale = Config.lengthScale) {
+export async function generateVitsAudio (text, speaker = '随机', language = '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）', noiseScale = parseFloat(Config.noiseScale), noiseScaleW = parseFloat(Config.noiseScaleW), lengthScale = parseFloat(Config.lengthScale)) {
   if (!speaker || speaker === '随机') {
     logger.info('随机角色！这次哪个角色这么幸运会被选到呢……')
     speaker = speakers[randomNum(0, speakers.length)]
