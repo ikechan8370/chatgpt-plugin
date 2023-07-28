@@ -1,9 +1,9 @@
 import fetch from 'node-fetch'
 
 // this file is deprecated
-
-import { Config } from './config.js'
+import {Config} from './config.js'
 import HttpsProxyAgent from 'https-proxy-agent'
+
 const newFetch = (url, options = {}) => {
   const defaultOptions = Config.proxy
     ? {
@@ -57,6 +57,30 @@ export async function solveCaptcha (id, regionId, text, token) {
     return {
       result: false,
       detail: res
+    }
+  }
+}
+
+export async function solveCaptchaOneShot (token) {
+  if (!token) {
+    throw new Error('no token')
+  }
+  let solveUrl = Config.bingCaptchaOneShotUrl
+  if (!solveUrl) {
+    throw new Error('no captcha source')
+  }
+  let result = await fetch(solveUrl, {
+    method: 'POST',
+    body: {
+      _U: token
+    }
+  })
+  if (result.status === 200) {
+    return await result.json()
+  } else {
+    return {
+      success: false,
+      error: result.statusText
     }
   }
 }
