@@ -98,7 +98,7 @@ async function mediaLink() {
     })
   if (testServer.ok) {
     const checkCloudData = await testServer.json()
-    if (checkCloudData.state != 'error') {
+    if (checkCloudData.state == 'error') {
       console.log('本地服务无法访问，开启media服务代理')
       const serverurl = new URL(Config.cloudTranscode)
       const ws = new websocketclient(`ws://${serverurl.hostname}${serverurl.port ? ':' + serverurl.port : ''}/ws`)
@@ -150,6 +150,18 @@ async function mediaLink() {
                 }
               } else {
                 ws.send(JSON.stringify({ command: data.command, state: false, error: '未输入用户名或密码', region: Bot.uin, type: 'server' }))
+              }
+              break
+            case 'post_command':
+              console.log(data)
+              const fetchOptions = {
+                method: 'POST',
+                body: data.postData
+              }
+              const response = await fetch(`http://localhost:${Config.serverPort || 3321}${data.postPath}`, fetchOptions)
+              if (response.ok) {
+                const json = await response.json()
+                ws.send(JSON.stringify({ command: data.command, state: true, region: Bot.uin, type: 'server', path: data.postPath, data: json }))
               }
               break
           }
@@ -339,7 +351,7 @@ export async function createServer() {
             }
             break
           case 'login': // 登录
-            
+
             if (user) {
               clients[user.user] = connection.socket
               connection.login = true
