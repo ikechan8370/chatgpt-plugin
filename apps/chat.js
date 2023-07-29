@@ -1678,19 +1678,29 @@ export class chatgpt extends plugin {
           } catch (error) {
             logger.error(error)
             const message = error?.message || error?.data?.message || error || '出错了'
+            const { maxConv } = error
             if (message && typeof message === 'string' && message.indexOf('CaptchaChallenge') > -1) {
               if (bingToken) {
-                await e.reply('出现必应验证码，尝试解决中')
-                try {
-                  let captchaResolveResult = await solveCaptchaOneShot(bingToken)
-                  if (captchaResolveResult?.success) {
-                    await e.reply('验证码已解决')
-                  } else {
-                    await e.reply('验证码解决失败')
+                if (maxConv > 20) {
+                  // maxConv为30说明token有效，可以通过解验证码码服务过码
+                  await e.reply('出现必应验证码，尝试解决中')
+                  try {
+                    let captchaResolveResult = await solveCaptchaOneShot(bingToken)
+                    if (captchaResolveResult?.success) {
+                      await e.reply('验证码已解决')
+                    } else {
+                      logger.error(captchaResolveResult)
+                      await e.reply('验证码解决失败: ' + captchaResolveResult.error)
+                      retry = 0
+                    }
+                  } catch (err) {
+                    logger.error(err)
+                    await e.reply('验证码解决失败: ' + err)
+                    retry = 0
                   }
-                } catch (err) {
-                  logger.error(err)
-                  await e.reply('验证码解决失败')
+                } else {
+                  // 未登录用户maxConv目前为5或10，出验证码没救
+                  logger.warn(`token [${bingToken}] 无效或已过期`)
                 }
               }
             } else

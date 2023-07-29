@@ -18,16 +18,12 @@ if (!globalThis.fetch) {
   globalThis.Request = Request
   globalThis.Response = Response
 }
+// workaround for ver 7.x and ver 5.x
+let proxy = HttpsProxyAgent
+if (typeof proxy !== 'function') {
+  proxy = HttpsProxyAgent.HttpsProxyAgent
+}
 
-// async function getWebSocket () {
-//   let WebSocket
-//   try {
-//     WebSocket = (await import('ws')).default
-//   } catch (error) {
-//     throw new Error('ws依赖未安装，请使用pnpm install ws安装')
-//   }
-//   return WebSocket
-// }
 async function getKeyv () {
   let Keyv
   try {
@@ -98,7 +94,7 @@ export default class SydneyAIClient {
       fetchOptions.headers.cookie = this.opts.cookies || `_U=${this.opts.userToken}`
     }
     if (this.opts.proxy) {
-      fetchOptions.agent = HttpsProxyAgent(Config.proxy)
+      fetchOptions.agent = proxy(Config.proxy)
     }
     let accessible = !(await isCN()) || this.opts.proxy
     if (accessible && !Config.sydneyForceUseReverse) {
@@ -137,7 +133,7 @@ export default class SydneyAIClient {
       let agent
       let sydneyHost = 'wss://sydney.bing.com'
       if (this.opts.proxy) {
-        agent = new HttpsProxyAgent(this.opts.proxy)
+        agent = proxy(this.opts.proxy)
       }
       if (Config.sydneyWebsocketUseProxy) {
         sydneyHost = Config.sydneyReverseProxy.replace('https://', 'wss://').replace('http://', 'ws://')
@@ -365,6 +361,7 @@ export default class SydneyAIClient {
     if (Config.enableGenerateContents) {
       optionsSets.push(...['gencontentv3'])
     }
+    let maxConv = Config.maxNumUserMessagesInConversation
     const currentDate = moment().format('YYYY-MM-DDTHH:mm:ssZ')
     const imageDate = await this.kblobImage(opts.imageUrl)
     // console.log(imageDate)
@@ -568,7 +565,8 @@ export default class SydneyAIClient {
             const messages = event?.arguments?.[0]?.messages
             if (!messages?.length || messages[0].author !== 'bot') {
               if (event?.arguments?.[0]?.throttling?.maxNumUserMessagesInConversation) {
-                Config.maxNumUserMessagesInConversation = event?.arguments?.[0]?.throttling?.maxNumUserMessagesInConversation
+                maxConv = event?.arguments?.[0]?.throttling?.maxNumUserMessagesInConversation
+                Config.maxNumUserMessagesInConversation = maxConv
               }
               return
             }
@@ -762,7 +760,8 @@ export default class SydneyAIClient {
         conversationExpiryTime,
         response: reply.text,
         details: reply,
-        apology: Config.sydneyApologyIgnored && apology
+        apology: Config.sydneyApologyIgnored && apology,
+        maxConv
       }
     } catch (err) {
       await this.conversationsCache.set(conversationKey, conversation)
@@ -771,6 +770,7 @@ export default class SydneyAIClient {
         conversationId,
         clientId
       }
+      err.maxConv = maxConv
       throw err
     }
   }
@@ -797,7 +797,7 @@ export default class SydneyAIClient {
       body: formData
     }
     if (this.opts.proxy) {
-      fetchOptions.agent = HttpsProxyAgent(Config.proxy)
+      fetchOptions.agent = proxy(Config.proxy)
     }
     let accessible = !(await isCN()) || this.opts.proxy
     let response = await fetch(`${accessible ? 'https://www.bing.com' : this.opts.host}/images/kblob`, fetchOptions)
