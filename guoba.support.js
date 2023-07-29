@@ -466,6 +466,12 @@ export function supportGuoba () {
           component: 'Switch'
         },
         {
+          field: 'bingCaptchaOneShotUrl',
+          label: '必应验证码pass服务',
+          bottomHelpMessage: '必应出验证码会自动用该服务绕过',
+          component: 'Input'
+        },
+        {
           field: 'sydneyMood',
           label: '情感显示',
           bottomHelpMessage: '开启Sydney的情感显示，仅在图片模式下生效',
