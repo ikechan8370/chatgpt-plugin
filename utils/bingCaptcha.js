@@ -69,11 +69,15 @@ export async function solveCaptchaOneShot (token) {
   if (!solveUrl) {
     throw new Error('no captcha source')
   }
+  logger.info(`尝试解决token${token}的验证码`)
   let result = await fetch(solveUrl, {
     method: 'POST',
-    body: {
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
       _U: token
-    }
+    })
   })
   if (result.status === 200) {
     return await result.json()

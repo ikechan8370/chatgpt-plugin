@@ -41,7 +41,7 @@ async function getKeyv () {
 const genRanHex = (size) => [...Array(size)].map(() => Math.floor(Math.random() * 16).toString(16)).join('')
 
 export default class SydneyAIClient {
-  constructor (opts) {
+  constructor(opts) {
     this.opts = {
       ...opts,
       host: opts.host || Config.sydneyReverseProxy || 'https://edgeservices.bing.com/edgesvc'
@@ -52,7 +52,7 @@ export default class SydneyAIClient {
     this.debug = opts.debug
   }
 
-  async initCache () {
+  async initCache() {
     if (!this.conversationsCache) {
       const cacheOptions = this.opts.cache || {}
       cacheOptions.namespace = cacheOptions.namespace || 'bing'
@@ -61,7 +61,7 @@ export default class SydneyAIClient {
     }
   }
 
-  async createNewConversation () {
+  async createNewConversation() {
     await this.initCache()
     const fetchOptions = {
       headers: {
@@ -126,7 +126,7 @@ export default class SydneyAIClient {
     }
   }
 
-  async createWebSocketConnection () {
+  async createWebSocketConnection() {
     await this.initCache()
     // let WebSocket = await getWebSocket()
     return new Promise((resolve, reject) => {
@@ -190,13 +190,13 @@ export default class SydneyAIClient {
     })
   }
 
-  async cleanupWebSocketConnection (ws) {
+  async cleanupWebSocketConnection(ws) {
     clearInterval(ws.bingPingInterval)
     ws.close()
     ws.removeAllListeners()
   }
 
-  async sendMessage (
+  async sendMessage(
     message,
     opts = {}
   ) {
@@ -364,7 +364,6 @@ export default class SydneyAIClient {
     let maxConv = Config.maxNumUserMessagesInConversation
     const currentDate = moment().format('YYYY-MM-DDTHH:mm:ssZ')
     const imageDate = await this.kblobImage(opts.imageUrl)
-    // console.log(imageDate)
     const obj = {
       arguments: [
         {
@@ -573,9 +572,9 @@ export default class SydneyAIClient {
             const message = messages.length
               ? messages[messages.length - 1]
               : {
-                  adaptiveCards: adaptiveCardsSoFar,
-                  text: replySoFar.join('')
-                }
+                adaptiveCards: adaptiveCardsSoFar,
+                text: replySoFar.join('')
+              }
             if (messages[0].contentOrigin === 'Apology') {
               console.log('Apology found')
               if (!replySoFar[0]) {
@@ -640,9 +639,9 @@ export default class SydneyAIClient {
             const message = messages.length
               ? messages[messages.length - 1]
               : {
-                  adaptiveCards: adaptiveCardsSoFar,
-                  text: replySoFar.join('')
-                }
+                adaptiveCards: adaptiveCardsSoFar,
+                text: replySoFar.join('')
+              }
             // 获取到图片内容
             if (message.contentType === 'IMAGE') {
               message.imageTag = messages.filter(m => m.contentType === 'IMAGE').map(m => m.text).join('')
@@ -808,7 +807,6 @@ export default class SydneyAIClient {
       return false
     }
   }
-
   /**
      * Iterate through messages, building an array based on the parentMessageId.
      * Each message has an id and a parentMessageId. The parentMessageId is the id of the message that this message is a reply to.
@@ -816,7 +814,7 @@ export default class SydneyAIClient {
      * @param parentMessageId
      * @returns {*[]} An array containing the messages in the order they should be displayed, starting with the root message.
      */
-  static getMessagesForConversation (messages, parentMessageId) {
+  static getMessagesForConversation(messages, parentMessageId) {
     const orderedMessages = []
     let currentMessageId = parentMessageId
     while (currentMessageId) {
@@ -832,7 +830,7 @@ export default class SydneyAIClient {
   }
 }
 
-async function generateRandomIP () {
+async function generateRandomIP() {
   let ip = await redis.get('CHATGPT:BING_IP')
   if (ip) {
     return ip
