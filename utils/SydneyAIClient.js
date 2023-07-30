@@ -98,7 +98,7 @@ export default class SydneyAIClient {
       fetchOptions.headers.cookie = this.opts.cookies || `_U=${this.opts.userToken}`
     }
     if (this.opts.proxy) {
-      fetchOptions.agent = HttpsProxyAgent(Config.proxy)
+      fetchOptions.agent = new HttpsProxyAgent(Config.proxy)
     }
     let accessible = !(await isCN()) || this.opts.proxy
     if (accessible && !Config.sydneyForceUseReverse) {
@@ -796,7 +796,7 @@ export default class SydneyAIClient {
       body: formData
     }
     if (this.opts.proxy) {
-      fetchOptions.agent = HttpsProxyAgent(Config.proxy)
+      fetchOptions.agent = new HttpsProxyAgent(Config.proxy)
     }
     let accessible = !(await isCN()) || this.opts.proxy
     let response = await fetch(`${accessible ? 'https://www.bing.com' : this.opts.host}/images/kblob`, fetchOptions)

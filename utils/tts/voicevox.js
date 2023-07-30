@@ -1,18 +1,10 @@
 import { Config } from '../config.js'
-
-let proxy
-if (Config.proxy) {
-  try {
-    proxy = (await import('https-proxy-agent')).default
-  } catch (e) {
-    console.warn('未安装https-proxy-agent，请在插件目录下执行pnpm add https-proxy-agent')
-  }
-}
+import HttpsProxyAgent from 'https-proxy-agent'
 
 const newFetch = (url, options = {}) => {
   const defaultOptions = Config.proxy
     ? {
-        agent: proxy(Config.proxy)
+        agent: new HttpsProxyAgent(Config.proxy)
       }
     : {}
 

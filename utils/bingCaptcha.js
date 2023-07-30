@@ -1,13 +1,13 @@
 import fetch from 'node-fetch'
 
 // this file is deprecated
-import {Config} from './config.js'
+import { Config } from './config.js'
 import HttpsProxyAgent from 'https-proxy-agent'
 
 const newFetch = (url, options = {}) => {
   const defaultOptions = Config.proxy
     ? {
-        agent: HttpsProxyAgent(Config.proxy)
+        agent: new HttpsProxyAgent(Config.proxy)
       }
     : {}
   const mergedOptions = {

@@ -2,9 +2,9 @@ import { AbstractTool } from './AbstractTool.js'
 import { ChatGPTAPI } from '../openai/chatgpt-api.js'
 import { Config } from '../config.js'
 import fetch from 'node-fetch'
-import proxy from 'https-proxy-agent'
 import { getMaxModelTokens } from '../common.js'
 import { ChatGPTPuppeteer } from '../browser.js'
+import HttpsProxyAgent from 'https-proxy-agent'
 export class WebsiteTool extends AbstractTool {
   name = 'website'
 
@@ -72,7 +72,7 @@ export class WebsiteTool extends AbstractTool {
         fetch: (url, options = {}) => {
           const defaultOptions = Config.proxy
             ? {
-                agent: proxy(Config.proxy)
+                agent: new HttpsProxyAgent(Config.proxy)
               }
             : {}
           const mergedOptions = {

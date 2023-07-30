@@ -3,15 +3,8 @@ import { scrape } from './credential.js'
 import fetch from 'node-fetch'
 import crypto from 'crypto'
 import { Config } from '../config.js'
+import HttpsProxyAgent from 'https-proxy-agent'
 
-let proxy
-if (Config.proxy) {
-  try {
-    proxy = (await import('https-proxy-agent')).default
-  } catch (e) {
-    console.warn('未安装https-proxy-agent，请在插件目录下执行pnpm add https-proxy-agent')
-  }
-}
 // used when test as a single file
 // const _path = process.cwd()
 const _path = process.cwd() + '/plugins/chatgpt-plugin/utils/poe'
@@ -51,7 +44,7 @@ export class PoeClient {
   reConnectWs = false
 
   async setCredentials () {
-    let result = await scrape(this.config.quora_cookie, this.config.proxy ? proxy(Config.proxy) : null)
+    let result = await scrape(this.config.quora_cookie, this.config.proxy ? new HttpsProxyAgent(Config.proxy) : null)
     console.log(result)
     this.config.quora_formkey = result.appSettings.formkey
     this.config.channel_name = result.channelName
@@ -98,7 +91,7 @@ export class PoeClient {
       body: payload
     }
     if (this.config.proxy) {
-      option.agent = proxy(Config.proxy)
+      option.agent = new HttpsProxyAgent(Config.proxy)
     }
     const response = await fetch('https://poe.com/api/gql_POST', option)
     let text = await response.text()
@@ -121,7 +114,7 @@ export class PoeClient {
         headers: this.headers
       }
       if (this.config.proxy) {
-        option.agent = proxy(Config.proxy)
+        option.agent = new HttpsProxyAgent(Config.proxy)
       }
       let r = await fetch(url, option)
       let res = await r.text()
@@ -141,7 +134,7 @@ export class PoeClient {
       headers: this.headers
     }
     if (this.config.proxy) {
-      option.agent = proxy(Config.proxy)
+      option.agent = new HttpsProxyAgent(Config.proxy)
     }
     let r = await fetch('https://poe.com', option)
     let text = await r.text()

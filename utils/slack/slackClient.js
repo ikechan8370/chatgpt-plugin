@@ -2,14 +2,8 @@ import { Config } from '../config.js'
 import slack from '@slack/bolt'
 import delay from 'delay'
 import { limitString } from '../common.js'
-let proxy
-if (Config.proxy) {
-  try {
-    proxy = (await import('https-proxy-agent')).default
-  } catch (e) {
-    console.warn('未安装https-proxy-agent，请在插件目录下执行pnpm add https-proxy-agent')
-  }
-}
+import HttpsProxyAgent from 'https-proxy-agent'
+
 export class SlackClaudeClient {
   constructor (props) {
     this.config = props
@@ -22,9 +16,9 @@ export class SlackClaudeClient {
         // port: 45912
       }
       if (Config.proxy) {
-        option.agent = proxy(Config.proxy)
+        option.agent = HttpsProxyAgent(Config.proxy)
       }
-      option.logLevel = Config.debug ? 'debug': 'info'
+      option.logLevel = Config.debug ? 'debug' : 'info'
       this.app = new slack.App(option)
     } else {
       throw new Error('未配置Slack信息')
