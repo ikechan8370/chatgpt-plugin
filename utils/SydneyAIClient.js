@@ -19,16 +19,7 @@ if (!globalThis.fetch) {
   globalThis.Response = Response
 }
 
-// async function getWebSocket () {
-//   let WebSocket
-//   try {
-//     WebSocket = (await import('ws')).default
-//   } catch (error) {
-//     throw new Error('ws依赖未安装，请使用pnpm install ws安装')
-//   }
-//   return WebSocket
-// }
-async function getKeyv() {
+async function getKeyv () {
   let Keyv
   try {
     Keyv = (await import('keyv')).default
@@ -365,6 +356,7 @@ export default class SydneyAIClient {
     if (Config.enableGenerateContents) {
       optionsSets.push(...['gencontentv3'])
     }
+    let maxConv = Config.maxNumUserMessagesInConversation
     const currentDate = moment().format('YYYY-MM-DDTHH:mm:ssZ')
     const imageDate = await this.kblobImage(opts.imageUrl)
     const obj = {
@@ -567,7 +559,8 @@ export default class SydneyAIClient {
             const messages = event?.arguments?.[0]?.messages
             if (!messages?.length || messages[0].author !== 'bot') {
               if (event?.arguments?.[0]?.throttling?.maxNumUserMessagesInConversation) {
-                Config.maxNumUserMessagesInConversation = event?.arguments?.[0]?.throttling?.maxNumUserMessagesInConversation
+                maxConv = event?.arguments?.[0]?.throttling?.maxNumUserMessagesInConversation
+                Config.maxNumUserMessagesInConversation = maxConv
               }
               return
             }
@@ -761,7 +754,8 @@ export default class SydneyAIClient {
         conversationExpiryTime,
         response: reply.text,
         details: reply,
-        apology: Config.sydneyApologyIgnored && apology
+        apology: Config.sydneyApologyIgnored && apology,
+        maxConv
       }
     } catch (err) {
       await this.conversationsCache.set(conversationKey, conversation)
@@ -770,6 +764,7 @@ export default class SydneyAIClient {
         conversationId,
         clientId
       }
+      err.maxConv = maxConv
       throw err
     }
   }
