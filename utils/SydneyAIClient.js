@@ -18,6 +18,11 @@ if (!globalThis.fetch) {
   globalThis.Request = Request
   globalThis.Response = Response
 }
+// workaround for ver 7.x and ver 5.x
+let proxy = HttpsProxyAgent
+if (typeof proxy !== 'function') {
+  proxy = HttpsProxyAgent.HttpsProxyAgent
+}
 
 async function getKeyv () {
   let Keyv
