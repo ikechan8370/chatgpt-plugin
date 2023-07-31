@@ -18,11 +18,6 @@ if (!globalThis.fetch) {
   globalThis.Request = Request
   globalThis.Response = Response
 }
-// workaround for ver 7.x and ver 5.x
-let proxy = HttpsProxyAgent
-if (typeof proxy !== 'function') {
-  proxy = HttpsProxyAgent.HttpsProxyAgent
-}
 
 async function getKeyv () {
   let Keyv
@@ -843,3 +838,4 @@ async function generateRandomIP () {
   await redis.set('CHATGPT:BING_IP', ip, { EX: 86400 * 7 })
   return ip
 }
+
