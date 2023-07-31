@@ -838,4 +838,3 @@ async function generateRandomIP () {
   await redis.set('CHATGPT:BING_IP', ip, { EX: 86400 * 7 })
   return ip
 }
-
