@@ -129,7 +129,7 @@ export class ClaudeAIClient {
       }
     })
     let response = {
-      response: responseText.trim(),
+      text: responseText.trim(),
       conversationId
     }
     return {
