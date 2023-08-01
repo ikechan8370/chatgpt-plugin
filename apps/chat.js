@@ -1885,7 +1885,6 @@ export class chatgpt extends plugin {
         if (conversationId) {
           return await client.sendMessage(prompt, conversationId, attachments)
         } else {
-          await client.createConversation()
           let conv = await client.createConversation()
           return await client.sendMessage(prompt, conv.uuid, attachments)
         }

@@ -39,22 +39,21 @@ export class ClaudeAIClient {
      * @returns {Promise<void>}
      */
   async convertDocument (filePath) {
-    try {
-      let formData = new FormData()
-      formData.append('orgUuid', this.organizationId)
-      let buffer = fs.readFileSync(filePath)
-      formData.append('file', new File([buffer]))
-      let result = await this.fetch('https://claude.ai/api/convert_document', {
-        body: formData,
-        headers: this.headers,
-        method: 'POST'
-      })
-      let fileDetail = await result.json()
-      return fileDetail
-    } catch (err) {
-      logger.error(err)
-      return null
+    let formData = new FormData()
+    formData.append('orgUuid', this.organizationId)
+    let buffer = fs.readFileSync(filePath)
+    formData.append('file', new File([buffer]))
+    let result = await this.fetch('https://claude.ai/api/convert_document', {
+      body: formData,
+      headers: this.headers,
+      method: 'POST',
+      redirect: 'manual'
+    })
+    if (result.statusCode === 307) {
+      throw new Error('claude.ai目前不支持你所在的地区')
     }
+    let fileDetail = await result.json()
+    return fileDetail
   }
 
   /**
@@ -72,8 +71,12 @@ export class ClaudeAIClient {
     let result = await this.fetch(`https://claude.ai/api/organizations/${this.organizationId}/chat_conversations`, {
       body,
       headers: this.headers,
-      method: 'POST'
+      method: 'POST',
+      redirect: 'manual'
     })
+    if (result.statusCode === 307) {
+      throw new Error('claude.ai目前不支持你所在的地区')
+    }
     let jsonRes = await result.json()
     if (this.debug) {
       console.log(jsonRes)
@@ -102,8 +105,12 @@ export class ClaudeAIClient {
     let streamDataRes = await this.fetch(url, {
       method: 'POST',
       body: JSON.stringify(body),
-      headers: this.headers
+      headers: this.headers,
+      redirect: 'manual'
     })
+    if (streamDataRes.statusCode === 307) {
+      throw new Error('claude.ai目前不支持你所在的地区')
+    }
     let streamData = await streamDataRes.text()
     let responseText = ''
     let streams = streamData.split('\n\n')
