@@ -1858,8 +1858,7 @@ export class chatgpt extends plugin {
           proxy: Config.proxy
         })
         let fileUrl, filename, attachments
-        if (e.source && e.message === '[文件]') {
-          filename = e.source.file.name
+        if (e.source && e.source.message === '[文件]') {
           if (e.isGroup) {
             let source = (await e.group.getChatHistory(e.source.seq, 1))[0]
             let file = source.message.find(m => m.type === 'file')
@@ -1867,7 +1866,6 @@ export class chatgpt extends plugin {
               filename = file.name
               fileUrl = await e.group.getFileUrl(file.fid)
             }
-
           } else {
             let source = (await e.friend.getChatHistory(e.source.time, 1))[0]
             let file = source.message.find(m => m.type === 'file')
@@ -1878,6 +1876,7 @@ export class chatgpt extends plugin {
           }
         }
         if (fileUrl) {
+          logger.info('文件地址：' + fileUrl)
           mkdirs('data/chatgpt/files')
           let destinationPath = 'data/chatgpt/files/' + filename
           const response = await fetch(fileUrl)
@@ -1891,7 +1890,7 @@ export class chatgpt extends plugin {
               resolve()
             })
           })
-          attachments = [await client.convertDocument(destinationPath)]
+          attachments = [await client.convertDocument(destinationPath, filename)]
         }
         if (conversationId) {
           return await client.sendMessage(prompt, conversationId, attachments)

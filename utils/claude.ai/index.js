@@ -38,11 +38,11 @@ export class ClaudeAIClient {
      * @param filePath 文件路径
      * @returns {Promise<void>}
      */
-  async convertDocument (filePath) {
+  async convertDocument (filePath, filename = 'file.pdf') {
     let formData = new FormData()
     formData.append('orgUuid', this.organizationId)
     let buffer = fs.readFileSync(filePath)
-    formData.append('file', new File([buffer]))
+    formData.append('file', new File([buffer], filename))
     let result = await this.fetch('https://claude.ai/api/convert_document', {
       body: formData,
       headers: this.headers,
