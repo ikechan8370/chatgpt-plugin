@@ -132,7 +132,10 @@ const defaultConfig = {
   extraUrl: 'https://cpe.ikechan8370.com',
   smartMode: false,
   bingCaptchaOneShotUrl: 'http://bingcaptcha.ikechan8370.com/bing',
-  version: 'v2.7.3'
+  // claude2
+  claudeAIOrganizationId: '',
+  claudeAISessionKey: '',
+  version: 'v2.7.4'
 }
 const _path = process.cwd()
 let config = {}
