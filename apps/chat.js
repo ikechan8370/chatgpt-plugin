@@ -1858,12 +1858,23 @@ export class chatgpt extends plugin {
           proxy: Config.proxy
         })
         let fileUrl, filename, attachments
-        if (e.source && e.source.file) {
+        if (e.source && e.message === '[文件]') {
           filename = e.source.file.name
           if (e.isGroup) {
-            fileUrl = await e.group.getFileUrl(e.source.file.fid)
+            let source = (await e.group.getChatHistory(e.source.seq, 1))[0]
+            let file = source.message.find(m => m.type === 'file')
+            if (file) {
+              filename = file.name
+              fileUrl = await e.group.getFileUrl(file.fid)
+            }
+
           } else {
-            fileUrl = await e.friend.getFileUrl(e.source.file.fid)
+            let source = (await e.friend.getChatHistory(e.source.time, 1))[0]
+            let file = source.message.find(m => m.type === 'file')
+            if (file) {
+              filename = file.name
+              fileUrl = await e.group.getFileUrl(file.fid)
+            }
           }
         }
         if (fileUrl) {
