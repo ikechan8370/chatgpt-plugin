@@ -1,10 +1,8 @@
-import fetch, { FormData, File, Headers } from 'node-fetch'
+import fetch, { File, FormData, Headers } from 'node-fetch'
 import fs from 'fs'
 import crypto from 'crypto'
-import https from 'https'
-import { createParser } from 'eventsource-parser'
-import http from 'http'
 import HttpsProxyAgent from 'https-proxy-agent'
+
 export class ClaudeAIClient {
   constructor (opts) {
     const { organizationId, sessionKey, proxy, debug = false } = opts
@@ -34,10 +32,11 @@ export class ClaudeAIClient {
   }
 
   /**
-     * 抽取文件文本内容，https://claude.ai/api/convert_document
-     * @param filePath 文件路径
-     * @returns {Promise<void>}
-     */
+   * 抽取文件文本内容，https://claude.ai/api/convert_document
+   * @param filePath 文件路径
+   * @param filename
+   * @returns {Promise<void>}
+   */
   async convertDocument (filePath, filename = 'file.pdf') {
     let formData = new FormData()
     formData.append('orgUuid', this.organizationId)
@@ -52,8 +51,17 @@ export class ClaudeAIClient {
     if (result.statusCode === 307) {
       throw new Error('claude.ai目前不支持你所在的地区')
     }
-    let fileDetail = await result.json()
-    return fileDetail
+    if (result.statusCode !== 200) {
+      console.warn('failed to parse document convert result: ' + result.statusCode + ' ' + result.statusText)
+      return null
+    }
+    let raw = await result.text()
+    try {
+      return JSON.parse(raw)
+    } catch (e) {
+      console.warn('failed to parse document convert result: ' + raw)
+      return null
+    }
   }
 
   /**
