@@ -961,7 +961,7 @@ export class chatgpt extends plugin {
     let key
     if (use === 'api3') {
       // api3 支持对话穿插，因此不按照qq号来进行判断了
-      let conversationId = await redis.get(`CHATGPT:QQ_CONVERSATION:${e.sender.user_id}`)
+      let conversationId = await redis.get(`CHATGPT:QQ_CONVERSATION:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`)
       if (conversationId) {
         let lastMessageId = await redis.get(`CHATGPT:CONVERSATION_LAST_MESSAGE_ID:${conversationId}`)
         if (!lastMessageId) {
@@ -986,23 +986,23 @@ export class chatgpt extends plugin {
     } else if (use !== 'poe' && use !== 'claude') {
       switch (use) {
         case 'api': {
-          key = `CHATGPT:CONVERSATIONS:${e.sender.user_id}`
+          key = `CHATGPT:CONVERSATIONS:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`
           break
         }
         case 'bing': {
-          key = `CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`
+          key = `CHATGPT:CONVERSATIONS_BING:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`
           break
         }
         case 'chatglm': {
-          key = `CHATGPT:CONVERSATIONS_CHATGLM:${e.sender.user_id}`
+          key = `CHATGPT:CONVERSATIONS_CHATGLM:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`
           break
         }
         case 'browser': {
-          key = `CHATGPT:CONVERSATIONS_BROWSER:${e.sender.user_id}`
+          key = `CHATGPT:CONVERSATIONS_BROWSER:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`
           break
         }
         case 'xh': {
-          key = `CHATGPT:CONVERSATIONS_XH:${e.sender.user_id}`
+          key = `CHATGPT:CONVERSATIONS_XH:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`
           break
         }
       }
@@ -1782,7 +1782,7 @@ export class chatgpt extends plugin {
         await redis.set(`CHATGPT:CONVERSATION_LAST_MESSAGE_PROMPT:${sendMessageResult.conversationId}`, prompt)
         // 更新最后一条messageId
         await redis.set(`CHATGPT:CONVERSATION_LAST_MESSAGE_ID:${sendMessageResult.conversationId}`, sendMessageResult.id)
-        await redis.set(`CHATGPT:QQ_CONVERSATION:${e.sender.user_id}`, sendMessageResult.conversationId)
+        await redis.set(`CHATGPT:QQ_CONVERSATION:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`, sendMessageResult.conversationId)
         if (!conversation.conversationId) {
           // 如果是对话的创建者
           await redis.set(`CHATGPT:CONVERSATION_CREATER_ID:${sendMessageResult.conversationId}`, e.sender.user_id)
