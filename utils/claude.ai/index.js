@@ -132,9 +132,8 @@ export class ClaudeAIClient {
       text: responseText.trim(),
       conversationId
     }
-    return {
-      response
-    }
+    return response
+
   }
 }
 
