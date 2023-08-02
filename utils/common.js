@@ -703,6 +703,7 @@ export async function getUserData (user) {
       chat: [],
       mode: '',
       cast: {
+        azure: '',
         api: '', // API设定
         bing: '', // 必应设定
         bing_resource: '', // 必应扩展资料

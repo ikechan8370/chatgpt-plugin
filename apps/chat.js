@@ -67,6 +67,7 @@ import { SendAvatarTool } from '../utils/tools/SendAvatarTool.js'
 import { SendMessageToSpecificGroupOrUserTool } from '../utils/tools/SendMessageToSpecificGroupOrUserTool.js'
 import { SetTitleTool } from '../utils/tools/SetTitleTool.js'
 import { createCaptcha, solveCaptcha, solveCaptchaOneShot } from '../utils/bingCaptcha.js'
+import { OpenAIClient, AzureKeyCredential } from '@azure/openai'
 
 try {
   await import('emoji-strip')
@@ -1005,6 +1006,10 @@ export class chatgpt extends plugin {
           key = `CHATGPT:CONVERSATIONS_XH:${e.sender.user_id}`
           break
         }
+        case 'azure': {
+          key = `CHATGPT:CONVERSATIONS_AZURE:${e.sender.user_id}`
+          break
+        }
       }
       let ctime = new Date()
       previousConversation = (key ? await redis.get(key) : null) || JSON.stringify({
@@ -1012,6 +1017,7 @@ export class chatgpt extends plugin {
         ctime,
         utime: ctime,
         num: 0,
+        messages: [{ role: 'system', content: 'You are an AI assistant that helps people find information.' }],
         conversation: {}
       })
       previousConversation = JSON.parse(previousConversation)
@@ -1019,6 +1025,7 @@ export class chatgpt extends plugin {
         logger.info({ previousConversation })
       }
       conversation = {
+        messages: previousConversation.messages,
         conversationId: previousConversation.conversation?.conversationId,
         parentMessageId: previousConversation.parentMessageId,
         clientId: previousConversation.clientId,
@@ -1058,6 +1065,11 @@ export class chatgpt extends plugin {
           }
         } else if (chatMessage.id) {
           previousConversation.parentMessageId = chatMessage.id
+        } else if (chatMessage.message) {
+          if (previousConversation.messages.length > 10) {
+            previousConversation.messages.shift()
+          }
+          previousConversation.messages.push(chatMessage.message)
         }
         if (Config.debug) {
           logger.info(chatMessage)
@@ -1854,6 +1866,16 @@ export class chatgpt extends plugin {
         })
         let response = await client.sendMessage(prompt, conversation?.conversationId)
         return response
+      }
+      case 'azure': {
+        let msg = conversation.messages
+        let content = { role: 'user', content: prompt }
+        msg.push(content)
+        const client = new OpenAIClient(Config.azureUrl, new AzureKeyCredential(Config.apiKey))
+        const deploymentName = Config.azureDeploymentName
+        const { choices } = await client.getChatCompletions(deploymentName, msg)
+        let completion = choices[0].message;
+        return {'text' : completion.content, 'message': completion}
       }
       default: {
         let completionParams = {}

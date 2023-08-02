@@ -19,6 +19,8 @@
   "openAiBaseUrl": "https://mondstadt.d201.eu.org/v1",
   "OpenAiPlatformRefreshToken": "",
   "openAiForceUseReverse": false,
+  "azureDeploymentName":"",
+  "azureUrl":"",
   "drawCD": 30,
   "model": "",
   "temperature": 0.8,
