@@ -390,7 +390,8 @@ export async function createServer() {
                     rand: e.rand,
                     message: e.message,
                     user_name: e.sender.nickname,
-                  }
+                  },
+                  read: true
                 }
                 await connection.socket.send(JSON.stringify(messageData))
               })
