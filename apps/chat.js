@@ -1641,7 +1641,7 @@ export class chatgpt extends plugin {
               response.quote = []
               for (let quote of response.details.sourceAttributions) {
                 response.quote.push({
-                  text: quote.providerDisplayName,
+                  text: quote.providerDisplayName || '',
                   url: quote.seeMoreUrl,
                   imageLink: quote.imageLink || ''
                 })
