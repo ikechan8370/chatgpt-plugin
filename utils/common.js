@@ -137,10 +137,6 @@ export async function makeForwardMsg(e, msg = [], dec = "") {
   return forwardMsg;
 }
 
-
-  return forwardMsg
-}
-
 // @see https://github.com/sindresorhus/p-timeout
 export async function pTimeout (
   promise,
