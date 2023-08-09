@@ -16,6 +16,7 @@ import { getPublicIP, getUserData, getMasterQQ, randomString } from '../utils/co
 
 import webRoute from './modules/web_route.js'
 import webUser from './modules/user.js'
+import webPrompt from './modules/prompts.js'
 import SettingView from './modules/setting_view.js'
 
 const __dirname = path.resolve()
@@ -82,6 +83,7 @@ await server.register(fastifyCookie)
 await server.register(webRoute)
 await server.register(webUser)
 await server.register(SettingView)
+await server.register(webPrompt)
 
 // 无法访问端口的情况下创建与media的通讯
 async function mediaLink() {
@@ -390,7 +392,8 @@ export async function createServer() {
                     rand: e.rand,
                     message: e.message,
                     user_name: e.sender.nickname,
-                  }
+                  },
+                  read: true
                 }
                 await connection.socket.send(JSON.stringify(messageData))
               })
