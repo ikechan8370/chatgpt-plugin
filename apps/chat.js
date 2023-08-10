@@ -1892,6 +1892,15 @@ export class chatgpt extends plugin {
         if (!matchesPSID[1] || !matchesPSIDTS[1]) {
           throw new Error('未绑定bard')
         }
+        // 处理图片
+        const image = await getImg(e)
+        let imageBuff
+        if (image) {
+          let imgResponse = await fetch(image[0])
+          if (imgResponse.ok) {
+            imageBuff = await imgResponse.arrayBuffer()
+          }
+        }
         // 发送数据
         let bot = new Bard(cookie,{
           fetch: fetch,
@@ -1903,7 +1912,9 @@ export class chatgpt extends plugin {
           choiceID: conversation.clientId,
           _reqID: conversation.invocationId
         }: {})
-        let response = await chat.ask(prompt)
+        let response = await chat.ask(prompt, imageBuff ? {
+          image: imageBuff
+        } : undefined)
         let chatConversation = await chat.export()
         return {
           conversationId: chatConversation.conversationID,
