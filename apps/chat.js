@@ -67,7 +67,12 @@ import { SendAvatarTool } from '../utils/tools/SendAvatarTool.js'
 import { SendMessageToSpecificGroupOrUserTool } from '../utils/tools/SendMessageToSpecificGroupOrUserTool.js'
 import { SetTitleTool } from '../utils/tools/SetTitleTool.js'
 import { createCaptcha, solveCaptcha, solveCaptchaOneShot } from '../utils/bingCaptcha.js'
-import { OpenAIClient, AzureKeyCredential } from '@azure/openai'
+
+try {
+  await import('@azure/openai')
+} catch (err) {
+  logger.warn('【Azure-Openai】依赖@azure/openai未安装，Azure OpenAI不可用 请执行pnpm install @azure/openai安装')
+}
 
 try {
   await import('emoji-strip')
@@ -1868,6 +1873,14 @@ export class chatgpt extends plugin {
         return response
       }
       case 'azure': {
+        let azureModel
+        try {
+          azureModel = await import('@azure/openai')
+        } catch (error) {
+          throw new Error('未安装@azure/openai包，请执行pnpm install @azure/openai安装')
+        }
+        let OpenAIClient = azureModel.OpenAIClient
+        let AzureKeyCredential = azureModel.AzureKeyCredential
         let msg = conversation.messages
         let content = { role: 'user', content: prompt }
         msg.push(content)
