@@ -1059,6 +1059,12 @@ export class chatgpt extends plugin {
         await e.reply([chatMessage.text, segment.image(`base64://${chatMessage.image}`)])
         return false
       }
+      // 处理bard图片
+      if (use === 'bard' && chatMessage?.images) {
+        chatMessage.images.forEach(async element => {
+          await e.reply([element.tag, segment.image(element.url)])
+        })
+      }
       if (use === 'api' && !chatMessage) {
         // 字数超限直接返回
         return false
@@ -1912,16 +1918,18 @@ export class chatgpt extends plugin {
           choiceID: conversation.clientId,
           _reqID: conversation.invocationId
         }: {})
-        let response = await chat.ask(prompt, imageBuff ? {
-          image: imageBuff
-        } : undefined)
-        let chatConversation = await chat.export()
+        let response = await chat.ask(prompt, {
+          image: imageBuff,
+          format: Bard.JSON
+        })
+        console.log(response)
         return {
-          conversationId: chatConversation.conversationID,
-          responseID: chatConversation.responseID,
-          choiceID: chatConversation.choiceID,
-          _reqID: chatConversation._reqID,
-          text: response
+          conversationId: response.ids.conversationID,
+          responseID: response.ids.responseID,
+          choiceID: response.ids.choiceID,
+          _reqID: response.ids._reqID,
+          text: response.content,
+          images: response.images
         }
       }
       default: {
