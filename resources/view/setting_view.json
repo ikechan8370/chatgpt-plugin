@@ -82,6 +82,10 @@
             "value": "xh"
           },
           {
+            "label": "Bard",
+            "value": "bard"
+          },
+          {
             "label": "浏览器",
             "value": "browser"
           }
@@ -713,6 +717,27 @@
                 "type": "password",
                 "label": "星火Cookie",
                 "data": "xinghuoToken"
+              }
+            ]
+          },
+          {
+            "title": "Bard",
+            "tab": "bard",
+            "view": [
+              {
+                "type": "password",
+                "label": "BardCookie",
+                "data": "bardPsid"
+              },
+              {
+                "type": "url",
+                "label": "Bard反代地址",
+                "data": "bardReverseProxy"
+              },
+              {
+                "type": "check",
+                "label": "使用Bard反代",
+                "data": "bardForceUseReverse"
               }
             ]
           }
