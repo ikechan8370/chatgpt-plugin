@@ -1679,7 +1679,6 @@ export class chatgpt extends plugin {
                 })
               }
             }
-            console.log(response)
             // 处理内容生成的图片
             if (response.details.imageTag) {
               if (Config.debug) {
@@ -1902,9 +1901,13 @@ export class chatgpt extends plugin {
         const image = await getImg(e)
         let imageBuff
         if (image) {
-          let imgResponse = await fetch(image[0])
-          if (imgResponse.ok) {
-            imageBuff = await imgResponse.arrayBuffer()
+          try {
+            let imgResponse = await fetch(image[0])
+            if (imgResponse.ok) {
+              imageBuff = await imgResponse.arrayBuffer()
+            }
+          } catch (error) {
+            logger.warn(`错误的图片链接${image[0]}`)
           }
         }
         // 发送数据
@@ -1922,7 +1925,6 @@ export class chatgpt extends plugin {
           image: imageBuff,
           format: Bard.JSON
         })
-        console.log(response)
         return {
           conversationId: response.ids.conversationID,
           responseID: response.ids.responseID,
