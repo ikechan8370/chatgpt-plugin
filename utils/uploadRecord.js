@@ -87,7 +87,8 @@ async function uploadRecord (recordUrl, ttsMode = 'vits-uma-genshin-honkai') {
           buffer = Buffer.from(arrayBuffer)
           formData.append('file', new File([buffer], 'audio.wav'))
         }
-        const resultres = await fetch(`${Config.cloudTranscode}/audio`, {
+        const cloudUrl = new URL(Config.cloudTranscode)
+        const resultres = await fetch(`${cloudUrl}audio`, {
           method: 'POST',
           body: formData
         })
@@ -103,7 +104,8 @@ async function uploadRecord (recordUrl, ttsMode = 'vits-uma-genshin-honkai') {
           throw e
         }
       } else {
-        const resultres = await fetch(`${Config.cloudTranscode}/audio`, {
+        const cloudUrl = new URL(Config.cloudTranscode)
+        const resultres = await fetch(`${cloudUrl}audio`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'

@@ -1,16 +1,18 @@
 // import { remark } from 'remark'
 // import stripMarkdown from 'strip-markdown'
-import { exec } from 'child_process'
+import {exec} from 'child_process'
 import lodash from 'lodash'
 import fs from 'node:fs'
 import path from 'node:path'
 import buffer from 'buffer'
 import yaml from 'yaml'
 import puppeteer from '../../../lib/puppeteer/puppeteer.js'
-import { Config } from './config.js'
-import { speakers as vitsRoleList } from './tts.js'
-import { supportConfigurations as voxRoleList } from './tts/voicevox.js'
-import { supportConfigurations as azureRoleList } from './tts/microsoft-azure.js'
+import {Config} from './config.js'
+import {convertSpeaker, generateVitsAudio, speakers as vitsRoleList} from './tts.js'
+import VoiceVoxTTS, {supportConfigurations as voxRoleList} from './tts/voicevox.js'
+import AzureTTS, {supportConfigurations as azureRoleList} from './tts/microsoft-azure.js'
+import {translate} from './translate.js'
+import uploadRecord from './uploadRecord.js'
 // export function markdownToText (markdown) {
 //  return remark()
 //    .use(stripMarkdown)
@@ -81,8 +83,12 @@ export async function tryTimes (promiseFn, maxTries = 10) {
 export async function makeForwardMsg (e, msg = [], dec = '') {
   let nickname = Bot.nickname
   if (e.isGroup) {
-    let info = await Bot.getGroupMemberInfo(e.group_id, Bot.uin)
-    nickname = info.card || info.nickname
+    try {
+      let info = await Bot.getGroupMemberInfo(e.group_id, Bot.uin)
+      nickname = info.card || info.nickname
+    } catch (err) {
+      console.error(`Failed to get group member info: ${err}`)
+    }
   }
   let userInfo = {
     user_id: Bot.uin,
@@ -90,13 +96,13 @@ export async function makeForwardMsg (e, msg = [], dec = '') {
   }
 
   let forwardMsg = []
-  msg.forEach(v => {
+  msg.forEach((v) => {
     forwardMsg.push({
       ...userInfo,
       message: v
     })
   })
-
+  let is_sign = true
   /** 制作转发内容 */
   if (e.isGroup) {
     forwardMsg = await e.group.makeForwardMsg(forwardMsg)
@@ -105,15 +111,29 @@ export async function makeForwardMsg (e, msg = [], dec = '') {
   } else {
     return false
   }
-
-  if (dec) {
-    /** 处理描述 */
-    forwardMsg.data = forwardMsg.data
-      .replace(/\n/g, '')
-      .replace(/<title color="#777777" size="26">(.+?)<\/title>/g, '___')
-      .replace(/___+/, `<title color="#777777" size="26">${dec}</title>`)
+  let forwardMsg_json = forwardMsg.data
+  if (typeof (forwardMsg_json) === 'object') {
+    if (forwardMsg_json.app === 'com.tencent.multimsg' && forwardMsg_json.meta?.detail) {
+      let detail = forwardMsg_json.meta.detail
+      let resid = detail.resid
+      let fileName = detail.uniseq
+      let preview = ''
+      for (let val of detail.news) {
+        preview += `<title color="#777777" size="26">${val.text}</title>`
+      }
+      forwardMsg.data = `<?xml version="1.0" encoding="utf-8"?><msg brief="[聊天记录]" m_fileName="${fileName}" action="viewMultiMsg" tSum="1" flag="3" m_resid="${resid}" serviceID="35" m_fileSize="0"><item layout="1"><title color="#000000" size="34">转发的聊天记录</title>${preview}<hr></hr><summary color="#808080" size="26">${detail.summary}</summary></item><source name="聊天记录"></source></msg>`
+      forwardMsg.type = 'xml'
+      forwardMsg.id = 35
+    }
   }
-
+  forwardMsg.data = forwardMsg.data
+		.replace(/\n/g, '')
+		.replace(/<title color="#777777" size="26">(.+?)<\/title>/g, '___')
+		.replace(/___+/, `<title color="#777777" size="26">${dec}</title>`)
+  if (!is_sign) {
+    forwardMsg.data = forwardMsg.data
+      .replace('转发的', '不可转发的')
+  }
   return forwardMsg
 }
 
@@ -256,6 +276,14 @@ export function formatDate (date) {
   const formattedDate = `${year}年${month}月${day}日 ${hour}:${minute}`
   return formattedDate
 }
+
+export function formatDate2 (date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
 export async function getMasterQQ () {
   return (await import('../../../lib/config/config.js')).default.masterQQ
 }
@@ -332,7 +360,8 @@ export async function renderUrl (e, url, renderCfg = {}) {
   // 云渲染
   if (Config.cloudRender) {
     url = url.replace(`127.0.0.1:${Config.serverPort || 3321}`, Config.serverHost || `${await getPublicIP()}:${Config.serverPort || 3321}`)
-    const resultres = await fetch(`${Config.cloudTranscode}/screenshot`, {
+    const cloudUrl = new URL(Config.cloudTranscode)
+    const resultres = await fetch(`${cloudUrl.href}screenshot`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -346,7 +375,7 @@ export async function renderUrl (e, url, renderCfg = {}) {
           waitUtil: renderCfg.waitUtil || 'networkidle2',
           wait: renderCfg.wait || 1000,
           func: renderCfg.func || '',
-          dpr: renderCfg.dpr || 1
+          dpr: renderCfg.deviceScaleFactor || 1
         },
         type: 'image'
       })
@@ -698,11 +727,11 @@ export async function getUserData (user) {
 }
 
 export function getVoicevoxRoleList () {
-  return voxRoleList.map(item => item.name).join('、')
+  return voxRoleList.map(item => item.name).join(',')
 }
 
 export function getAzureRoleList () {
-  return azureRoleList.map(item => item.name).join('、')
+  return azureRoleList.map(item => item.roleInfo + (item?.emotion ? '-> 支持：' + Object.keys(item.emotion).join('，') + ' 情绪。' : '')).join('\n\n')
 }
 
 export async function getVitsRoleList (e) {
@@ -774,15 +803,153 @@ export async function getImageOcrText (e) {
     return false
   }
 }
-// 对原始黑白名单进行去重和去除无效群号处理，并处理通过锅巴面板添加错误配置时可能导致的问题
-export function processList (whitelist, blacklist) {
-  whitelist = Array.isArray(whitelist)
-    ? whitelist
-    : String(whitelist).split(/[,，]/)
-  blacklist = !Array.isArray(blacklist)
-    ? blacklist
-    : String(blacklist).split(/[,，]/)
-  whitelist = Array.from(new Set(whitelist)).filter(value => /^\^?[1-9]\d{5,9}$/.test(value))
-  blacklist = Array.from(new Set(blacklist)).filter(value => /^\^?[1-9]\d{5,9}$/.test(value))
-  return [whitelist, blacklist]
+
+export function getMaxModelTokens (model = 'gpt-3.5-turbo') {
+  if (model.startsWith('gpt-3.5-turbo')) {
+    if (model.includes('16k')) {
+      return 16000
+    } else {
+      return 4000
+    }
+  } else {
+    if (model.includes('32k')) {
+      return 32000
+    } else {
+      return 16000
+    }
+  }
 }
+
+/**
+ * 生成当前语音模式下可发送的音频信息
+ * @param e - 上下文对象
+ * @param pendingText - 待处理文本
+ * @param speakingEmotion - AzureTTSMode中的发言人情绪
+ * @param emotionDegree - AzureTTSMode中的发言人情绪强度
+ * @returns {Promise<{file: string, type: string}|undefined|boolean>}
+ */
+export async function generateAudio (e, pendingText, speakingEmotion, emotionDegree = 1) {
+  if (!Config.ttsSpace && !Config.azureTTSKey && !Config.voicevoxSpace) return false
+  let wav
+  const speaker = getUserSpeaker(await getUserReplySetting(e))
+  try {
+    if (Config.ttsMode === 'vits-uma-genshin-honkai' && Config.ttsSpace) {
+      if (Config.autoJapanese) {
+        try {
+          pendingText = await translate(pendingText, '日')
+        } catch (err) {
+          logger.warn(err.message + '\n将使用原始文本合成语音...')
+          return false
+        }
+      }
+      wav = await generateVitsAudio(pendingText, speaker, '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）')
+    } else if (Config.ttsMode === 'azure' && Config.azureTTSKey) {
+      return await generateAzureAudio(pendingText, speaker, speakingEmotion, emotionDegree)
+    } else if (Config.ttsMode === 'voicevox' && Config.voicevoxSpace) {
+      pendingText = (await translate(pendingText, '日')).replace('\n', '')
+      wav = await VoiceVoxTTS.generateAudio(pendingText, {
+        speaker
+      })
+    }
+  } catch (err) {
+    logger.error(err)
+    return false
+  }
+  let sendable
+  try {
+    try {
+      sendable = await uploadRecord(wav, Config.ttsMode)
+      if (!sendable) {
+        // 如果合成失败，尝试使用ffmpeg合成
+        sendable = segment.record(wav)
+      }
+    } catch (err) {
+      logger.error(err)
+      sendable = segment.record(wav)
+    }
+  } catch (err) {
+    logger.error(err)
+    return false
+  }
+  if (Config.ttsMode === 'azure' && Config.azureTTSKey) {
+    // 清理文件
+    try {
+      fs.unlinkSync(wav)
+    } catch (err) {
+      logger.warn(err)
+    }
+  }
+  return sendable
+}
+
+/**
+ * 生成可发送的AzureTTS音频
+ * @param pendingText - 待转换文本
+ * @param role - 发言人
+ * @param speakingEmotion - 发言人情绪
+ * @param emotionDegree - 发言人情绪强度
+ * @returns {Promise<{file: string, type: string}|boolean>}
+ */
+export async function generateAzureAudio (pendingText, role = '随机', speakingEmotion, emotionDegree = 1) {
+  if (!Config.azureTTSKey) return false
+  let speaker
+  try {
+    if (role !== '随机') {
+      // 判断传入的是不是code
+      if (azureRoleList.find(s => s.code === role.trim())) {
+        speaker = role
+      } else {
+        speaker = azureRoleList.find(s => s.roleInfo.includes(role.trim()))
+        if (!speaker) {
+          logger.warn('找不到名为' + role + '的发言人,将使用默认发言人 晓晓 发送音频.')
+          speaker = 'zh-CN-XiaoxiaoNeural'
+        } else {
+          speaker = speaker.code
+        }
+      }
+      let languagePrefix = azureRoleList.find(config => config.code === speaker).languageDetail.charAt(0)
+      languagePrefix = languagePrefix.startsWith('E') ? '英' : languagePrefix
+      pendingText = (await translate(pendingText, languagePrefix)).replace('\n', '')
+
+    } else {
+      let role, languagePrefix
+      role = azureRoleList[Math.floor(Math.random() * azureRoleList.length)]
+      speaker = role.code
+      languagePrefix = role.languageDetail.charAt(0).startsWith('E') ? '英' : role.languageDetail.charAt(0)
+      pendingText = (await translate(pendingText, languagePrefix)).replace('\n', '')
+      if (role?.emotion) {
+        const keys = Object.keys(role.emotion)
+        speakingEmotion = keys[Math.floor(Math.random() * keys.length)]
+      }
+      emotionDegree = 2
+      logger.info('using speaker: ' + speaker)
+      logger.info('using language: ' + languagePrefix)
+      logger.info('using emotion: ' + speakingEmotion)
+    }
+    let ssml = AzureTTS.generateSsml(pendingText, {
+      speaker,
+      emotion: speakingEmotion,
+      pendingText,
+      emotionDegree
+    })
+    return await uploadRecord(
+      await AzureTTS.generateAudio(pendingText, {
+        speaker
+      }, await ssml)
+      , Config.ttsMode
+    )
+  } catch (err) {
+    logger.error(err)
+    return false
+  }
+}
+export function getUserSpeaker (userSetting) {
+  if (Config.ttsMode === 'vits-uma-genshin-honkai') {
+    return convertSpeaker(userSetting.ttsRole || Config.defaultTTSRole)
+  } else if (Config.ttsMode === 'azure') {
+    return userSetting.ttsRoleAzure || Config.azureTTSSpeaker
+  } else if (Config.ttsMode === 'voicevox') {
+    return userSetting.ttsRoleVoiceVox || Config.voicevoxTTSSpeaker
+  }
+}
+

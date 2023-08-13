@@ -42,13 +42,17 @@ export function supportGuoba () {
         {
           field: 'whitelist',
           label: '对话白名单',
-          bottomHelpMessage: '只有在白名单内的QQ号或群组才能使用本插件进行对话。如果需要添加QQ号，请在号码前面加上^符号（例如：^123456），多个号码之间请用英文逗号(,)隔开。白名单优先级高于黑名单。',
+          bottomHelpMessage: '默认设置为添加群号。优先级高于黑名单。\n' +
+              '注意：需要添加QQ号时在前面添加^(例如：^123456)，此全局添加白名单，即除白名单以外的所有人都不能使用插件对话。\n' +
+              '如果需要在某个群里独享moment，即群聊中只有白名单上的qq号能用，则使用（群号^qq）的格式(例如：123456^123456)。\n' +
+              '白名单优先级：混合制 > qq > 群号。\n' +
+              '黑名单优先级: 群号 > qq > 混合制。',
           component: 'Input'
         },
         {
           field: 'blacklist',
           label: '对话黑名单',
-          bottomHelpMessage: '名单内的群或QQ号将无法使用本插件进行对话。如果需要添加QQ号，请在QQ号前面加上^符号（例如：^123456），并用英文逗号（,）将各个号码分隔开。',
+          bottomHelpMessage: '参考白名单设置规则。',
           component: 'Input'
         },
         {
@@ -220,6 +224,12 @@ export function supportGuoba () {
           }
         },
         {
+          field: 'groupMerge',
+          label: '群组消息合并',
+          bottomHelpMessage: '开启后，群聊消息将被视为同一对话',
+          component: 'Switch'
+        },
+        {
           field: 'allowOtherMode',
           label: '允许其他模式',
           bottomHelpMessage: '开启后，则允许用户使用#chat1/#chat3/#chatglm/#bing等命令无视全局模式进行聊天',
@@ -323,8 +333,14 @@ export function supportGuoba () {
         {
           field: 'model',
           label: 'OpenAI 模型',
-          bottomHelpMessage: 'gpt-4, gpt-4-0314, gpt-4-32k, gpt-4-32k-0314, gpt-3.5-turbo, gpt-3.5-turbo-0301。默认为gpt-3.5-turbo，gpt-4需账户支持',
+          bottomHelpMessage: 'gpt-4, gpt-4-0613, gpt-4-32k, gpt-4-32k-0613, gpt-3.5-turbo, gpt-3.5-turbo-0613, gpt-3.5-turbo-16k-0613。默认为gpt-3.5-turbo，gpt-4需账户支持',
           component: 'Input'
+        },
+        {
+          field: 'smartMode',
+          label: '智能模式',
+          bottomHelpMessage: '仅建议gpt-4-32k和gpt-3.5-turbo-16k-0613开启，gpt-4-0613也可。开启后机器人可以群管、收发图片、发视频发音乐、联网搜索等。注意较费token。配合开启读取群聊上下文效果更佳',
+          component: 'Switch'
         },
         {
           field: 'openAiBaseUrl',
@@ -462,9 +478,21 @@ export function supportGuoba () {
           component: 'Switch'
         },
         {
+          field: 'bingCaptchaOneShotUrl',
+          label: '必应验证码pass服务',
+          bottomHelpMessage: '必应出验证码会自动用该服务绕过',
+          component: 'Input'
+        },
+        {
           field: 'sydneyMood',
           label: '情感显示',
           bottomHelpMessage: '开启Sydney的情感显示，仅在图片模式下生效',
+          component: 'Switch'
+        },
+        {
+          field: 'sydneyImageRecognition',
+          label: '图片识别',
+          bottomHelpMessage: '开启Sydney的图片识别功能，建议和OCR只保留一个开启',
           component: 'Switch'
         },
         {
@@ -794,6 +822,36 @@ export function supportGuoba () {
           label: 'Live2D模型',
           bottomHelpMessage: '选择Live2D使用的模型',
           component: 'Input'
+        },
+        {
+          field: 'amapKey',
+          label: '高德APIKey',
+          bottomHelpMessage: '用于查询天气',
+          component: 'Input'
+        },
+        {
+          field: 'azSerpKey',
+          label: 'Azure search key',
+          bottomHelpMessage: 'https://www.microsoft.com/en-us/bing/apis/bing-web-search-api',
+          component: 'Input'
+        },
+        {
+          field: 'serpSource',
+          label: '搜索来源，azure需填写key，ikechan8370为作者自备源',
+          component: 'Select',
+          componentProps: {
+            options: [
+              { label: 'Azure', value: 'azure' },
+              { label: 'ikechan8370', value: 'ikechan8370' }
+              // { label: '数据', value: 'buffer' }
+            ]
+          }
+        },
+        {
+          field: 'extraUrl',
+          label: '额外工具url',
+          bottomHelpMessage: '（测试期间提供一个公益接口，一段时间后撤掉）参考搭建：https://github.com/ikechan8370/chatgpt-plugin-extras',
+          component: 'Input'
         }
       ],
       // 获取配置数据方法（用于前端填充显示数据）
@@ -805,6 +863,21 @@ export function supportGuoba () {
         for (let [keyPath, value] of Object.entries(data)) {
           // 处理黑名单
           if (keyPath === 'blockWords' || keyPath === 'promptBlockWords' || keyPath === 'initiativeChatGroups') { value = value.toString().split(/[,，;；\|]/) }
+          if (keyPath === 'blacklist' || keyPath === 'whitelist') {
+            // 6-10位数的群号或qq
+            const regex = /^\^?[1-9]\d{5,9}(\^[1-9]\d{5,9})?$/
+            const inputSet = new Set()
+            value = value.toString().split(/[,，;；|\s]/).reduce((acc, item) => {
+              item = item.trim()
+              if (!inputSet.has(item) && regex.test(item)) {
+                if (item.length <= 11 || (item.length <= 21 && item.length > 11 && !item.startsWith('^'))) {
+                  inputSet.add(item)
+                  acc.push(item)
+                }
+              }
+              return acc
+            }, [])
+          }
           if (Config[keyPath] !== value) { Config[keyPath] = value }
         }
         // 正确储存azureRoleSelect结果

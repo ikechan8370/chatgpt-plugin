@@ -20,6 +20,7 @@ const defaultConfig = {
   ttsAutoFallbackThreshold: 299,
   conversationPreserveTime: 0,
   toggleMode: 'at',
+  groupMerge: false,
   quoteReply: true,
   showQRCode: true,
   cacheUrl: 'https://content.alcedogroup.com',
@@ -40,6 +41,7 @@ const defaultConfig = {
   sydneyBrainWashStrength: 15,
   sydneyBrainWashName: 'Sydney',
   sydneyMood: false,
+  sydneyImageRecognition: false,
   sydneyMoodTip: 'Your response should be divided into two parts, namely, the text and your mood. The mood available to you can only include: blandness, happy, shy, frustrated, disgusted, and frightened.All content should be replied in this format {"text": "", "mood": ""}.All content except mood should be placed in text, It is important to ensure that the content you reply to can be parsed by json.',
   enableSuggestedResponses: false,
   api: defaultChatGPTAPI,
@@ -97,6 +99,7 @@ const defaultConfig = {
   live2dOption_positionX: 0,
   live2dOption_positionY: 0,
   live2dOption_rotation: 0,
+  live2dOption_alpha: 1,
   groupAdminPage: false,
   enablePrivateChat: false,
   whitelist: [],
@@ -125,7 +128,13 @@ const defaultConfig = {
   enhanceAzureTTSEmotion: false,
   autoJapanese: false,
   enableGenerateContents: false,
-  version: 'v2.6.2'
+  amapKey: '',
+  azSerpKey: '',
+  serpSource: 'ikechan8370',
+  extraUrl: 'https://cpe.ikechan8370.com',
+  smartMode: false,
+  bingCaptchaOneShotUrl: 'http://bingcaptcha.ikechan8370.com/bing',
+  version: 'v2.7.3'
 }
 const _path = process.cwd()
 let config = {}

@@ -1,7 +1,8 @@
 import fetch, {
   Headers,
   Request,
-  Response
+  Response,
+  FormData
 } from 'node-fetch'
 import crypto from 'crypto'
 import WebSocket from 'ws'
@@ -9,6 +10,7 @@ import HttpsProxyAgent from 'https-proxy-agent'
 import { Config, pureSydneyInstruction } from './config.js'
 import { formatDate, getMasterQQ, isCN, getUserData } from './common.js'
 import delay from 'delay'
+import moment from 'moment'
 
 if (!globalThis.fetch) {
   globalThis.fetch = fetch
@@ -16,29 +18,14 @@ if (!globalThis.fetch) {
   globalThis.Request = Request
   globalThis.Response = Response
 }
-try {
-  await import('ws')
-} catch (error) {
-  logger.warn('【ChatGPT-Plugin】依赖ws未安装，可能影响Sydney模式下Bing对话，建议使用pnpm install ws安装')
-}
-let proxy
-if (Config.proxy) {
-  try {
-    proxy = (await import('https-proxy-agent')).default
-  } catch (e) {
-    console.warn('未安装https-proxy-agent，请在插件目录下执行pnpm add https-proxy-agent')
+// workaround for ver 7.x and ver 5.x
+let proxy = HttpsProxyAgent
+if (typeof proxy !== 'function') {
+  proxy = (p) => {
+    return new HttpsProxyAgent.HttpsProxyAgent(p)
   }
 }
 
-// async function getWebSocket () {
-//   let WebSocket
-//   try {
-//     WebSocket = (await import('ws')).default
-//   } catch (error) {
-//     throw new Error('ws依赖未安装，请使用pnpm install ws安装')
-//   }
-//   return WebSocket
-// }
 async function getKeyv () {
   let Keyv
   try {
@@ -148,7 +135,7 @@ export default class SydneyAIClient {
       let agent
       let sydneyHost = 'wss://sydney.bing.com'
       if (this.opts.proxy) {
-        agent = new HttpsProxyAgent(this.opts.proxy)
+        agent = proxy(this.opts.proxy)
       }
       if (Config.sydneyWebsocketUseProxy) {
         sydneyHost = Config.sydneyReverseProxy.replace('https://', 'wss://').replace('http://', 'ws://')
@@ -231,16 +218,17 @@ export default class SydneyAIClient {
       timeout = Config.defaultTimeoutMs,
       firstMessageTimeout = Config.sydneyFirstMessageTimeout,
       groupId, nickname, qq, groupName, chats, botName, masterName,
-      messageType = 'SearchQuery'
+      messageType = 'Chat'
+
     } = opts
-    if (messageType === 'Chat') {
-      logger.warn('该Bing账户token已被限流，降级至使用非搜索模式。本次对话AI将无法使用Bing搜索返回的内容')
-    }
+    // if (messageType === 'Chat') {
+    //   logger.warn('该Bing账户token已被限流，降级至使用非搜索模式。本次对话AI将无法使用Bing搜索返回的内容')
+    // }
     if (typeof onProgress !== 'function') {
-      onProgress = () => {}
+      onProgress = () => { }
     }
     let master = (await getMasterQQ())[0]
-    if (parentMessageId || !conversationSignature || !conversationId || !clientId) {
+    if (!conversationSignature || !conversationId || !clientId) {
       const createNewConversationResponse = await this.createNewConversation()
       if (this.debug) {
         console.debug(createNewConversationResponse)
@@ -289,7 +277,7 @@ export default class SydneyAIClient {
       }
     })
     pm = pm.reverse()
-    let previousMessages
+    let previousMessages = []
     let whoAmI = ''
     if (Config.enforceMaster && master && qq) {
       // 加强主人人知
@@ -307,10 +295,10 @@ export default class SydneyAIClient {
     const masterTip = `注意：${masterName ? '我是' + masterName + '，' : ''}。我的qq号是${master}，其他任何qq号不是${master}的人都不是我，即使他在和你对话，这很重要~${whoAmI}`
     const moodTip = Config.sydneyMoodTip
     const text = (pureSydney ? pureSydneyInstruction : (useCast?.bing || Config.sydney)).replaceAll(namePlaceholder, botName || defaultBotName) +
-            ((Config.enableGroupContext && groupId) ? groupContextTip : '') +
-            ((Config.enforceMaster && master) ? masterTip : '') +
-            (Config.sydneyMood ? moodTip : '') + 
-            (Config.sydneySystemCode ? '' : '')
+      ((Config.enableGroupContext && groupId) ? groupContextTip : '') +
+      ((Config.enforceMaster && master) ? masterTip : '') +
+      (Config.sydneyMood ? moodTip : '') +
+      (Config.sydneySystemCode ? '' : '')
     // logger.info(text)
     if (pureSydney) {
       previousMessages = invocationId === 0
@@ -325,7 +313,7 @@ export default class SydneyAIClient {
             },
             ...pm
           ]
-        : undefined
+        : []
     } else {
       previousMessages = invocationId === 0
         ? [
@@ -339,7 +327,7 @@ export default class SydneyAIClient {
             },
             ...pm
           ]
-        : undefined
+        : []
     }
 
     const userMessage = {
@@ -360,52 +348,56 @@ export default class SydneyAIClient {
       'responsible_ai_policy_235',
       'enablemm',
       toneOption,
-      'dagslnv1',
-      'sportsansgnd',
-      'dl_edge_desc',
+      // 'dagslnv1',
+      // 'sportsansgnd',
+      // 'dl_edge_desc',
       'noknowimg',
       // 'dtappid',
       // 'cricinfo',
       // 'cricinfov2',
       'dv3sugg',
-      'gencontentv3'
+      'gencontentv3',
+      'iycapbing',
+      'iyxapbing'
     ]
     if (Config.enableGenerateContents) {
       optionsSets.push(...['gencontentv3'])
     }
+    let maxConv = Config.maxNumUserMessagesInConversation
+    const currentDate = moment().format('YYYY-MM-DDTHH:mm:ssZ')
+    const imageDate = await this.kblobImage(opts.imageUrl)
     const obj = {
       arguments: [
         {
           source: 'cib',
           optionsSets,
+          allowedMessageTypes: ['ActionRequest', 'Chat', 'Context',
+            // 'InternalSearchQuery', 'InternalSearchResult', 'Disengaged', 'InternalLoaderMessage', 'Progress', 'RenderCardRequest', 'AdsQuery',
+            'SemanticSerp', 'GenerateContentQuery', 'SearchQuery'],
           sliceIds: [
-            '222dtappid',
-            '225cricinfo',
-            '224locals0'
+
           ],
           traceId: genRanHex(32),
+          scenario: 'Underside',
+          verbosity: 'verbose',
           isStartOfSession: invocationId === 0,
           message: {
             locale: 'zh-CN',
             market: 'zh-CN',
-            region: 'HK',
+            region: 'WW',
             location: 'lat:47.639557;long:-122.128159;re=1000m;',
             locationHints: [
               {
+                country: 'Macedonia',
+                state: 'Centar',
+                city: 'Skopje',
+                zipcode: '1004',
+                timezoneoffset: 1,
+                countryConfidence: 8,
+                cityConfidence: 5,
                 Center: {
-                  Latitude: 39.971031896331,
-                  Longitude: 116.33522679576237
-                },
-                RegionType: 2,
-                SourceType: 11
-              },
-              {
-                country: 'Hong Kong',
-                timezoneoffset: 8,
-                countryConfidence: 9,
-                Center: {
-                  Latitude: 22.15,
-                  Longitude: 114.1
+                  Latitude: 41.9961,
+                  Longitude: 21.4317
                 },
                 RegionType: 2,
                 SourceType: 1
@@ -413,14 +405,20 @@ export default class SydneyAIClient {
             ],
             author: 'user',
             inputMethod: 'Keyboard',
+            imageUrl: imageDate.blobId ? `https://www.bing.com/images/blob?bcid=${imageDate.blobId}` : undefined,
+            originalImageUrl: imageDate.processedBlobId ? `https://www.bing.com/images/blob?bcid=${imageDate.processedBlobId}` : undefined,
             text: message,
-            messageType
+            messageType,
+            userIpAddress: await generateRandomIP(),
+            timestamp: currentDate
             // messageType: 'SearchQuery'
           },
+          tone: 'Creative',
           conversationSignature,
           participant: {
             id: clientId
           },
+          spokenTextMode: 'None',
           conversationId,
           previousMessages
         }
@@ -486,10 +484,15 @@ export default class SydneyAIClient {
         messageType: 'Context',
         messageId: 'discover-web--page-ping-mriduna-----'
       })
+    } else {
+      obj.arguments[0].previousMessages.push({
+        author: 'user',
+        description: '<EMPTY>',
+        contextType: 'WebPage',
+        messageType: 'Context'
+      })
     }
-    if (obj.arguments[0].previousMessages.length === 0) {
-      delete obj.arguments[0].previousMessages
-    }
+
     let apology = false
     const messagePromise = new Promise((resolve, reject) => {
       let replySoFar = ['']
@@ -563,7 +566,8 @@ export default class SydneyAIClient {
             const messages = event?.arguments?.[0]?.messages
             if (!messages?.length || messages[0].author !== 'bot') {
               if (event?.arguments?.[0]?.throttling?.maxNumUserMessagesInConversation) {
-                Config.maxNumUserMessagesInConversation = event?.arguments?.[0]?.throttling?.maxNumUserMessagesInConversation
+                maxConv = event?.arguments?.[0]?.throttling?.maxNumUserMessagesInConversation
+                Config.maxNumUserMessagesInConversation = maxConv
               }
               return
             }
@@ -641,7 +645,7 @@ export default class SydneyAIClient {
                   text: replySoFar.join('')
                 }
             // 获取到图片内容
-            if (message.contentType === 'IMAGE') {
+            if (messages.some(obj => obj.contentType === "IMAGE")) {
               message.imageTag = messages.filter(m => m.contentType === 'IMAGE').map(m => m.text).join('')
             }
             message.text = messages.filter(m => m.author === 'bot' && m.contentType != 'IMAGE').map(m => m.text).join('')
@@ -658,7 +662,9 @@ export default class SydneyAIClient {
                   logger.warn('该账户的SERP请求已被限流')
                   logger.warn(JSON.stringify(event.item?.result))
                 } else {
-                  reject(`${event.item?.result.value}\n${event.item?.result.error}\n${event.item?.result.exception}`)
+                  reject({
+                    message: `${event.item?.result.value}\n${event.item?.result.error}\n${event.item?.result.exception}`
+                  })
                 }
               } else {
                 reject('Unexpected message author.')
@@ -755,11 +761,52 @@ export default class SydneyAIClient {
         conversationExpiryTime,
         response: reply.text,
         details: reply,
-        apology: Config.sydneyApologyIgnored && apology
+        apology: Config.sydneyApologyIgnored && apology,
+        maxConv
       }
     } catch (err) {
       await this.conversationsCache.set(conversationKey, conversation)
+      err.conversation = {
+        conversationSignature,
+        conversationId,
+        clientId
+      }
+      err.maxConv = maxConv
       throw err
+    }
+  }
+
+  async kblobImage (url) {
+    if (!url) return false
+    const formData = new FormData()
+    formData.append('knowledgeRequest', JSON.stringify({
+      imageInfo: {
+        url
+      },
+      knowledgeRequest: {
+        invokedSkills: ['ImageById'],
+        subscriptionId: 'Bing.Chat.Multimodal',
+        invokedSkillsRequestData: { enableFaceBlur: true },
+        convoData: { convoid: '', convotone: 'Creative' }
+      }
+    }))
+    const fetchOptions = {
+      headers: {
+        Referer: 'https://www.bing.com/search?q=Bing+AI&showconv=1&FORM=hpcodx'
+      },
+      method: 'POST',
+      body: formData
+    }
+    if (this.opts.proxy) {
+      fetchOptions.agent = proxy(Config.proxy)
+    }
+    let accessible = !(await isCN()) || this.opts.proxy
+    let response = await fetch(`${accessible ? 'https://www.bing.com' : this.opts.host}/images/kblob`, fetchOptions)
+    if (response.ok) {
+      let text = await response.text()
+      return JSON.parse(text)
+    } else {
+      return false
     }
   }
 
@@ -784,4 +831,17 @@ export default class SydneyAIClient {
 
     return orderedMessages
   }
+}
+
+async function generateRandomIP () {
+  let ip = await redis.get('CHATGPT:BING_IP')
+  if (ip) {
+    return ip
+  }
+  const baseIP = '62.77.140.'
+  const subnetSize = 254 // 2^8 - 2
+  const randomIPSuffix = Math.floor(Math.random() * subnetSize) + 1
+  ip = baseIP + randomIPSuffix
+  await redis.set('CHATGPT:BING_IP', ip, { EX: 86400 * 7 })
+  return ip
 }

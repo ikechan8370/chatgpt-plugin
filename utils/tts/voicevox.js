@@ -24,6 +24,12 @@ const newFetch = (url, options = {}) => {
   return fetch(url, mergedOptions)
 }
 
+/**
+ * 生成voxTTSMode下的wav音频
+ * @param text
+ * @param options
+ * @returns {Promise<Buffer>}
+ */
 async function generateAudio (text, options = {}) {
   let host = Config.voicevoxSpace
   let speaker = options.speaker || '随机'
