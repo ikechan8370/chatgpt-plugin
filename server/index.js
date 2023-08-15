@@ -187,6 +187,10 @@ export async function createServer() {
   server.post('/page', async (request, reply) => {
     const body = request.body || {}
     if (body.code) {
+      const pattern = /^[a-zA-Z0-9]+$/
+      if (!pattern.test(body.code)) {
+        reply.send({error: 'bad request'})
+      }
       const dir = 'resources/ChatGPTCache/page'
       const filename = body.code + '.json'
       const filepath = path.join(dir, filename)
