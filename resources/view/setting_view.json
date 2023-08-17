@@ -710,9 +710,39 @@
             "tab": "xh",
             "view": [
               {
+                "type": "select",
+                "label": "星火模式",
+                "data": "xhmode",
+                "items": [
+                  {
+                    "label": "通用",
+                    "value": "web"
+                  },
+                  {
+                    "label": "接口",
+                    "value": "api"
+                  }
+                ]
+              },
+              {
                 "type": "password",
                 "label": "星火Cookie",
                 "data": "xinghuoToken"
+              },
+              {
+                "type": "text",
+                "label": "星火AppId",
+                "data": "xhAppId"
+              },
+              {
+                "type": "password",
+                "label": "星火APISecret",
+                "data": "xhAPISecret"
+              },
+              {
+                "type": "password",
+                "label": "星火APIKey",
+                "data": "xhAPIKey"
               }
             ]
           }
