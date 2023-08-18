@@ -39,6 +39,7 @@ import { SlackClaudeClient } from '../utils/slack/slackClient.js'
 import { getPromptByName } from '../utils/prompts.js'
 import BingDrawClient from '../utils/BingDraw.js'
 import XinghuoClient from '../utils/xinghuo/xinghuo.js'
+import Bard from '../utils/bard.js'
 import { JinyanTool } from '../utils/tools/JinyanTool.js'
 import { SendVideoTool } from '../utils/tools/SendBilibiliTool.js'
 import { KickOutTool } from '../utils/tools/KickOutTool.js'
@@ -318,6 +319,11 @@ export class chatgpt extends plugin {
       await e.reply('星火对话已结束')
       return
     }
+    if (use === 'bard') {
+      await redis.del(`CHATGPT:CONVERSATIONS_BARD:${e.sender.user_id}`)
+      await e.reply('Bard对话已结束')
+      return
+    }
     let ats = e.message.filter(m => m.type === 'at')
     const isAtMode = Config.toggleMode === 'at'
     if (isAtMode) ats = ats.filter(item => item.qq !== Bot.uin)
@@ -475,7 +481,18 @@ export class chatgpt extends plugin {
         for (let i = 0; i < cs.length; i++) {
           await redis.del(cs[i])
           if (Config.debug) {
-            logger.info('delete slack conversation of qq: ' + cs[i])
+            logger.info('delete xh conversation of qq: ' + cs[i])
+          }
+          deleted++
+        }
+        break
+      }
+      case 'bard': {
+        let cs = await redis.keys('CHATGPT:CONVERSATIONS_BARD:*')
+        for (let i = 0; i < cs.length; i++) {
+          await redis.del(cs[i])
+          if (Config.debug) {
+            logger.info('delete bard conversation of qq: ' + cs[i])
           }
           deleted++
         }
@@ -1005,6 +1022,10 @@ export class chatgpt extends plugin {
           key = `CHATGPT:CONVERSATIONS_XH:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`
           break
         }
+        case 'bard': {
+          key = `CHATGPT:CONVERSATIONS_BARD:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`
+          break
+        }
       }
       let ctime = new Date()
       previousConversation = (key ? await redis.get(key) : null) || JSON.stringify({
@@ -1038,6 +1059,12 @@ export class chatgpt extends plugin {
         await e.reply([chatMessage.text, segment.image(`base64://${chatMessage.image}`)])
         return false
       }
+      // 处理bard图片
+      if (use === 'bard' && chatMessage?.images) {
+        chatMessage.images.forEach(async element => {
+          await e.reply([element.tag, segment.image(element.url)])
+        })
+      }
       if (use === 'api' && !chatMessage) {
         // 字数超限直接返回
         return false
@@ -1058,6 +1085,11 @@ export class chatgpt extends plugin {
           }
         } else if (chatMessage.id) {
           previousConversation.parentMessageId = chatMessage.id
+        }
+        if (use === 'bard' && !chatMessage.error) {
+          previousConversation.parentMessageId = chatMessage.responseID
+          previousConversation.clientId = chatMessage.choiceID
+          previousConversation.invocationId = chatMessage._reqID
         }
         if (Config.debug) {
           logger.info(chatMessage)
@@ -1647,7 +1679,6 @@ export class chatgpt extends plugin {
                 })
               }
             }
-            console.log(response)
             // 处理内容生成的图片
             if (response.details.imageTag) {
               if (Config.debug) {
@@ -1859,6 +1890,54 @@ export class chatgpt extends plugin {
         })
         let response = await client.sendMessage(prompt, conversation?.conversationId)
         return response
+      }
+      case 'bard': {
+        // 处理cookie
+        const matchesPSID = /__Secure-1PSID=([^;]+)/.exec(Config.bardPsid)
+        const matchesPSIDTS = /__Secure-1PSIDTS=([^;]+)/.exec(Config.bardPsid)
+        const cookie = {
+            '__Secure-1PSID': matchesPSID[1],
+            '__Secure-1PSIDTS': matchesPSIDTS[1]
+        }
+        if (!matchesPSID[1] || !matchesPSIDTS[1]) {
+          throw new Error('未绑定bard')
+        }
+        // 处理图片
+        const image = await getImg(e)
+        let imageBuff
+        if (image) {
+          try {
+            let imgResponse = await fetch(image[0])
+            if (imgResponse.ok) {
+              imageBuff = await imgResponse.arrayBuffer()
+            }
+          } catch (error) {
+            logger.warn(`错误的图片链接${image[0]}`)
+          }
+        }
+        // 发送数据
+        let bot = new Bard(cookie,{
+          fetch: fetch,
+          bardURL: Config.bardForceUseReverse ? Config.bardReverseProxy : 'https://bard.google.com'
+        })
+        let chat = await bot.createChat(conversation?.conversationId ? {
+          conversationID: conversation.conversationId,
+          responseID: conversation.parentMessageId,
+          choiceID: conversation.clientId,
+          _reqID: conversation.invocationId
+        }: {})
+        let response = await chat.ask(prompt, {
+          image: imageBuff,
+          format: Bard.JSON
+        })
+        return {
+          conversationId: response.ids.conversationID,
+          responseID: response.ids.responseID,
+          choiceID: response.ids.choiceID,
+          _reqID: response.ids._reqID,
+          text: response.content,
+          images: response.images
+        }
       }
       default: {
         let completionParams = {}

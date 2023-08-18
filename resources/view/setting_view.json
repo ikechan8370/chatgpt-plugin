@@ -82,6 +82,10 @@
             "value": "xh"
           },
           {
+            "label": "Bard",
+            "value": "bard"
+          },
+          {
             "label": "浏览器",
             "value": "browser"
           }
@@ -766,6 +770,27 @@
                 "label": "设定",
                 "placeholder": "若开启序列化，请传入json数据，例如[{ \"role\": \"user\", \"content\": \"现在是10点\" },{ \"role\": \"assistant\", \"content\": \"了解，现在10点了\" }]",
                 "data": "xhPrompt"
+              }
+            ]
+          },
+          {
+            "title": "Bard",
+            "tab": "bard",
+            "view": [
+              {
+                "type": "password",
+                "label": "BardCookie",
+                "data": "bardPsid"
+              },
+              {
+                "type": "url",
+                "label": "Bard反代地址",
+                "data": "bardReverseProxy"
+              },
+              {
+                "type": "check",
+                "label": "使用Bard反代",
+                "data": "bardForceUseReverse"
               }
             ]
           }
