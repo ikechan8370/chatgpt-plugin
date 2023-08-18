@@ -54,10 +54,14 @@ export default class XinghuoClient {
     if (!crypto) return false
     const APISecret = Config.xhAPISecret
     const APIKey = Config.xhAPIKey
+    let APILink = '/v1.1/chat'
+    if (Config.xhmode == 'apiv2') {
+      APILink = '/v2.1/chat'
+    }
     const date = new Date().toGMTString()
     const algorithm = 'hmac-sha256'
     const headers = 'host date request-line'
-    const signatureOrigin = `host: spark-api.xf-yun.com\ndate: ${date}\nGET /v1.1/chat HTTP/1.1`
+    const signatureOrigin = `host: spark-api.xf-yun.com\ndate: ${date}\nGET ${APILink} HTTP/1.1`
     const hmac = crypto.createHmac('sha256', APISecret)
     hmac.update(signatureOrigin)
     const signature = hmac.digest('base64')
@@ -68,11 +72,7 @@ export default class XinghuoClient {
       date: date,
       host: "spark-api.xf-yun.com"
     }
-    let APILink = 'spark-api.xf-yun.com/v1.1/chat'
-    if (Config.xhmode == 'apiv2') {
-      APILink = 'spark-api.xf-yun.com/v2.1/chat'
-    }
-    const url = `wss://${APILink}?${Object.keys(v).map(key => `${key}=${v[key]}`).join('&')}`
+    const url = `wss://spark-api.xf-yun.com${APILink}?${Object.keys(v).map(key => `${key}=${v[key]}`).join('&')}`
     return url
   }
 
