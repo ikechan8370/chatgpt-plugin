@@ -20,7 +20,7 @@ try {
 } catch (err) {
   logger.warn('未安装crypto，无法使用星火api模式')
 }
-async function getKeyv () {
+async function getKeyv() {
   let Keyv
   try {
     Keyv = (await import('keyv')).default
@@ -41,7 +41,7 @@ export default class XinghuoClient {
     }
   }
 
-  async initCache () {
+  async initCache() {
     if (!this.conversationsCache) {
       const cacheOptions = this.cache || {}
       cacheOptions.namespace = cacheOptions.namespace || 'xh'
@@ -68,7 +68,11 @@ export default class XinghuoClient {
       date: date,
       host: "spark-api.xf-yun.com"
     }
-    const url = "wss://spark-api.xf-yun.com/v1.1/chat?" + Object.keys(v).map(key => `${key}=${v[key]}`).join('&')
+    let APILink = 'spark-api.xf-yun.com/v1.1/chat'
+    if (Config.xhmode == 'apiv2') {
+      APILink = 'spark-api.xf-yun.com/v2.1/chat'
+    }
+    const url = `wss://${APILink}?${Object.keys(v).map(key => `${key}=${v[key]}`).join('&')}`
     return url
   }
 
@@ -78,7 +82,7 @@ export default class XinghuoClient {
     }
     if (!chatId) chatId = (Math.floor(Math.random() * 1000000) + 100000).toString()
     if (!Config.xhAppId || !Config.xhAPISecret || !Config.xhAPIKey) throw new Error('未配置api')
-    if (Config.xhmode == 'api') {
+    if (Config.xhmode == 'api' || Config.xhmode == 'apiv2') {
       await this.initCache()
       const conversationKey = `ChatXH_${chatId}`
       const conversation = (await this.conversationsCache.get(conversationKey)) || {
@@ -90,7 +94,7 @@ export default class XinghuoClient {
       let Prompt = []
       if (Config.xhPromptSerialize) {
         try {
-          Prompt  = JSON.parse(Config.xhPrompt)
+          Prompt = JSON.parse(Config.xhPrompt)
         } catch (error) {
           Prompt = []
           logger.warn('星火设定序列化失败,本次对话不附带设定')
@@ -105,7 +109,7 @@ export default class XinghuoClient {
         },
         parameter: {
           chat: {
-            domain: "general",
+            domain: Config.xhmode == 'api' ? "general" : "generalv2",
             temperature: Config.xhTemperature, // 核采样阈值
             max_tokens: Config.xhMaxTokens, // tokens最大长度
             chat_id: chatId
@@ -134,7 +138,7 @@ export default class XinghuoClient {
           try {
             const messageData = JSON.parse(message)
             if (messageData.header.code != 0) {
-              reject(`接口发生错误：${messageData.header.message}`)
+              reject(`接口发生错误：Error Code ${messageData.header.code} 请前往https://www.xfyun.cn/document/error-code查询错误原因`)
             }
             if (messageData.header.status == 0 || messageData.header.status == 1) {
               resMessage += messageData.payload.choices.text[0].content
@@ -151,8 +155,8 @@ export default class XinghuoClient {
               })
               await this.conversationsCache.set(conversationKey, conversation)
               resolve({
-                  response: resMessage
-                })
+                response: resMessage
+              })
             }
           } catch (error) {
             reject(new Error(error))

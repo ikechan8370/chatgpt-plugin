@@ -719,12 +719,16 @@
                 "data": "xhmode",
                 "items": [
                   {
-                    "label": "通用",
+                    "label": "体验版",
                     "value": "web"
                   },
                   {
-                    "label": "接口",
+                    "label": "讯飞星火认知大模型V1.5",
                     "value": "api"
+                  },
+                  {
+                    "label": "讯飞星火认知大模型V2.0",
+                    "value": "apiv2"
                   }
                 ]
               },
