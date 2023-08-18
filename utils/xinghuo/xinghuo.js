@@ -121,6 +121,9 @@ export default class XinghuoClient {
           }
         }
       }
+      if (Config.debug) {
+        logger.info(wsSendData.payload.message.text)
+      }
       let requestP = new Promise((resolve, reject) => {
         const socket = new WebSocket(wsUrl)
         let resMessage = ''
