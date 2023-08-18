@@ -711,7 +711,7 @@
             "view": [
               {
                 "type": "select",
-                "label": "星火模式",
+                "label": "模式",
                 "data": "xhmode",
                 "items": [
                   {
@@ -726,23 +726,46 @@
               },
               {
                 "type": "password",
-                "label": "星火Cookie",
+                "label": "Cookie",
                 "data": "xinghuoToken"
               },
               {
                 "type": "text",
-                "label": "星火AppId",
+                "label": "AppId",
                 "data": "xhAppId"
               },
               {
                 "type": "password",
-                "label": "星火APISecret",
+                "label": "APISecret",
                 "data": "xhAPISecret"
               },
               {
                 "type": "password",
                 "label": "星火APIKey",
                 "data": "xhAPIKey"
+              },
+              {
+                "type": "number",
+                "label": "核采样阈值",
+                "placeholder": "核采样阈值。用于决定结果随机性，取值越高随机性越强即相同的问题得到的不同答案的可能性越高",
+                "data": "xhTemperature"
+              },
+              {
+                "type": "number",
+                "label": "最大Token",
+                "placeholder": "模型回答的tokens的最大长度",
+                "data": "xhMaxTokens"
+              },
+              {
+                "type": "check",
+                "label": "序列化设定",
+                "data": "xhPromptSerialize"
+              },
+              {
+                "type": "textarea",
+                "label": "设定",
+                "placeholder": "若开启序列化，请传入json数据，例如[{ \"role\": \"user\", \"content\": \"现在是10点\" },{ \"role\": \"assistant\", \"content\": \"了解，现在10点了\" }]",
+                "data": "xhPrompt"
               }
             ]
           }

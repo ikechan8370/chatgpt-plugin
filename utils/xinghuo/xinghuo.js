@@ -87,6 +87,17 @@ export default class XinghuoClient {
       }
       const wsUrl = await this.getWsUrl()
       if (!wsUrl) throw new Error('缺少依赖：crypto。请安装依赖后重试')
+      let Prompt = []
+      if (Config.xhPromptSerialize) {
+        try {
+          Prompt  = JSON.parse(Config.xhPrompt)
+        } catch (error) {
+          Prompt = []
+          logger.warn('星火设定序列化失败,本次对话不附带设定')
+        }
+      } else {
+        Prompt = [{ "role": "user", "content": Config.xhPrompt }]
+      }
       const wsSendData = {
         header: {
           app_id: Config.xhAppId,
@@ -95,13 +106,15 @@ export default class XinghuoClient {
         parameter: {
           chat: {
             domain: "general",
-            temperature: 0.5, // 核采样阈值
-            max_tokens: 1024 // tokens最大长度
+            temperature: Config.xhTemperature, // 核采样阈值
+            max_tokens: Config.xhMaxTokens, // tokens最大长度
+            chat_id: chatId
           }
         },
         payload: {
           message: {
             "text": [
+              ...Prompt,
               ...conversation.messages,
               { "role": "user", "content": prompt }
             ]
