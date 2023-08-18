@@ -1845,12 +1845,17 @@ export class chatgpt extends plugin {
         }
       }
       case 'xh': {
+        const cacheOptions = {
+          namespace: 'xh',
+          store: new KeyvFile({ filename: 'cache.json' })
+        }
         const ssoSessionId = Config.xinghuoToken
         if (!ssoSessionId) {
           throw new Error('未绑定星火token，请使用#chatgpt设置星火token命令绑定token。（获取对话页面的ssoSessionId cookie值）')
         }
         let client = new XinghuoClient({
-          ssoSessionId
+          ssoSessionId,
+          cache: cacheOptions
         })
         let response = await client.sendMessage(prompt, conversation?.conversationId)
         return response

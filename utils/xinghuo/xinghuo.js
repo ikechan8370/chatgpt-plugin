@@ -20,14 +20,33 @@ try {
 } catch (err) {
   logger.warn('未安装crypto，无法使用星火api模式')
 }
+async function getKeyv () {
+  let Keyv
+  try {
+    Keyv = (await import('keyv')).default
+  } catch (error) {
+    throw new Error('keyv依赖未安装，请使用pnpm install keyv安装')
+  }
+  return Keyv
+}
 export default class XinghuoClient {
   constructor(opts) {
+    this.cache = opts.cache
     this.ssoSessionId = opts.ssoSessionId
     this.headers = {
       Referer: referer,
       Cookie: 'ssoSessionId=' + this.ssoSessionId + ';',
       'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/113.0.5672.69 Mobile/15E148 Safari/604.1',
       Origin: origin
+    }
+  }
+
+  async initCache () {
+    if (!this.conversationsCache) {
+      const cacheOptions = this.cache || {}
+      cacheOptions.namespace = cacheOptions.namespace || 'xh'
+      let Keyv = await getKeyv()
+      this.conversationsCache = new Keyv(cacheOptions)
     }
   }
 
@@ -57,9 +76,15 @@ export default class XinghuoClient {
     if (!FormData) {
       throw new Error('缺少依赖：form-data。请安装依赖后重试')
     }
+    if (!chatId) chatId = (Math.floor(Math.random() * 1000000) + 100000).toString()
+    if (!Config.xhAppId || !Config.xhAPISecret || !Config.xhAPIKey) throw new Error('未配置api')
     if (Config.xhmode == 'api') {
-      if (!chatId) chatId = (Math.floor(Math.random() * 1000000) + 100000).toString()
-      if (!Config.xhAppId || !Config.xhAPISecret || !Config.xhAPIKey) throw new Error('未配置api')
+      await this.initCache()
+      const conversationKey = `ChatXH_${chatId}`
+      const conversation = (await this.conversationsCache.get(conversationKey)) || {
+        messages: [],
+        createdAt: Date.now()
+      }
       const wsUrl = await this.getWsUrl()
       if (!wsUrl) throw new Error('缺少依赖：crypto。请安装依赖后重试')
       const wsSendData = {
@@ -77,8 +102,7 @@ export default class XinghuoClient {
         payload: {
           message: {
             "text": [
-              // { "role": "user", "content": "你是谁" },
-              // { "role": "assistant", "content": "我是星火" },
+              ...conversation.messages,
               { "role": "user", "content": prompt }
             ]
           }
@@ -86,22 +110,33 @@ export default class XinghuoClient {
       }
       let requestP = new Promise((resolve, reject) => {
         const socket = new WebSocket(wsUrl)
+        let resMessage = ''
         socket.on('open', () => {
           socket.send(JSON.stringify(wsSendData))
         })
-        socket.on('message', (message) => {
+        socket.on('message', async (message) => {
           try {
             const messageData = JSON.parse(message)
             if (messageData.header.code != 0) {
               reject(`接口发生错误：${messageData.header.message}`)
             }
+            if (messageData.header.status == 0 || messageData.header.status == 1) {
+              resMessage += messageData.payload.choices.text[0].content
+            }
             if (messageData.header.status == 2) {
-              resolve(
-                {
-                  error: null,
-                  response: messageData.payload.choices.text[0].content
-                }
-              )
+              resMessage += messageData.payload.choices.text[0].content
+              conversation.messages.push({
+                role: 'user',
+                content: prompt
+              })
+              conversation.messages.push({
+                role: 'assistant',
+                content: resMessage
+              })
+              await this.conversationsCache.set(conversationKey, conversation)
+              resolve({
+                  response: resMessage
+                })
             }
           } catch (error) {
             reject(new Error(error))
