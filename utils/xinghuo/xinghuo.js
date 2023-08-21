@@ -41,6 +41,39 @@ export default class XinghuoClient {
     }
   }
 
+  apiErrorInfo(code) {
+    switch (code) {
+      case 10000: return '升级为ws出现错误'
+      case 10001: return '通过ws读取用户的消息出错'
+      case 10002: return '通过ws向用户发送消息 错'
+      case 10003: return '用户的消息格式有错误'
+      case 10004: return '用户数据的schema错误'
+      case 10005: return '用户参数值有错误'
+      case 10006: return '用户并发错误：当前用户已连接，同一用户不能多处同时连接。'
+      case 10007: return '用户流量受限：服务正在处理用户当前的问题，需等待处理完成后再发送新的请求。（必须要等大模型完全回复之后，才能发送下一个问题）'
+      case 10008: return '服务容量不足，联系工作人员'
+      case 10009: return '和引擎建立连接失败'
+      case 10010: return '接收引擎数据的错误'
+      case 10011: return '发送数据给引擎的错误'
+      case 10012: return '引擎内部错误'
+      case 10013: return '输入内容审核不通过，涉嫌违规，请重新调整输入内容'
+      case 10014: return '输出内容涉及敏感信息，审核不通过，后续结果无法展示给用户'
+      case 10015: return 'appid在黑名单中'
+      case 10016: return 'appid授权类的错误。比如：未开通此功能，未开通对应版本，token不足，并发超过授权 等等'
+      case 10017: return '清除历史失败'
+      case 10019: return '表示本次会话内容有涉及违规信息的倾向；建议开发者收到此错误码后给用户一个输入涉及违规的提示'
+      case 10110: return '服务忙，请稍后再试'
+      case 10163: return '请求引擎的参数异常 引擎的schema 检查不通过'
+      case 10222: return '引擎网络异常'
+      case 10907: return 'token数量超过上限。对话历史+问题的字数太多，需要精简输入'
+      case 11200: return '授权错误：该appId没有相关功能的授权 或者 业务量超过限制'
+      case 11201: return '授权错误：日流控超限。超过当日最大访问量的限制'
+      case 11202: return '授权错误：秒级流控超限。秒级并发超过授权路数限制'
+      case 11203: return '授权错误：并发流控超限。并发路数超过授权路数限制'
+      default: return '无效错误代码'
+    }
+  }
+
   async initCache() {
     if (!this.conversationsCache) {
       const cacheOptions = this.cache || {}
@@ -76,22 +109,188 @@ export default class XinghuoClient {
     return url
   }
 
-  async sendMessage(prompt, chatId) {
+  async apiMessage(prompt, chatId, ePrompt = []) {
+    if (!chatId) chatId = (Math.floor(Math.random() * 1000000) + 100000).toString()
+
+    //  初始化缓存
+    await this.initCache()
+    const conversationKey = `ChatXH_${chatId}`
+    const conversation = (await this.conversationsCache.get(conversationKey)) || {
+      messages: [],
+      createdAt: Date.now()
+    }
+
+    // 获取ws链接
+    const wsUrl = await this.getWsUrl()
+    if (!wsUrl) throw new Error('缺少依赖：crypto。请安装依赖后重试')
+
+    // 编写消息内容
+    const wsSendData = {
+      header: {
+        app_id: Config.xhAppId,
+        uid: chatId
+      },
+      parameter: {
+        chat: {
+          domain: Config.xhmode == 'api' ? "general" : "generalv2",
+          temperature: Config.xhTemperature, // 核采样阈值
+          max_tokens: Config.xhMaxTokens, // tokens最大长度
+          chat_id: chatId
+        }
+      },
+      payload: {
+        message: {
+          "text": [
+            ...ePrompt,
+            ...conversation.messages,
+            { "role": "user", "content": prompt }
+          ]
+        }
+      }
+    }
+    if (Config.debug) {
+      logger.info(wsSendData.payload.message.text)
+    }
+
+    return new Promise((resolve, reject) => {
+      const socket = new WebSocket(wsUrl)
+      let resMessage = ''
+      socket.on('open', () => {
+        socket.send(JSON.stringify(wsSendData))
+      })
+      socket.on('message', async (message) => {
+        try {
+          const messageData = JSON.parse(message)
+          if (messageData.header.code != 0) {
+            reject(`接口发生错误：Error Code ${messageData.header.code} ,${this.apiErrorInfo(messageData.header.code)}`)
+          }
+          if (messageData.header.status == 0 || messageData.header.status == 1) {
+            resMessage += messageData.payload.choices.text[0].content
+          }
+          if (messageData.header.status == 2) {
+            resMessage += messageData.payload.choices.text[0].content
+            conversation.messages.push({
+              role: 'user',
+              content: prompt
+            })
+            conversation.messages.push({
+              role: 'assistant',
+              content: resMessage
+            })
+            // 超过规定token去除一半曾经的对话记录
+            if (messageData.payload.usage.text.total_tokens >= Config.xhMaxTokens) {
+              const half = Math.floor(conversation.messages.length / 2)
+              conversation.messages.splice(0, half)
+            }
+            await this.conversationsCache.set(conversationKey, conversation)
+            resolve(resMessage)
+          }
+        } catch (error) {
+          reject(new Error(error))
+        }
+      })
+      socket.on('error', (error) => {
+        reject(error)
+      })
+    })
+  }
+
+  async webMessage(prompt, chatId, botId) {
     if (!FormData) {
       throw new Error('缺少依赖：form-data。请安装依赖后重试')
     }
-    if (!chatId) chatId = (Math.floor(Math.random() * 1000000) + 100000).toString()
-    if (!Config.xhAppId || !Config.xhAPISecret || !Config.xhAPIKey) throw new Error('未配置api')
-    if (Config.xhmode == 'api' || Config.xhmode == 'apiv2') {
-      await this.initCache()
-      const conversationKey = `ChatXH_${chatId}`
-      const conversation = (await this.conversationsCache.get(conversationKey)) || {
-        messages: [],
-        createdAt: Date.now()
+    return new Promise((resolve, reject) => {
+      let formData = new FormData()
+      formData.setBoundary('----WebKitFormBoundarycATE2QFHDn9ffeWF')
+      formData.append('clientType', '2')
+      formData.append('chatId', chatId)
+      formData.append('text', prompt)
+      if (botId) {
+        formData.append('isBot', '1')
+        formData.append('botId', botId)
       }
-      const wsUrl = await this.getWsUrl()
-      if (!wsUrl) throw new Error('缺少依赖：crypto。请安装依赖后重试')
+      let randomNumber = Math.floor(Math.random() * 1000)
+      let fd = '439' + randomNumber.toString().padStart(3, '0')
+      formData.append('fd', fd)
+      this.headers.Referer = referer + chatId
+      let option = {
+        method: 'POST',
+        headers: Object.assign(this.headers, {
+          Accept: 'text/event-stream',
+          'Content-Type': 'multipart/form-data; boundary=----WebKitFormBoundarycATE2QFHDn9ffeWF'
+        }),
+        // body: formData,
+        referrer: this.headers.Referer
+      }
+      let statusCode
+      const req = https.request(chatUrl, option, (res) => {
+        statusCode = res.statusCode
+        if (statusCode !== 200) {
+          logger.error('星火statusCode：' + statusCode)
+        }
+        let response = ''
+        function onMessage(data) {
+          // console.log(data)
+          if (data === '<end>') {
+            return resolve({
+              error: null,
+              response
+            })
+          }
+          try {
+            if (data) {
+              response += atob(data.trim())
+              if (Config.debug) {
+                logger.info(response)
+              }
+            }
+          } catch (err) {
+            console.warn('fetchSSE onMessage unexpected error', err)
+            reject(err)
+          }
+        }
+
+        const parser = createParser((event) => {
+          if (event.type === 'event') {
+            onMessage(event.data)
+          }
+        })
+        const errBody = []
+        res.on('data', (chunk) => {
+          if (statusCode === 200) {
+            let str = chunk.toString()
+            parser.feed(str)
+          }
+          errBody.push(chunk)
+        })
+
+        // const body = []
+        // res.on('data', (chunk) => body.push(chunk))
+        res.on('end', () => {
+          const resString = Buffer.concat(errBody).toString()
+          // logger.info({ resString })
+          reject(resString)
+        })
+      })
+      formData.pipe(req)
+      req.on('error', (err) => {
+        logger.error(err)
+        reject(err)
+      })
+      req.on('timeout', () => {
+        req.destroy()
+        reject(new Error('Request time out'))
+      })
+      // req.write(formData.stringify())
+      req.end()
+    })
+  }
+
+  async sendMessage(prompt, chatId) {
+    if (Config.xhmode == 'api' || Config.xhmode == 'apiv2') {
+      if (!Config.xhAppId || !Config.xhAPISecret || !Config.xhAPIKey) throw new Error('未配置api')
       let Prompt = []
+      // 设定
       if (Config.xhPromptSerialize) {
         try {
           Prompt = JSON.parse(Config.xhPrompt)
@@ -102,177 +301,45 @@ export default class XinghuoClient {
       } else {
         Prompt = [{ "role": "user", "content": Config.xhPrompt }]
       }
-      const wsSendData = {
-        header: {
-          app_id: Config.xhAppId,
-          uid: chatId
-        },
-        parameter: {
-          chat: {
-            domain: Config.xhmode == 'api' ? "general" : "generalv2",
-            temperature: Config.xhTemperature, // 核采样阈值
-            max_tokens: Config.xhMaxTokens, // tokens最大长度
-            chat_id: chatId
-          }
-        },
-        payload: {
-          message: {
-            "text": [
-              ...Prompt,
-              ...conversation.messages,
-              { "role": "user", "content": prompt }
-            ]
-          }
-        }
-      }
-      if (Config.debug) {
-        logger.info(wsSendData.payload.message.text)
-      }
-      let requestP = new Promise((resolve, reject) => {
-        const socket = new WebSocket(wsUrl)
-        let resMessage = ''
-        socket.on('open', () => {
-          socket.send(JSON.stringify(wsSendData))
-        })
-        socket.on('message', async (message) => {
-          try {
-            const messageData = JSON.parse(message)
-            if (messageData.header.code != 0) {
-              reject(`接口发生错误：Error Code ${messageData.header.code} 请前往https://www.xfyun.cn/document/error-code查询错误原因`)
-            }
-            if (messageData.header.status == 0 || messageData.header.status == 1) {
-              resMessage += messageData.payload.choices.text[0].content
-            }
-            if (messageData.header.status == 2) {
-              resMessage += messageData.payload.choices.text[0].content
-              conversation.messages.push({
-                role: 'user',
-                content: prompt
-              })
-              conversation.messages.push({
-                role: 'assistant',
-                content: resMessage
-              })
-              await this.conversationsCache.set(conversationKey, conversation)
-              resolve({
-                response: resMessage
-              })
-            }
-          } catch (error) {
-            reject(new Error(error))
-          }
-        })
-        socket.on('error', (error) => {
-          reject(error)
-        })
-      })
-      const { response } = await requestP
-      return {
-        conversationId: chatId, // chatId
-        text: response
-      }
-    } else {
-      if (!chatId) {
-        chatId = (await this.createChatList()).chatListId
-      }
-      let requestP = new Promise((resolve, reject) => {
-        let formData = new FormData()
-        formData.setBoundary('----WebKitFormBoundarycATE2QFHDn9ffeWF')
-        formData.append('clientType', '2')
-        formData.append('chatId', chatId)
-        formData.append('text', prompt)
-        let randomNumber = Math.floor(Math.random() * 1000)
-        let fd = '439' + randomNumber.toString().padStart(3, '0')
-        formData.append('fd', fd)
-        this.headers.Referer = referer + chatId
-        let option = {
-          method: 'POST',
-          headers: Object.assign(this.headers, {
-            Accept: 'text/event-stream',
-            'Content-Type': 'multipart/form-data; boundary=----WebKitFormBoundarycATE2QFHDn9ffeWF'
-          }),
-          // body: formData,
-          referrer: this.headers.Referer
-        }
-        let statusCode
-        const req = https.request(chatUrl, option, (res) => {
-          statusCode = res.statusCode
-          if (statusCode !== 200) {
-            logger.error('星火statusCode：' + statusCode)
-          }
-          let response = ''
-          function onMessage(data) {
-            // console.log(data)
-            if (data === '<end>') {
-              return resolve({
-                error: null,
-                response
-              })
-            }
-            try {
-              if (data) {
-                response += atob(data.trim())
-                if (Config.debug) {
-                  logger.info(response)
-                }
-              }
-            } catch (err) {
-              console.warn('fetchSSE onMessage unexpected error', err)
-              reject(err)
-            }
-          }
-
-          const parser = createParser((event) => {
-            if (event.type === 'event') {
-              onMessage(event.data)
-            }
-          })
-          const errBody = []
-          res.on('data', (chunk) => {
-            if (statusCode === 200) {
-              let str = chunk.toString()
-              parser.feed(str)
-            }
-            errBody.push(chunk)
-          })
-
-          // const body = []
-          // res.on('data', (chunk) => body.push(chunk))
-          res.on('end', () => {
-            const resString = Buffer.concat(errBody).toString()
-            // logger.info({ resString })
-            reject(resString)
-          })
-        })
-        formData.pipe(req)
-        req.on('error', (err) => {
-          logger.error(err)
-          reject(err)
-        })
-        req.on('timeout', () => {
-          req.destroy()
-          reject(new Error('Request time out'))
-        })
-        // req.write(formData.stringify())
-        req.end()
-      })
-      const { response } = await requestP
-      // logger.info(response)
-      // let responseText = atob(response)
+      const response = await this.apiMessage(prompt, chatId, Prompt)
       return {
         conversationId: chatId,
         text: response
       }
+    } else if (Config.xhmode == 'web') {
+      let botId = false
+      if (chatId && typeof chatId === 'object') {
+        chatId = chatId.chatid
+        botId = chatId.botid
+      }
+      if (!chatId) {
+        chatId = (await this.createChatList()).chatListId
+      }
+      const { response } = await this.webMessage(prompt, chatId, botId)
+      // logger.info(response)
+      // let responseText = atob(response)
+      if (botId) {
+        chatId = {
+          chatid: chatId,
+          botid: botId
+        }
+      }
+      return {
+        conversationId: chatId,
+        text: response
+      }
+    } else {
+      throw new Error('星火模式错误')
     }
   }
 
-  async createChatList() {
+  async createChatList(bot = false) {
     let createChatListRes = await fetch(createChatUrl, {
       method: 'POST',
       headers: Object.assign(this.headers, {
         'Content-Type': 'application/json'
       }),
-      body: '{}'
+      body: bot ? `{"botId": ${bot}}` : '{}'
     })
     if (createChatListRes.status !== 200) {
       let errorRes = await createChatListRes.text()
@@ -284,8 +351,8 @@ export default class XinghuoClient {
     if (createChatListRes.data?.id) {
       logger.info('星火对话创建成功：' + createChatListRes.data.id)
     } else {
-      logger.error('星火对话创建成功: ' + JSON.stringify(createChatListRes))
-      throw new Error('星火对话创建成功:' + JSON.stringify(createChatListRes))
+      logger.error('星火对话创建失败: ' + JSON.stringify(createChatListRes))
+      throw new Error('星火对话创建失败:' + JSON.stringify(createChatListRes))
     }
     return {
       chatListId: createChatListRes.data?.id,

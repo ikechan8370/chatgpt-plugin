@@ -163,6 +163,14 @@ export class chatgpt extends plugin {
           fnc: 'xh'
         },
         {
+          reg: '^#星火助手',
+          fnc: 'newxhBotConversation'
+        },
+        {
+          reg: '^#星火(搜索|查找)助手',
+          fnc: 'searchxhBot'
+        },
+        {
           /** 命令正则匹配 */
           reg: toggleMode === 'at' ? '^[^#][sS]*' : '^#chat[^gpt][sS]*',
           /** 执行方法 */
@@ -249,7 +257,7 @@ export class chatgpt extends plugin {
    * @param e
    * @returns {Promise<boolean>}
    */
-  async bingCaptcha (e) {
+  async bingCaptcha(e) {
     let bingTokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
     if (!bingTokens) {
       await e.reply('尚未绑定必应token:必应过码必须绑定token')
@@ -1123,9 +1131,9 @@ export class chatgpt extends plugin {
             response.length / 2 < endIndex
               ? [response.substring(startIndex), response.substring(0, startIndex)]
               : [
-                  response.substring(0, endIndex + 1),
-                  response.substring(endIndex + 1)
-                ]
+                response.substring(0, endIndex + 1),
+                response.substring(endIndex + 1)
+              ]
           const match = ttsArr[0].match(emotionReg)
           response = ttsArr[1].replace(/\n/, '').trim()
           if (match) {
@@ -1745,23 +1753,23 @@ export class chatgpt extends plugin {
                 bingTokens[badBingToken].State = '受限'
                 bingTokens[badBingToken].DisactivationTime = now
                 await redis.set('CHATGPT:BING_TOKENS', JSON.stringify(bingTokens))
-              // 不减次数
+                // 不减次数
               } else if (message && typeof message === 'string' && message.indexOf('UnauthorizedRequest') > -1) {
-              // token过期了
-              // let bingTokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
-              // const badBingToken = bingTokens.findIndex(element => element.Token === bingToken)
-              // // 可能是微软抽风，给三次机会
-              // if (bingTokens[badBingToken].exception) {
-              //   if (bingTokens[badBingToken].exception <= 3) {
-              //     bingTokens[badBingToken].exception += 1
-              //   } else {
-              //     bingTokens[badBingToken].exception = 0
-              //     bingTokens[badBingToken].State = '过期'
-              //   }
-              // } else {
-              //   bingTokens[badBingToken].exception = 1
-              // }
-              // await redis.set('CHATGPT:BING_TOKENS', JSON.stringify(bingTokens))
+                // token过期了
+                // let bingTokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
+                // const badBingToken = bingTokens.findIndex(element => element.Token === bingToken)
+                // // 可能是微软抽风，给三次机会
+                // if (bingTokens[badBingToken].exception) {
+                //   if (bingTokens[badBingToken].exception <= 3) {
+                //     bingTokens[badBingToken].exception += 1
+                //   } else {
+                //     bingTokens[badBingToken].exception = 0
+                //     bingTokens[badBingToken].State = '过期'
+                //   }
+                // } else {
+                //   bingTokens[badBingToken].exception = 1
+                // }
+                // await redis.set('CHATGPT:BING_TOKENS', JSON.stringify(bingTokens))
                 logger.warn(`token${bingToken}疑似不存在或已过期，再试试`)
                 retry = retry - 0.1
               } else {
@@ -1896,8 +1904,8 @@ export class chatgpt extends plugin {
         const matchesPSID = /__Secure-1PSID=([^;]+)/.exec(Config.bardPsid)
         const matchesPSIDTS = /__Secure-1PSIDTS=([^;]+)/.exec(Config.bardPsid)
         const cookie = {
-            '__Secure-1PSID': matchesPSID[1],
-            '__Secure-1PSIDTS': matchesPSIDTS[1]
+          '__Secure-1PSID': matchesPSID[1],
+          '__Secure-1PSIDTS': matchesPSIDTS[1]
         }
         if (!matchesPSID[1] || !matchesPSIDTS[1]) {
           throw new Error('未绑定bard')
@@ -1916,7 +1924,7 @@ export class chatgpt extends plugin {
           }
         }
         // 发送数据
-        let bot = new Bard(cookie,{
+        let bot = new Bard(cookie, {
           fetch: fetch,
           bardURL: Config.bardForceUseReverse ? Config.bardReverseProxy : 'https://bard.google.com'
         })
@@ -1925,7 +1933,7 @@ export class chatgpt extends plugin {
           responseID: conversation.parentMessageId,
           choiceID: conversation.clientId,
           _reqID: conversation.invocationId
-        }: {})
+        } : {})
         let response = await chat.ask(prompt, {
           image: imageBuff,
           format: Bard.JSON
@@ -2290,6 +2298,105 @@ export class chatgpt extends plugin {
     return true
   }
 
+  async newxhBotConversation(e) {
+    let botId = e.msg.replace(/^#星火助手/, '').trim()
+    if (Config.xhmode != 'web') {
+      await e.reply('星火助手仅支持体验版使用', true)
+      return true
+    }
+    if (!botId) {
+      await e.reply('无效助手id', true)
+    } else {
+      const ssoSessionId = Config.xinghuoToken
+      if (!ssoSessionId) {
+        await e.reply(`未绑定星火token，请使用#chatgpt设置星火token命令绑定token`, true)
+        return true
+      }
+      let client = new XinghuoClient({
+        ssoSessionId,
+        cache: null
+      })
+      try {
+        let chatId = await client.createChatList(botId)
+        let botInfoRes = await fetch(`https://xinghuo.xfyun.cn/iflygpt/bot/getBotInfo?chatId=${chatId.chatListId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            Cookie: 'ssoSessionId=' + ssoSessionId + ';',
+            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/113.0.5672.69 Mobile/15E148 Safari/604.1',
+          }
+        })
+        if (botInfoRes.ok) {
+          let botInfo = await botInfoRes.json()
+          if (botInfo.flag) {
+            let ctime = new Date()
+            await redis.set(
+              `CHATGPT:CONVERSATIONS_XH:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`,
+              JSON.stringify({
+                sender: e.sender,
+                ctime,
+                utime: ctime,
+                num: 0,
+                conversation: {
+                  conversationId: {
+                    chatid: chatId.chatListId,
+                    botid: botId
+                  }
+                }
+              }),
+              Config.conversationPreserveTime > 0 ? { EX: Config.conversationPreserveTime } : {}
+            )
+            await e.reply(`成功创建助手对话\n助手名称：${botInfo.data.bot_name}\n助手描述：${botInfo.data.bot_desc}`, true)
+          } else {
+            await e.reply(`创建助手对话失败,${botInfo.desc}`, true)
+          }
+        } else {
+          await e.reply(`创建助手对话失败,服务器异常`, true)
+        }
+      } catch (error) {
+        await e.reply(`创建助手对话失败 ${error}`, true)
+      }
+    }
+    return true
+  }
+
+  async searchxhBot(e) {
+    let searchBot = e.msg.replace(/^#星火(搜索|查找)助手/, '').trim()
+    const ssoSessionId = Config.xinghuoToken
+    if (!ssoSessionId) {
+      await e.reply(`未绑定星火token，请使用#chatgpt设置星火token命令绑定token`, true)
+      return true
+    }
+    const cacheresOption = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Cookie: 'ssoSessionId=' + ssoSessionId + ';',
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/113.0.5672.69 Mobile/15E148 Safari/604.1',
+      },
+      body: JSON.stringify({
+        botType: '',
+        pageIndex: 1,
+        pageSize: 45,
+        searchValue: searchBot
+      })
+    }
+    const searchBots = await fetch('https://xinghuo.xfyun.cn/iflygpt/bot/page', cacheresOption)
+    const bots = await searchBots.json()
+    if (Config.debug) {
+      logger.info(bots)
+    }
+    if (bots.code === 0) {
+      if (bots.data.pageList.length > 0) {
+        this.reply(await makeForwardMsg(this.e, bots.data.pageList.map(msg => `${msg.bot.botId} - ${msg.bot.botName}`)))
+      } else {
+        await e.reply(`未查到相关助手`, true)
+      }
+    } else {
+      await e.reply(`搜索助手失败`, true)
+    }
+  }
+  
   async emptyQueue(e) {
     await redis.lTrim('CHATGPT:CHAT_QUEUE', 1, 0)
     await this.reply('已清空当前等待队列')
@@ -2438,7 +2545,7 @@ export class chatgpt extends plugin {
     return await this.chatGPTApi.sendMessage(prompt, sendMessageOption)
   }
 
-  async solveBingCaptcha (e) {
+  async solveBingCaptcha(e) {
     try {
       let id = e.bingCaptchaId
       let regionId = e.regionId
