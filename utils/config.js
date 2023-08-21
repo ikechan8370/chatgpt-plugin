@@ -20,6 +20,7 @@ const defaultConfig = {
   ttsAutoFallbackThreshold: 299,
   conversationPreserveTime: 0,
   toggleMode: 'at',
+  groupMerge: false,
   quoteReply: true,
   showQRCode: true,
   cacheUrl: 'https://content.alcedogroup.com',

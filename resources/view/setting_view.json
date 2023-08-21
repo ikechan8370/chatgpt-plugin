@@ -31,6 +31,11 @@
       },
       {
         "type": "check",
+        "label": "群组消息合并",
+        "data": "groupMerge"
+      },
+      {
+        "type": "check",
         "label": "新版帮助",
         "data": "newhelp"
       },
@@ -639,6 +644,12 @@
                 "type": "check",
                 "label": "允许生成图像等内容",
                 "data": "enableGenerateContents"
+              },
+              {
+                "type": "url",
+                "label": "必应验证码pass服务",
+                "placeholder": "必应出验证码会自动用该服务绕过",
+                "data": "bingCaptchaOneShotUrl"
               }
             ]
           },

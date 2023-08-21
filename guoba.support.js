@@ -218,6 +218,12 @@ export function supportGuoba () {
           }
         },
         {
+          field: 'groupMerge',
+          label: '群组消息合并',
+          bottomHelpMessage: '开启后，群聊消息将被视为同一对话',
+          component: 'Switch'
+        },
+        {
           field: 'allowOtherMode',
           label: '允许其他模式',
           bottomHelpMessage: '开启后，则允许用户使用#chat1/#chat3/#chatglm/#bing等命令无视全局模式进行聊天',
