@@ -315,9 +315,18 @@ export default class XinghuoClient {
       if (!chatId) {
         chatId = (await this.createChatList()).chatListId
       }
-      const { response } = await this.webMessage(prompt, chatId, botId)
+      let { response } = await this.webMessage(prompt, chatId, botId)
       // logger.info(response)
       // let responseText = atob(response)
+      // 处理图片
+      let images
+      if(response.includes('multi_image_url')) {
+        images = [{
+          tag: '',
+          url: JSON.parse(/{([^}]*)}/g.exec(response)[0]).url
+        }]
+        response = '我已经完成作品，欢迎您提出宝贵的意见和建议，帮助我快速进步~~'
+      }
       if (botId) {
         chatId = {
           chatid: chatId,
@@ -326,7 +335,8 @@ export default class XinghuoClient {
       }
       return {
         conversationId: chatId,
-        text: response
+        text: response,
+        images: images
       }
     } else {
       throw new Error('星火模式错误')

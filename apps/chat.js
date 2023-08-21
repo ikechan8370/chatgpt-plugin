@@ -311,24 +311,24 @@ export class chatgpt extends plugin {
   async destroyConversations(e) {
     const userData = await getUserData(e.user_id)
     const use = (userData.mode === 'default' ? null : userData.mode) || await redis.get('CHATGPT:USE')
-    await redis.del(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`)
+    await redis.del(`CHATGPT:WRONG_EMOTION:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`)
     if (use === 'claude') {
       // let client = new SlackClaudeClient({
       //   slackUserToken: Config.slackUserToken,
       //   slackChannelId: Config.slackChannelId
       // })
       // await client.endConversation()
-      await redis.del(`CHATGPT:SLACK_CONVERSATION:${e.sender.user_id}`)
+      await redis.del(`CHATGPT:SLACK_CONVERSATION:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`)
       await e.reply('claude对话已结束')
       return
     }
     if (use === 'xh') {
-      await redis.del(`CHATGPT:CONVERSATIONS_XH:${e.sender.user_id}`)
+      await redis.del(`CHATGPT:CONVERSATIONS_XH:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`)
       await e.reply('星火对话已结束')
       return
     }
     if (use === 'bard') {
-      await redis.del(`CHATGPT:CONVERSATIONS_BARD:${e.sender.user_id}`)
+      await redis.del(`CHATGPT:CONVERSATIONS_BARD:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`)
       await e.reply('Bard对话已结束')
       return
     }
@@ -337,15 +337,15 @@ export class chatgpt extends plugin {
     if (isAtMode) ats = ats.filter(item => item.qq !== Bot.uin)
     if (ats.length === 0) {
       if (use === 'api3') {
-        await redis.del(`CHATGPT:QQ_CONVERSATION:${e.sender.user_id}`)
+        await redis.del(`CHATGPT:QQ_CONVERSATION:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`)
         await this.reply('已退出当前对话，该对话仍然保留。请@我进行聊天以开启新的对话', true)
       } else if (use === 'bing' && (Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom')) {
-        let c = await redis.get(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
+        let c = await redis.get(`CHATGPT:CONVERSATIONS_BING:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`)
         if (!c) {
           await this.reply('当前没有开启对话', true)
           return
         } else {
-          await redis.del(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
+          await redis.del(`CHATGPT:CONVERSATIONS_BING:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`)
         }
         const conversation = {
           store: new KeyvFile({ filename: 'cache.json' }),
@@ -1067,8 +1067,8 @@ export class chatgpt extends plugin {
         await e.reply([chatMessage.text, segment.image(`base64://${chatMessage.image}`)])
         return false
       }
-      // 处理bard图片
-      if (use === 'bard' && chatMessage?.images) {
+      // 处理星火和bard图片
+      if ((use === 'bard' || use === 'xh') && chatMessage?.images) {
         chatMessage.images.forEach(async element => {
           await e.reply([element.tag, segment.image(element.url)])
         })
