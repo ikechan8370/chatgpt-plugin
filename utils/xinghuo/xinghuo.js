@@ -1,17 +1,16 @@
-import fetch, { File, FormData } from 'node-fetch'
+import fetch from 'node-fetch'
 import { Config } from '../config.js'
 import { createParser } from 'eventsource-parser'
 import https from 'https'
 import WebSocket from 'ws'
-import fs from 'fs'
 
 const referer = atob('aHR0cHM6Ly94aW5naHVvLnhmeXVuLmNuL2NoYXQ/aWQ9')
 const origin = atob('aHR0cHM6Ly94aW5naHVvLnhmeXVuLmNu')
 const createChatUrl = atob('aHR0cHM6Ly94aW5naHVvLnhmeXVuLmNuL2lmbHlncHQvdS9jaGF0LWxpc3QvdjEvY3JlYXRlLWNoYXQtbGlzdA==')
 const chatUrl = atob('aHR0cHM6Ly94aW5naHVvLnhmeXVuLmNuL2lmbHlncHQtY2hhdC91L2NoYXRfbWVzc2FnZS9jaGF0')
-let Form_Data
+let FormData
 try {
-  Form_Data = (await import('form-data')).default
+  FormData = (await import('form-data')).default
 } catch (err) {
   logger.warn('未安装form-data，无法使用星火模式')
 }
@@ -118,10 +117,9 @@ export default class XinghuoClient {
     const blob = await response.blob()
     const arrayBuffer = await blob.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
-    const imgData = new File([buffer], 'image.png', { type: 'image/png' })
     // 上传oss
     const formData = new FormData()
-    formData.append('file', imgData)
+    formData.append('file', buffer, 'image.png')
     const respOss = await fetch('https://xinghuo.xfyun.cn/iflygpt/oss/sign', {
       method: 'POST',
       headers: {
@@ -254,22 +252,23 @@ export default class XinghuoClient {
   }
 
   async webMessage(prompt, chatId, botId) {
-    if (!Form_Data) {
+    if (!FormData) {
       throw new Error('缺少依赖：form-data。请安装依赖后重试')
     }
     return new Promise(async (resolve, reject) => {
-      let formData = new Form_Data()
+      let formData = new FormData()
       formData.setBoundary('----WebKitFormBoundarycATE2QFHDn9ffeWF')
       formData.append('clientType', '2')
       formData.append('chatId', chatId)
-      formData.append('text', prompt.text)
       if (prompt.image) {
+        prompt.text = prompt.text.replace("[图片]", "") // 清理消息中中首个被使用的图片
         const imgdata = await this.uploadImage(prompt.image)
         if (imgdata) {
           formData.append('fileUrl', imgdata.url)
           formData.append('file', imgdata.file, 'image.png')
         }
       }
+      formData.append('text', prompt.text)
       if (botId) {
         formData.append('isBot', '1')
         formData.append('botId', botId)
