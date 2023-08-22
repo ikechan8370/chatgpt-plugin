@@ -1896,7 +1896,9 @@ export class chatgpt extends plugin {
           ssoSessionId,
           cache: cacheOptions
         })
-        let response = await client.sendMessage(prompt, conversation?.conversationId)
+        // 获取图片资源
+        const image = await getImg(e)
+        let response = await client.sendMessage(prompt, conversation?.conversationId, image ? image[0] : undefined)
         return response
       }
       case 'bard': {

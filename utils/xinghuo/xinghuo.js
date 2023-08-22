@@ -1,16 +1,17 @@
-import fetch from 'node-fetch'
+import fetch, { File, FormData } from 'node-fetch'
 import { Config } from '../config.js'
 import { createParser } from 'eventsource-parser'
 import https from 'https'
 import WebSocket from 'ws'
+import fs from 'fs'
 
 const referer = atob('aHR0cHM6Ly94aW5naHVvLnhmeXVuLmNuL2NoYXQ/aWQ9')
 const origin = atob('aHR0cHM6Ly94aW5naHVvLnhmeXVuLmNu')
 const createChatUrl = atob('aHR0cHM6Ly94aW5naHVvLnhmeXVuLmNuL2lmbHlncHQvdS9jaGF0LWxpc3QvdjEvY3JlYXRlLWNoYXQtbGlzdA==')
 const chatUrl = atob('aHR0cHM6Ly94aW5naHVvLnhmeXVuLmNuL2lmbHlncHQtY2hhdC91L2NoYXRfbWVzc2FnZS9jaGF0')
-let FormData
+let Form_Data
 try {
-  FormData = (await import('form-data')).default
+  Form_Data = (await import('form-data')).default
 } catch (err) {
   logger.warn('未安装form-data，无法使用星火模式')
 }
@@ -109,6 +110,63 @@ export default class XinghuoClient {
     return url
   }
 
+  async uploadImage(url) {
+    // 获取图片
+    let response = await fetch(url, {
+      method: 'GET',
+    })
+    const blob = await response.blob()
+    const arrayBuffer = await blob.arrayBuffer()
+    const buffer = Buffer.from(arrayBuffer)
+    const imgData = new File([buffer], 'image.png', { type: 'image/png' })
+    // 上传oss
+    const formData = new FormData()
+    formData.append('file', imgData)
+    const respOss = await fetch('https://xinghuo.xfyun.cn/iflygpt/oss/sign', {
+      method: 'POST',
+      headers: {
+        Cookie: 'ssoSessionId=' + this.ssoSessionId + ';',
+      },
+      body: formData
+    })
+    if (respOss.ok) {
+      const ossData = await respOss.json()
+      // 上传接口
+      const sparkdeskUrl = `${ossData.data.url}&authorization=${Buffer.from(ossData.data.authorization).toString('base64')}&date=${ossData.data.date}&host=${ossData.data.host}`
+      const respSparkdes = await fetch(sparkdeskUrl, {
+        method: 'POST',
+        headers: {
+          Cookie: 'ssoSessionId=' + this.ssoSessionId + ';',
+          authorization: Buffer.from(ossData.data.authorization).toString('base64')
+        },
+        body: buffer
+      })
+      if (respSparkdes.ok) {
+        const sparkdesData = await respSparkdes.json()
+        return {
+          url: sparkdesData.data.link,
+          file: buffer
+        }
+      } else {
+        try {
+          const sparkdesData = await respSparkdes.json()
+          logger.error('星火图片Sparkdes：发送失败' + sparkdesData.desc)
+        } catch (error) {
+          logger.error('星火图片Sparkdes：发送失败')
+        }
+        return false
+      }
+    } else {
+      try {
+        const ossData = await respOss.json()
+        logger.error('星火图片OSS：上传失败' + ossData.desc)
+      } catch (error) {
+        logger.error('星火图片OSS：上传失败')
+      }
+      return false
+    }
+  }
+
   async apiMessage(prompt, chatId, ePrompt = []) {
     if (!chatId) chatId = (Math.floor(Math.random() * 1000000) + 100000).toString()
 
@@ -196,15 +254,22 @@ export default class XinghuoClient {
   }
 
   async webMessage(prompt, chatId, botId) {
-    if (!FormData) {
+    if (!Form_Data) {
       throw new Error('缺少依赖：form-data。请安装依赖后重试')
     }
-    return new Promise((resolve, reject) => {
-      let formData = new FormData()
+    return new Promise(async (resolve, reject) => {
+      let formData = new Form_Data()
       formData.setBoundary('----WebKitFormBoundarycATE2QFHDn9ffeWF')
       formData.append('clientType', '2')
       formData.append('chatId', chatId)
-      formData.append('text', prompt)
+      formData.append('text', prompt.text)
+      if (prompt.image) {
+        const imgdata = await this.uploadImage(prompt.image)
+        if (imgdata) {
+          formData.append('fileUrl', imgdata.url)
+          formData.append('file', imgdata.file, 'image.png')
+        }
+      }
       if (botId) {
         formData.append('isBot', '1')
         formData.append('botId', botId)
@@ -286,7 +351,7 @@ export default class XinghuoClient {
     })
   }
 
-  async sendMessage(prompt, chatId) {
+  async sendMessage(prompt, chatId, image) {
     if (Config.xhmode == 'api' || Config.xhmode == 'apiv2') {
       if (!Config.xhAppId || !Config.xhAPISecret || !Config.xhAPIKey) throw new Error('未配置api')
       let Prompt = []
@@ -315,12 +380,12 @@ export default class XinghuoClient {
       if (!chatId) {
         chatId = (await this.createChatList()).chatListId
       }
-      let { response } = await this.webMessage(prompt, chatId, botId)
+      let { response } = await this.webMessage({ text: prompt, image: image }, chatId, botId)
       // logger.info(response)
       // let responseText = atob(response)
       // 处理图片
       let images
-      if(response.includes('multi_image_url')) {
+      if (response.includes('multi_image_url')) {
         images = [{
           tag: '',
           url: JSON.parse(/{([^}]*)}/g.exec(response)[0]).url
