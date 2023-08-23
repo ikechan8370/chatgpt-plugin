@@ -3,6 +3,7 @@ import { Config } from '../config.js'
 import { createParser } from 'eventsource-parser'
 import https from 'https'
 import WebSocket from 'ws'
+import { config } from 'process'
 
 const referer = atob('aHR0cHM6Ly94aW5naHVvLnhmeXVuLmNuL2NoYXQ/aWQ9')
 const origin = atob('aHR0cHM6Ly94aW5naHVvLnhmeXVuLmNu')
@@ -386,7 +387,10 @@ export default class XinghuoClient {
       } else {
         Prompt = [{ "role": "user", "content": Config.xhPrompt }]
       }
-      const response = await this.apiMessage(prompt, chatId, Prompt)
+      let response = await this.apiMessage(prompt, chatId, Prompt)
+      if (Config.xhRetRegExp) {
+        response = response.replace(new RegExp(Config.xhRetRegExp, 'g'), Config.xhRetReplace)
+      }
       return {
         conversationId: chatId,
         text: response
@@ -417,6 +421,9 @@ export default class XinghuoClient {
           chatid: chatId,
           botid: botId
         }
+      }
+      if (Config.xhRetRegExp) {
+        response = response.replace(new RegExp(Config.xhRetRegExp, 'g'), Config.xhRetReplace)
       }
       return {
         conversationId: chatId,

@@ -749,7 +749,7 @@
               },
               {
                 "type": "password",
-                "label": "星火APIKey",
+                "label": "APIKey",
                 "data": "xhAPIKey"
               },
               {
@@ -774,6 +774,18 @@
                 "label": "设定",
                 "placeholder": "若开启序列化，请传入json数据，例如[{ \"role\": \"user\", \"content\": \"现在是10点\" },{ \"role\": \"assistant\", \"content\": \"了解，现在10点了\" }]",
                 "data": "xhPrompt"
+              },
+              {
+                "type": "text",
+                "label": "回复替换正则",
+                "placeholder": "要替换文本的正则",
+                "data": "xhRetRegExp"
+              },
+              {
+                "type": "text",
+                "label": "回复内容替换",
+                "placeholder": "替换回复内容中的文本",
+                "data": "xhRetReplace"
               }
             ]
           },

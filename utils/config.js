@@ -58,6 +58,8 @@ const defaultConfig = {
   xhMaxTokens: 1024,
   xhPromptSerialize: false,
   xhPrompt: '',
+  xhRetRegExp: '',
+  xhRetReplace: '',
   promptPrefixOverride: 'Your answer shouldn\'t be too verbose. Prefer to answer in Chinese.',
   assistantLabel: 'ChatGPT',
   // thinkingTips: true,

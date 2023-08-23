@@ -612,11 +612,79 @@ export function supportGuoba () {
           component: 'Divider'
         },
         {
+          field: 'xhmode',
+          label: '星火模式',
+          bottomHelpMessage: '设置星火使用的对话模式',
+          component: 'Select',
+          componentProps: {
+            options: [
+              { label: '体验版', value: 'web' },
+              { label: '讯飞星火认知大模型V1.5', value: 'api' },
+              { label: '讯飞星火认知大模型V2.0', value: 'apiv2' }
+            ]
+          }
+        },
+        {
           field: 'xinghuoToken',
           label: '星火Cookie',
           bottomHelpMessage: '获取对话页面的ssoSessionId cookie。不要带等号和分号',
+          component: 'InputPassword'
+        },
+        {
+          field: 'xhAppId',
+          label: 'AppId',
+          bottomHelpMessage: '应用页面获取',
           component: 'Input'
-        },{
+        },
+        {
+          field: 'xhAPISecret',
+          label: 'APISecret',
+          bottomHelpMessage: '应用页面获取',
+          component: 'InputPassword'
+        },
+        {
+          field: 'xhAPIKey',
+          label: '星火APIKey',
+          bottomHelpMessage: '应用页面获取',
+          component: 'InputPassword'
+        },
+        {
+          field: 'xhTemperature',
+          label: '核采样阈值',
+          bottomHelpMessage: '核采样阈值。用于决定结果随机性，取值越高随机性越强即相同的问题得到的不同答案的可能性越高',
+          component: 'InputNumber'
+        },
+        {
+          field: 'xhMaxTokens',
+          label: '最大Token',
+          bottomHelpMessage: '模型回答的tokens的最大长度',
+          component: 'InputNumber'
+        },
+        {
+          field: 'xhPromptSerialize',
+          label: '序列化设定',
+          bottomHelpMessage: '是否将设定内容进行json序列化',
+          component: 'Switch'
+        },
+        {
+          field: 'xhPrompt',
+          label: '设定',
+          bottomHelpMessage: '若开启序列化，请传入json数据，例如[{ \"role\": \"user\", \"content\": \"现在是10点\" },{ \"role\": \"assistant\", \"content\": \"了解，现在10点了\" }]',
+          component: 'InputTextArea'
+        },
+        {
+          field: 'xhRetRegExp',
+          label: '回复替换正则',
+          bottomHelpMessage: '要替换文本的正则',
+          component: 'Input'
+        },
+        {
+          field: 'xhRetReplace',
+          label: '回复内容替换',
+          bottomHelpMessage: '替换回复内容中的文本',
+          component: 'Input'
+        },
+        {
           label: '以下为Bard方式的配置',
           component: 'Divider'
         },
