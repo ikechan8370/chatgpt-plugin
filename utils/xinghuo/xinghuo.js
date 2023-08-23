@@ -411,9 +411,10 @@ export default class XinghuoClient {
     let createChatListRes = await fetch(createChatUrl, {
       method: 'POST',
       headers: Object.assign(this.headers, {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        Botweb: bot ? 1 : 0
       }),
-      body: bot ? `{"botId": ${bot}}` : '{}'
+      body: bot ? `{"BotWeb": 1, "botId": "${bot}"}` : '{}'
     })
     if (createChatListRes.status !== 200) {
       let errorRes = await createChatListRes.text()
