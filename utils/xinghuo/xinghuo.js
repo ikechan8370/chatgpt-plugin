@@ -74,6 +74,15 @@ export default class XinghuoClient {
     }
   }
 
+  promptBypassPreset(prompt) {
+    switch (prompt) {
+      case '你是谁':
+        return '你是谁，叫什么'
+      default:
+        return prompt
+    }
+  }
+
   async initCache() {
     if (!this.conversationsCache) {
       const cacheOptions = this.cache || {}
@@ -361,6 +370,8 @@ export default class XinghuoClient {
   }
 
   async sendMessage(prompt, chatId, image) {
+    // 对星火预设的问题进行重写，避免收到预设回答
+    prompt = this.promptBypassPreset(prompt)
     if (Config.xhmode == 'api' || Config.xhmode == 'apiv2') {
       if (!Config.xhAppId || !Config.xhAPISecret || !Config.xhAPIKey) throw new Error('未配置api')
       let Prompt = []
