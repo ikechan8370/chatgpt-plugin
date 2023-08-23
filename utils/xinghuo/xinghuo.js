@@ -301,8 +301,18 @@ export default class XinghuoClient {
               response
             })
           }
+          if (data.charAt(0) === '{') {
+            try {
+              response = JSON.parse(data).value
+              if (Config.debug) {
+                logger.info(response)
+              }
+            } catch (err) {
+              reject(err)
+            }
+          }
           try {
-            if (data) {
+            if (data && data !== '[error]') {
               response += atob(data.trim())
               if (Config.debug) {
                 logger.info(response)
