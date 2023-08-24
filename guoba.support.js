@@ -620,7 +620,8 @@ export function supportGuoba () {
             options: [
               { label: '体验版', value: 'web' },
               { label: '讯飞星火认知大模型V1.5', value: 'api' },
-              { label: '讯飞星火认知大模型V2.0', value: 'apiv2' }
+              { label: '讯飞星火认知大模型V2.0', value: 'apiv2' },
+              { label: '讯飞星火助手', value: 'assistants' }
             ]
           }
         },
@@ -647,6 +648,12 @@ export function supportGuoba () {
           label: '星火APIKey',
           bottomHelpMessage: '应用页面获取',
           component: 'InputPassword'
+        },
+        {
+          field: 'xhAssistants',
+          label: '助手接口',
+          bottomHelpMessage: '助手页面获取',
+          component: 'Input'
         },
         {
           field: 'xhTemperature',

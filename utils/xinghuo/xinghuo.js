@@ -79,6 +79,8 @@ export default class XinghuoClient {
     switch (prompt) {
       case '你是谁':
         return '你是谁，叫什么'
+      case '你是谁啊':
+        return '你是谁啊，叫什么'
       default:
         return prompt
     }
@@ -187,7 +189,7 @@ export default class XinghuoClient {
     }
 
     // 获取ws链接
-    const wsUrl = await this.getWsUrl()
+    const wsUrl = Config.xhmode == 'assistants' ? Config.xhAssistants : await this.getWsUrl()
     if (!wsUrl) throw new Error('缺少依赖：crypto。请安装依赖后重试')
 
     // 编写消息内容
@@ -373,7 +375,7 @@ export default class XinghuoClient {
   async sendMessage(prompt, chatId, image) {
     // 对星火预设的问题进行重写，避免收到预设回答
     prompt = this.promptBypassPreset(prompt)
-    if (Config.xhmode == 'api' || Config.xhmode == 'apiv2') {
+    if (Config.xhmode == 'api' || Config.xhmode == 'apiv2' || Config.xhmode == 'assistants') {
       if (!Config.xhAppId || !Config.xhAPISecret || !Config.xhAPIKey) throw new Error('未配置api')
       let Prompt = []
       // 设定

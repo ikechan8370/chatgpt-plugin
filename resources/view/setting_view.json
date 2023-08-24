@@ -719,7 +719,7 @@
                 "data": "xhmode",
                 "items": [
                   {
-                    "label": "体验版",
+                    "label": "讯飞星火认知大模型体验版",
                     "value": "web"
                   },
                   {
@@ -729,6 +729,10 @@
                   {
                     "label": "讯飞星火认知大模型V2.0",
                     "value": "apiv2"
+                  },
+                  {
+                    "label": "讯飞星火助手",
+                    "value": "assistants"
                   }
                 ]
               },
@@ -751,6 +755,11 @@
                 "type": "password",
                 "label": "APIKey",
                 "data": "xhAPIKey"
+              },
+              {
+                "type": "text",
+                "label": "助手接口",
+                "data": "xhAssistants"
               },
               {
                 "type": "number",

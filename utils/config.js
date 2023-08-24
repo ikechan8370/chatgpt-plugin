@@ -54,6 +54,7 @@ const defaultConfig = {
   xhAppId: '',
   xhAPISecret: '',
   xhAPIKey: '',
+  xhAssistants: '',
   xhTemperature: 0.5,
   xhMaxTokens: 1024,
   xhPromptSerialize: false,
