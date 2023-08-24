@@ -1935,6 +1935,7 @@ export class chatgpt extends plugin {
         const { choices } = await client.getChatCompletions(deploymentName, msg)
         let completion = choices[0].message;
         return {'text' : completion.content, 'message': completion}
+      }
       case 'bard': {
         // 处理cookie
         const matchesPSID = /__Secure-1PSID=([^;]+)/.exec(Config.bardPsid)
