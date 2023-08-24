@@ -387,7 +387,7 @@ export default class XinghuoClient {
           logger.warn('星火设定序列化失败,本次对话不附带设定')
         }
       } else {
-        Prompt = [{ "role": "user", "content": Config.xhPrompt }]
+        Prompt = Config.xhPrompt ? [{ "role": "user", "content": Config.xhPrompt }] : []
       }
       let response = await this.apiMessage(prompt, chatId, Prompt)
       if (Config.xhRetRegExp) {
