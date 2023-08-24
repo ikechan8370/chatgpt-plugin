@@ -70,6 +70,12 @@ import { SetTitleTool } from '../utils/tools/SetTitleTool.js'
 import { createCaptcha, solveCaptcha, solveCaptchaOneShot } from '../utils/bingCaptcha.js'
 
 try {
+  await import('@azure/openai')
+} catch (err) {
+  logger.warn('【Azure-Openai】依赖@azure/openai未安装，Azure OpenAI不可用 请执行pnpm install @azure/openai安装')
+}
+
+try {
   await import('emoji-strip')
 } catch (err) {
   logger.warn('【ChatGPT-Plugin】依赖emoji-strip未安装，会导致azure语音模式下朗读emoji的问题，建议执行pnpm install emoji-strip安装')
@@ -1034,6 +1040,10 @@ export class chatgpt extends plugin {
           key = `CHATGPT:CONVERSATIONS_BARD:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`
           break
         }
+        case 'azure': {
+          key = `CHATGPT:CONVERSATIONS_AZURE:${e.sender.user_id}`
+          break
+        }
       }
       let ctime = new Date()
       previousConversation = (key ? await redis.get(key) : null) || JSON.stringify({
@@ -1041,6 +1051,7 @@ export class chatgpt extends plugin {
         ctime,
         utime: ctime,
         num: 0,
+        messages: [{ role: 'system', content: 'You are an AI assistant that helps people find information.' }],
         conversation: {}
       })
       previousConversation = JSON.parse(previousConversation)
@@ -1048,6 +1059,7 @@ export class chatgpt extends plugin {
         logger.info({ previousConversation })
       }
       conversation = {
+        messages: previousConversation.messages,
         conversationId: previousConversation.conversation?.conversationId,
         parentMessageId: previousConversation.parentMessageId,
         clientId: previousConversation.clientId,
@@ -1093,6 +1105,11 @@ export class chatgpt extends plugin {
           }
         } else if (chatMessage.id) {
           previousConversation.parentMessageId = chatMessage.id
+        } else if (chatMessage.message) {
+          if (previousConversation.messages.length > 10) {
+            previousConversation.messages.shift()
+          }
+          previousConversation.messages.push(chatMessage.message)
         }
         if (use === 'bard' && !chatMessage.error) {
           previousConversation.parentMessageId = chatMessage.responseID
@@ -1901,6 +1918,23 @@ export class chatgpt extends plugin {
         let response = await client.sendMessage(prompt, conversation?.conversationId, image ? image[0] : undefined)
         return response
       }
+      case 'azure': {
+        let azureModel
+        try {
+          azureModel = await import('@azure/openai')
+        } catch (error) {
+          throw new Error('未安装@azure/openai包，请执行pnpm install @azure/openai安装')
+        }
+        let OpenAIClient = azureModel.OpenAIClient
+        let AzureKeyCredential = azureModel.AzureKeyCredential
+        let msg = conversation.messages
+        let content = { role: 'user', content: prompt }
+        msg.push(content)
+        const client = new OpenAIClient(Config.azureUrl, new AzureKeyCredential(Config.apiKey))
+        const deploymentName = Config.azureDeploymentName
+        const { choices } = await client.getChatCompletions(deploymentName, msg)
+        let completion = choices[0].message;
+        return {'text' : completion.content, 'message': completion}
       case 'bard': {
         // 处理cookie
         const matchesPSID = /__Secure-1PSID=([^;]+)/.exec(Config.bardPsid)

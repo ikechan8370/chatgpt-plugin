@@ -109,6 +109,11 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
+          reg: '^#chatgpt切换azure$',
+          fnc: 'useAzureBasedSolution',
+          permission: 'master'
+        },
+        {
           reg: '^#chatgpt切换(Bard|bard)$',
           fnc: 'useBardBasedSolution',
           permission: 'master'
@@ -838,6 +843,15 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
       await this.reply('当前已经是星火模式了')
     }
   }
+  async useAzureBasedSolution () {
+    let use = await redis.get('CHATGPT:USE')
+    if (use !== 'azure') {
+      await redis.set('CHATGPT:USE', 'azure')
+      await this.reply('已切换到基于Azure的解决方案')
+    } else {
+      await this.reply('当前已经是Azure模式了')
+    }
+  }
 
   async useBardBasedSolution () {
     let use = await redis.get('CHATGPT:USE')
@@ -894,6 +908,7 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
     let mode = await redis.get('CHATGPT:USE')
     const modeMap = {
       browser: '浏览器',
+      azure: 'Azure',
       // apiReverse: 'API2',
       api: 'API',
       bing: '必应',

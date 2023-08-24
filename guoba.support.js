@@ -850,6 +850,28 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
+          label: '以下为Azure chatGPT的配置',
+          component: 'Divider'
+        },
+        {
+          field: 'apiKey',
+          label: 'Azure API Key',
+          bottomHelpMessage: '管理密钥，用于访问Azure的API接口',
+          component: 'InputPassword'
+        },
+        {
+          field: 'azureUrl',
+          label: '端点地址',
+          bottomHelpMessage: 'https://xxxx.openai.azure.com/',
+          component: 'Input'
+        },
+        {
+          field: 'azureDeploymentName',
+          label: '部署名称',
+          bottomHelpMessage: '创建部署时输入的名称',
+          component: 'Input'
+        },
+        {
           label: '以下为后台与渲染相关配置',
           component: 'Divider'
         },
