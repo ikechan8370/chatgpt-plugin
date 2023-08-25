@@ -3,7 +3,6 @@ import { Config } from '../config.js'
 import { createParser } from 'eventsource-parser'
 import https from 'https'
 import WebSocket from 'ws'
-import { config } from 'process'
 
 const referer = atob('aHR0cHM6Ly94aW5naHVvLnhmeXVuLmNuL2NoYXQ/aWQ9')
 const origin = atob('aHR0cHM6Ly94aW5naHVvLnhmeXVuLmNu')
@@ -76,6 +75,7 @@ export default class XinghuoClient {
   }
 
   promptBypassPreset(prompt) {
+    // 貌似不适用于所有人，考虑去掉
     switch (prompt) {
       case '你是谁':
         return '你是谁，叫什么'
@@ -251,7 +251,10 @@ export default class XinghuoClient {
               conversation.messages.splice(0, half)
             }
             await this.conversationsCache.set(conversationKey, conversation)
-            resolve(resMessage)
+            resolve({ 
+              id: chatId ,
+              response: resMessage
+            })
           }
         } catch (error) {
           reject(new Error(error))
@@ -389,12 +392,12 @@ export default class XinghuoClient {
       } else {
         Prompt = Config.xhPrompt ? [{ "role": "user", "content": Config.xhPrompt }] : []
       }
-      let response = await this.apiMessage(prompt, chatId, Prompt)
+      let { response, id } = await this.apiMessage(prompt, chatId, Prompt)
       if (Config.xhRetRegExp) {
         response = response.replace(new RegExp(Config.xhRetRegExp, 'g'), Config.xhRetReplace)
       }
       return {
-        conversationId: chatId,
+        conversationId: id,
         text: response
       }
     } else if (Config.xhmode == 'web') {
