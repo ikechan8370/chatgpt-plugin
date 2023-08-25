@@ -1907,7 +1907,8 @@ export class chatgpt extends plugin {
         }
         const ssoSessionId = Config.xinghuoToken
         if (!ssoSessionId) {
-          throw new Error('未绑定星火token，请使用#chatgpt设置星火token命令绑定token。（获取对话页面的ssoSessionId cookie值）')
+          //throw new Error('未绑定星火token，请使用#chatgpt设置星火token命令绑定token。（获取对话页面的ssoSessionId cookie值）')
+          logger.warn(`未绑定星火token，请使用#chatgpt设置星火token命令绑定token。（获取对话页面的ssoSessionId cookie值）`)
         }
         let client = new XinghuoClient({
           ssoSessionId,
