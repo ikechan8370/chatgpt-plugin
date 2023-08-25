@@ -1210,7 +1210,7 @@ export class chatgpt extends plugin {
       let quotemessage = []
       if (chatMessage?.quote) {
         chatMessage.quote.forEach(function (item, index) {
-          if (item.text.trim() !== '') {
+          if (item.text && item.text.trim() !== '') {
             quotemessage.push(item)
           }
         })
