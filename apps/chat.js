@@ -1916,7 +1916,11 @@ export class chatgpt extends plugin {
         })
         // 获取图片资源
         const image = await getImg(e)
-        let response = await client.sendMessage(prompt, conversation?.conversationId, image ? image[0] : undefined)
+        let response = await client.sendMessage(prompt, {
+          e,
+          chatId: conversation?.conversationId,
+          image: image ? image[0] : undefined
+        })
         return response
       }
       case 'azure': {

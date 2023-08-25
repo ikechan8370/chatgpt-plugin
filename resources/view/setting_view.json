@@ -779,6 +779,11 @@
                 "data": "xhPromptSerialize"
               },
               {
+                "type": "check",
+                "label": "运行执行设定中的代码",
+                "data": "xhPromptEval"
+              },
+              {
                 "type": "textarea",
                 "label": "设定",
                 "placeholder": "若开启序列化，请传入json数据，例如[{ \"role\": \"user\", \"content\": \"现在是10点\" },{ \"role\": \"assistant\", \"content\": \"了解，现在10点了\" }]",

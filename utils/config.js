@@ -59,6 +59,7 @@ const defaultConfig = {
   xhMaxTokens: 1024,
   xhPromptSerialize: false,
   xhPrompt: '',
+  xhPromptEval: false,
   xhRetRegExp: '',
   xhRetReplace: '',
   promptPrefixOverride: 'Your answer shouldn\'t be too verbose. Prefer to answer in Chinese.',

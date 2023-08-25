@@ -375,7 +375,10 @@ export default class XinghuoClient {
     })
   }
 
-  async sendMessage(prompt, chatId, image) {
+  async sendMessage(prompt, option) {
+    let chatId = option?.chatId
+    let image = option?.image
+
     // 对星火预设的问题进行重写，避免收到预设回答
     prompt = this.promptBypassPreset(prompt)
     if (Config.xhmode == 'api' || Config.xhmode == 'apiv2' || Config.xhmode == 'assistants') {
@@ -392,6 +395,18 @@ export default class XinghuoClient {
       } else {
         Prompt = Config.xhPrompt ? [{ "role": "user", "content": Config.xhPrompt }] : []
       }
+      if(Config.xhPromptEval) {
+        Prompt.forEach(obj => {
+          try {
+            obj.content = obj.content.replace(/{{(.*?)}}/g, (match, variable) => {
+              return Function(`"use strict";return ((e)=>{return ${variable} })`)()(option.e)
+            })
+          } catch (error) {
+            logger.error(error)
+          }
+        })
+      }
+
       let { response, id } = await this.apiMessage(prompt, chatId, Prompt)
       if (Config.xhRetRegExp) {
         response = response.replace(new RegExp(Config.xhRetRegExp, 'g'), Config.xhRetReplace)
