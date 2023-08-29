@@ -82,6 +82,10 @@
             "value": "xh"
           },
           {
+            "label": "Bard",
+            "value": "bard"
+          },
+          {
             "label": "浏览器",
             "value": "browser"
           }
@@ -710,9 +714,108 @@
             "tab": "xh",
             "view": [
               {
+                "type": "select",
+                "label": "模式",
+                "data": "xhmode",
+                "items": [
+                  {
+                    "label": "讯飞星火认知大模型体验版",
+                    "value": "web"
+                  },
+                  {
+                    "label": "讯飞星火认知大模型V1.5",
+                    "value": "api"
+                  },
+                  {
+                    "label": "讯飞星火认知大模型V2.0",
+                    "value": "apiv2"
+                  },
+                  {
+                    "label": "讯飞星火助手",
+                    "value": "assistants"
+                  }
+                ]
+              },
+              {
                 "type": "password",
-                "label": "星火Cookie",
+                "label": "Cookie",
                 "data": "xinghuoToken"
+              },
+              {
+                "type": "text",
+                "label": "AppId",
+                "data": "xhAppId"
+              },
+              {
+                "type": "password",
+                "label": "APISecret",
+                "data": "xhAPISecret"
+              },
+              {
+                "type": "password",
+                "label": "APIKey",
+                "data": "xhAPIKey"
+              },
+              {
+                "type": "text",
+                "label": "助手接口",
+                "data": "xhAssistants"
+              },
+              {
+                "type": "number",
+                "label": "核采样阈值",
+                "placeholder": "核采样阈值。用于决定结果随机性，取值越高随机性越强即相同的问题得到的不同答案的可能性越高",
+                "data": "xhTemperature"
+              },
+              {
+                "type": "number",
+                "label": "最大Token",
+                "placeholder": "模型回答的tokens的最大长度",
+                "data": "xhMaxTokens"
+              },
+              {
+                "type": "check",
+                "label": "序列化设定",
+                "data": "xhPromptSerialize"
+              },
+              {
+                "type": "textarea",
+                "label": "设定",
+                "placeholder": "若开启序列化，请传入json数据，例如[{ \"role\": \"user\", \"content\": \"现在是10点\" },{ \"role\": \"assistant\", \"content\": \"了解，现在10点了\" }]",
+                "data": "xhPrompt"
+              },
+              {
+                "type": "text",
+                "label": "回复替换正则",
+                "placeholder": "要替换文本的正则",
+                "data": "xhRetRegExp"
+              },
+              {
+                "type": "text",
+                "label": "回复内容替换",
+                "placeholder": "替换回复内容中的文本",
+                "data": "xhRetReplace"
+              }
+            ]
+          },
+          {
+            "title": "Bard",
+            "tab": "bard",
+            "view": [
+              {
+                "type": "password",
+                "label": "BardCookie",
+                "data": "bardPsid"
+              },
+              {
+                "type": "url",
+                "label": "Bard反代地址",
+                "data": "bardReverseProxy"
+              },
+              {
+                "type": "check",
+                "label": "使用Bard反代",
+                "data": "bardForceUseReverse"
               }
             ]
           }
