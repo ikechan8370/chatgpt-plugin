@@ -1253,7 +1253,7 @@ Poe 模式会调用 Poe 中的 Claude-instant 进行对话。需要提供 Cookie
   }
 
   async toolsPage (e) {
-    if (!Config.groupAdminPage && (e.isGroup || !e.isPrivate)) {
+    if (e.isGroup || !e.isPrivate) {
       await this.reply('请私聊发送命令', true)
       return true
     }
