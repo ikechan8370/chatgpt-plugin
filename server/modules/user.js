@@ -1,5 +1,5 @@
 import { UserInfo, AddUser } from './user_data.js'
-import { randomString, getUserData } from '../../utils/common.js'
+import { randomString, getUserData, getMasterQQ } from '../../utils/common.js'
 import fs from 'fs'
 
 async function User(fastify, options) {
@@ -22,9 +22,32 @@ async function User(fastify, options) {
                     reply.send({ login: false, err: `用户名密码错误,如果忘记密码请私聊机器人输入 ${body.qq == Bot.uin ? '#修改管理密码' : '#修改用户密码'} 进行修改` })
                 }
             }
+        } else if (body.otp) {
+            const token = randomString(32)
+            const opt = await redis.get(`CHATGPT:SERVER_QUICK`)
+            if (opt && body.otp == opt) {
+                AddUser({ user: Bot.uin, token: token, autho: 'admin' })
+                reply.setCookie('token', token, { path: '/' })
+                reply.send({ login: true, autho: 'admin', token: token, user: Bot.uin })
+            } else {
+                reply.send({ login: false, err: `快捷登录代码错误，请检查后重试` })
+            }
         } else {
             reply.send({ login: false, err: '未输入用户名或密码' })
         }
+        return reply
+    })
+    // 快速登录
+    fastify.post('/quick', async (request, reply) => {
+        const otp = randomString(6)
+        await redis.set(
+            `CHATGPT:SERVER_QUICK`,
+            otp,
+            { EX: 60000 }
+        )
+        const master = (await getMasterQQ())[0]
+        Bot.sendPrivateMsg(master, `收到工具箱快捷登录请求，1分钟内有效：${otp}`, false)
+        reply.send({ state: true })
         return reply
     })
     // 检查用户是否存在
@@ -41,7 +64,7 @@ async function User(fastify, options) {
             verify: true,
             user: user.user,
             autho: user.autho,
-            version: 10010,
+            version: 10016,
         })
         return reply
     })
