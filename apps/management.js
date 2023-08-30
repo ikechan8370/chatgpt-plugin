@@ -9,7 +9,8 @@ import {
   getVoicevoxRoleList,
   makeForwardMsg,
   parseDuration,
-  renderUrl
+  renderUrl,
+  randomString
 } from '../utils/common.js'
 import SydneyAIClient from '../utils/SydneyAIClient.js'
 import { convertSpeaker, speakers as vitsRoleList } from '../utils/tts.js'
@@ -211,6 +212,11 @@ export class ChatgptManagement extends plugin {
         {
           reg: '^#(设置|修改)用户密码',
           fnc: 'setUserPassword'
+        },
+        {
+          reg: '^#工具箱',
+          fnc: 'toolsPage',
+          permission: 'master'
         },
         {
           reg: '^#chatgpt系统(设置|配置|管理)',
@@ -1244,6 +1250,21 @@ Poe 模式会调用 Poe 中的 Claude-instant 进行对话。需要提供 Cookie
     }
     const viewHost = Config.serverHost ? `http://${Config.serverHost}/` : `http://${await getPublicIP()}:${Config.serverPort || 3321}/`
     await this.reply(`请登录${viewHost + 'admin/dashboard'}进行系统配置`, true)
+  }
+
+  async toolsPage (e) {
+    if (!Config.groupAdminPage && (e.isGroup || !e.isPrivate)) {
+      await this.reply('请私聊发送命令', true)
+      return true
+    }
+    const viewHost = Config.serverHost ? `http://${Config.serverHost}/` : `http://${await getPublicIP()}:${Config.serverPort || 3321}/`
+    const otp = randomString(6)
+    await redis.set(
+        `CHATGPT:SERVER_QUICK`,
+        otp,
+        { EX: 60000 }
+    )
+    await this.reply(`请登录http://tools.alcedogroup.com/login?server=${viewHost}&otp=${otp}`, true)
   }
 
   async setOpenAIPlatformToken (e) {
