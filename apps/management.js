@@ -1240,7 +1240,7 @@ Poe 模式会调用 Poe 中的 Claude-instant 进行对话。需要提供 Cookie
       return true
     }
     const viewHost = Config.serverHost ? `http://${Config.serverHost}/` : `http://${await getPublicIP()}:${Config.serverPort || 3321}/`
-    await this.reply(`请登录${viewHost + 'admin/settings'}进行系统配置`, true)
+    await this.reply(`请登录${viewHost}进行系统配置`, true)
   }
 
   async userPage (e) {
@@ -1249,7 +1249,7 @@ Poe 模式会调用 Poe 中的 Claude-instant 进行对话。需要提供 Cookie
       return true
     }
     const viewHost = Config.serverHost ? `http://${Config.serverHost}/` : `http://${await getPublicIP()}:${Config.serverPort || 3321}/`
-    await this.reply(`请登录${viewHost + 'admin/dashboard'}进行系统配置`, true)
+    await this.reply(`请登录${viewHost}进行系统配置`, true)
   }
 
   async toolsPage (e) {
