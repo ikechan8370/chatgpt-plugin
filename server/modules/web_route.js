@@ -3,15 +3,16 @@ import fs from 'fs'
 
 async function routes(fastify, options) {
     fastify.get('/page/*', async (request, reply) => {
-        const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
+        const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/page.html')
         reply.type('text/html').send(stream)
         return reply
     })
     fastify.get('/version', async (request, reply) => {
-        const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
+        const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/page.html')
         reply.type('text/html').send(stream)
         return reply
     })
+    /*
     fastify.get('/auth/*', async (request, reply) => {
         const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
         reply.type('text/html').send(stream)
@@ -41,7 +42,6 @@ async function routes(fastify, options) {
         return reply
     })
     fastify.get('/admin/settings', async (request, reply) => {
-        /*
         const token = request.cookies.token || request.body?.token || 'unknown'
         const user = UserInfo(token)
         if (!user || user.autho != 'admin') {
@@ -49,15 +49,9 @@ async function routes(fastify, options) {
         }
         const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
         reply.type('text/html').send(stream)
-        */
-        reply.redirect('/tools/')
         return reply
     })
-    fastify.get('/tools/*', async (request, reply) => {
-        const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/tools/index.html')
-        reply.type('text/html').send(stream)
-        return reply
-    })
+    */
 }
 
 export default routes
