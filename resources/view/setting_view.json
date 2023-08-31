@@ -62,6 +62,10 @@
             "value": "bing"
           },
           {
+            "label": "Azure OpenAI",
+            "value": "azure"
+          },
+          {
             "label": "ChatGPT API",
             "value": "api"
           },
@@ -821,6 +825,27 @@
                 "type": "check",
                 "label": "使用Bard反代",
                 "data": "bardForceUseReverse"
+              }
+            ]
+          },
+          {
+            "title": "Azure",
+            "tab": "azure",
+            "view": [
+              {
+                "type": "password",
+                "label": "Azure API Key",
+                "data": "azApiKey"
+              },
+              {
+                "type": "url",
+                "label": "端点地址",
+                "data": "azureUrl"
+              },
+              {
+                "type": "url",
+                "label": "部署名称",
+                "data": "azureDeploymentName"
               }
             ]
           }

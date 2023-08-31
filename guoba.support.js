@@ -854,7 +854,7 @@ export function supportGuoba () {
           component: 'Divider'
         },
         {
-          field: 'apiKey',
+          field: 'azApiKey',
           label: 'Azure API Key',
           bottomHelpMessage: '管理密钥，用于访问Azure的API接口',
           component: 'InputPassword'

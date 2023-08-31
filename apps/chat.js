@@ -1935,7 +1935,7 @@ export class chatgpt extends plugin {
         let msg = conversation.messages
         let content = { role: 'user', content: prompt }
         msg.push(content)
-        const client = new OpenAIClient(Config.azureUrl, new AzureKeyCredential(Config.apiKey))
+        const client = new OpenAIClient(Config.azureUrl, new AzureKeyCredential(Config.azApiKey))
         const deploymentName = Config.azureDeploymentName
         const { choices } = await client.getChatCompletions(deploymentName, msg)
         let completion = choices[0].message;
