@@ -9,7 +9,8 @@ import {
   getVoicevoxRoleList,
   makeForwardMsg,
   parseDuration,
-  renderUrl
+  renderUrl,
+  randomString
 } from '../utils/common.js'
 import SydneyAIClient from '../utils/SydneyAIClient.js'
 import { convertSpeaker, speakers as vitsRoleList } from '../utils/tts.js'
@@ -114,6 +115,16 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
+          reg: '^#chatgpt切换azure$',
+          fnc: 'useAzureBasedSolution',
+          permission: 'master'
+        },
+        {
+          reg: '^#chatgpt切换(Bard|bard)$',
+          fnc: 'useBardBasedSolution',
+          permission: 'master'
+        },
+        {
           reg: '^#chatgpt(必应|Bing)切换',
           fnc: 'changeBingTone',
           permission: 'master'
@@ -206,6 +217,11 @@ export class ChatgptManagement extends plugin {
         {
           reg: '^#(设置|修改)用户密码',
           fnc: 'setUserPassword'
+        },
+        {
+          reg: '^#工具箱',
+          fnc: 'toolsPage',
+          permission: 'master'
         },
         {
           reg: '^#chatgpt系统(设置|配置|管理)',
@@ -848,6 +864,25 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
       await this.reply('当前已经是星火模式了')
     }
   }
+  async useAzureBasedSolution () {
+    let use = await redis.get('CHATGPT:USE')
+    if (use !== 'azure') {
+      await redis.set('CHATGPT:USE', 'azure')
+      await this.reply('已切换到基于Azure的解决方案')
+    } else {
+      await this.reply('当前已经是Azure模式了')
+    }
+  }
+
+  async useBardBasedSolution () {
+    let use = await redis.get('CHATGPT:USE')
+    if (use !== 'bard') {
+      await redis.set('CHATGPT:USE', 'bard')
+      await this.reply('已切换到基于Bard的解决方案')
+    } else {
+      await this.reply('当前已经是Bard模式了')
+    }
+  }
 
   async changeBingTone (e) {
     let tongStyle = e.msg.replace(/^#chatgpt(必应|Bing)切换/, '')
@@ -894,6 +929,7 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
     let mode = await redis.get('CHATGPT:USE')
     const modeMap = {
       browser: '浏览器',
+      azure: 'Azure',
       // apiReverse: 'API2',
       api: 'API',
       bing: '必应',
@@ -1219,7 +1255,7 @@ Poe 模式会调用 Poe 中的 Claude-instant 进行对话。需要提供 Cookie
       return true
     }
     const viewHost = Config.serverHost ? `http://${Config.serverHost}/` : `http://${await getPublicIP()}:${Config.serverPort || 3321}/`
-    await this.reply(`请登录${viewHost + 'admin/settings'}进行系统配置`, true)
+    await this.reply(`请登录${viewHost}进行系统配置`, true)
   }
 
   async userPage (e) {
@@ -1228,7 +1264,22 @@ Poe 模式会调用 Poe 中的 Claude-instant 进行对话。需要提供 Cookie
       return true
     }
     const viewHost = Config.serverHost ? `http://${Config.serverHost}/` : `http://${await getPublicIP()}:${Config.serverPort || 3321}/`
-    await this.reply(`请登录${viewHost + 'admin/dashboard'}进行系统配置`, true)
+    await this.reply(`请登录${viewHost}进行系统配置`, true)
+  }
+
+  async toolsPage (e) {
+    if (e.isGroup || !e.isPrivate) {
+      await this.reply('请私聊发送命令', true)
+      return true
+    }
+    const viewHost = Config.serverHost ? `http://${Config.serverHost}/` : `http://${await getPublicIP()}:${Config.serverPort || 3321}/`
+    const otp = randomString(6)
+    await redis.set(
+        `CHATGPT:SERVER_QUICK`,
+        otp,
+        { EX: 60000 }
+    )
+    await this.reply(`请登录http://tools.alcedogroup.com/login?server=${viewHost}&otp=${otp}`, true)
   }
 
   async setOpenAIPlatformToken (e) {
@@ -1265,7 +1316,7 @@ Poe 模式会调用 Poe 中的 Claude-instant 进行对话。需要提供 Cookie
     if (await redis.exists('CHATGPT:USE') != 0) {
       redisConfig.useMode = await redis.get('CHATGPT:USE')
     }
-    const filepath = path.join('plugins/chatgpt-plugin/resources', 'view.json')
+    const filepath = path.join('plugins/chatgpt-plugin/resources/view', 'setting_view.json')
     const configView = JSON.parse(fs.readFileSync(filepath, 'utf8'))
     const configJson = JSON.stringify({
       chatConfig: Config,
@@ -1274,7 +1325,7 @@ Poe 模式会调用 Poe 中的 Claude-instant 进行对话。需要提供 Cookie
     })
     console.log(configJson)
     const buf = Buffer.from(configJson)
-    e.friend.sendFile(buf, `ChatGPT-Plugin Config ${new Date()}.json`)
+    e.friend.sendFile(buf, `ChatGPT-Plugin Config ${Date.now()}.json`)
     return true
   }
 

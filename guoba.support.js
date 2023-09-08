@@ -218,6 +218,12 @@ export function supportGuoba () {
           }
         },
         {
+          field: 'groupMerge',
+          label: '群组消息合并',
+          bottomHelpMessage: '开启后，群聊消息将被视为同一对话',
+          component: 'Switch'
+        },
+        {
           field: 'allowOtherMode',
           label: '允许其他模式',
           bottomHelpMessage: '开启后，则允许用户使用#chat1/#chat3/#chatglm/#bing等命令无视全局模式进行聊天',
@@ -233,18 +239,6 @@ export function supportGuoba () {
           field: 'showQRCode',
           label: '启用二维码',
           bottomHelpMessage: '在图片模式中启用二维码。该对话内容将被发送至第三方服务器以进行渲染展示，如果不希望对话内容被上传到第三方服务器请关闭此功能',
-          component: 'Switch'
-        },
-        {
-          field: 'cacheUrl',
-          label: '渲染服务器地址',
-          bottomHelpMessage: '用于缓存图片模式会话内容并渲染的服务器地址',
-          component: 'Input'
-        },
-        {
-          field: 'cacheEntry',
-          label: '预制渲染服务器访问代码',
-          bottomHelpMessage: '图片内容渲染服务器开启预制访问代码，当渲染服务器访问较慢时可以开启,但无法保证访问代码可以正常访问页面',
           component: 'Switch'
         },
         {
@@ -622,10 +616,106 @@ export function supportGuoba () {
           component: 'Divider'
         },
         {
+          field: 'xhmode',
+          label: '星火模式',
+          bottomHelpMessage: '设置星火使用的对话模式',
+          component: 'Select',
+          componentProps: {
+            options: [
+              { label: '体验版', value: 'web' },
+              { label: '讯飞星火认知大模型V1.5', value: 'api' },
+              { label: '讯飞星火认知大模型V2.0', value: 'apiv2' },
+              { label: '讯飞星火助手', value: 'assistants' }
+            ]
+          }
+        },
+        {
           field: 'xinghuoToken',
           label: '星火Cookie',
           bottomHelpMessage: '获取对话页面的ssoSessionId cookie。不要带等号和分号',
+          component: 'InputPassword'
+        },
+        {
+          field: 'xhAppId',
+          label: 'AppId',
+          bottomHelpMessage: '应用页面获取',
           component: 'Input'
+        },
+        {
+          field: 'xhAPISecret',
+          label: 'APISecret',
+          bottomHelpMessage: '应用页面获取',
+          component: 'InputPassword'
+        },
+        {
+          field: 'xhAPIKey',
+          label: '星火APIKey',
+          bottomHelpMessage: '应用页面获取',
+          component: 'InputPassword'
+        },
+        {
+          field: 'xhAssistants',
+          label: '助手接口',
+          bottomHelpMessage: '助手页面获取',
+          component: 'Input'
+        },
+        {
+          field: 'xhTemperature',
+          label: '核采样阈值',
+          bottomHelpMessage: '核采样阈值。用于决定结果随机性，取值越高随机性越强即相同的问题得到的不同答案的可能性越高',
+          component: 'InputNumber'
+        },
+        {
+          field: 'xhMaxTokens',
+          label: '最大Token',
+          bottomHelpMessage: '模型回答的tokens的最大长度',
+          component: 'InputNumber'
+        },
+        {
+          field: 'xhPromptSerialize',
+          label: '序列化设定',
+          bottomHelpMessage: '是否将设定内容进行json序列化',
+          component: 'Switch'
+        },
+        {
+          field: 'xhPrompt',
+          label: '设定',
+          bottomHelpMessage: '若开启序列化，请传入json数据，例如[{ \"role\": \"user\", \"content\": \"现在是10点\" },{ \"role\": \"assistant\", \"content\": \"了解，现在10点了\" }]',
+          component: 'InputTextArea'
+        },
+        {
+          field: 'xhRetRegExp',
+          label: '回复替换正则',
+          bottomHelpMessage: '要替换文本的正则',
+          component: 'Input'
+        },
+        {
+          field: 'xhRetReplace',
+          label: '回复内容替换',
+          bottomHelpMessage: '替换回复内容中的文本',
+          component: 'Input'
+        },
+        {
+          label: '以下为Bard方式的配置',
+          component: 'Divider'
+        },
+        {
+          field: 'bardPsid',
+          label: 'BardCookie',
+          bottomHelpMessage: '获取https://bard.google.com/页面的cookie，可完整输入，需至少包含__Secure-1PSID和__Secure-1PSIDTS',
+          component: 'Input'
+        },
+        {
+          field: 'bardReverseProxy',
+          label: 'Bard反代地址',
+          bottomHelpMessage: 'bard反代服务器地址，用于绕过地区限制',
+          component: 'Input'
+        },
+        {
+          field: 'bardForceUseReverse',
+          label: 'Bard使用反代',
+          bottomHelpMessage: '开启后将通过反代访问bard',
+          component: 'Switch'
         },
         {
           label: '以下为杂七杂八的配置',
@@ -764,14 +854,30 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
-          label: '以下为后台与渲染相关配置',
+          label: '以下为Azure chatGPT的配置',
           component: 'Divider'
         },
         {
-          field: 'oldview',
-          label: '旧版本渲染',
-          bottomHelpMessage: '开启预览版本',
-          component: 'Switch'
+          field: 'azApiKey',
+          label: 'Azure API Key',
+          bottomHelpMessage: '管理密钥，用于访问Azure的API接口',
+          component: 'InputPassword'
+        },
+        {
+          field: 'azureUrl',
+          label: '端点地址',
+          bottomHelpMessage: 'https://xxxx.openai.azure.com/',
+          component: 'Input'
+        },
+        {
+          field: 'azureDeploymentName',
+          label: '部署名称',
+          bottomHelpMessage: '创建部署时输入的名称',
+          component: 'Input'
+        },
+        {
+          label: '以下为后台与渲染相关配置',
+          component: 'Divider'
         },
         {
           field: 'serverPort',

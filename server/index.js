@@ -16,6 +16,7 @@ import { getPublicIP, getUserData, getMasterQQ, randomString } from '../utils/co
 
 import webRoute from './modules/web_route.js'
 import webUser from './modules/user.js'
+import webPrompt from './modules/prompts.js'
 import SettingView from './modules/setting_view.js'
 
 const __dirname = path.resolve()
@@ -82,6 +83,7 @@ await server.register(fastifyCookie)
 await server.register(webRoute)
 await server.register(webUser)
 await server.register(SettingView)
+await server.register(webPrompt)
 
 // 无法访问端口的情况下创建与media的通讯
 async function mediaLink() {
@@ -185,6 +187,10 @@ export async function createServer() {
   server.post('/page', async (request, reply) => {
     const body = request.body || {}
     if (body.code) {
+      const pattern = /^[a-zA-Z0-9]+$/
+      if (!pattern.test(body.code)) {
+        reply.send({error: 'bad request'})
+      }
       const dir = 'resources/ChatGPTCache/page'
       const filename = body.code + '.json'
       const filepath = path.join(dir, filename)
@@ -390,7 +396,8 @@ export async function createServer() {
                     rand: e.rand,
                     message: e.message,
                     user_name: e.sender.nickname,
-                  }
+                  },
+                  read: true
                 }
                 await connection.socket.send(JSON.stringify(messageData))
               })
@@ -578,14 +585,8 @@ export async function createServer() {
   // 系统服务测试
   server.post('/serverTest', async (request, reply) => {
     let serverState = {
-      cache: false,
+      cache: false, //待移除
       cloud: false
-    }
-    if (Config.cacheUrl) {
-      const checkCacheUrl = await fetch(Config.cacheUrl, { method: 'GET' })
-      if (checkCacheUrl.ok) {
-        serverState.cache = true
-      }
     }
     if (Config.cloudTranscode) {
       const checkCheckCloud = await fetch(Config.cloudTranscode, { method: 'GET' })
