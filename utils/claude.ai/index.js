@@ -1,34 +1,52 @@
-import fetch, { File, FormData, Headers } from 'node-fetch'
+import { File, FormData, Headers } from 'node-fetch'
 import fs from 'fs'
 import crypto from 'crypto'
-import HttpsProxyAgent from 'https-proxy-agent'
-
+// import initCycleTLS from 'cycletls'
+let initCycleTLS
+try {
+  initCycleTLS = await import('cycletls')
+} catch (err) {
+  console.warn('未安装cycletls，无法使用claude2功能。')
+}
 export class ClaudeAIClient {
   constructor (opts) {
+    if (!initCycleTLS) {
+      throw new Error('CycleTLS is not installed')
+    }
     const { organizationId, sessionKey, proxy, debug = false } = opts
     this.organizationId = organizationId
     this.sessionKey = sessionKey
     this.debug = debug
     let headers = new Headers()
     headers.append('Cookie', `sessionKey=${sessionKey}`)
-    headers.append('referrer', 'https://claude.ai/chat/360f8c2c-56e8-4193-99c6-8d52fad3ecc8')
+    headers.append('referrer', 'https://claude.ai/chat')
     headers.append('origin', 'https://claude.ai')
     headers.append('Content-Type', 'application/json')
-    this.headers = headers
-    this.proxy = proxy
-    this.fetch = (url, options = {}) => {
-      const defaultOptions = proxy
-        ? {
-            agent: HttpsProxyAgent(proxy)
-          }
-        : {}
-      const mergedOptions = {
-        ...defaultOptions,
-        ...options
-      }
+    headers.append('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36')
+    // headers.append('sec-ch-ua', '"Chromium";v="116", "Not)A;Brand";v="24", "Google Chrome";v="116"')
+    // headers.append('Sec-Ch-Ua-Mobile', '?0')
+    // headers.append('Sec-Ch-Ua-Platform', '"Windows"')
+    headers.append('Sec-Fetch-Dest', 'empty')
+    headers.append('Sec-Fetch-Mode', 'cors')
+    headers.append('Sec-Fetch-Site', 'same-origin')
+    headers.append('Connection', 'keep-alive')
+    headers.append('TE', 'trailers')
+    headers.append('Accept-Encoding', 'gzip, deflate, br')
+    headers.append('Accept-Language', 'en-US,en;q=0.5')
+    headers.append('Dnt', '1')
+    headers.append('Accept', '*/*')
+    // headers.append('sentry-trace', 'd1c13c8e760c4e9e969a5e1aed6a38cf-a854f94e3d1a4bc7-0')
+    // headers.append('anthropic-client-sha', 'cab849b55d41c73804c1b2b87a7a7fdb84263dc9')
+    // headers.append('anthropic-client-version', '1')
+    // headers.append('baggage', 'sentry-environment=production,sentry-release=cab849b55d41c73804c1b2b87a7a7fdb84263dc9,sentry-public_key=58e9b9d0fc244061a1b54fe288b0e483,sentry-trace_id=d1c13c8e760c4e9e969a5e1aed6a38cf')
+    this.JA3 = '772,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,5-27-45-35-65281-16-18-10-17513-43-13-23-51-0-11,29-23-24,0'
 
-      return fetch(url, mergedOptions)
-    }
+    this.headers = headers
+    this.rawHeaders = {}
+    Array.from(this.headers.keys()).forEach(key => {
+      this.rawHeaders[key] = this.headers.get(key)
+    })
+    this.proxy = proxy
   }
 
   /**
@@ -42,26 +60,27 @@ export class ClaudeAIClient {
     formData.append('orgUuid', this.organizationId)
     let buffer = fs.readFileSync(filePath)
     formData.append('file', new File([buffer], filename))
-    let result = await this.fetch('https://claude.ai/api/convert_document', {
-      body: formData,
-      headers: this.headers,
-      method: 'POST',
-      redirect: 'manual'
-    })
-    if (result.statusCode === 307) {
-      throw new Error('claude.ai目前不支持你所在的地区')
-    }
-    if (result.statusCode !== 200) {
-      console.warn('failed to parse document convert result: ' + result.statusCode + ' ' + result.statusText)
-      return null
-    }
-    let raw = await result.text()
-    try {
-      return JSON.parse(raw)
-    } catch (e) {
-      console.warn('failed to parse document convert result: ' + raw)
-      return null
-    }
+    // let result = await this.fetch('https://claude.ai/api/convert_document', {
+    //   body: formData,
+    //   headers: this.headers,
+    //   method: 'POST',
+    //   redirect: 'manual',
+    //   referrer: 'https://claude.ai/chat/bba5a67d-ee59-4196-a371-ece8a35db1f2'
+    // })
+    // if (result.statusCode === 307) {
+    //   throw new Error('claude.ai目前不支持你所在的地区')
+    // }
+    // if (result.statusCode !== 200) {
+    //   console.warn('failed to parse document convert result: ' + result.statusCode + ' ' + result.statusText)
+    //   return null
+    // }
+    // let raw = await result.text()
+    // try {
+    //   return JSON.parse(raw)
+    // } catch (e) {
+    //   console.warn('failed to parse document convert result: ' + raw)
+    //   return null
+    // }
   }
 
   /**
@@ -76,21 +95,32 @@ export class ClaudeAIClient {
       uuid
     }
     body = JSON.stringify(body)
-    let result = await this.fetch(`https://claude.ai/api/organizations/${this.organizationId}/chat_conversations`, {
+    // let result = await this.fetch(`https://claude.ai/api/organizations/${this.organizationId}/chat_conversations`, {
+    //   body,
+    //   headers: this.headers,
+    //   method: 'POST',
+    //   redirect: 'manual'
+    //   // referrer: 'https://claude.ai/chat/bba5a67d-ee59-4196-a371-ece8a35db1f2'
+    // })
+    const cycleTLS = await initCycleTLS()
+    let result = await cycleTLS(`https://claude.ai/api/organizations/${this.organizationId}/chat_conversations`, {
+      ja3: this.JA3,
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
+      proxy: this.proxy,
       body,
-      headers: this.headers,
-      method: 'POST',
-      redirect: 'manual'
-    })
-    if (result.statusCode === 307) {
+      headers: this.rawHeaders,
+      disableRedirect: true
+    }, 'post')
+    if (result.status === 307) {
       throw new Error('claude.ai目前不支持你所在的地区')
     }
-    let jsonRes = await result.json()
+    let jsonRes = result.body
     if (this.debug) {
       console.log(jsonRes)
     }
     if (!jsonRes?.uuid) {
       console.error(jsonRes)
+      // console.log(result.headers)
       throw new Error('conversation create error')
     }
     return jsonRes
@@ -110,37 +140,44 @@ export class ClaudeAIClient {
       }
     }
     let url = 'https://claude.ai/api/append_message'
-    let streamDataRes = await this.fetch(url, {
-      method: 'POST',
+    const cycleTLS = await initCycleTLS()
+    let streamDataRes = await cycleTLS(url, {
+      ja3: this.JA3,
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
+      proxy: this.proxy,
       body: JSON.stringify(body),
-      headers: this.headers,
-      redirect: 'manual'
-    })
-    if (streamDataRes.statusCode === 307) {
+      headers: this.rawHeaders,
+      disableRedirect: true
+    }, 'post')
+    if (streamDataRes.status === 307) {
       throw new Error('claude.ai目前不支持你所在的地区')
     }
-    let streamData = await streamDataRes.text()
+    let streamData = streamDataRes.body
+    // console.log(streamData)
     let responseText = ''
     let streams = streamData.split('\n\n')
-    streams.forEach(s => {
+    for (let s of streams) {
       let jsonStr = s.replace('data: ', '').trim()
       try {
         let jsonObj = JSON.parse(jsonStr)
         if (jsonObj && jsonObj.completion) {
           responseText += jsonObj.completion
         }
+        if (this.debug) {
+          console.log(jsonObj)
+        }
+        // console.log(responseText)
       } catch (err) {
         // ignore error
         if (this.debug) {
           console.log(jsonStr)
         }
       }
-    })
-    let response = {
+    }
+    return {
       text: responseText.trim(),
       conversationId
     }
-    return response
   }
 }
 
@@ -153,7 +190,8 @@ async function testClaudeAI () {
   })
   let conv = await client.createConversation()
   let result = await client.sendMessage('hello, who are you', conv.uuid)
-  console.log(result.response)
+  console.log(result.text)
+  return result
 }
 
 // testClaudeAI()

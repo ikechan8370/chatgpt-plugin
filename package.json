@@ -41,7 +41,8 @@
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-recaptcha": "^3.6.8",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
-    "sharp": "^0.32.3"
+    "sharp": "^0.32.3",
+    "cycletls": "^1.0.21"
   },
   "devDependencies": {
     "ts-node": "^10.9.1",
