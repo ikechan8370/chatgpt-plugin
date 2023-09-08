@@ -4,7 +4,7 @@ import crypto from 'crypto'
 // import initCycleTLS from 'cycletls'
 let initCycleTLS
 try {
-  initCycleTLS = await import('cycletls')
+  initCycleTLS = (await import('cycletls')).default
 } catch (err) {
   console.warn('未安装cycletls，无法使用claude2功能。')
 }
