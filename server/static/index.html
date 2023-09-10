@@ -1,20 +1,40 @@
-<!--
+<!DOCTYPE html>
+<html lang="en">
 
-=========================================================
-* Vue Notus - v1.1.0 based on Tailwind Starter Kit by Creative Tim
-=========================================================
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" href="./favicon.ico" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChatGPT 工具箱</title>
+  <link rel="stylesheet" type="text/css" href="./loader.css" />
+  <script type="module" crossorigin src="./assets/index.f985de17.js"></script>
+  <link rel="stylesheet" href="./assets/index.7236eb96.css">
+</head>
 
-* Product Page: https://www.creative-tim.com/product/vue-notus
-* Copyright 2021 Creative Tim (https://www.creative-tim.com)
-* Licensed under MIT (https://github.com/creativetimofficial/vue-notus/blob/main/LICENSE.md)
+<body>
+  <div id="app">
+    <div id="loading-bg">
+      <div class="loading-logo">
+        <img src="./logo.png" height="50" alt="Logo" />
+      </div>
+      <div class="loading">
+        <div class="effect-1 effects"></div>
+        <div class="effect-2 effects"></div>
+        <div class="effect-3 effects"></div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    const loaderColor = localStorage.getItem('Materio-initial-loader-bg') || '#FFFFFF'
+    const primaryColor = localStorage.getItem('Materio-initial-loader-color') || '#9155FD'
 
-* Tailwind Starter Kit Page: https://www.creative-tim.com/learning-lab/tailwind-starter-kit/presentation
+    if (loaderColor)
+      document.documentElement.style.setProperty('--initial-loader-bg', loaderColor)
+    if (primaryColor)
+      document.documentElement.style.setProperty('--initial-loader-color', primaryColor)
 
-* Coded by Creative Tim
+  </script>
+</body>
 
-=========================================================
-
-* The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
--->
-<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta http-equiv="X-UA-Compatible" content="IE=edge"/><meta name="viewport" content="width=device-width,initial-scale=1"/><link rel="shortcut icon" href="/favicon.ico"/><link rel="apple-touch-icon" sizes="76x76" href="/apple-icon.png"/><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css"/><script src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/8.6.3/mermaid.min.js"></script><script src="/live2d/live2dcubismcore.min.js"></script><title>ChatGPT-Plugin</title><script defer="defer" type="module" src="/js/chunk-vendors.b7a1d693.js"></script><script defer="defer" type="module" src="/js/app.9eedf06d.js"></script><link href="/css/chunk-vendors.0ede84b4.css" rel="stylesheet"><link href="/css/app.a18150c7.css" rel="stylesheet"><script defer="defer" src="/js/chunk-vendors-legacy.a05bfee7.js" nomodule></script><script defer="defer" src="/js/app-legacy.093fe9e5.js" nomodule></script></head><body class="text-blueGray-700 antialiased"><noscript><strong>We're sorry but vue-notus doesn't work properly without JavaScript enabled. Please enable it to continue.</strong></noscript><div id="app"></div></body></html>
+</html>

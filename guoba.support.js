@@ -242,18 +242,6 @@ export function supportGuoba () {
           component: 'Switch'
         },
         {
-          field: 'cacheUrl',
-          label: '渲染服务器地址',
-          bottomHelpMessage: '用于缓存图片模式会话内容并渲染的服务器地址',
-          component: 'Input'
-        },
-        {
-          field: 'cacheEntry',
-          label: '预制渲染服务器访问代码',
-          bottomHelpMessage: '图片内容渲染服务器开启预制访问代码，当渲染服务器访问较慢时可以开启,但无法保证访问代码可以正常访问页面',
-          component: 'Switch'
-        },
-        {
           field: 'drawCD',
           label: '绘图CD',
           helpMessage: '单位：秒',
@@ -854,7 +842,7 @@ export function supportGuoba () {
           component: 'Divider'
         },
         {
-          field: 'apiKey',
+          field: 'azApiKey',
           label: 'Azure API Key',
           bottomHelpMessage: '管理密钥，用于访问Azure的API接口',
           component: 'InputPassword'
@@ -874,12 +862,6 @@ export function supportGuoba () {
         {
           label: '以下为后台与渲染相关配置',
           component: 'Divider'
-        },
-        {
-          field: 'oldview',
-          label: '旧版本渲染',
-          bottomHelpMessage: '开启预览版本',
-          component: 'Switch'
         },
         {
           field: 'serverPort',

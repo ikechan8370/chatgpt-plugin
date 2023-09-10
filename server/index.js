@@ -585,14 +585,8 @@ export async function createServer() {
   // 系统服务测试
   server.post('/serverTest', async (request, reply) => {
     let serverState = {
-      cache: false,
+      cache: false, //待移除
       cloud: false
-    }
-    if (Config.cacheUrl) {
-      const checkCacheUrl = await fetch(Config.cacheUrl, { method: 'GET' })
-      if (checkCacheUrl.ok) {
-        serverState.cache = true
-      }
     }
     if (Config.cloudTranscode) {
       const checkCheckCloud = await fetch(Config.cloudTranscode, { method: 'GET' })

@@ -1,0 +1,88 @@
+body {
+  margin: 0;
+}
+
+html {
+  overflow-x: hidden;
+  overflow-y: scroll;
+}
+
+#loading-bg {
+  position: absolute;
+  display: block;
+  background: var(--initial-loader-bg, #fff);
+  block-size: 100%;
+  inline-size: 100%;
+  -webkit-app-region: drag;
+}
+
+.loading-logo {
+  position: absolute;
+  inset-block-start: 40%;
+  inset-inline-start: calc(50% - 45px);
+}
+
+.loading {
+  position: absolute;
+  box-sizing: border-box;
+  border: 3px solid transparent;
+  block-size: 55px;
+  border-radius: 50%;
+  inline-size: 55px;
+  inset-block-start: 50%;
+  inset-inline-start: calc(50% - 35px);
+}
+
+.loading .effect-1,
+.loading .effect-2,
+.loading .effect-3 {
+  position: absolute;
+  box-sizing: border-box;
+  border: 3px solid transparent;
+  block-size: 100%;
+  border-inline-start: 3px solid var(--initial-loader-color, #eee);
+  border-radius: 50%;
+  inline-size: 100%;
+}
+
+.loading .effect-1 {
+  animation: rotate 1s ease infinite;
+}
+
+.loading .effect-2 {
+  animation: rotate-opacity 1s ease infinite 0.1s;
+}
+
+.loading .effect-3 {
+  animation: rotate-opacity 1s ease infinite 0.2s;
+}
+
+.loading .effects {
+  transition: all 0.3s ease;
+}
+
+@keyframes rotate {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes rotate-opacity {
+  0% {
+    opacity: 0.1;
+    transform: rotate(0deg);
+  }
+
+  100% {
+    opacity: 1;
+    transform: rotate(1turn);
+  }
+}
+
+::-webkit-scrollbar {
+  display: none; /* Chrome Safari */
+}

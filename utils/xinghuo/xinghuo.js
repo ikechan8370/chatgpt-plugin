@@ -74,18 +74,6 @@ export default class XinghuoClient {
     }
   }
 
-  promptBypassPreset(prompt) {
-    // 貌似不适用于所有人，考虑去掉
-    switch (prompt) {
-      case '你是谁':
-        return '你是谁，叫什么'
-      case '你是谁啊':
-        return '你是谁啊，叫什么'
-      default:
-        return prompt
-    }
-  }
-
   async initCache() {
     if (!this.conversationsCache) {
       const cacheOptions = this.cache || {}
@@ -203,7 +191,8 @@ export default class XinghuoClient {
           domain: Config.xhmode == 'api' ? "general" : "generalv2",
           temperature: Config.xhTemperature, // 核采样阈值
           max_tokens: Config.xhMaxTokens, // tokens最大长度
-          chat_id: chatId
+          chat_id: chatId,
+          top_k: Math.floor(Math.random() * 6) + 1 // 随机候选，避免重复回复
         }
       },
       payload: {
@@ -230,7 +219,17 @@ export default class XinghuoClient {
         try {
           const messageData = JSON.parse(message)
           if (messageData.header.code != 0) {
-            reject(`接口发生错误：Error Code ${messageData.header.code} ,${this.apiErrorInfo(messageData.header.code)}`)
+            if (messageData.header.code == 10907) {
+              const half = Math.floor(conversation.messages.length / 2)
+              conversation.messages.splice(0, half)
+              await this.conversationsCache.set(conversationKey, conversation)
+              resolve({ 
+                id: (Math.floor(Math.random() * 1000000) + 100000).toString() ,
+                response: '对话以达到上限，已自动清理对话，请重试'
+              })
+            } else {
+              reject(`接口发生错误：Error Code ${messageData.header.code} ,${this.apiErrorInfo(messageData.header.code)}`)
+            }
           }
           if (messageData.header.status == 0 || messageData.header.status == 1) {
             resMessage += messageData.payload.choices.text[0].content
@@ -379,8 +378,6 @@ export default class XinghuoClient {
     let chatId = option?.chatId
     let image = option?.image
 
-    // 对星火预设的问题进行重写，避免收到预设回答
-    prompt = this.promptBypassPreset(prompt)
     if (Config.xhmode == 'api' || Config.xhmode == 'apiv2' || Config.xhmode == 'assistants') {
       if (!Config.xhAppId || !Config.xhAPISecret || !Config.xhAPIKey) throw new Error('未配置api')
       let Prompt = []

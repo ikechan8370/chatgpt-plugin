@@ -1,0 +1,1 @@
+.misc-wrapper{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.25rem;min-block-size:calc(var(--vh, 1vh) * 100)}.misc-footer-img{position:absolute;inline-size:100%;inset-block-end:0}.misc-avatar{z-index:1}.misc-footer-tree{position:absolute;z-index:1}.misc-footer-tree{inline-size:15.625rem;inset-block-end:3.5rem;inset-inline-start:.375rem}

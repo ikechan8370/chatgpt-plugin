@@ -1455,7 +1455,7 @@ export class chatgpt extends plugin {
   }
 
   async cacheContent(e, use, content, prompt, quote = [], mood = '', suggest = '', imgUrls = []) {
-    let cacheData = { file: '', cacheUrl: Config.cacheUrl, status: '' }
+    let cacheData = { file: '', status: '' }
     cacheData.file = randomString()
     const cacheresOption = {
       method: 'POST',
@@ -1497,49 +1497,7 @@ export class chatgpt extends plugin {
   async renderImage(e, use, content, prompt, quote = [], mood = '', suggest = '', imgUrls = []) {
     let cacheData = await this.cacheContent(e, use, content, prompt, quote, mood, suggest, imgUrls)
     const template = use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index'
-    if (!Config.oldview) {
-      if (cacheData.error || cacheData.status != 200) { await this.reply(`出现错误：${cacheData.error || 'server error ' + cacheData.status}`, true) } else { await e.reply(await renderUrl(e, (Config.viewHost ? `${Config.viewHost}/` : `http://127.0.0.1:${Config.serverPort || 3321}/`) + `page/${cacheData.file}?qr=${Config.showQRCode ? 'true' : 'false'}`, { retType: Config.quoteReply ? 'base64' : '', Viewport: { width: parseInt(Config.chatViewWidth), height: parseInt(parseInt(Config.chatViewWidth) * 0.56) }, func: (parseFloat(Config.live2d) && !Config.viewHost) ? 'window.Live2d == true' : '', deviceScaleFactor: parseFloat(Config.cloudDPR) }), e.isGroup && Config.quoteReply) }
-    } else {
-      if (Config.cacheEntry) cacheData.file = randomString()
-      const cacheresOption = {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          content: {
-            content: new Buffer.from(content).toString('base64'),
-            prompt: new Buffer.from(prompt).toString('base64'),
-            senderName: e.sender.nickname,
-            style: Config.toneStyle,
-            mood,
-            quote
-          },
-          model: use,
-          bing: use === 'bing',
-          entry: Config.cacheEntry ? cacheData.file : ''
-        })
-      }
-      if (Config.cacheEntry) {
-        fetch(`${Config.cacheUrl}/cache`, cacheresOption)
-      } else {
-        const cacheres = await fetch(`${Config.cacheUrl}/cache`, cacheresOption)
-        if (cacheres.ok) {
-          cacheData = Object.assign({}, cacheData, await cacheres.json())
-        }
-      }
-      await e.reply(await render(e, 'chatgpt-plugin', template, {
-        content: new Buffer.from(content).toString('base64'),
-        prompt: new Buffer.from(prompt).toString('base64'),
-        senderName: e.sender.nickname,
-        quote: quote.length > 0,
-        quotes: quote,
-        cache: cacheData,
-        style: Config.toneStyle,
-        mood,
-        version
-      }, { retType: Config.quoteReply ? 'base64' : '' }), e.isGroup && Config.quoteReply)
-    }
+    if (cacheData.error || cacheData.status != 200) { await this.reply(`出现错误：${cacheData.error || 'server error ' + cacheData.status}`, true) } else { await e.reply(await renderUrl(e, (Config.viewHost ? `${Config.viewHost}/` : `http://127.0.0.1:${Config.serverPort || 3321}/`) + `page/${cacheData.file}?qr=${Config.showQRCode ? 'true' : 'false'}`, { retType: Config.quoteReply ? 'base64' : '', Viewport: { width: parseInt(Config.chatViewWidth), height: parseInt(parseInt(Config.chatViewWidth) * 0.56) }, func: (parseFloat(Config.live2d) && !Config.viewHost) ? 'window.Live2d == true' : '', deviceScaleFactor: parseFloat(Config.cloudDPR) }), e.isGroup && Config.quoteReply) }
   }
 
   async sendMessage(prompt, conversation = {}, use, e) {
@@ -1935,7 +1893,7 @@ export class chatgpt extends plugin {
         let msg = conversation.messages
         let content = { role: 'user', content: prompt }
         msg.push(content)
-        const client = new OpenAIClient(Config.azureUrl, new AzureKeyCredential(Config.apiKey))
+        const client = new OpenAIClient(Config.azureUrl, new AzureKeyCredential(Config.azApiKey))
         const deploymentName = Config.azureDeploymentName
         const { choices } = await client.getChatCompletions(deploymentName, msg)
         let completion = choices[0].message;
