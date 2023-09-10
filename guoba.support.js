@@ -586,6 +586,22 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
+          label: '以下为Claude2方式的配置',
+          component: 'Divider'
+        },
+        {
+          field: 'claudeAIOrganizationId',
+          label: 'claude2 OrganizationId',
+          bottomHelpMessage: 'claude.ai的OrganizationId',
+          component: 'Input'
+        },
+        {
+          field: 'claudeAISessionKey',
+          label: 'claude2 SessionKey',
+          bottomHelpMessage: 'claude.ai Cookie中的SessionKey',
+          component: 'Input'
+        },
+        {
           label: '以下为ChatGLM方式的配置',
           component: 'Divider'
         },

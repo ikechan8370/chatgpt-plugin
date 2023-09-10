@@ -25,7 +25,7 @@ import {
   getUserReplySetting,
   getImageOcrText,
   getImg,
-  getMaxModelTokens, formatDate, generateAudio, formatDate2
+  getMaxModelTokens, formatDate, generateAudio, formatDate2, mkdirs
 } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
@@ -68,6 +68,8 @@ import { SendAvatarTool } from '../utils/tools/SendAvatarTool.js'
 import { SendMessageToSpecificGroupOrUserTool } from '../utils/tools/SendMessageToSpecificGroupOrUserTool.js'
 import { SetTitleTool } from '../utils/tools/SetTitleTool.js'
 import { createCaptcha, solveCaptcha, solveCaptchaOneShot } from '../utils/bingCaptcha.js'
+import { ClaudeAIClient } from '../utils/claude.ai/index.js'
+import fs from 'fs'
 
 try {
   await import('@azure/openai')
@@ -155,6 +157,12 @@ export class chatgpt extends plugin {
         {
           reg: '^#claude开启新对话',
           fnc: 'newClaudeConversation'
+        },
+        {
+          /** 命令正则匹配 */
+          reg: '^#claude2[sS]*',
+          /** 执行方法 */
+          fnc: 'claude2'
         },
         {
           /** 命令正则匹配 */
@@ -249,41 +257,9 @@ export class chatgpt extends plugin {
           fnc: 'deleteConversation',
           permission: 'master'
         }
-        // {
-        //   reg: '^#chatgpt必应验证码',
-        //   fnc: 'bingCaptcha'
-        // }
       ]
     })
     this.toggleMode = toggleMode
-  }
-
-  /**
-   * deprecated
-   * @param e
-   * @returns {Promise<boolean>}
-   */
-  async bingCaptcha(e) {
-    let bingTokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
-    if (!bingTokens) {
-      await e.reply('尚未绑定必应token:必应过码必须绑定token')
-      return
-    }
-    bingTokens = bingTokens.map(token => token.Token)
-    let index = e.msg.replace(/^#chatgpt必应验证码/, '')
-    if (!index) {
-      await e.reply('指令不完整：请输入#chatgpt必应验证码+token序号（从1开始），如#chatgpt必应验证码1')
-      return
-    }
-    index = parseInt(index) - 1
-    let bingToken = bingTokens[index]
-    let { id, regionId, image } = await createCaptcha(e, bingToken)
-    e.bingCaptchaId = id
-    e.regionId = regionId
-    e.token = bingToken
-    await e.reply(['请崽60秒内输入下面图片以通过必应人机验证', segment.image(`base64://${image}`)])
-    this.setContext('solveBingCaptcha', false, 60)
-    return false
   }
 
   /**
@@ -326,6 +302,11 @@ export class chatgpt extends plugin {
       // await client.endConversation()
       await redis.del(`CHATGPT:SLACK_CONVERSATION:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`)
       await e.reply('claude对话已结束')
+      return
+    }
+    if (use === 'claude2') {
+      await redis.del(`CHATGPT:CLAUDE2_CONVERSATION:${e.sender.user_id}`)
+      await e.reply('claude2对话已结束')
       return
     }
     if (use === 'xh') {
@@ -1032,6 +1013,10 @@ export class chatgpt extends plugin {
           key = `CHATGPT:CONVERSATIONS_BROWSER:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`
           break
         }
+        case 'claude2': {
+          key = `CHATGPT:CLAUDE2_CONVERSATION:${e.sender.user_id}`
+          break
+        }
         case 'xh': {
           key = `CHATGPT:CONVERSATIONS_XH:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`
           break
@@ -1416,7 +1401,26 @@ export class chatgpt extends plugin {
     return true
   }
 
-  async claude(e) {
+  async claude2 (e) {
+    if (!Config.allowOtherMode) {
+      return false
+    }
+    let ats = e.message.filter(m => m.type === 'at')
+    if (!e.atme && ats.length > 0) {
+      if (Config.debug) {
+        logger.mark('艾特别人了，没艾特我，忽略#claude2')
+      }
+      return false
+    }
+    let prompt = _.replace(e.raw_message.trimStart(), '#claude2', '').trim()
+    if (prompt.length === 0) {
+      return false
+    }
+    await this.abstractChat(e, prompt, 'claude2')
+    return true
+  }
+
+  async claude (e) {
     if (!Config.allowOtherMode) {
       return false
     }
@@ -1856,6 +1860,56 @@ export class chatgpt extends plugin {
         let text = await client.sendMessage(prompt, e)
         return {
           text
+        }
+      }
+      case 'claude2': {
+        let { conversationId } = conversation
+        let client = new ClaudeAIClient({
+          organizationId: Config.claudeAIOrganizationId,
+          sessionKey: Config.claudeAISessionKey,
+          debug: Config.debug,
+          proxy: Config.proxy
+        })
+        let fileUrl, filename, attachments
+        if (e.source && e.source.message === '[文件]') {
+          if (e.isGroup) {
+            let source = (await e.group.getChatHistory(e.source.seq, 1))[0]
+            let file = source.message.find(m => m.type === 'file')
+            if (file) {
+              filename = file.name
+              fileUrl = await e.group.getFileUrl(file.fid)
+            }
+          } else {
+            let source = (await e.friend.getChatHistory(e.source.time, 1))[0]
+            let file = source.message.find(m => m.type === 'file')
+            if (file) {
+              filename = file.name
+              fileUrl = await e.group.getFileUrl(file.fid)
+            }
+          }
+        }
+        if (fileUrl) {
+          logger.info('文件地址：' + fileUrl)
+          mkdirs('data/chatgpt/files')
+          let destinationPath = 'data/chatgpt/files/' + filename
+          const response = await fetch(fileUrl)
+          const fileStream = fs.createWriteStream(destinationPath)
+          await new Promise((resolve, reject) => {
+            response.body.pipe(fileStream)
+            response.body.on('error', (err) => {
+              reject(err)
+            })
+            fileStream.on('finish', () => {
+              resolve()
+            })
+          })
+          attachments = [await client.convertDocument(destinationPath, filename)]
+        }
+        if (conversationId) {
+          return await client.sendMessage(prompt, conversationId, attachments)
+        } else {
+          let conv = await client.createConversation()
+          return await client.sendMessage(prompt, conv.uuid, attachments)
         }
       }
       case 'xh': {
@@ -2543,45 +2597,6 @@ export class chatgpt extends plugin {
       sendMessageOption = Object.assign(sendMessageOption, conversation)
     }
     return await this.chatGPTApi.sendMessage(prompt, sendMessageOption)
-  }
-
-  async solveBingCaptcha(e) {
-    try {
-      let id = e.bingCaptchaId
-      let regionId = e.regionId
-      let text = this.e.msg
-      let solveResult = await solveCaptcha(id, regionId, text, e.token)
-      if (solveResult.result) {
-        logger.mark('验证码正确：' + JSON.stringify(solveResult.detail))
-        const cacheOptions = {
-          namespace: Config.toneStyle,
-          store: new KeyvFile({ filename: 'cache.json' })
-        }
-        const bingAIClient = new SydneyAIClient({
-          userToken: e.token, // "_U" cookie from bing.com
-          debug: Config.debug,
-          cache: cacheOptions,
-          user: e.sender.user_id,
-          proxy: Config.proxy
-        })
-        try {
-          let response = await bingAIClient.sendMessage('hello', Object.assign({ invocationId: '1' }, e.bingConversation))
-          if (response.response) {
-            await e.reply('验证码已通过')
-          } else {
-            await e.reply('验证码正确，但账户未解决验证码')
-          }
-        } catch (err) {
-          logger.error(err)
-          await e.reply('验证码正确，但账户未解决验证码')
-        }
-      } else {
-        await e.reply('验证码失败：' + JSON.stringify(solveResult.detail))
-      }
-    } catch (err) {
-      this.finish('solveBingCaptcha')
-    }
-    this.finish('solveBingCaptcha')
   }
 }
 

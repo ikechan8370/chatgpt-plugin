@@ -105,6 +105,11 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
+          reg: '^#chatgpt切换(Claude2|claude2|claude.ai)$',
+          fnc: 'useClaudeAISolution',
+          permission: 'master'
+        },
+        {
           reg: '^#chatgpt切换星火$',
           fnc: 'useXinghuoBasedSolution',
           permission: 'master'
@@ -837,6 +842,16 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
       await this.reply('已切换到基于slack claude机器人的解决方案')
     } else {
       await this.reply('当前已经是claude模式了')
+    }
+  }
+
+  async useClaudeAISolution () {
+    let use = await redis.get('CHATGPT:USE')
+    if (use !== 'claude2') {
+      await redis.set('CHATGPT:USE', 'claude2')
+      await this.reply('已切换到基于claude.ai的解决方案')
+    } else {
+      await this.reply('当前已经是claude2模式了')
     }
   }
 
