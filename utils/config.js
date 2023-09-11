@@ -23,8 +23,6 @@ const defaultConfig = {
   groupMerge: false,
   quoteReply: true,
   showQRCode: true,
-  cacheUrl: 'https://content.alcedogroup.com',
-  cacheEntry: false,
   apiKey: '',
   openAiBaseUrl: defaultOpenAIReverseProxy,
   OpenAiPlatformRefreshToken: '',
@@ -59,6 +57,7 @@ const defaultConfig = {
   xhMaxTokens: 1024,
   xhPromptSerialize: false,
   xhPrompt: '',
+  xhPromptEval: false,
   xhRetRegExp: '',
   xhRetReplace: '',
   promptPrefixOverride: 'Your answer shouldn\'t be too verbose. Prefer to answer in Chinese.',
@@ -97,8 +96,6 @@ const defaultConfig = {
   maxNumUserMessagesInConversation: 20,
   sydneyApologyIgnored: true,
   enforceMaster: false,
-  oldview: false,
-  newhelp: false,
   serverPort: 3321,
   serverHost: '',
   viewHost: '',
@@ -148,7 +145,12 @@ const defaultConfig = {
   extraUrl: 'https://cpe.ikechan8370.com',
   smartMode: false,
   bingCaptchaOneShotUrl: 'http://bingcaptcha.ikechan8370.com/bing',
-  version: 'v2.7.3'
+  // claude2
+  claudeAIOrganizationId: '',
+  claudeAISessionKey: '',
+  claudeAIJA3: '772,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,27-5-65281-13-35-0-51-18-16-43-10-45-11-17513-23,29-23-24,0',
+  claudeAIUA: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
+  version: 'v2.7.4'
 }
 const _path = process.cwd()
 let config = {}

@@ -25,7 +25,7 @@ import {
   getUserReplySetting,
   getImageOcrText,
   getImg,
-  getMaxModelTokens, formatDate, generateAudio, formatDate2
+  getMaxModelTokens, formatDate, generateAudio, formatDate2, mkdirs
 } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
@@ -68,6 +68,8 @@ import { SendAvatarTool } from '../utils/tools/SendAvatarTool.js'
 import { SendMessageToSpecificGroupOrUserTool } from '../utils/tools/SendMessageToSpecificGroupOrUserTool.js'
 import { SetTitleTool } from '../utils/tools/SetTitleTool.js'
 import { createCaptcha, solveCaptcha, solveCaptchaOneShot } from '../utils/bingCaptcha.js'
+import { ClaudeAIClient } from '../utils/claude.ai/index.js'
+import fs from 'fs'
 
 try {
   await import('@azure/openai')
@@ -155,6 +157,12 @@ export class chatgpt extends plugin {
         {
           reg: '^#claude开启新对话',
           fnc: 'newClaudeConversation'
+        },
+        {
+          /** 命令正则匹配 */
+          reg: '^#claude2[sS]*',
+          /** 执行方法 */
+          fnc: 'claude2'
         },
         {
           /** 命令正则匹配 */
@@ -249,41 +257,9 @@ export class chatgpt extends plugin {
           fnc: 'deleteConversation',
           permission: 'master'
         }
-        // {
-        //   reg: '^#chatgpt必应验证码',
-        //   fnc: 'bingCaptcha'
-        // }
       ]
     })
     this.toggleMode = toggleMode
-  }
-
-  /**
-   * deprecated
-   * @param e
-   * @returns {Promise<boolean>}
-   */
-  async bingCaptcha(e) {
-    let bingTokens = JSON.parse(await redis.get('CHATGPT:BING_TOKENS'))
-    if (!bingTokens) {
-      await e.reply('尚未绑定必应token:必应过码必须绑定token')
-      return
-    }
-    bingTokens = bingTokens.map(token => token.Token)
-    let index = e.msg.replace(/^#chatgpt必应验证码/, '')
-    if (!index) {
-      await e.reply('指令不完整：请输入#chatgpt必应验证码+token序号（从1开始），如#chatgpt必应验证码1')
-      return
-    }
-    index = parseInt(index) - 1
-    let bingToken = bingTokens[index]
-    let { id, regionId, image } = await createCaptcha(e, bingToken)
-    e.bingCaptchaId = id
-    e.regionId = regionId
-    e.token = bingToken
-    await e.reply(['请崽60秒内输入下面图片以通过必应人机验证', segment.image(`base64://${image}`)])
-    this.setContext('solveBingCaptcha', false, 60)
-    return false
   }
 
   /**
@@ -326,6 +302,11 @@ export class chatgpt extends plugin {
       // await client.endConversation()
       await redis.del(`CHATGPT:SLACK_CONVERSATION:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`)
       await e.reply('claude对话已结束')
+      return
+    }
+    if (use === 'claude2') {
+      await redis.del(`CHATGPT:CLAUDE2_CONVERSATION:${e.sender.user_id}`)
+      await e.reply('claude2对话已结束')
       return
     }
     if (use === 'xh') {
@@ -1032,6 +1013,10 @@ export class chatgpt extends plugin {
           key = `CHATGPT:CONVERSATIONS_BROWSER:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`
           break
         }
+        case 'claude2': {
+          key = `CHATGPT:CLAUDE2_CONVERSATION:${e.sender.user_id}`
+          break
+        }
         case 'xh': {
           key = `CHATGPT:CONVERSATIONS_XH:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`
           break
@@ -1403,7 +1388,26 @@ export class chatgpt extends plugin {
     return true
   }
 
-  async claude(e) {
+  async claude2 (e) {
+    if (!Config.allowOtherMode) {
+      return false
+    }
+    let ats = e.message.filter(m => m.type === 'at')
+    if (!e.atme && ats.length > 0) {
+      if (Config.debug) {
+        logger.mark('艾特别人了，没艾特我，忽略#claude2')
+      }
+      return false
+    }
+    let prompt = _.replace(e.raw_message.trimStart(), '#claude2', '').trim()
+    if (prompt.length === 0) {
+      return false
+    }
+    await this.abstractChat(e, prompt, 'claude2')
+    return true
+  }
+
+  async claude (e) {
     if (!Config.allowOtherMode) {
       return false
     }
@@ -1442,7 +1446,7 @@ export class chatgpt extends plugin {
   }
 
   async cacheContent(e, use, content, prompt, quote = [], mood = '', suggest = '', imgUrls = []) {
-    let cacheData = { file: '', cacheUrl: Config.cacheUrl, status: '' }
+    let cacheData = { file: '', status: '' }
     cacheData.file = randomString()
     const cacheresOption = {
       method: 'POST',
@@ -1484,49 +1488,7 @@ export class chatgpt extends plugin {
   async renderImage(e, use, content, prompt, quote = [], mood = '', suggest = '', imgUrls = []) {
     let cacheData = await this.cacheContent(e, use, content, prompt, quote, mood, suggest, imgUrls)
     const template = use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index'
-    if (!Config.oldview) {
-      if (cacheData.error || cacheData.status != 200) { await this.reply(`出现错误：${cacheData.error || 'server error ' + cacheData.status}`, true) } else { await e.reply(await renderUrl(e, (Config.viewHost ? `${Config.viewHost}/` : `http://127.0.0.1:${Config.serverPort || 3321}/`) + `page/${cacheData.file}?qr=${Config.showQRCode ? 'true' : 'false'}`, { retType: Config.quoteReply ? 'base64' : '', Viewport: { width: parseInt(Config.chatViewWidth), height: parseInt(parseInt(Config.chatViewWidth) * 0.56) }, func: (parseFloat(Config.live2d) && !Config.viewHost) ? 'window.Live2d == true' : '', deviceScaleFactor: parseFloat(Config.cloudDPR) }), e.isGroup && Config.quoteReply) }
-    } else {
-      if (Config.cacheEntry) cacheData.file = randomString()
-      const cacheresOption = {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          content: {
-            content: new Buffer.from(content).toString('base64'),
-            prompt: new Buffer.from(prompt).toString('base64'),
-            senderName: e.sender.nickname,
-            style: Config.toneStyle,
-            mood,
-            quote
-          },
-          model: use,
-          bing: use === 'bing',
-          entry: Config.cacheEntry ? cacheData.file : ''
-        })
-      }
-      if (Config.cacheEntry) {
-        fetch(`${Config.cacheUrl}/cache`, cacheresOption)
-      } else {
-        const cacheres = await fetch(`${Config.cacheUrl}/cache`, cacheresOption)
-        if (cacheres.ok) {
-          cacheData = Object.assign({}, cacheData, await cacheres.json())
-        }
-      }
-      await e.reply(await render(e, 'chatgpt-plugin', template, {
-        content: new Buffer.from(content).toString('base64'),
-        prompt: new Buffer.from(prompt).toString('base64'),
-        senderName: e.sender.nickname,
-        quote: quote.length > 0,
-        quotes: quote,
-        cache: cacheData,
-        style: Config.toneStyle,
-        mood,
-        version
-      }, { retType: Config.quoteReply ? 'base64' : '' }), e.isGroup && Config.quoteReply)
-    }
+    if (cacheData.error || cacheData.status != 200) { await this.reply(`出现错误：${cacheData.error || 'server error ' + cacheData.status}`, true) } else { await e.reply(await renderUrl(e, (Config.viewHost ? `${Config.viewHost}/` : `http://127.0.0.1:${Config.serverPort || 3321}/`) + `page/${cacheData.file}?qr=${Config.showQRCode ? 'true' : 'false'}`, { retType: Config.quoteReply ? 'base64' : '', Viewport: { width: parseInt(Config.chatViewWidth), height: parseInt(parseInt(Config.chatViewWidth) * 0.56) }, func: (parseFloat(Config.live2d) && !Config.viewHost) ? 'window.Live2d == true' : '', deviceScaleFactor: parseFloat(Config.cloudDPR) }), e.isGroup && Config.quoteReply) }
   }
 
   async sendMessage(prompt, conversation = {}, use, e) {
@@ -1887,6 +1849,56 @@ export class chatgpt extends plugin {
           text
         }
       }
+      case 'claude2': {
+        let { conversationId } = conversation
+        let client = new ClaudeAIClient({
+          organizationId: Config.claudeAIOrganizationId,
+          sessionKey: Config.claudeAISessionKey,
+          debug: Config.debug,
+          proxy: Config.proxy
+        })
+        let fileUrl, filename, attachments
+        if (e.source && e.source.message === '[文件]') {
+          if (e.isGroup) {
+            let source = (await e.group.getChatHistory(e.source.seq, 1))[0]
+            let file = source.message.find(m => m.type === 'file')
+            if (file) {
+              filename = file.name
+              fileUrl = await e.group.getFileUrl(file.fid)
+            }
+          } else {
+            let source = (await e.friend.getChatHistory(e.source.time, 1))[0]
+            let file = source.message.find(m => m.type === 'file')
+            if (file) {
+              filename = file.name
+              fileUrl = await e.group.getFileUrl(file.fid)
+            }
+          }
+        }
+        if (fileUrl) {
+          logger.info('文件地址：' + fileUrl)
+          mkdirs('data/chatgpt/files')
+          let destinationPath = 'data/chatgpt/files/' + filename
+          const response = await fetch(fileUrl)
+          const fileStream = fs.createWriteStream(destinationPath)
+          await new Promise((resolve, reject) => {
+            response.body.pipe(fileStream)
+            response.body.on('error', (err) => {
+              reject(err)
+            })
+            fileStream.on('finish', () => {
+              resolve()
+            })
+          })
+          attachments = [await client.convertDocument(destinationPath, filename)]
+        }
+        if (conversationId) {
+          return await client.sendMessage(prompt, conversationId, attachments)
+        } else {
+          let conv = await client.createConversation()
+          return await client.sendMessage(prompt, conv.uuid, attachments)
+        }
+      }
       case 'xh': {
         const cacheOptions = {
           namespace: 'xh',
@@ -1894,7 +1906,8 @@ export class chatgpt extends plugin {
         }
         const ssoSessionId = Config.xinghuoToken
         if (!ssoSessionId) {
-          throw new Error('未绑定星火token，请使用#chatgpt设置星火token命令绑定token。（获取对话页面的ssoSessionId cookie值）')
+          //throw new Error('未绑定星火token，请使用#chatgpt设置星火token命令绑定token。（获取对话页面的ssoSessionId cookie值）')
+          logger.warn(`未绑定星火token，请使用#chatgpt设置星火token命令绑定token。（获取对话页面的ssoSessionId cookie值）`)
         }
         let client = new XinghuoClient({
           ssoSessionId,
@@ -1902,7 +1915,11 @@ export class chatgpt extends plugin {
         })
         // 获取图片资源
         const image = await getImg(e)
-        let response = await client.sendMessage(prompt, conversation?.conversationId, image ? image[0] : undefined)
+        let response = await client.sendMessage(prompt, {
+          e,
+          chatId: conversation?.conversationId,
+          image: image ? image[0] : undefined
+        })
         return response
       }
       case 'azure': {
@@ -1917,7 +1934,7 @@ export class chatgpt extends plugin {
         let msg = conversation.messages
         let content = { role: 'user', content: prompt }
         msg.push(content)
-        const client = new OpenAIClient(Config.azureUrl, new AzureKeyCredential(Config.apiKey))
+        const client = new OpenAIClient(Config.azureUrl, new AzureKeyCredential(Config.azApiKey))
         const deploymentName = Config.azureDeploymentName
         const { choices } = await client.getChatCompletions(deploymentName, msg)
         let completion = choices[0].message;
@@ -2567,45 +2584,6 @@ export class chatgpt extends plugin {
       sendMessageOption = Object.assign(sendMessageOption, conversation)
     }
     return await this.chatGPTApi.sendMessage(prompt, sendMessageOption)
-  }
-
-  async solveBingCaptcha(e) {
-    try {
-      let id = e.bingCaptchaId
-      let regionId = e.regionId
-      let text = this.e.msg
-      let solveResult = await solveCaptcha(id, regionId, text, e.token)
-      if (solveResult.result) {
-        logger.mark('验证码正确：' + JSON.stringify(solveResult.detail))
-        const cacheOptions = {
-          namespace: Config.toneStyle,
-          store: new KeyvFile({ filename: 'cache.json' })
-        }
-        const bingAIClient = new SydneyAIClient({
-          userToken: e.token, // "_U" cookie from bing.com
-          debug: Config.debug,
-          cache: cacheOptions,
-          user: e.sender.user_id,
-          proxy: Config.proxy
-        })
-        try {
-          let response = await bingAIClient.sendMessage('hello', Object.assign({ invocationId: '1' }, e.bingConversation))
-          if (response.response) {
-            await e.reply('验证码已通过')
-          } else {
-            await e.reply('验证码正确，但账户未解决验证码')
-          }
-        } catch (err) {
-          logger.error(err)
-          await e.reply('验证码正确，但账户未解决验证码')
-        }
-      } else {
-        await e.reply('验证码失败：' + JSON.stringify(solveResult.detail))
-      }
-    } catch (err) {
-      this.finish('solveBingCaptcha')
-    }
-    this.finish('solveBingCaptcha')
   }
 }
 

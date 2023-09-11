@@ -3,7 +3,6 @@ import { Config } from '../config.js'
 import { createParser } from 'eventsource-parser'
 import https from 'https'
 import WebSocket from 'ws'
-import { config } from 'process'
 
 const referer = atob('aHR0cHM6Ly94aW5naHVvLnhmeXVuLmNuL2NoYXQ/aWQ9')
 const origin = atob('aHR0cHM6Ly94aW5naHVvLnhmeXVuLmNu')
@@ -72,17 +71,6 @@ export default class XinghuoClient {
       case 11202: return '授权错误：秒级流控超限。秒级并发超过授权路数限制'
       case 11203: return '授权错误：并发流控超限。并发路数超过授权路数限制'
       default: return '无效错误代码'
-    }
-  }
-
-  promptBypassPreset(prompt) {
-    switch (prompt) {
-      case '你是谁':
-        return '你是谁，叫什么'
-      case '你是谁啊':
-        return '你是谁啊，叫什么'
-      default:
-        return prompt
     }
   }
 
@@ -203,7 +191,8 @@ export default class XinghuoClient {
           domain: Config.xhmode == 'api' ? "general" : "generalv2",
           temperature: Config.xhTemperature, // 核采样阈值
           max_tokens: Config.xhMaxTokens, // tokens最大长度
-          chat_id: chatId
+          chat_id: chatId,
+          top_k: Math.floor(Math.random() * 6) + 1 // 随机候选，避免重复回复
         }
       },
       payload: {
@@ -230,7 +219,17 @@ export default class XinghuoClient {
         try {
           const messageData = JSON.parse(message)
           if (messageData.header.code != 0) {
-            reject(`接口发生错误：Error Code ${messageData.header.code} ,${this.apiErrorInfo(messageData.header.code)}`)
+            if (messageData.header.code == 10907) {
+              const half = Math.floor(conversation.messages.length / 2)
+              conversation.messages.splice(0, half)
+              await this.conversationsCache.set(conversationKey, conversation)
+              resolve({ 
+                id: (Math.floor(Math.random() * 1000000) + 100000).toString() ,
+                response: '对话以达到上限，已自动清理对话，请重试'
+              })
+            } else {
+              reject(`接口发生错误：Error Code ${messageData.header.code} ,${this.apiErrorInfo(messageData.header.code)}`)
+            }
           }
           if (messageData.header.status == 0 || messageData.header.status == 1) {
             resMessage += messageData.payload.choices.text[0].content
@@ -251,7 +250,10 @@ export default class XinghuoClient {
               conversation.messages.splice(0, half)
             }
             await this.conversationsCache.set(conversationKey, conversation)
-            resolve(resMessage)
+            resolve({ 
+              id: chatId ,
+              response: resMessage
+            })
           }
         } catch (error) {
           reject(new Error(error))
@@ -372,9 +374,10 @@ export default class XinghuoClient {
     })
   }
 
-  async sendMessage(prompt, chatId, image) {
-    // 对星火预设的问题进行重写，避免收到预设回答
-    prompt = this.promptBypassPreset(prompt)
+  async sendMessage(prompt, option) {
+    let chatId = option?.chatId
+    let image = option?.image
+
     if (Config.xhmode == 'api' || Config.xhmode == 'apiv2' || Config.xhmode == 'assistants') {
       if (!Config.xhAppId || !Config.xhAPISecret || !Config.xhAPIKey) throw new Error('未配置api')
       let Prompt = []
@@ -389,12 +392,24 @@ export default class XinghuoClient {
       } else {
         Prompt = Config.xhPrompt ? [{ "role": "user", "content": Config.xhPrompt }] : []
       }
-      let response = await this.apiMessage(prompt, chatId, Prompt)
+      if(Config.xhPromptEval) {
+        Prompt.forEach(obj => {
+          try {
+            obj.content = obj.content.replace(/{{(.*?)}}/g, (match, variable) => {
+              return Function(`"use strict";return ((e)=>{return ${variable} })`)()(option.e)
+            })
+          } catch (error) {
+            logger.error(error)
+          }
+        })
+      }
+
+      let { response, id } = await this.apiMessage(prompt, chatId, Prompt)
       if (Config.xhRetRegExp) {
         response = response.replace(new RegExp(Config.xhRetRegExp, 'g'), Config.xhRetReplace)
       }
       return {
-        conversationId: chatId,
+        conversationId: id,
         text: response
       }
     } else if (Config.xhmode == 'web') {

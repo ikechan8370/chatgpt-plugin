@@ -35,11 +35,6 @@
         "data": "groupMerge"
       },
       {
-        "type": "check",
-        "label": "新版帮助",
-        "data": "newhelp"
-      },
-      {
         "type": "number",
         "label": "对话保留时长",
         "placeholder": "每个人发起的对话保留时长",
@@ -60,6 +55,10 @@
           {
             "label": "必应",
             "value": "bing"
+          },
+          {
+            "label": "Azure OpenAI",
+            "value": "azure"
           },
           {
             "label": "ChatGPT API",
@@ -253,29 +252,6 @@
                 "label": "Live2D模型透明度",
                 "placeholder": "Live2d模型的透明度",
                 "data": "live2dOption_alpha"
-              }
-            ]
-          },
-          {
-            "title": "图片模式[旧渲染]",
-            "icon": "mdi-image",
-            "tab": "image_old",
-            "view": [
-              {
-                "type": "check",
-                "label": "旧版本渲染",
-                "data": "oldview"
-              },
-              {
-                "type": "check",
-                "label": "预制渲染服务器访问代码",
-                "data": "cacheEntry"
-              },
-              {
-                "type": "url",
-                "label": "渲染服务器地址",
-                "placeholder": "可选择第三方渲染服务器",
-                "data": "cacheUrl"
               }
             ]
           },
@@ -779,6 +755,11 @@
                 "data": "xhPromptSerialize"
               },
               {
+                "type": "check",
+                "label": "运行执行设定中的代码",
+                "data": "xhPromptEval"
+              },
+              {
                 "type": "textarea",
                 "label": "设定",
                 "placeholder": "若开启序列化，请传入json数据，例如[{ \"role\": \"user\", \"content\": \"现在是10点\" },{ \"role\": \"assistant\", \"content\": \"了解，现在10点了\" }]",
@@ -816,6 +797,27 @@
                 "type": "check",
                 "label": "使用Bard反代",
                 "data": "bardForceUseReverse"
+              }
+            ]
+          },
+          {
+            "title": "Azure",
+            "tab": "azure",
+            "view": [
+              {
+                "type": "password",
+                "label": "Azure API Key",
+                "data": "azApiKey"
+              },
+              {
+                "type": "url",
+                "label": "端点地址",
+                "data": "azureUrl"
+              },
+              {
+                "type": "url",
+                "label": "部署名称",
+                "data": "azureDeploymentName"
               }
             ]
           }
