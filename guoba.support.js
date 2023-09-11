@@ -602,6 +602,18 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
+          field: 'claudeAIJA3',
+          label: 'claude2浏览器指纹',
+          bottomHelpMessage: 'claude.ai使用的浏览器TLS指纹，去https://scrapfly.io/web-scraping-tools/ja3-fingerprint或https://ja3.zone/check查看',
+          component: 'Input'
+        },
+        {
+          field: 'claudeAIUA',
+          label: 'claude2浏览器UA',
+          bottomHelpMessage: 'claude.ai使用的浏览器UA，去https://scrapfly.io/web-scraping-tools/ja3-fingerprint或https://ja3.zone/check查看',
+          component: 'Input'
+        },
+        {
           label: '以下为ChatGLM方式的配置',
           component: 'Divider'
         },

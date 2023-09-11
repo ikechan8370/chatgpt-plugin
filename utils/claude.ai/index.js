@@ -1,6 +1,7 @@
 import { File, FormData, Headers } from 'node-fetch'
 import fs from 'fs'
 import crypto from 'crypto'
+import { Config } from '../config.js'
 // import initCycleTLS from 'cycletls'
 let initCycleTLS
 try {
@@ -22,7 +23,7 @@ export class ClaudeAIClient {
     headers.append('referrer', 'https://claude.ai/chat')
     headers.append('origin', 'https://claude.ai')
     headers.append('Content-Type', 'application/json')
-    headers.append('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36')
+    headers.append('User-Agent', Config.claudeAIUA || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36')
     // headers.append('sec-ch-ua', '"Chromium";v="116", "Not)A;Brand";v="24", "Google Chrome";v="116"')
     // headers.append('Sec-Ch-Ua-Mobile', '?0')
     // headers.append('Sec-Ch-Ua-Platform', '"Windows"')
@@ -39,7 +40,7 @@ export class ClaudeAIClient {
     // headers.append('anthropic-client-sha', 'cab849b55d41c73804c1b2b87a7a7fdb84263dc9')
     // headers.append('anthropic-client-version', '1')
     // headers.append('baggage', 'sentry-environment=production,sentry-release=cab849b55d41c73804c1b2b87a7a7fdb84263dc9,sentry-public_key=58e9b9d0fc244061a1b54fe288b0e483,sentry-trace_id=d1c13c8e760c4e9e969a5e1aed6a38cf')
-    this.JA3 = '772,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,5-27-45-35-65281-16-18-10-17513-43-13-23-51-0-11,29-23-24,0'
+    this.JA3 = Config.claudeAIJA3 || '772,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,27-5-65281-13-35-0-51-18-16-43-10-45-11-17513-23,29-23-24,0'
 
     this.headers = headers
     this.rawHeaders = {}
