@@ -1,17 +1,11 @@
 import fetch, { FormData } from 'node-fetch'
 import { makeForwardMsg } from './common.js'
 import { Config } from './config.js'
+import { getProxy } from './proxy.js'
 
-let proxy
-if (Config.proxy) {
-  try {
-    proxy = (await import('https-proxy-agent')).default
-  } catch (e) {
-    console.warn('未安装https-proxy-agent，请在插件目录下执行pnpm add https-proxy-agent')
-  }
-}
+let proxy = getProxy()
 export default class BingDrawClient {
-  constructor(opts) {
+  constructor (opts) {
     this.opts = opts
     if (Config.proxy && !Config.sydneyForceUseReverse) {
       // 如果设置代理，走代理
@@ -19,7 +13,7 @@ export default class BingDrawClient {
     }
   }
 
-  async getImages(prompt, e) {
+  async getImages (prompt, e) {
     let urlEncodedPrompt = encodeURIComponent(prompt)
     let url = `${this.opts.baseUrl}/images/create?q=${urlEncodedPrompt}&rt=4&FORM=GENCRE`
     // let d = Math.ceil(Math.random() * 255)
@@ -82,7 +76,7 @@ export default class BingDrawClient {
       }
     }
     if (!success) {
-      //最后尝试使用https://cn.bing.com进行一次绘图
+      // 最后尝试使用https://cn.bing.com进行一次绘图
       logger.info('尝试使用https://cn.bing.com进行绘图')
       url = `https://cn.bing.com/images/create?q=${urlEncodedPrompt}&rt=3&FORM=GENCRE`
       fetchOptions.referrer = 'https://cn.bing.com/images/create/'
