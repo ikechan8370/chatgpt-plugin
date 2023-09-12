@@ -1,7 +1,7 @@
 ![chatgpt-plugin](https://user-images.githubusercontent.com/21212372/232115814-de9a0633-371f-4733-8da0-dd6e912c8a1e.png)
 <div align=center> <h1>云崽QQ机器人的ChatGPT插件</h1> </div>
 <div align=center>
-   
+
    <img src ="https://img.shields.io/github/issues/ikechan8370/chatgpt-plugin?logo=github"/>
 <img src ="https://img.shields.io/github/license/ikechan8370/chatgpt-plugin"/>
 <img src ="https://img.shields.io/github/v/tag/ikechan8370/chatgpt-plugin?label=latest%20version&logo=github"/>
@@ -19,9 +19,9 @@
 ### 推荐的相关文档和参考资料
 本README
 [手册](https://chatgptplugin.ikechan8370.com/)
-[文档1（建设中）](https://chatgpt-docs.err0r.top/) 
-[插件常见问题（鹤望兰版）](https://www.wolai.com/4FCxxWAdjbrHF29MCJmAQK) 
-[Yunzai常见问题（LUCK小运版）](https://www.wolai.com/oA43vuW71aBnv7UsEysn4T) 
+[文档1（建设中）](https://chatgpt-docs.err0r.top/)
+[插件常见问题（鹤望兰版）](https://www.wolai.com/4FCxxWAdjbrHF29MCJmAQK)
+[Yunzai常见问题（LUCK小运版）](https://www.wolai.com/oA43vuW71aBnv7UsEysn4T)
 [憨憨博客](https://blog.hanhanz.top/)
 
 ## 特点
@@ -40,7 +40,7 @@
 * 2023-05-12 支持星火大模型
 * 2023-05-29 支持gpt-4 API.必应无需cookie即可对话（Sydney和自定义模式）
 * 2023-07 支持智能模式，机器人可以实现禁言、群名片/头衔（需给机器人管理员/群主）、分享音乐视频、主动发音频、对接ap,sr和喵喵等插件、联网搜索等，需api模式0613系列模型。智能模式所需的额外api和搜索api分别可以参考[chatgpt-plugin-extras](https://github.com/ikechan8370/chatgpt-plugin-extras) 和 [search-api](https://github.com/ikechan8370/search-api) 自行搭建，其中后者提供了一个公益版本，前者可使用[huggingface](https://huggingface.co/spaces/ikechan8370/cp-extra)部署
-
+* 2023-09-10 支持来自claude.ai的claude-2模型
 ### 如果觉得这个插件有趣或者对你有帮助，请点一个star吧！
 
 ## 版本要求
@@ -97,7 +97,7 @@ pnpm i
 
    用户同样可私聊机器人 `#设置用户密码` 进行账号注册和密码设置
 用户设置密码后，所有聊天信息将记录在用户缓存数据下，同时用户可通过私聊机器人 `#chatgpt用户配置` 登录后台用户配置面板，查看自己的聊天数据和自定义机器人对自己的回复参数
-   
+
    如果后台面板访问出现 time out 请检查机器人启动时是否有报错，服务器端口是否开放，可尝试ping一下服务器ip看能否直接ping通。
 
 5. 重启Yunzai-Bot
@@ -263,9 +263,9 @@ pnpm i
    > 原因：没装依赖
    >
    > 解决方式：请参考文档在本插件目录下用`pnpm install`安装依赖，安装完就不报错了
-   
+
 4. 反代能自己搭吗？
-   
+
    能。参考[这里](https://ikechan8370.com/archives/da-jian-chatgpt-guan-fang-fan-xiang-dai-li)
 
    必应可以用[azure](https://ikechan8370.com/archives/ji-yu-azure-container-web-applicationda-jian-mian-fei-bi-ying-fan-dai)或~cloudflare workers~的serverless服务：
@@ -279,7 +279,7 @@ pnpm i
 7. 系统后台无法进入怎么办？
 
    多数情况下是由于服务器未开放3321端口导致，请根据服务器系统和服务器供应商配置，开放3321端口后再试。
-   
+
 ## 交流群
 
 * QQ 559567232 [问题交流]
