@@ -147,6 +147,7 @@ const defaultConfig = {
   // claude2
   claudeAIOrganizationId: '',
   claudeAISessionKey: '',
+  claudeAIReverseProxy: '',
   claudeAIJA3: '772,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,27-5-65281-13-35-0-51-18-16-43-10-45-11-17513-23,29-23-24,0',
   claudeAIUA: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
   version: 'v2.7.4'

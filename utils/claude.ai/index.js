@@ -103,8 +103,9 @@ export class ClaudeAIClient {
     //   redirect: 'manual'
     //   // referrer: 'https://claude.ai/chat/bba5a67d-ee59-4196-a371-ece8a35db1f2'
     // })
+    let host = Config.claudeAIReverseProxy || 'https://claude.ai'
     const cycleTLS = await initCycleTLS()
-    let result = await cycleTLS(`https://claude.ai/api/organizations/${this.organizationId}/chat_conversations`, {
+    let result = await cycleTLS(`${host}/api/organizations/${this.organizationId}/chat_conversations`, {
       ja3: this.JA3,
       userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
       proxy: this.proxy,
@@ -140,7 +141,8 @@ export class ClaudeAIClient {
         timezone: 'Asia/Hong_Kong'
       }
     }
-    let url = 'https://claude.ai/api/append_message'
+    let host = Config.claudeAIReverseProxy || 'https://claude.ai'
+    let url = host + '/api/append_message'
     const cycleTLS = await initCycleTLS()
     let streamDataRes = await cycleTLS(url, {
       ja3: this.JA3,

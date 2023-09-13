@@ -602,15 +602,21 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
+          field: 'claudeAIReverseProxy',
+          label: 'claude2 反代',
+          bottomHelpMessage: 'claude.ai 的反代。或许可以参考https://github.com/ikechan8370/sydney-ws-proxy/tree/claude.ai搭建',
+          component: 'Input'
+        },
+        {
           field: 'claudeAIJA3',
           label: 'claude2浏览器指纹',
-          bottomHelpMessage: 'claude.ai使用的浏览器TLS指纹，去https://scrapfly.io/web-scraping-tools/ja3-fingerprint或https://ja3.zone/check查看',
+          bottomHelpMessage: 'claude.ai使用的浏览器TLS指纹，去https://scrapfly.io/web-scraping-tools/ja3-fingerprint或https://ja3.zone/check查看。如果用了反代就不用管',
           component: 'Input'
         },
         {
           field: 'claudeAIUA',
           label: 'claude2浏览器UA',
-          bottomHelpMessage: 'claude.ai使用的浏览器UA，去https://scrapfly.io/web-scraping-tools/ja3-fingerprint或https://ja3.zone/check查看',
+          bottomHelpMessage: 'claude.ai使用的浏览器UA，https://scrapfly.io/web-scraping-tools/http2-fingerprint或https://ja3.zone/check查看。如果用了反代就不用管',
           component: 'Input'
         },
         {
