@@ -150,7 +150,8 @@ export class ClaudeAIClient {
       proxy: this.proxy,
       body: JSON.stringify(body),
       headers: this.rawHeaders,
-      disableRedirect: true
+      disableRedirect: true,
+      timeout: Config.claudeAITimeout || 30
     }, 'post')
     if (streamDataRes.status === 307) {
       throw new Error('claude.ai目前不支持你所在的地区')

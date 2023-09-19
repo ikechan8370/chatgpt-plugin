@@ -620,6 +620,12 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
+          field: 'claudeAITimeout',
+          label: 'claude2超时时间',
+          bottomHelpMessage: '等待响应的超时时间，单位为秒，默认为30。如果不使用反代而是使用代理可以适当调低。',
+          component: 'InputNumber'
+        },
+        {
           label: '以下为ChatGLM方式的配置',
           component: 'Divider'
         },
