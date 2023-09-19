@@ -156,31 +156,37 @@ export class ClaudeAIClient {
     if (streamDataRes.status === 307) {
       throw new Error('claude.ai目前不支持你所在的地区')
     }
-    let streamData = streamDataRes.body
-    // console.log(streamData)
-    let responseText = ''
-    let streams = streamData.split('\n\n')
-    for (let s of streams) {
-      let jsonStr = s.replace('data: ', '').trim()
-      try {
-        let jsonObj = JSON.parse(jsonStr)
-        if (jsonObj && jsonObj.completion) {
-          responseText += jsonObj.completion
-        }
-        if (this.debug) {
-          console.log(jsonObj)
-        }
-        // console.log(responseText)
-      } catch (err) {
-        // ignore error
-        if (this.debug) {
-          console.log(jsonStr)
+    if (streamDataRes.status === 200) {
+      let streamData = streamDataRes.body
+      // console.log(streamData)
+      let responseText = ''
+      let streams = streamData.split('\n\n')
+      for (let s of streams) {
+        let jsonStr = s.replace('data: ', '').trim()
+        try {
+          let jsonObj = JSON.parse(jsonStr)
+          if (jsonObj && jsonObj.completion) {
+            responseText += jsonObj.completion
+          }
+          if (this.debug) {
+            console.log(jsonObj)
+          }
+          // console.log(responseText)
+        } catch (err) {
+          // ignore error
+          if (this.debug) {
+            console.log(jsonStr)
+          }
         }
       }
-    }
-    return {
-      text: responseText.trim(),
-      conversationId
+      return {
+        text: responseText.trim(),
+        conversationId
+      }
+    } else if (streamDataRes.status === 408) {
+      throw new Error('claude.ai响应超时，可能是回复文本太多，请调高超时时间重试')
+    } else {
+      throw new Error('unknown error')
     }
   }
 }
