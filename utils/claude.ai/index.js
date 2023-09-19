@@ -151,7 +151,7 @@ export class ClaudeAIClient {
       body: JSON.stringify(body),
       headers: this.rawHeaders,
       disableRedirect: true,
-      timeout: Config.claudeAITimeout || 30
+      timeout: Config.claudeAITimeout || 120
     }, 'post')
     if (streamDataRes.status === 307) {
       throw new Error('claude.ai目前不支持你所在的地区')
