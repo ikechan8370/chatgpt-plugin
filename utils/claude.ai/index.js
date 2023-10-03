@@ -103,8 +103,9 @@ export class ClaudeAIClient {
     //   redirect: 'manual'
     //   // referrer: 'https://claude.ai/chat/bba5a67d-ee59-4196-a371-ece8a35db1f2'
     // })
+    let host = Config.claudeAIReverseProxy || 'https://claude.ai'
     const cycleTLS = await initCycleTLS()
-    let result = await cycleTLS(`https://claude.ai/api/organizations/${this.organizationId}/chat_conversations`, {
+    let result = await cycleTLS(`${host}/api/organizations/${this.organizationId}/chat_conversations`, {
       ja3: this.JA3,
       userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
       proxy: this.proxy,
@@ -140,7 +141,8 @@ export class ClaudeAIClient {
         timezone: 'Asia/Hong_Kong'
       }
     }
-    let url = 'https://claude.ai/api/append_message'
+    let host = Config.claudeAIReverseProxy || 'https://claude.ai'
+    let url = host + '/api/append_message'
     const cycleTLS = await initCycleTLS()
     let streamDataRes = await cycleTLS(url, {
       ja3: this.JA3,
@@ -148,36 +150,43 @@ export class ClaudeAIClient {
       proxy: this.proxy,
       body: JSON.stringify(body),
       headers: this.rawHeaders,
-      disableRedirect: true
+      disableRedirect: true,
+      timeout: Config.claudeAITimeout || 120
     }, 'post')
     if (streamDataRes.status === 307) {
       throw new Error('claude.ai目前不支持你所在的地区')
     }
-    let streamData = streamDataRes.body
-    // console.log(streamData)
-    let responseText = ''
-    let streams = streamData.split('\n\n')
-    for (let s of streams) {
-      let jsonStr = s.replace('data: ', '').trim()
-      try {
-        let jsonObj = JSON.parse(jsonStr)
-        if (jsonObj && jsonObj.completion) {
-          responseText += jsonObj.completion
-        }
-        if (this.debug) {
-          console.log(jsonObj)
-        }
-        // console.log(responseText)
-      } catch (err) {
-        // ignore error
-        if (this.debug) {
-          console.log(jsonStr)
+    if (streamDataRes.status === 200) {
+      let streamData = streamDataRes.body
+      // console.log(streamData)
+      let responseText = ''
+      let streams = streamData.split('\n\n')
+      for (let s of streams) {
+        let jsonStr = s.replace('data: ', '').trim()
+        try {
+          let jsonObj = JSON.parse(jsonStr)
+          if (jsonObj && jsonObj.completion) {
+            responseText += jsonObj.completion
+          }
+          if (this.debug) {
+            console.log(jsonObj)
+          }
+          // console.log(responseText)
+        } catch (err) {
+          // ignore error
+          if (this.debug) {
+            console.log(jsonStr)
+          }
         }
       }
-    }
-    return {
-      text: responseText.trim(),
-      conversationId
+      return {
+        text: responseText.trim(),
+        conversationId
+      }
+    } else if (streamDataRes.status === 408) {
+      throw new Error('claude.ai响应超时，可能是回复文本太多，请调高超时时间重试')
+    } else {
+      throw new Error('unknown error')
     }
   }
 }

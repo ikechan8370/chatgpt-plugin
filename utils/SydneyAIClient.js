@@ -6,11 +6,11 @@ import fetch, {
 } from 'node-fetch'
 import crypto from 'crypto'
 import WebSocket from 'ws'
-import HttpsProxyAgent from 'https-proxy-agent'
 import { Config, pureSydneyInstruction } from './config.js'
 import { formatDate, getMasterQQ, isCN, getUserData } from './common.js'
 import delay from 'delay'
 import moment from 'moment'
+import { getProxy } from './proxy.js'
 
 if (!globalThis.fetch) {
   globalThis.fetch = fetch
@@ -19,12 +19,7 @@ if (!globalThis.fetch) {
   globalThis.Response = Response
 }
 // workaround for ver 7.x and ver 5.x
-let proxy = HttpsProxyAgent
-if (typeof proxy !== 'function') {
-  proxy = (p) => {
-    return new HttpsProxyAgent.HttpsProxyAgent(p)
-  }
-}
+let proxy = getProxy()
 
 async function getKeyv () {
   let Keyv
