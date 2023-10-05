@@ -2,21 +2,8 @@ import { Configuration, OpenAIApi } from 'openai'
 import { Config, defaultOpenAIAPI, defaultOpenAIReverseProxy } from './config.js'
 import fs from 'fs'
 import { isCN, mkdirs } from './common.js'
-let proxy
-if (Config.proxy) {
-  try {
-    proxy = (await import('https-proxy-agent')).default
-  } catch (e) {
-    console.warn('未安装https-proxy-agent，请在插件目录下执行pnpm add https-proxy-agent')
-  }
-}
-function getProxy () {
-  if (!Config.proxy || proxy) {
-    return proxy
-  } else {
-    throw new Error('未安装https-proxy-agent，请在插件目录下执行pnpm add https-proxy-agent')
-  }
-}
+import { getProxy } from './proxy.js'
+let proxy = getProxy()
 export async function createImage (prompt, n = 1, size = '512x512') {
   let basePath = Config.openAiBaseUrl
   if (Config.openAiBaseUrl && Config.proxy && !Config.openAiForceUseReverse) {
@@ -34,7 +21,7 @@ export async function createImage (prompt, n = 1, size = '512x512') {
   if (Config.debug) {
     logger.info({ prompt, n, size })
   }
-  let proxyFn = getProxy()
+  let proxyFn = proxy
   const response = await openai.createImage({
     prompt,
     n,

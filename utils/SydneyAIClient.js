@@ -6,11 +6,11 @@ import fetch, {
 } from 'node-fetch'
 import crypto from 'crypto'
 import WebSocket from 'ws'
-import HttpsProxyAgent from 'https-proxy-agent'
 import { Config, pureSydneyInstruction } from './config.js'
 import { formatDate, getMasterQQ, isCN, getUserData } from './common.js'
 import delay from 'delay'
 import moment from 'moment'
+import { getProxy } from './proxy.js'
 
 if (!globalThis.fetch) {
   globalThis.fetch = fetch
@@ -19,12 +19,7 @@ if (!globalThis.fetch) {
   globalThis.Response = Response
 }
 // workaround for ver 7.x and ver 5.x
-let proxy = HttpsProxyAgent
-if (typeof proxy !== 'function') {
-  proxy = (p) => {
-    return new HttpsProxyAgent.HttpsProxyAgent(p)
-  }
-}
+let proxy = getProxy()
 
 async function getKeyv () {
   let Keyv
@@ -105,7 +100,7 @@ export default class SydneyAIClient {
       this.opts.host = 'https://edgeservices.bing.com/edgesvc'
     }
     logger.mark('使用host：' + this.opts.host)
-    let response = await fetch(`${this.opts.host}/turing/conversation/create`, fetchOptions)
+    let response = await fetch(`${this.opts.host}/turing/conversation/create?bundleVersion=1.1055.6`, fetchOptions)
     let text = await response.text()
     let retry = 10
     while (retry >= 0 && response.status === 200 && !text) {
@@ -120,7 +115,11 @@ export default class SydneyAIClient {
       throw new Error('创建sydney对话失败: status code: ' + response.status + response.statusText)
     }
     try {
-      return JSON.parse(text)
+      let r = JSON.parse(text)
+      if (!r.conversationSignature) {
+        r.encryptedconversationsignature = response.headers.get('x-sydney-encryptedconversationsignature')
+      }
+      return r
     } catch (err) {
       logger.error('创建sydney对话失败: status code: ' + response.status + response.statusText)
       logger.error(text)
@@ -128,7 +127,7 @@ export default class SydneyAIClient {
     }
   }
 
-  async createWebSocketConnection () {
+  async createWebSocketConnection (encryptedconversationsignature = '') {
     await this.initCache()
     // let WebSocket = await getWebSocket()
     return new Promise((resolve, reject) => {
@@ -141,7 +140,11 @@ export default class SydneyAIClient {
         sydneyHost = Config.sydneyReverseProxy.replace('https://', 'wss://').replace('http://', 'ws://')
       }
       logger.mark(`use sydney websocket host: ${sydneyHost}`)
-      let ws = new WebSocket(sydneyHost + '/sydney/ChatHub', undefined, { agent, origin: 'https://edgeservices.bing.com' })
+      let host = sydneyHost + '/sydney/ChatHub'
+      if (encryptedconversationsignature) {
+        host += `?sec_access_token=${encodeURIComponent(encryptedconversationsignature)}`
+      }
+      let ws = new WebSocket(host, undefined, { agent, origin: 'https://edgeservices.bing.com' })
       ws.on('error', (err) => {
         console.error(err)
         reject(err)
@@ -224,6 +227,7 @@ export default class SydneyAIClient {
     // if (messageType === 'Chat') {
     //   logger.warn('该Bing账户token已被限流，降级至使用非搜索模式。本次对话AI将无法使用Bing搜索返回的内容')
     // }
+    let encryptedconversationsignature = ''
     if (typeof onProgress !== 'function') {
       onProgress = () => { }
     }
@@ -236,7 +240,7 @@ export default class SydneyAIClient {
       if (createNewConversationResponse.result?.value === 'UnauthorizedRequest') {
         throw new Error(`UnauthorizedRequest: ${createNewConversationResponse.result.message}`)
       }
-      if (!createNewConversationResponse.conversationSignature || !createNewConversationResponse.conversationId || !createNewConversationResponse.clientId) {
+      if (!createNewConversationResponse.conversationId || !createNewConversationResponse.clientId) {
         const resultValue = createNewConversationResponse.result?.value
         if (resultValue) {
           throw new Error(`${resultValue}: ${createNewConversationResponse.result.message}`)
@@ -246,7 +250,8 @@ export default class SydneyAIClient {
       ({
         conversationSignature,
         conversationId,
-        clientId
+        clientId,
+        encryptedconversationsignature
       } = createNewConversationResponse)
     }
     let pureSydney = Config.toneStyle === 'Sydney'
@@ -336,7 +341,7 @@ export default class SydneyAIClient {
       role: 'User',
       message
     }
-    const ws = await this.createWebSocketConnection()
+    const ws = await this.createWebSocketConnection(encryptedconversationsignature)
     if (Config.debug) {
       logger.mark('sydney websocket constructed successful')
     }
@@ -366,62 +371,67 @@ export default class SydneyAIClient {
     let maxConv = Config.maxNumUserMessagesInConversation
     const currentDate = moment().format('YYYY-MM-DDTHH:mm:ssZ')
     const imageDate = await this.kblobImage(opts.imageUrl)
+    let argument0 = {
+      source: 'cib',
+      optionsSets,
+      allowedMessageTypes: ['ActionRequest', 'Chat', 'Context',
+        // 'InternalSearchQuery', 'InternalSearchResult', 'Disengaged', 'InternalLoaderMessage', 'Progress', 'RenderCardRequest', 'AdsQuery',
+        'SemanticSerp', 'GenerateContentQuery', 'SearchQuery'],
+      sliceIds: [
+
+      ],
+      requestId: crypto.randomUUID(),
+      traceId: genRanHex(32),
+      scenario: 'Underside',
+      verbosity: 'verbose',
+      isStartOfSession: invocationId === 0,
+      message: {
+        locale: 'zh-CN',
+        market: 'zh-CN',
+        region: 'WW',
+        location: 'lat:47.639557;long:-122.128159;re=1000m;',
+        locationHints: [
+          {
+            country: 'Macedonia',
+            state: 'Centar',
+            city: 'Skopje',
+            zipcode: '1004',
+            timezoneoffset: 1,
+            countryConfidence: 8,
+            cityConfidence: 5,
+            Center: {
+              Latitude: 41.9961,
+              Longitude: 21.4317
+            },
+            RegionType: 2,
+            SourceType: 1
+          }
+        ],
+        author: 'user',
+        inputMethod: 'Keyboard',
+        imageUrl: imageDate.blobId ? `https://www.bing.com/images/blob?bcid=${imageDate.blobId}` : undefined,
+        originalImageUrl: imageDate.processedBlobId ? `https://www.bing.com/images/blob?bcid=${imageDate.processedBlobId}` : undefined,
+        text: message,
+        messageType,
+        userIpAddress: await generateRandomIP(),
+        timestamp: currentDate
+        // messageType: 'SearchQuery'
+      },
+      tone: 'Creative',
+      conversationSignature,
+      participant: {
+        id: clientId
+      },
+      spokenTextMode: 'None',
+      conversationId,
+      previousMessages
+    }
+    if (encryptedconversationsignature) {
+      delete argument0.conversationSignature
+    }
     const obj = {
       arguments: [
-        {
-          source: 'cib',
-          optionsSets,
-          allowedMessageTypes: ['ActionRequest', 'Chat', 'Context',
-            // 'InternalSearchQuery', 'InternalSearchResult', 'Disengaged', 'InternalLoaderMessage', 'Progress', 'RenderCardRequest', 'AdsQuery',
-            'SemanticSerp', 'GenerateContentQuery', 'SearchQuery'],
-          sliceIds: [
-
-          ],
-          traceId: genRanHex(32),
-          scenario: 'Underside',
-          verbosity: 'verbose',
-          isStartOfSession: invocationId === 0,
-          message: {
-            locale: 'zh-CN',
-            market: 'zh-CN',
-            region: 'WW',
-            location: 'lat:47.639557;long:-122.128159;re=1000m;',
-            locationHints: [
-              {
-                country: 'Macedonia',
-                state: 'Centar',
-                city: 'Skopje',
-                zipcode: '1004',
-                timezoneoffset: 1,
-                countryConfidence: 8,
-                cityConfidence: 5,
-                Center: {
-                  Latitude: 41.9961,
-                  Longitude: 21.4317
-                },
-                RegionType: 2,
-                SourceType: 1
-              }
-            ],
-            author: 'user',
-            inputMethod: 'Keyboard',
-            imageUrl: imageDate.blobId ? `https://www.bing.com/images/blob?bcid=${imageDate.blobId}` : undefined,
-            originalImageUrl: imageDate.processedBlobId ? `https://www.bing.com/images/blob?bcid=${imageDate.processedBlobId}` : undefined,
-            text: message,
-            messageType,
-            userIpAddress: await generateRandomIP(),
-            timestamp: currentDate
-            // messageType: 'SearchQuery'
-          },
-          tone: 'Creative',
-          conversationSignature,
-          participant: {
-            id: clientId
-          },
-          spokenTextMode: 'None',
-          conversationId,
-          previousMessages
-        }
+        argument0
       ],
       invocationId: invocationId.toString(),
       target: 'chat',

@@ -1,6 +1,7 @@
 import { File, FormData, Headers } from 'node-fetch'
 import fs from 'fs'
 import crypto from 'crypto'
+import { Config } from '../config.js'
 // import initCycleTLS from 'cycletls'
 let initCycleTLS
 try {
@@ -22,7 +23,7 @@ export class ClaudeAIClient {
     headers.append('referrer', 'https://claude.ai/chat')
     headers.append('origin', 'https://claude.ai')
     headers.append('Content-Type', 'application/json')
-    headers.append('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36')
+    headers.append('User-Agent', Config.claudeAIUA || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36')
     // headers.append('sec-ch-ua', '"Chromium";v="116", "Not)A;Brand";v="24", "Google Chrome";v="116"')
     // headers.append('Sec-Ch-Ua-Mobile', '?0')
     // headers.append('Sec-Ch-Ua-Platform', '"Windows"')
@@ -39,7 +40,7 @@ export class ClaudeAIClient {
     // headers.append('anthropic-client-sha', 'cab849b55d41c73804c1b2b87a7a7fdb84263dc9')
     // headers.append('anthropic-client-version', '1')
     // headers.append('baggage', 'sentry-environment=production,sentry-release=cab849b55d41c73804c1b2b87a7a7fdb84263dc9,sentry-public_key=58e9b9d0fc244061a1b54fe288b0e483,sentry-trace_id=d1c13c8e760c4e9e969a5e1aed6a38cf')
-    this.JA3 = '772,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,5-27-45-35-65281-16-18-10-17513-43-13-23-51-0-11,29-23-24,0'
+    this.JA3 = Config.claudeAIJA3 || '772,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,27-5-65281-13-35-0-51-18-16-43-10-45-11-17513-23,29-23-24,0'
 
     this.headers = headers
     this.rawHeaders = {}
@@ -102,8 +103,9 @@ export class ClaudeAIClient {
     //   redirect: 'manual'
     //   // referrer: 'https://claude.ai/chat/bba5a67d-ee59-4196-a371-ece8a35db1f2'
     // })
+    let host = Config.claudeAIReverseProxy || 'https://claude.ai'
     const cycleTLS = await initCycleTLS()
-    let result = await cycleTLS(`https://claude.ai/api/organizations/${this.organizationId}/chat_conversations`, {
+    let result = await cycleTLS(`${host}/api/organizations/${this.organizationId}/chat_conversations`, {
       ja3: this.JA3,
       userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
       proxy: this.proxy,
@@ -139,7 +141,8 @@ export class ClaudeAIClient {
         timezone: 'Asia/Hong_Kong'
       }
     }
-    let url = 'https://claude.ai/api/append_message'
+    let host = Config.claudeAIReverseProxy || 'https://claude.ai'
+    let url = host + '/api/append_message'
     const cycleTLS = await initCycleTLS()
     let streamDataRes = await cycleTLS(url, {
       ja3: this.JA3,
@@ -147,36 +150,43 @@ export class ClaudeAIClient {
       proxy: this.proxy,
       body: JSON.stringify(body),
       headers: this.rawHeaders,
-      disableRedirect: true
+      disableRedirect: true,
+      timeout: Config.claudeAITimeout || 120
     }, 'post')
     if (streamDataRes.status === 307) {
       throw new Error('claude.ai目前不支持你所在的地区')
     }
-    let streamData = streamDataRes.body
-    // console.log(streamData)
-    let responseText = ''
-    let streams = streamData.split('\n\n')
-    for (let s of streams) {
-      let jsonStr = s.replace('data: ', '').trim()
-      try {
-        let jsonObj = JSON.parse(jsonStr)
-        if (jsonObj && jsonObj.completion) {
-          responseText += jsonObj.completion
-        }
-        if (this.debug) {
-          console.log(jsonObj)
-        }
-        // console.log(responseText)
-      } catch (err) {
-        // ignore error
-        if (this.debug) {
-          console.log(jsonStr)
+    if (streamDataRes.status === 200) {
+      let streamData = streamDataRes.body
+      // console.log(streamData)
+      let responseText = ''
+      let streams = streamData.split('\n\n')
+      for (let s of streams) {
+        let jsonStr = s.replace('data: ', '').trim()
+        try {
+          let jsonObj = JSON.parse(jsonStr)
+          if (jsonObj && jsonObj.completion) {
+            responseText += jsonObj.completion
+          }
+          if (this.debug) {
+            console.log(jsonObj)
+          }
+          // console.log(responseText)
+        } catch (err) {
+          // ignore error
+          if (this.debug) {
+            console.log(jsonStr)
+          }
         }
       }
-    }
-    return {
-      text: responseText.trim(),
-      conversationId
+      return {
+        text: responseText.trim(),
+        conversationId
+      }
+    } else if (streamDataRes.status === 408) {
+      throw new Error('claude.ai响应超时，可能是回复文本太多，请调高超时时间重试')
+    } else {
+      throw new Error('unknown error')
     }
   }
 }
