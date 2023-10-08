@@ -46,7 +46,11 @@ async function User(fastify, options) {
             { EX: 60000 }
         )
         const master = (await getMasterQQ())[0]
-        Bot.sendPrivateMsg(master, `收到工具箱快捷登录请求，1分钟内有效：${otp}`, false)
+        if (Array.isArray(Bot.uin)) {
+            Bot.pickFriend(master).sendMsg(`收到工具箱快捷登录请求，1分钟内有效：${otp}`)
+        } else {
+            Bot.sendPrivateMsg(master, `收到工具箱快捷登录请求，1分钟内有效：${otp}`, false)
+        }
         reply.send({ state: true })
         return reply
     })

@@ -118,7 +118,11 @@ async function mediaLink() {
             case 'register':
               if (data.state) {
                 let master = (await getMasterQQ())[0]
-                Bot.sendPrivateMsg(master, `当前chatgpt插件服务无法被外网访问，已启用代理链接，访问代码：${data.token}`, false)
+                if (Array.isArray(Bot.uin)) {
+                  Bot.pickFriend(master).sendMsg(`当前chatgpt插件服务无法被外网访问，已启用代理链接，访问代码：${data.token}`)
+                } else {
+                  Bot.sendPrivateMsg(master, `当前chatgpt插件服务无法被外网访问，已启用代理链接，访问代码：${data.token}`, false)
+                }
               } else {
                 console.log('注册区域失败')
               }
@@ -189,7 +193,7 @@ export async function createServer() {
     if (body.code) {
       const pattern = /^[a-zA-Z0-9]+$/
       if (!pattern.test(body.code)) {
-        reply.send({error: 'bad request'})
+        reply.send({ error: 'bad request' })
       }
       const dir = 'resources/ChatGPTCache/page'
       const filename = body.code + '.json'
@@ -342,7 +346,11 @@ export async function createServer() {
               if (data.group) {
                 Bot.sendGroupMsg(parseInt(data.id), data.message, data.quotable)
               } else {
-                Bot.sendPrivateMsg(parseInt(data.id), data.message, data.quotable)
+                if (Array.isArray(Bot.uin)) {
+                  Bot.pickFriend(parseInt(data.id)).sendMsg(data.message)
+                } else {
+                  Bot.sendPrivateMsg(parseInt(data.id), data.message, data.quotable)
+                }
               }
               await connection.socket.send(JSON.stringify({ command: data.command, state: true, }))
             } else {
