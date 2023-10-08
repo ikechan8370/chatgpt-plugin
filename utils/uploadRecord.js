@@ -9,7 +9,7 @@ import crypto from 'crypto'
 import child_process from 'child_process'
 import { Config } from './config.js'
 import path from 'path'
-import { mkdirs } from './common.js'
+import { mkdirs, getUin } from './common.js'
 let module
 try {
   module = await import('oicq')
@@ -139,7 +139,7 @@ async function uploadRecord (recordUrl, ttsMode = 'vits-uma-genshin-honkai') {
     2: 3,
     5: {
       1: Contactable.target,
-      2: Bot.uin,
+      2: getUin(e),
       3: 0,
       4: hash,
       5: buf.length,

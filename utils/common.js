@@ -84,14 +84,14 @@ export async function makeForwardMsg (e, msg = [], dec = '') {
   let nickname = Bot.nickname
   if (e.isGroup) {
     try {
-      let info = await Bot.getGroupMemberInfo(e.group_id, Bot.uin)
+      let info = await Bot.getGroupMemberInfo(e.group_id, getUin(e))
       nickname = info.card || info.nickname
     } catch (err) {
       console.error(`Failed to get group member info: ${err}`)
     }
   }
   let userInfo = {
-    user_id: Bot.uin,
+    user_id: getUin(e),
     nickname
   }
 
