@@ -122,6 +122,12 @@
         "label": "额外工具url",
         "placeholder": "测试期间提供一个公益接口，一段时间后撤掉",
         "data": "extraUrl"
+      },
+      {
+        "type": "text",
+        "label": "Trss主账号",
+        "placeholder": "用于Trss配置脚本时使用的主账号",
+        "data": "trssBotUin"
       }
     ]
   },

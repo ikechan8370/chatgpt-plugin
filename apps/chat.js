@@ -25,7 +25,7 @@ import {
   getUserReplySetting,
   getImageOcrText,
   getImg,
-  getMaxModelTokens, formatDate, generateAudio, formatDate2, mkdirs
+  getMaxModelTokens, formatDate, generateAudio, formatDate2, mkdirs, getUin
 } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
@@ -315,7 +315,7 @@ export class chatgpt extends plugin {
     }
     let ats = e.message.filter(m => m.type === 'at')
     const isAtMode = Config.toggleMode === 'at'
-    if (isAtMode) ats = ats.filter(item => item.qq !== Bot.uin)
+    if (isAtMode) ats = ats.filter(item => item.qq !== getUin(e))
     if (ats.length === 0) {
       if (use === 'api3') {
         await redis.del(`CHATGPT:QQ_CONVERSATION:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`)
@@ -764,11 +764,11 @@ export class chatgpt extends plugin {
       if (e.isGroup && !e.atme) {
         return false
       }
-      if (e.user_id == Bot.uin) return false
+      if (e.user_id == getUin(e)) return false
       prompt = e.raw_message.trim()
       if (e.isGroup && typeof this.e.group.getMemberMap === 'function') {
         let mm = await this.e.group.getMemberMap()
-        let me = mm.get(Bot.uin)
+        let me = mm.get(getUin(e))
         let card = me.card
         let nickname = me.nickname
         if (nickname && card) {
@@ -1477,7 +1477,7 @@ export class chatgpt extends plugin {
         chatViewBotName: Config.chatViewBotName || '',
         entry: cacheData.file,
         userImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${e.sender.user_id}`,
-        botImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${Bot.uin}`,
+        botImg: `https://q1.qlogo.cn/g?b=qq&s=0&nk=${getUin(e)}`,
         cacheHost: Config.serverHost,
         qq: e.sender.user_id
       })
@@ -1586,7 +1586,7 @@ export class chatgpt extends plugin {
                   opt.qq = e.sender.user_id
                   opt.nickname = e.sender.card
                   opt.groupName = e.group.name
-                  opt.botName = e.isGroup ? (e.group.pickMember(Bot.uin).card || e.group.pickMember(Bot.uin).nickname) : Bot.nickname
+                  opt.botName = e.isGroup ? (e.group.pickMember(getUin(e)).card || e.group.pickMember(getUin(e)).nickname) : Bot.nickname
                   let master = (await getMasterQQ())[0]
                   if (master && e.group) {
                     opt.masterName = e.group.pickMember(parseInt(master)).card || e.group.pickMember(parseInt(master)).nickname
@@ -2019,7 +2019,7 @@ export class chatgpt extends plugin {
             opt.qq = e.sender.user_id
             opt.nickname = e.sender.card
             opt.groupName = e.group.name
-            opt.botName = e.isGroup ? (e.group.pickMember(Bot.uin).card || e.group.pickMember(Bot.uin).nickname) : Bot.nickname
+            opt.botName = e.isGroup ? (e.group.pickMember(getUin(e)).card || e.group.pickMember(getUin(e)).nickname) : Bot.nickname
             let master = (await getMasterQQ())[0]
             if (master && e.group) {
               opt.masterName = e.group.pickMember(parseInt(master)).card || e.group.pickMember(parseInt(master)).nickname
@@ -2191,7 +2191,7 @@ export class chatgpt extends plugin {
             logger.mark(logger.green('【ChatGPT-Plugin】插件avocado-plugin未安装') + '，安装后可查看最近热映电影与体验可玩性更高的点歌工具。\n可前往 https://github.com/Qz-Sean/avocado-plugin 获取')
           }
           if (e.isGroup) {
-            let botInfo = await Bot.getGroupMemberInfo(e.group_id, Bot.uin, true)
+            let botInfo = await Bot.getGroupMemberInfo(e.group_id, getUin(e), true)
             if (botInfo.role !== 'member') {
               // 管理员才给这些工具
               tools.push(...[new EditCardTool(), new JinyanTool(), new KickOutTool(), new HandleMessageMsgTool(), new SetTitleTool()])

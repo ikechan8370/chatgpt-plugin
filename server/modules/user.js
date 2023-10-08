@@ -1,5 +1,5 @@
 import { UserInfo, AddUser } from './user_data.js'
-import { randomString, getUserData, getMasterQQ } from '../../utils/common.js'
+import { randomString, getUserData, getMasterQQ, getUin } from '../../utils/common.js'
 import fs from 'fs'
 
 async function User(fastify, options) {
@@ -8,7 +8,7 @@ async function User(fastify, options) {
         const body = request.body || {}
         if (body.qq && body.passwd) {
             const token = randomString(32)
-            if (body.qq == Bot.uin && await redis.get('CHATGPT:ADMIN_PASSWD') == body.passwd) {
+            if (body.qq == getUin() && await redis.get('CHATGPT:ADMIN_PASSWD') == body.passwd) {
                 AddUser({ user: body.qq, token: token, autho: 'admin' })
                 reply.setCookie('token', token, { path: '/' })
                 reply.send({ login: true, autho: 'admin', token: token })
@@ -19,16 +19,16 @@ async function User(fastify, options) {
                     reply.setCookie('token', token, { path: '/' })
                     reply.send({ login: true, autho: 'user', token: token })
                 } else {
-                    reply.send({ login: false, err: `用户名密码错误,如果忘记密码请私聊机器人输入 ${body.qq == Bot.uin ? '#修改管理密码' : '#修改用户密码'} 进行修改` })
+                    reply.send({ login: false, err: `用户名密码错误,如果忘记密码请私聊机器人输入 ${body.qq == getUin() ? '#修改管理密码' : '#修改用户密码'} 进行修改` })
                 }
             }
         } else if (body.otp) {
             const token = randomString(32)
             const opt = await redis.get(`CHATGPT:SERVER_QUICK`)
             if (opt && body.otp == opt) {
-                AddUser({ user: Bot.uin, token: token, autho: 'admin' })
+                AddUser({ user: getUin(), token: token, autho: 'admin' })
                 reply.setCookie('token', token, { path: '/' })
-                reply.send({ login: true, autho: 'admin', token: token, user: Bot.uin })
+                reply.send({ login: true, autho: 'admin', token: token, user: getUin() })
             } else {
                 reply.send({ login: false, err: `快捷登录代码错误，请检查后重试` })
             }
@@ -46,7 +46,11 @@ async function User(fastify, options) {
             { EX: 60000 }
         )
         const master = (await getMasterQQ())[0]
-        Bot.sendPrivateMsg(master, `收到工具箱快捷登录请求，1分钟内有效：${otp}`, false)
+        if (Array.isArray(Bot.uin)) {
+            Bot.pickFriend(master).sendMsg(`收到工具箱快捷登录请求，1分钟内有效：${otp}`)
+        } else {
+            Bot.sendPrivateMsg(master, `收到工具箱快捷登录请求，1分钟内有效：${otp}`, false)
+        }
         reply.send({ state: true })
         return reply
     })

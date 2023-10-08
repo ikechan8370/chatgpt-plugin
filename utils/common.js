@@ -84,14 +84,14 @@ export async function makeForwardMsg (e, msg = [], dec = '') {
   let nickname = Bot.nickname
   if (e.isGroup) {
     try {
-      let info = await Bot.getGroupMemberInfo(e.group_id, Bot.uin)
+      let info = await Bot.getGroupMemberInfo(e.group_id, getUin(e))
       nickname = info.card || info.nickname
     } catch (err) {
       console.error(`Failed to get group member info: ${err}`)
     }
   }
   let userInfo = {
-    user_id: Bot.uin,
+    user_id: getUin(e),
     nickname
   }
 
@@ -819,6 +819,14 @@ export function getMaxModelTokens (model = 'gpt-3.5-turbo') {
       return 16000
     }
   }
+}
+
+export function getUin (e) {
+  if (e?.bot?.uin) return e.bot.uin
+  if (Array.isArray(Bot.uin)) {
+    if (Config.trssBotUin && Bot.uin.indexOf(Config.trssBotUin) > -1) return Config.trssBotUin
+    else return Bot.uin[0]
+  } else return Bot.uin
 }
 
 /**

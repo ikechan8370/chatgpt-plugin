@@ -12,7 +12,7 @@ import websocketclient from 'ws'
 
 import { Config } from '../utils/config.js'
 import { UserInfo, GetUser, AddUser } from './modules/user_data.js'
-import { getPublicIP, getUserData, getMasterQQ, randomString } from '../utils/common.js'
+import { getPublicIP, getUserData, getMasterQQ, randomString, getUin } from '../utils/common.js'
 
 import webRoute from './modules/web_route.js'
 import webUser from './modules/user.js'
@@ -107,7 +107,7 @@ async function mediaLink() {
       ws.on('open', () => {
         ws.send(JSON.stringify({
           command: 'register',
-          region: Bot.uin,
+          region: getUin(),
           type: 'server',
         }))
       })
@@ -118,7 +118,11 @@ async function mediaLink() {
             case 'register':
               if (data.state) {
                 let master = (await getMasterQQ())[0]
-                Bot.sendPrivateMsg(master, `当前chatgpt插件服务无法被外网访问，已启用代理链接，访问代码：${data.token}`, false)
+                if (Array.isArray(Bot.uin)) {
+                  Bot.pickFriend(master).sendMsg(`当前chatgpt插件服务无法被外网访问，已启用代理链接，访问代码：${data.token}`)
+                } else {
+                  Bot.sendPrivateMsg(master, `当前chatgpt插件服务无法被外网访问，已启用代理链接，访问代码：${data.token}`, false)
+                }
               } else {
                 console.log('注册区域失败')
               }
@@ -128,30 +132,30 @@ async function mediaLink() {
                 const user = UserInfo(data.token)
                 if (user) {
                   ws.login = true
-                  ws.send(JSON.stringify({ command: data.command, state: true, region: Bot.uin, type: 'server' }))
+                  ws.send(JSON.stringify({ command: data.command, state: true, region: getUin(), type: 'server' }))
                 } else {
-                  ws.send(JSON.stringify({ command: data.command, state: false, error: '权限验证失败', region: Bot.uin, type: 'server' }))
+                  ws.send(JSON.stringify({ command: data.command, state: false, error: '权限验证失败', region: getUin(), type: 'server' }))
                 }
               }
               break
             case 'post_login':
               if (data.qq && data.passwd) {
                 const token = randomString(32)
-                if (data.qq == Bot.uin && await redis.get('CHATGPT:ADMIN_PASSWD') == data.passwd) {
+                if (data.qq == getUin() && await redis.get('CHATGPT:ADMIN_PASSWD') == data.passwd) {
                   AddUser({ user: data.qq, token: token, autho: 'admin' })
-                  ws.send(JSON.stringify({ command: data.command, state: true, autho: 'admin', token: token, region: Bot.uin, type: 'server' }))
+                  ws.send(JSON.stringify({ command: data.command, state: true, autho: 'admin', token: token, region: getUin(), type: 'server' }))
 
                 } else {
                   const user = await getUserData(data.qq)
                   if (user.passwd != '' && user.passwd === data.passwd) {
                     AddUser({ user: data.qq, token: token, autho: 'user' })
-                    ws.send(JSON.stringify({ command: data.command, state: true, autho: 'user', token: token, region: Bot.uin, type: 'server' }))
+                    ws.send(JSON.stringify({ command: data.command, state: true, autho: 'user', token: token, region: getUin(), type: 'server' }))
                   } else {
-                    ws.send(JSON.stringify({ command: data.command, state: false, error: `用户名密码错误,如果忘记密码请私聊机器人输入 ${data.qq == Bot.uin ? '#修改管理密码' : '#修改用户密码'} 进行修改`, region: Bot.uin, type: 'server' }))
+                    ws.send(JSON.stringify({ command: data.command, state: false, error: `用户名密码错误,如果忘记密码请私聊机器人输入 ${data.qq == getUin() ? '#修改管理密码' : '#修改用户密码'} 进行修改`, region: getUin(), type: 'server' }))
                   }
                 }
               } else {
-                ws.send(JSON.stringify({ command: data.command, state: false, error: '未输入用户名或密码', region: Bot.uin, type: 'server' }))
+                ws.send(JSON.stringify({ command: data.command, state: false, error: '未输入用户名或密码', region: getUin(), type: 'server' }))
               }
               break
             case 'post_command':
@@ -163,7 +167,7 @@ async function mediaLink() {
               const response = await fetch(`http://localhost:${Config.serverPort || 3321}${data.postPath}`, fetchOptions)
               if (response.ok) {
                 const json = await response.json()
-                ws.send(JSON.stringify({ command: data.command, state: true, region: Bot.uin, type: 'server', path: data.postPath, data: json }))
+                ws.send(JSON.stringify({ command: data.command, state: true, region: getUin(), type: 'server', path: data.postPath, data: json }))
               }
               break
           }
@@ -189,7 +193,7 @@ export async function createServer() {
     if (body.code) {
       const pattern = /^[a-zA-Z0-9]+$/
       if (!pattern.test(body.code)) {
-        reply.send({error: 'bad request'})
+        reply.send({ error: 'bad request' })
       }
       const dir = 'resources/ChatGPTCache/page'
       const filename = body.code + '.json'
@@ -342,7 +346,11 @@ export async function createServer() {
               if (data.group) {
                 Bot.sendGroupMsg(parseInt(data.id), data.message, data.quotable)
               } else {
-                Bot.sendPrivateMsg(parseInt(data.id), data.message, data.quotable)
+                if (Array.isArray(Bot.uin)) {
+                  Bot.pickFriend(parseInt(data.id)).sendMsg(data.message)
+                } else {
+                  Bot.sendPrivateMsg(parseInt(data.id), data.message, data.quotable)
+                }
               }
               await connection.socket.send(JSON.stringify({ command: data.command, state: true, }))
             } else {
