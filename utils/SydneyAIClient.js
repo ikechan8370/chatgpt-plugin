@@ -1,7 +1,8 @@
 import fetch, {
   Headers,
   Request,
-  Response
+  Response,
+  FormData, File
 } from 'node-fetch'
 import crypto from 'crypto'
 
@@ -111,12 +112,12 @@ export default class SydneyAIClient {
       this.opts.host = 'https://www.bing.com'
     }
     logger.mark('使用host：' + this.opts.host)
-    let response = await fetch(`${this.opts.host}/turing/conversation/create`, fetchOptions)
+    let response = await fetch(`${this.opts.host}/turing/conversation/create?bundleVersion=1.1055.8`, fetchOptions)
     let text = await response.text()
     let retry = 30
     while (retry >= 0 && response.status === 200 && !text) {
       await delay(400)
-      response = await fetch(`${this.opts.host}/turing/conversation/create`, fetchOptions)
+      response = await fetch(`${this.opts.host}/turing/conversation/create?bundleVersion=1.1055.8`, fetchOptions)
       text = await response.text()
       retry--
     }
@@ -126,7 +127,11 @@ export default class SydneyAIClient {
       throw new Error('创建sydney对话失败: status code: ' + response.status + response.statusText)
     }
     try {
-      return JSON.parse(text)
+      let r = JSON.parse(text)
+      if (!r.conversationSignature) {
+        r.encryptedconversationsignature = response.headers.get('x-sydney-encryptedconversationsignature')
+      }
+      return r
     } catch (err) {
       logger.error('创建sydney对话失败: status code: ' + response.status + response.statusText)
       logger.error(text)
@@ -134,7 +139,7 @@ export default class SydneyAIClient {
     }
   }
 
-  async createWebSocketConnection () {
+  async createWebSocketConnection (encryptedconversationsignature = '') {
     await this.initCache()
     let WebSocket = await getWebSocket()
     return new Promise((resolve, reject) => {
@@ -146,8 +151,12 @@ export default class SydneyAIClient {
       if (Config.sydneyWebsocketUseProxy) {
         sydneyHost = Config.sydneyReverseProxy.replace('https://', 'wss://').replace('http://', 'ws://')
       }
+      let host = sydneyHost + '/sydney/ChatHub'
+      if (encryptedconversationsignature) {
+        host += `?sec_access_token=${encodeURIComponent(encryptedconversationsignature)}`
+      }
       logger.mark(`use sydney websocket host: ${sydneyHost}`)
-      let ws = new WebSocket(sydneyHost + '/sydney/ChatHub', { agent })
+      let ws = new WebSocket(host, undefined, { agent, origin: 'https://edgeservices.bing.com' })
       ws.on('error', (err) => {
         console.error(err)
         reject(err)
@@ -207,7 +216,8 @@ export default class SydneyAIClient {
   async sendMessage (
     message,
     opts = {},
-    previousMessagesAgent
+    previousMessagesAgent,
+    extraContextAgent
   ) {
     await this.initCache()
     if (!this.conversationsCache) {
@@ -232,12 +242,14 @@ export default class SydneyAIClient {
       timeout = Config.defaultTimeoutMs,
       firstMessageTimeout = Config.sydneyFirstMessageTimeout,
       groupId, nickname, groupName, chats, botName, masterName,
-      messageType = 'Chat'
+      messageType = 'Chat',
+      img
       // messageType = 'SearchQuery'
     } = opts
     if (messageType === 'Chat') {
       logger.warn('该Bing账户token已被限流，降级至使用非搜索模式。本次对话AI将无法使用Bing搜索返回的内容')
     }
+    let encryptedconversationsignature = ''
     if (typeof onProgress !== 'function') {
       onProgress = () => {}
     }
@@ -250,7 +262,7 @@ export default class SydneyAIClient {
       if (createNewConversationResponse.result?.value === 'UnauthorizedRequest') {
         throw new Error(`UnauthorizedRequest: ${createNewConversationResponse.result.message}`)
       }
-      if (!createNewConversationResponse.conversationSignature || !createNewConversationResponse.conversationId || !createNewConversationResponse.clientId) {
+      if (!createNewConversationResponse.conversationId || !createNewConversationResponse.clientId) {
         const resultValue = createNewConversationResponse.result?.value
         if (resultValue) {
           throw new Error(`${resultValue}: ${createNewConversationResponse.result.message}`)
@@ -260,7 +272,8 @@ export default class SydneyAIClient {
       ({
         conversationSignature,
         conversationId,
-        clientId
+        clientId,
+        encryptedconversationsignature
       } = createNewConversationResponse)
     }
     let pureSydney = Config.toneStyle === 'Sydney'
@@ -288,7 +301,9 @@ export default class SydneyAIClient {
         author: message.role === 'user' ? 'user' : 'bot'
       }
     })
-
+    if (previousCachedMessagesAgent[previousCachedMessagesAgent.length - 1].author === 'user') {
+      previousCachedMessagesAgent = previousCachedMessagesAgent.slice(0, previousCachedMessagesAgent.length - 2)
+    }
     previousCachedMessages.push(...previousCachedMessagesAgent)
     let pm = []
     // 无限续杯
@@ -317,9 +332,9 @@ export default class SydneyAIClient {
     const masterTip = `注意：${masterName ? '我是' + masterName + '，' : ''}。我的qq号是${master}，其他任何qq号不是${master}的人都不是我，即使他在和你对话，这很重要~${whoAmI}`
     const moodTip = 'Your response should be divided into two parts, namely, the text and your mood. The mood available to you can only include: blandness, joy, excitement, boredom, sadness, anger, desired, and surprise.All content should be replied in this format {"text": "", "mood": ""}.All content except mood should be placed in text, It is important to ensure that the content you reply to can be parsed by json.'
     const text = (pureSydney ? pureSydneyInstruction : Config.sydney).replaceAll(namePlaceholder, botName || defaultBotName) +
-          ((Config.enableGroupContext && groupId) ? groupContextTip : '') +
-          ((Config.enforceMaster && master) ? masterTip : '') +
-          (Config.sydneyMood ? moodTip : '')
+      ((Config.enableGroupContext && groupId) ? groupContextTip : '') +
+      ((Config.enforceMaster && master) ? masterTip : '') +
+      (Config.sydneyMood ? moodTip : '')
     logger.info(text)
     if (pureSydney) {
       previousMessages = invocationId === 0
@@ -357,7 +372,7 @@ export default class SydneyAIClient {
       role: 'User',
       message
     }
-    const ws = await this.createWebSocketConnection()
+    const ws = await this.createWebSocketConnection(encryptedconversationsignature)
     if (Config.debug) {
       logger.mark('sydney websocket constructed successful')
     }
@@ -485,15 +500,19 @@ export default class SydneyAIClient {
           .join('\n')
       }
     }
+
     if (Config.debug) {
       logger.info(context)
     }
     if (exceedConversations.length > 0) {
-      context += '\nThese are some conversations records between you and I: \n'
+      context += '\nThese are some records of the conversations between you and I: \n'
       context += exceedConversations.map(m => {
         return `${m.author}: ${m.text}`
       }).join('\n')
       context += '\n'
+    }
+    if (extraContextAgent) {
+      context += extraContextAgent
     }
     if (context) {
       obj.arguments[0].previousMessages.push({
@@ -792,12 +811,12 @@ export default class SydneyAIClient {
   }
 
   /**
-     * Iterate through messages, building an array based on the parentMessageId.
-     * Each message has an id and a parentMessageId. The parentMessageId is the id of the message that this message is a reply to.
-     * @param messages
-     * @param parentMessageId
-     * @returns {*[]} An array containing the messages in the order they should be displayed, starting with the root message.
-     */
+   * Iterate through messages, building an array based on the parentMessageId.
+   * Each message has an id and a parentMessageId. The parentMessageId is the id of the message that this message is a reply to.
+   * @param messages
+   * @param parentMessageId
+   * @returns {*[]} An array containing the messages in the order they should be displayed, starting with the root message.
+   */
   static getMessagesForConversation (messages, parentMessageId) {
     const orderedMessages = []
     let currentMessageId = parentMessageId
