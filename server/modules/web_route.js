@@ -51,8 +51,9 @@ async function routes(fastify, options) {
         return reply
     })
     fastify.setNotFoundHandler((request, reply) => {
-        if (request.method === 'GET') {
-            reply.sendFile('plugins/chatgpt-plugin/server/static/index.html')
+        if (request.method == 'GET') {
+            const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')
+            reply.type('text/html').send(stream)
         } else {
             reply.code(404).send(new Error('Not Found'))
         }
