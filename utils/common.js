@@ -821,6 +821,14 @@ export function getMaxModelTokens (model = 'gpt-3.5-turbo') {
   }
 }
 
+export function getUin (e) {
+  if (e?.bot?.uin) return e.bot.uin
+  if (Array.isArray(Bot.uin)) {
+    if (Config.trssBotUin && Bot.uin.indexOf(Config.trssBotUin) > -1) return Config.trssBotUin
+    else return Bot.uin[0]
+  } else return Bot.uin
+}
+
 /**
  * 生成当前语音模式下可发送的音频信息
  * @param e - 上下文对象
