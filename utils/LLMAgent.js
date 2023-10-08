@@ -1,6 +1,6 @@
 import { BaseChain } from 'langchain/chains'
 
-export class SydneyAgentExecutor extends BaseChain {
+export class AgentExecutor extends BaseChain {
   constructor (input) {
     super(input.memory, input.verbose, input.callbackManager)
     this.agent = input.agent
@@ -13,7 +13,7 @@ export class SydneyAgentExecutor extends BaseChain {
   }
 
   static fromAgentAndTools (fields) {
-    return new SydneyAgentExecutor(fields)
+    return new AgentExecutor(fields)
   }
 
   shouldContinue (iterations) {

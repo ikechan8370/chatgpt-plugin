@@ -6,25 +6,23 @@ import delay from 'delay'
 import { ChatGPTAPI } from 'chatgpt'
 import { BingAIClient } from '@waylaidwanderer/chatgpt-api'
 import {
-  completeJSON,
-  getDefaultUserSetting,
-  getMasterQQ,
-  getMessageById,
-  isCN,
-  makeForwardMsg,
-  randomString,
   render,
-  upsertMessage
+  getMessageById,
+  makeForwardMsg,
+  upsertMessage,
+  randomString,
+  completeJSON,
+  getDefaultUserSetting, isCN, getMasterQQ
 } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
 import { OfficialChatGPTClient } from '../utils/message.js'
-import fetch, { File, FormData } from 'node-fetch'
+import fetch from 'node-fetch'
 import { deleteConversation, getConversations, getLatestMessageIdByConversationId } from '../utils/conversation.js'
 import { convertSpeaker, generateAudio, speakers } from '../utils/tts.js'
 import ChatGLMClient from '../utils/chatglm.js'
 import { convertFaces } from '../utils/face.js'
-import { SydneyAgentExecutor } from '../utils/LLMAgentExecutor.js'
+import { AgentExecutor } from '../utils/LLMAgent.js'
 import { JinyanTool } from '../utils/tools/JinyanTool.js'
 import { KickOutTool } from '../utils/tools/KickOutTool.js'
 import { SendPictureTool } from '../utils/tools/SendPictureTool.js'
@@ -33,14 +31,9 @@ import { EditCardTool } from '../utils/tools/EditCardTool.js'
 import { SendMessageTool } from '../utils/tools/SendMessageTool.js'
 import { SendDiceTool } from '../utils/tools/SendDiceTool.js'
 import { SendRPSTool } from '../utils/tools/SendRPSTool.js'
-import { SydneyAIModel } from '../utils/SydneyAIModel.js'
+import { SydneyAgent, SydneyAIModel } from '../utils/SydneyAIModel.js'
 import { SendMusicTool } from '../utils/tools/SendMusicTool.js'
 import { SendVideoTool } from '../utils/tools/SendBilibiliTool.js'
-import { LLMChain } from 'langchain'
-import { BingPreciseOutputParser, BingPrecisePromptTemplate } from '../utils/agents/BingPreciseAgent.js'
-import { LLMSingleActionAgent, AgentExecutor } from 'langchain/agents'
-import { QueryQQWeightTool } from '../utils/tools/QueryQQWeight.js'
-
 try {
   await import('keyv')
 } catch (err) {
@@ -78,7 +71,6 @@ const newFetch = (url, options = {}) => {
 
   return fetch(url, mergedOptions)
 }
-
 export class chatgpt extends plugin {
   constructor () {
     let toggleMode = Config.toggleMode
@@ -190,10 +182,10 @@ export class chatgpt extends plugin {
   }
 
   /**
-     * 获取chatgpt当前对话列表
-     * @param e
-     * @returns {Promise<void>}
-     */
+   * 获取chatgpt当前对话列表
+   * @param e
+   * @returns {Promise<void>}
+   */
   async getConversations (e) {
     // todo 根据use返回不同的对话列表
     let keys = await redis.keys('CHATGPT:CONVERSATIONS:*')
@@ -213,10 +205,10 @@ export class chatgpt extends plugin {
   }
 
   /**
-     * 销毁指定人的对话
-     * @param e
-     * @returns {Promise<void>}
-     */
+   * 销毁指定人的对话
+   * @param e
+   * @returns {Promise<void>}
+   */
   async destroyConversations (e) {
     let ats = e.message.filter(m => m.type === 'at')
     let use = await redis.get('CHATGPT:USE')
@@ -528,8 +520,8 @@ export class chatgpt extends plugin {
   }
 
   /**
-     * #chatgpt
-     */
+   * #chatgpt
+   */
   async chatgpt (e) {
     let prompt
     if (this.toggleMode === 'at') {
@@ -622,8 +614,7 @@ export class chatgpt extends plugin {
             // }
           }
           prompt = imgOcrText + prompt
-        } catch (err) {
-        }
+        } catch (err) { }
       }
     }
     // 检索是否有屏蔽词
@@ -1119,7 +1110,8 @@ export class chatgpt extends plugin {
                   chats = chats.reverse().slice(0, Config.groupContextLength).reverse()
                   let mm = await e.group.getMemberMap()
                   chats.forEach(chat => {
-                    chat.sender = mm.get(chat.sender.user_id)
+                    let sender = mm.get(chat.sender.user_id)
+                    chat.sender = sender
                   })
                   // console.log(chats)
                   opt.chats = chats
@@ -1129,41 +1121,23 @@ export class chatgpt extends plugin {
               }
               delete opt.parentMessageId
               delete opt.conversationId
-              opt.img = e.img
               let model = new SydneyAIModel(Object.assign(opt, clientOpts))
               const tools = [
                 new JinyanTool(),
                 new KickOutTool(),
-                // new SendPictureTool(),
+                new SendPictureTool(),
                 new SendAvatarTool(),
                 new EditCardTool(),
-                // new SendMessageTool(),
-                // new SendDiceTool(),
-                // new SendRPSTool(),
+                new SendMessageTool(),
+                new SendDiceTool(),
+                new SendRPSTool(),
                 new SendMusicTool(),
-                new SendVideoTool(),
-                new QueryQQWeightTool()
+                new SendVideoTool()
               ]
-              const llmChain = new LLMChain({
-                prompt: new BingPrecisePromptTemplate({
-                  tools,
-                  inputVariables: ['input', 'agent_scratchpad']
-                }),
-                llm: model
-              })
-              const agent = new LLMSingleActionAgent({
-                llmChain,
-                outputParser: new BingPreciseOutputParser(),
-                stop: ['\nObservation']
-              })
-              // executor = SydneyAgentExecutor.fromAgentAndTools({
-              //   agent: SydneyAgent.fromLLMAndTools(model, tools),
-              //   tools,
-              //   returnIntermediateSteps: true
-              // })
-              executor = new AgentExecutor({
-                agent,
-                tools
+              executor = AgentExecutor.fromAgentAndTools({
+                agent: SydneyAgent.fromLLMAndTools(model, tools),
+                tools,
+                returnIntermediateSteps: true
               })
             } else {
               // 重新创建client，因为token可能换到别的了
@@ -1183,32 +1157,7 @@ export class chatgpt extends plugin {
               bingAIClient = new BingAIClient(bingOption)
             }
             if (executor) {
-              let handledMessage = prompt
-
-              // let imgContents = []
-              // if (e.img) {
-              //   for (let i of e.img) {
-              //     let res = await fetch(i)
-              //     const formData = new FormData()
-              //     const blob = await res.blob()
-              //     const arrayBuffer = await blob.arrayBuffer()
-              //     const buffer = Buffer.from(arrayBuffer)
-              //     formData.append('file', new File([buffer], 'image.jpg', { type: 'image/jpeg' }))
-              //     let caption = await fetch('http://127.0.0.1:8000/caption', {
-              //       method: 'POST',
-              //       body: formData
-              //     })
-              //     caption = await caption.json()
-              //     let imgContent = caption.message
-              //     console.log(imgContent)
-              //     imgContents.push(imgContent)
-              //   }
-              // }
-              //
-              // if (imgContents.length > 0) {
-              //   handledMessage = `(Notice: there is ${imgContents.length} picture: the contents of each picture are: ${imgContents.join(';')})\n${prompt}`
-              // }
-              response = await executor.call({ input: handledMessage })
+              response = await executor.call({ input: prompt })
               response = {
                 response: response.output
               }
@@ -1243,9 +1192,7 @@ export class chatgpt extends plugin {
               savedBingToken = savedBingToken.split('|')
               let tokenId = savedBingToken.indexOf(bingToken)
               savedBingToken.splice(tokenId, 1)
-              savedBingToken = savedBingToken.filter(function (element) {
-                return element !== ''
-              })
+              savedBingToken = savedBingToken.filter(function (element) { return element !== '' })
               await redis.set('CHATGPT:BING_TOKEN', savedBingToken.join('|'))
               logger.mark(`token${bingToken}已移除`)
             } else if (message.indexOf('Unhandled Exception') > -1) {
@@ -1479,10 +1426,10 @@ export class chatgpt extends plugin {
   }
 
   /**
-     * #chatgpt
-     * @param prompt 问题
-     * @param conversation 对话
-     */
+   * #chatgpt
+   * @param prompt 问题
+   * @param conversation 对话
+   */
   async chatgptBrowserBased (prompt, conversation) {
     let option = { markdown: true }
     if (Config['2captchaToken']) {
