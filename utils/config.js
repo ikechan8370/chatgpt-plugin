@@ -34,7 +34,7 @@ const defaultConfig = {
   sydney: pureSydneyInstruction,
   sydneyReverseProxy: 'https://666102.201666.xyz',
   sydneyForceUseReverse: false,
-  sydneyWebsocketUseProxy: false,
+  sydneyWebsocketUseProxy: true,
   sydneyBrainWash: true,
   sydneyBrainWashStrength: 15,
   sydneyBrainWashName: 'Sydney',
