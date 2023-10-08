@@ -79,7 +79,8 @@ const defaultConfig = {
   maxNumUserMessagesInConversation: 20,
   sydneyApologyIgnored: true,
   enforceMaster: false,
-  version: 'v2.4.11'
+  bingCaptchaOneShotUrl: 'http://bingcaptcha.ikechan8370.com/bing',
+  version: 'v2.4.11-langchain'
 }
 const _path = process.cwd()
 let config = {}

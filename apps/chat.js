@@ -1198,6 +1198,25 @@ export class chatgpt extends plugin {
             } else if (message.indexOf('Unhandled Exception') > -1) {
               errorMessage = message
               retry = retry - 0.25
+            } else if (message.includes('Captcha')) {
+              if (bingToken) {
+                // maxConv为30说明token有效，可以通过解验证码码服务过码
+                await e.reply('出现必应验证码，尝试解决中')
+                try {
+                  let captchaResolveResult = await solveCaptchaOneShot(bingToken)
+                  if (captchaResolveResult?.success) {
+                    await e.reply('验证码已解决')
+                  } else {
+                    logger.error(captchaResolveResult)
+                    await e.reply('验证码解决失败: ' + captchaResolveResult.error)
+                    retry = 0
+                  }
+                } catch (err) {
+                  logger.error(err)
+                  await e.reply('验证码解决失败: ' + err)
+                  retry = 0
+                }
+              }
             } else {
               retry--
               errorMessage = message === 'Timed out waiting for response. Try enabling debug mode to see more information.' ? (reply ? `${reply}\n不行了，我的大脑过载了，处理不过来了!` : '必应的小脑瓜不好使了，不知道怎么回答！') : message
