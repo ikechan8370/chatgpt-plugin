@@ -8,7 +8,7 @@ export class JinyanTool extends Tool {
     try {
       let [groupId, qq, time = '600'] = input.trim().split(' ')
       groupId = parseInt(groupId.trim())
-      if (groupId === 123456789) {
+      if (groupId === 123456789 || groupId === 12345678) {
         groupId = e.group_id + ''
       }
       if (qq === '123456789') {

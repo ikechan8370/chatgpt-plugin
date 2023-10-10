@@ -13,7 +13,7 @@ export class EditCardTool extends Tool {
       } else {
         groupId = e.group_id + ''
       }
-      if (groupId === '123456789') {
+      if (groupId.startsWith('12345678')) {
         groupId = e.group_id + ''
       }
       let left = input.replace(groupId, '')
