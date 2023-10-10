@@ -3,11 +3,32 @@ import { Tool } from 'langchain/agents'
 export class EditCardTool extends Tool {
   name = 'editCard'
 
-  async _call (input) {
+  async _call (option) {
+    const { input, e } = option
     try {
-      let groupId = input.match(/^\d+/)[0]
+      let groupId
+      let matches = input.match(/\d+$/)
+      if (matches && matches.length > 0) {
+        groupId = matches[0]
+      } else {
+        groupId = e.group_id + ''
+      }
+      if (groupId === '123456789') {
+        groupId = e.group_id + ''
+      }
       let left = input.replace(groupId, '')
-      let qq = left.trimStart().match(/^\d+/)[0]
+
+      let qq
+      matches = input.match(/\d+$/)
+      if (matches && matches.length > 0) {
+        qq = matches[0]
+      } else {
+        qq = e.sender.user_id + ''
+      }
+      if (qq === '123456789') {
+        qq = e.sender.user_id + ''
+      }
+
       let card = left.replace(qq, '').trim()
       groupId = parseInt(groupId.trim())
       qq = parseInt(qq.trim())

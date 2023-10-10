@@ -1,8 +1,9 @@
-import {Tool} from "langchain/agents";
+import { Tool } from 'langchain/agents'
 
 export class SendPictureTool extends Tool {
   name = 'sendPicture'
-  async _call (input) {
+  async _call (option) {
+    const { input, e } = option
     try {
       let pictures = input.trim().split(' ')
       let groupId = parseInt(pictures[pictures.length - 1])

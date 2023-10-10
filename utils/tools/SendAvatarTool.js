@@ -1,8 +1,9 @@
-import {Tool} from "langchain/agents";
+import { Tool } from 'langchain/agents'
 
 export class SendAvatarTool extends Tool {
   name = 'sendAvatar'
-  async _call (input) {
+  async _call (option) {
+    const { input, e } = option
     try {
       let [qq, groupId] = input.trim().split(' ')
       let groupList = await Bot.getGroupList()
@@ -20,5 +21,4 @@ export class SendAvatarTool extends Tool {
   }
 
   description = 'Useful when you want to send the user avatar picture to the group. The input to this tool should be the user\'s qq number and the target group number, and they should be concated with a space. 如果是在群聊中，优先选择群号发送。'
-
 }

@@ -1,12 +1,19 @@
-import {Tool} from "langchain/agents";
+import { Tool } from 'langchain/agents'
 
 export class JinyanTool extends Tool {
   name = 'jinyan'
 
-  async _call (input) {
+  async _call (option) {
+    const { input, e } = option
     try {
       let [groupId, qq, time = '600'] = input.trim().split(' ')
       groupId = parseInt(groupId.trim())
+      if (groupId === 123456789) {
+        groupId = e.group_id + ''
+      }
+      if (qq === '123456789') {
+        qq = e.sender?.user_id + ''
+      }
       console.log('ban', groupId, qq)
       let group = await Bot.pickGroup(groupId)
       time = parseInt(time.trim())

@@ -17,6 +17,7 @@ import {
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
 import { OfficialChatGPTClient } from '../utils/message.js'
+import { solveCaptchaOneShot } from '../utils/bingCaptcha.js'
 import fetch from 'node-fetch'
 import { deleteConversation, getConversations, getLatestMessageIdByConversationId } from '../utils/conversation.js'
 import { convertSpeaker, generateAudio, speakers } from '../utils/tts.js'
@@ -1125,7 +1126,7 @@ export class chatgpt extends plugin {
               const tools = [
                 new JinyanTool(),
                 new KickOutTool(),
-                new SendPictureTool(),
+                // new SendPictureTool(),
                 new SendAvatarTool(),
                 new EditCardTool(),
                 new SendMessageTool(),
@@ -1137,7 +1138,8 @@ export class chatgpt extends plugin {
               executor = AgentExecutor.fromAgentAndTools({
                 agent: SydneyAgent.fromLLMAndTools(model, tools),
                 tools,
-                returnIntermediateSteps: true
+                returnIntermediateSteps: true,
+                e
               })
             } else {
               // 重新创建client，因为token可能换到别的了

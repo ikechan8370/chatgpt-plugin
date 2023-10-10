@@ -1,11 +1,12 @@
 import fetch from 'node-fetch'
 import { Tool } from 'langchain/agents'
-import {formatDate, mkdirs} from '../common.js'
+import { formatDate, mkdirs } from '../common.js'
 import fs from 'fs'
 export class SendVideoTool extends Tool {
   name = 'sendVideo'
 
-  async _call (input) {
+  async _call (option) {
+    const { input, e } = option
     try {
       let groupId = input.match(/^\d+/)[0]
       let keyword = input.replace(groupId, '').trim()
@@ -84,22 +85,22 @@ async function searchBilibili (name) {
   return {}
 }
 
-function randomIndex() {
+function randomIndex () {
   // Define weights for each index
-  const weights = [5, 4, 3, 2, 1, 1, 1, 1, 1, 1, 1];
+  const weights = [5, 4, 3, 2, 1, 1, 1, 1, 1, 1, 1]
 
   // Compute the total weight
-  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+  const totalWeight = weights.reduce((sum, weight) => sum + weight, 0)
 
   // Generate a random number between 0 and the total weight
-  const randomNumber = Math.floor(Math.random() * totalWeight);
+  const randomNumber = Math.floor(Math.random() * totalWeight)
 
   // Choose the index based on the random number and weights
-  let weightSum = 0;
+  let weightSum = 0
   for (let i = 0; i < weights.length; i++) {
-    weightSum += weights[i];
+    weightSum += weights[i]
     if (randomNumber < weightSum) {
-      return i;
+      return i
     }
   }
 }

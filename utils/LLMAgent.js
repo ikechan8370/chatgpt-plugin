@@ -5,6 +5,7 @@ export class AgentExecutor extends BaseChain {
     super(input.memory, input.verbose, input.callbackManager)
     this.agent = input.agent
     this.tools = input.tools
+    this.e = input.e
     this.returnIntermediateSteps =
             input.returnIntermediateSteps ?? this.returnIntermediateSteps
     this.maxIterations = input.maxIterations ?? this.maxIterations
@@ -53,7 +54,10 @@ export class AgentExecutor extends BaseChain {
       } else {
         const tool = toolsByName[toolName]
         const observation = tool
-          ? await tool.call(a.action_input, verbose)
+          ? await tool.call({
+            input: a.action_input,
+            e: this.e
+          }, verbose)
           : `${action.action} is not a valid tool, try another one.`
         console.log(observation)
       }

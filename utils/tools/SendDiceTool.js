@@ -2,7 +2,8 @@ import { Tool } from 'langchain/agents'
 
 export class SendDiceTool extends Tool {
   name = 'sendDice'
-  async _call (input) {
+  async _call (option) {
+    const { input, e } = option
     try {
       let [num, groupId] = input.trim().split(' ')
       num = parseInt(num.trim())

@@ -1,8 +1,9 @@
-import {Tool} from "langchain/agents";
+import { Tool } from 'langchain/agents'
 
 export class KickOutTool extends Tool {
   name = 'kickOut'
-  async _call (input) {
+  async _call (option) {
+    const { input, e } = option
     try {
       let [groupId, qq] = input.trim().split(' ')
       groupId = parseInt(groupId.trim())

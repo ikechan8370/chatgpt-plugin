@@ -4,7 +4,8 @@ import { Tool } from 'langchain/agents'
 export class SendMusicTool extends Tool {
   name = 'sendMusic'
 
-  async _call (input) {
+  async _call (option) {
+    const { input, e } = option
     try {
       let groupId = input.match(/^\d+/)[0]
       let keyword = input.replace(groupId, '').trim()

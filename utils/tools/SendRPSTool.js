@@ -1,8 +1,9 @@
-import {Tool} from "langchain/agents";
+import { Tool } from 'langchain/agents'
 
 export class SendRPSTool extends Tool {
   name = 'sendRPS'
-  async _call (input) {
+  async _call (option) {
+    const { input, e } = option
     try {
       let [num, groupId] = input.trim().split(' ')
       num = parseInt(num.trim())

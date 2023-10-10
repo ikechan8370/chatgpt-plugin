@@ -4,9 +4,19 @@ import { Config } from '../config.js'
 
 export class SendMessageTool extends Tool {
   name = 'send'
-  async _call (input) {
+  async _call (option) {
+    const { input, e } = option
     try {
-      let groupId = input.match(/\d+$/)[0]
+      let groupId
+      let matches = input.match(/\d+$/)
+      if (matches && matches.length > 0) {
+        groupId = matches[0]
+      } else {
+        groupId = e.group_id + ''
+      }
+      if (groupId.startsWith('12345678')) {
+        groupId = e.group_id + ''
+      }
       const text = input.replace(groupId, '')
       groupId = parseInt(groupId.trim())
       console.log('send', text, groupId)
