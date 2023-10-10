@@ -8,7 +8,7 @@ export class SendMessageTool extends Tool {
     const { input, e } = option
     try {
       let groupId
-      let matches = input.match(/\d+/)
+      let matches = input.match(/(\d+$|^\d+)/)
       if (matches && matches.length > 0) {
         groupId = matches[matches.length - 1]
       } else {
