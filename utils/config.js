@@ -30,11 +30,11 @@ const defaultConfig = {
   drawCD: 30,
   model: '',
   temperature: 0.8,
-  toneStyle: 'balanced', // or creative, precise
+  toneStyle: 'Sydney', // or creative, precise
   sydney: pureSydneyInstruction,
   sydneyReverseProxy: 'https://666102.201666.xyz',
   sydneyForceUseReverse: false,
-  sydneyWebsocketUseProxy: false,
+  sydneyWebsocketUseProxy: true,
   sydneyBrainWash: true,
   sydneyBrainWashStrength: 15,
   sydneyBrainWashName: 'Sydney',
