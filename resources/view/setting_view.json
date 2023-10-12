@@ -636,6 +636,12 @@
                 "label": "必应验证码pass服务",
                 "placeholder": "必应出验证码会自动用该服务绕过",
                 "data": "bingCaptchaOneShotUrl"
+              },
+              {
+                "type": "url",
+                "label": "第三方绘图",
+                "placeholder": "Stable Diffusion API地址",
+                "data": "bingDrawApi"
               }
             ]
           },

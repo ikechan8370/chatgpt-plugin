@@ -1665,16 +1665,40 @@ export class chatgpt extends plugin {
               if (Config.debug) {
                 logger.mark(`开始生成内容：${response.details.imageTag}`)
               }
-              let client = new BingDrawClient({
-                baseUrl: Config.sydneyReverseProxy,
-                userToken: bingToken
-              })
-              await redis.set(`CHATGPT:DRAW:${e.sender.user_id}`, 'c', { EX: 30 })
-              try {
-                await client.getImages(response.details.imageTag, e)
-              } catch (err) {
-                await redis.del(`CHATGPT:DRAW:${e.sender.user_id}`)
-                await e.reply('绘图失败：' + err)
+              if (Config.bingDrawApi) {
+                // 调用第三方API进行绘图
+                const drawOption = {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    prompt: response.details.imageTag,
+                    width: 512,
+                    height: 512
+                  })
+                }
+                const drawData = await fetch(Config.bingDrawApi, drawOption)
+                if (drawData.ok) {
+                  let draw = await cacheres.json()
+                  if (draw.images) {
+                    for(let image of draw.images) {
+                      this.reply(segment.image(`base64://${image}`), true)
+                    }
+                  }
+                } else {
+                  await e.reply('绘图失败：第三方绘图服务器错误')
+                }
+
+              } else {
+                let client = new BingDrawClient({
+                  baseUrl: Config.sydneyReverseProxy,
+                  userToken: bingToken
+                })
+                await redis.set(`CHATGPT:DRAW:${e.sender.user_id}`, 'c', { EX: 30 })
+                try {
+                  await client.getImages(response.details.imageTag, e)
+                } catch (err) {
+                  await redis.del(`CHATGPT:DRAW:${e.sender.user_id}`)
+                  await e.reply('绘图失败：' + err)
+                }
               }
             }
 
