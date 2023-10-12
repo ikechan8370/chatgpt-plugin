@@ -97,6 +97,7 @@ const defaultConfig = {
   sydneyApologyIgnored: true,
   enforceMaster: false,
   bingDrawApi: '',
+  bingDrawSampler: '',
   serverPort: 3321,
   serverHost: '',
   viewHost: '',

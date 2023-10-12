@@ -642,6 +642,11 @@
                 "label": "第三方绘图",
                 "placeholder": "Stable Diffusion API地址",
                 "data": "bingDrawApi"
+              },
+              {
+                "type": "text",
+                "label": "第三方绘图采样方法",
+                "data": "bingDrawSampler"
               }
             ]
           },
