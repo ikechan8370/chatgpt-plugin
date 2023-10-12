@@ -98,6 +98,8 @@ const defaultConfig = {
   enforceMaster: false,
   bingDrawApi: '',
   bingDrawSampler: '',
+  bingDrawWidth: 512,
+  bingDrawHeight: 512,
   serverPort: 3321,
   serverHost: '',
   viewHost: '',

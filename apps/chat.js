@@ -1672,8 +1672,8 @@ export class chatgpt extends plugin {
                   headers: {'content-type': 'application/json'},
                   body: JSON.stringify({
                     prompt: response.details.imageTag,
-                    width: 512,
-                    height: 512,
+                    width: Config.bingDrawWidth || 512,
+                    height: Config.bingDrawHeight || 512,
                     sampler_index: Config.bingDrawSampler || 'DPM++ 2M SDE'
                   })
                 }

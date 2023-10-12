@@ -647,6 +647,18 @@
                 "type": "text",
                 "label": "第三方绘图采样方法",
                 "data": "bingDrawSampler"
+              },
+              {
+                "type": "number",
+                "label": "第三方绘图宽度",
+                "placeholder": "图片宽度",
+                "data": "bingDrawWidth"
+              },
+              {
+                "type": "bingDrawWidth",
+                "label": "第三方绘图高度",
+                "placeholder": "图片高度",
+                "data": "bingDrawHeight"
               }
             ]
           },
