@@ -655,7 +655,7 @@
                 "data": "bingDrawWidth"
               },
               {
-                "type": "bingDrawWidth",
+                "type": "number",
                 "label": "第三方绘图高度",
                 "placeholder": "图片高度",
                 "data": "bingDrawHeight"
