@@ -1669,6 +1669,7 @@ export class chatgpt extends plugin {
                 // 调用第三方API进行绘图
                 const drawOption = {
                   method: 'POST',
+                  headers: {'content-type': 'application/json'},
                   body: JSON.stringify({
                     prompt: response.details.imageTag,
                     width: 512,
@@ -1677,11 +1678,13 @@ export class chatgpt extends plugin {
                 }
                 const drawData = await fetch(Config.bingDrawApi, drawOption)
                 if (drawData.ok) {
-                  let draw = await cacheres.json()
-                  if (draw.images) {
+                  let draw = await drawData.json()
+                  if (draw.images?.length > 0) {
                     for(let image of draw.images) {
                       this.reply(segment.image(`base64://${image}`), true)
                     }
+                  } else {
+                      await e.reply('绘图失败：未产生图片')
                   }
                 } else {
                   await e.reply('绘图失败：第三方绘图服务器错误')
