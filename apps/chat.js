@@ -548,7 +548,7 @@ export class chatgpt extends plugin {
       await this.reply('本功能当前仅支持API3模式', true)
       return false
     }
-    if (ats.length === 0 || (ats.length === 1 && e.atme)) {
+    if (ats.length === 0 || (ats.length === 1 && (e.atme || e.atBot))) {
       let conversationId = _.trimStart(e.msg, '#chatgpt删除对话').trim()
       if (!conversationId) {
         await this.reply('指令格式错误，请同时加上对话id或@某人以删除他当前进行的对话', true)
@@ -761,14 +761,14 @@ export class chatgpt extends plugin {
       if (!e.raw_message || e.msg?.startsWith('#')) {
         return false
       }
-      if (e.isGroup && !e.atme) {
+      if (e.isGroup && !(e.atme || e.atBot)) {
         return false
       }
       if (e.user_id == getUin(e)) return false
       prompt = e.raw_message.trim()
       if (e.isGroup && typeof this.e.group.getMemberMap === 'function') {
         let mm = await this.e.group.getMemberMap()
-        let me = mm.get(getUin(e))
+        let me = mm.get(getUin(e)) || {}
         let card = me.card
         let nickname = me.nickname
         if (nickname && card) {
@@ -797,7 +797,7 @@ export class chatgpt extends plugin {
       }
     } else {
       let ats = e.message.filter(m => m.type === 'at')
-      if (!e.atme && ats.length > 0) {
+      if (!(e.atme || e.atBot) && ats.length > 0) {
         if (Config.debug) {
           logger.mark('艾特别人了，没艾特我，忽略#chat')
         }
@@ -1324,7 +1324,7 @@ export class chatgpt extends plugin {
       return false
     }
     let ats = e.message.filter(m => m.type === 'at')
-    if (!e.atme && ats.length > 0) {
+    if (!(e.atme || e.atBot) && ats.length > 0) {
       if (Config.debug) {
         logger.mark('艾特别人了，没艾特我，忽略#chat1')
       }
@@ -1343,7 +1343,7 @@ export class chatgpt extends plugin {
       return false
     }
     let ats = e.message.filter(m => m.type === 'at')
-    if (!e.atme && ats.length > 0) {
+    if (!(e.atme || e.atBot) && ats.length > 0) {
       if (Config.debug) {
         logger.mark('艾特别人了，没艾特我，忽略#chat3')
       }
@@ -1362,7 +1362,7 @@ export class chatgpt extends plugin {
       return false
     }
     let ats = e.message.filter(m => m.type === 'at')
-    if (!e.atme && ats.length > 0) {
+    if (!(e.atme || e.atBot) && ats.length > 0) {
       if (Config.debug) {
         logger.mark('艾特别人了，没艾特我，忽略#chatglm')
       }
@@ -1381,7 +1381,7 @@ export class chatgpt extends plugin {
       return false
     }
     let ats = e.message.filter(m => m.type === 'at')
-    if (!e.atme && ats.length > 0) {
+    if (!(e.atme || e.atBot) && ats.length > 0) {
       if (Config.debug) {
         logger.mark('艾特别人了，没艾特我，忽略#bing')
       }
@@ -1400,7 +1400,7 @@ export class chatgpt extends plugin {
       return false
     }
     let ats = e.message.filter(m => m.type === 'at')
-    if (!e.atme && ats.length > 0) {
+    if (!(e.atme || e.atBot) && ats.length > 0) {
       if (Config.debug) {
         logger.mark('艾特别人了，没艾特我，忽略#claude2')
       }
@@ -1419,7 +1419,7 @@ export class chatgpt extends plugin {
       return false
     }
     let ats = e.message.filter(m => m.type === 'at')
-    if (!e.atme && ats.length > 0) {
+    if (!(e.atme || e.atBot) && ats.length > 0) {
       if (Config.debug) {
         logger.mark('艾特别人了，没艾特我，忽略#claude')
       }
@@ -1438,7 +1438,7 @@ export class chatgpt extends plugin {
       return false
     }
     let ats = e.message.filter(m => m.type === 'at')
-    if (!e.atme && ats.length > 0) {
+    if (!(e.atme || e.atBot) && ats.length > 0) {
       if (Config.debug) {
         logger.mark('艾特别人了，没艾特我，忽略#xh')
       }
@@ -1665,16 +1665,24 @@ export class chatgpt extends plugin {
               if (Config.debug) {
                 logger.mark(`开始生成内容：${response.details.imageTag}`)
               }
-              let client = new BingDrawClient({
-                baseUrl: Config.sydneyReverseProxy,
-                userToken: bingToken
-              })
-              await redis.set(`CHATGPT:DRAW:${e.sender.user_id}`, 'c', { EX: 30 })
-              try {
-                await client.getImages(response.details.imageTag, e)
-              } catch (err) {
-                await redis.del(`CHATGPT:DRAW:${e.sender.user_id}`)
-                await e.reply('绘图失败：' + err)
+              if (Config.bingAPDraw) {
+                // 调用第三方API进行绘图
+                let apDraw = new APTool()
+                apDraw.func({
+                  prompt: response.details.imageTag
+                }, e)
+              } else {
+                let client = new BingDrawClient({
+                  baseUrl: Config.sydneyReverseProxy,
+                  userToken: bingToken
+                })
+                await redis.set(`CHATGPT:DRAW:${e.sender.user_id}`, 'c', { EX: 30 })
+                try {
+                  await client.getImages(response.details.imageTag, e)
+                } catch (err) {
+                  await redis.del(`CHATGPT:DRAW:${e.sender.user_id}`)
+                  await e.reply('绘图失败：' + err)
+                }
               }
             }
 

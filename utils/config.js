@@ -96,6 +96,7 @@ const defaultConfig = {
   maxNumUserMessagesInConversation: 20,
   sydneyApologyIgnored: true,
   enforceMaster: false,
+  bingAPDraw: false,
   serverPort: 3321,
   serverHost: '',
   viewHost: '',
