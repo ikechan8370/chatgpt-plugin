@@ -761,7 +761,7 @@ export class chatgpt extends plugin {
       if (!e.raw_message || e.msg?.startsWith('#')) {
         return false
       }
-      if (e.isGroup && !(e.atme || e.atBot)) {
+      if ((e.isGroup || e.group_id) && !(e.atme || e.atBot)) {
         return false
       }
       if (e.user_id == getUin(e)) return false
@@ -1720,8 +1720,11 @@ export class chatgpt extends plugin {
                   }
                 } else {
                   // 未登录用户maxConv目前为5或10，出验证码没救
-                  logger.warn(`token [${bingToken}] 无效或已过期`)
+                  logger.warn(`token [${bingToken}] 无效或已过期，如确认token无误，请前往网页版必应对话一次`)
+                  retry = 0
                 }
+              } else {
+                retry = 0
               }
             } else
               if (message && typeof message === 'string' && message.indexOf('限流') > -1) {
