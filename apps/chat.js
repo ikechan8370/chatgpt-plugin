@@ -1588,7 +1588,6 @@ export class chatgpt extends plugin {
               // opt.messageType = allThrottled ? 'Chat' : 'SearchQuery'
               if (Config.enableGroupContext && e.isGroup && typeof e.group.getMemberMap === 'function') {
                 try {
-                  let memberMap = await e.group.getMemberMap()
                   opt.groupId = e.group_id
                   opt.qq = e.sender.user_id
                   opt.nickname = e.sender.card
@@ -1601,23 +1600,28 @@ export class chatgpt extends plugin {
                   if (master && !e.group) {
                     opt.masterName = Bot.getFriendList().get(parseInt(master))?.nickname
                   }
-                  let latestChat = await e.group.getChatHistory(0, 1)
-                  let seq = latestChat[0].seq
-                  let chats = []
-                  while (chats.length < Config.groupContextLength) {
-                    let chatHistory = await e.group.getChatHistory(seq, 20)
-                    chats.push(...chatHistory)
-                  }
-                  chats = chats.slice(0, Config.groupContextLength)
-                  let mm = await e.group.getMemberMap()
-                  chats.forEach(chat => {
-                    let sender = mm.get(chat.sender.user_id)
-                    if (sender) {
-                      chat.sender = sender
+                  let latestChats = await e.group.getChatHistory(0, 1)
+                  if (latestChats.length > 0) {
+                    let latestChat = latestChats[0]
+                    if (latestChat) {
+                      let seq = latestChat.seq
+                      let chats = []
+                      while (chats.length < Config.groupContextLength) {
+                        let chatHistory = await e.group.getChatHistory(seq, 20)
+                        chats.push(...chatHistory)
+                      }
+                      chats = chats.slice(0, Config.groupContextLength)
+                      let mm = await e.group.getMemberMap()
+                      chats.forEach(chat => {
+                        let sender = mm.get(chat.sender.user_id)
+                        if (sender) {
+                          chat.sender = sender
+                        }
+                      })
+                      // console.log(chats)
+                      opt.chats = chats
                     }
-                  })
-                  // console.log(chats)
-                  opt.chats = chats
+                  }
                 } catch (err) {
                   logger.warn('获取群聊聊天记录失败，本次对话不携带聊天记录', err)
                 }
