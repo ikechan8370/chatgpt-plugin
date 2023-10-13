@@ -11,6 +11,7 @@ import { formatDate, getMasterQQ, isCN, getUserData } from './common.js'
 import delay from 'delay'
 import moment from 'moment'
 import { getProxy } from './proxy.js'
+import Version from './version.js'
 
 if (!globalThis.fetch) {
   globalThis.fetch = fetch
@@ -80,7 +81,7 @@ export default class SydneyAIClient {
         // 'x-ms-client-request-id': crypto.randomUUID(),
         // 'x-ms-useragent': 'azsdk-js-api-client-factory/1.0.0-beta.1 core-rest-pipeline/1.10.3 OS/macOS',
         // cookie: this.opts.cookies || `_U=${this.opts.userToken}`,
-        Referer: 'https://edgeservices.bing.com/edgesvc/chat?udsframed=1&form=SHORUN&clientscopes=chat,noheader,channelstable,',
+        Referer: 'https://edgeservices.bing.com/edgesvc/chat?udsframed=1&form=SHORUN&clientscopes=chat,noheader,channelstable,'
         // 'Referrer-Policy': 'origin-when-cross-origin',
         // Workaround for request being blocked due to geolocation
         // 'x-forwarded-for': '1.1.1.1'
@@ -461,11 +462,10 @@ export default class SydneyAIClient {
         admin: '管理员'
       }
       if (chats) {
-        context += `以下是一段qq群内的对话，提供给你作为上下文，你在回答所有问题时必须优先考虑这些信息，结合这些上下文进行回答，这很重要！！！。"
-      `
+        context += '以下是一段qq群内的对话，提供给你作为上下文，你在回答所有问题时必须优先考虑这些信息，结合这些上下文进行回答，这很重要！！！。"'
         context += chats
           .map(chat => {
-            let sender = chat.sender || {}
+            let sender = chat.sender || chat || {}
             // if (sender.user_id === Bot.uin && chat.raw_message.startsWith('建议的回复')) {
             if (chat.raw_message.startsWith('建议的回复')) {
               // 建议的回复太容易污染设定导致对话太固定跑偏了
@@ -655,7 +655,7 @@ export default class SydneyAIClient {
                   text: replySoFar.join('')
                 }
             // 获取到图片内容
-            if (messages.some(obj => obj.contentType === "IMAGE")) {
+            if (messages.some(obj => obj.contentType === 'IMAGE')) {
               message.imageTag = messages.filter(m => m.contentType === 'IMAGE').map(m => m.text).join('')
             }
             message.text = messages.filter(m => m.author === 'bot' && m.contentType != 'IMAGE').map(m => m.text).join('')
