@@ -768,34 +768,38 @@ export class chatgpt extends plugin {
       }
       if (e.user_id == getUin(e)) return false
       prompt = msg.trim()
-      if (e.isGroup && typeof this.e.group.getMemberMap === 'function') {
-        let mm = await this.e.group.getMemberMap()
-        let me = mm.get(getUin(e)) || {}
-        let card = me.card
-        let nickname = me.nickname
-        if (nickname && card) {
-          if (nickname.startsWith(card)) {
-            // 例如nickname是"滚筒洗衣机"，card是"滚筒"
-            prompt = prompt.replace(`@${nickname}`, '').trim()
-          } else if (card.startsWith(nickname)) {
-            // 例如nickname是"十二"，card是"十二｜本月已发送1000条消息"
-            prompt = prompt.replace(`@${card}`, '').trim()
-            // 如果是好友，显示的还是昵称
-            prompt = prompt.replace(`@${nickname}`, '').trim()
-          } else {
-            // 互不包含，分别替换
-            if (nickname) {
+      try {
+        if (e.isGroup && typeof this.e.group.getMemberMap === 'function') {
+          let mm = await this.e.group.getMemberMap()
+          let me = mm.get(getUin(e)) || {}
+          let card = me.card
+          let nickname = me.nickname
+          if (nickname && card) {
+            if (nickname.startsWith(card)) {
+              // 例如nickname是"滚筒洗衣机"，card是"滚筒"
               prompt = prompt.replace(`@${nickname}`, '').trim()
-            }
-            if (card) {
+            } else if (card.startsWith(nickname)) {
+              // 例如nickname是"十二"，card是"十二｜本月已发送1000条消息"
               prompt = prompt.replace(`@${card}`, '').trim()
+              // 如果是好友，显示的还是昵称
+              prompt = prompt.replace(`@${nickname}`, '').trim()
+            } else {
+              // 互不包含，分别替换
+              if (nickname) {
+                prompt = prompt.replace(`@${nickname}`, '').trim()
+              }
+              if (card) {
+                prompt = prompt.replace(`@${card}`, '').trim()
+              }
             }
+          } else if (nickname) {
+            prompt = prompt.replace(`@${nickname}`, '').trim()
+          } else if (card) {
+            prompt = prompt.replace(`@${card}`, '').trim()
           }
-        } else if (nickname) {
-          prompt = prompt.replace(`@${nickname}`, '').trim()
-        } else if (card) {
-          prompt = prompt.replace(`@${card}`, '').trim()
         }
+      } catch (err) {
+        logger.warn(err)
       }
     } else {
       let ats = e.message.filter(m => m.type === 'at')

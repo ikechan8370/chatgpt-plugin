@@ -1,18 +1,20 @@
 // import { remark } from 'remark'
 // import stripMarkdown from 'strip-markdown'
-import {exec} from 'child_process'
+import { exec } from 'child_process'
 import lodash from 'lodash'
 import fs from 'node:fs'
 import path from 'node:path'
 import buffer from 'buffer'
 import yaml from 'yaml'
 import puppeteer from '../../../lib/puppeteer/puppeteer.js'
-import {Config} from './config.js'
-import {convertSpeaker, generateVitsAudio, speakers as vitsRoleList} from './tts.js'
-import VoiceVoxTTS, {supportConfigurations as voxRoleList} from './tts/voicevox.js'
-import AzureTTS, {supportConfigurations as azureRoleList} from './tts/microsoft-azure.js'
-import {translate} from './translate.js'
+import common from '../../../lib/common/common.js'
+import { Config } from './config.js'
+import { convertSpeaker, generateVitsAudio, speakers as vitsRoleList } from './tts.js'
+import VoiceVoxTTS, { supportConfigurations as voxRoleList } from './tts/voicevox.js'
+import AzureTTS, { supportConfigurations as azureRoleList } from './tts/microsoft-azure.js'
+import { translate } from './translate.js'
 import uploadRecord from './uploadRecord.js'
+import Version from './version.js'
 // export function markdownToText (markdown) {
 //  return remark()
 //    .use(stripMarkdown)
@@ -81,6 +83,9 @@ export async function tryTimes (promiseFn, maxTries = 10) {
 }
 
 export async function makeForwardMsg (e, msg = [], dec = '') {
+  if (Version.isTrss) {
+    return common.makeForwardMsg(e, msg, dec)
+  }
   let nickname = Bot.nickname
   if (e.isGroup) {
     try {
@@ -127,9 +132,9 @@ export async function makeForwardMsg (e, msg = [], dec = '') {
     }
   }
   forwardMsg.data = forwardMsg.data
-		.replace(/\n/g, '')
-		.replace(/<title color="#777777" size="26">(.+?)<\/title>/g, '___')
-		.replace(/___+/, `<title color="#777777" size="26">${dec}</title>`)
+    .replace(/\n/g, '')
+    .replace(/<title color="#777777" size="26">(.+?)<\/title>/g, '___')
+    .replace(/___+/, `<title color="#777777" size="26">${dec}</title>`)
   if (!is_sign) {
     forwardMsg.data = forwardMsg.data
       .replace('转发的', '不可转发的')
@@ -919,7 +924,6 @@ export async function generateAzureAudio (pendingText, role = '随机', speaking
       let languagePrefix = azureRoleList.find(config => config.code === speaker).languageDetail.charAt(0)
       languagePrefix = languagePrefix.startsWith('E') ? '英' : languagePrefix
       pendingText = (await translate(pendingText, languagePrefix)).replace('\n', '')
-
     } else {
       let role, languagePrefix
       role = azureRoleList[Math.floor(Math.random() * azureRoleList.length)]
@@ -961,4 +965,3 @@ export function getUserSpeaker (userSetting) {
     return userSetting.ttsRoleVoiceVox || Config.voicevoxTTSSpeaker
   }
 }
-
