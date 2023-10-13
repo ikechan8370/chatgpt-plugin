@@ -1665,32 +1665,12 @@ export class chatgpt extends plugin {
               if (Config.debug) {
                 logger.mark(`开始生成内容：${response.details.imageTag}`)
               }
-              if (Config.bingDrawApi) {
+              if (Config.bingAPDraw) {
                 // 调用第三方API进行绘图
-                const drawOption = {
-                  method: 'POST',
-                  headers: {'content-type': 'application/json'},
-                  body: JSON.stringify({
-                    prompt: response.details.imageTag,
-                    width: Config.bingDrawWidth || 512,
-                    height: Config.bingDrawHeight || 512,
-                    sampler_index: Config.bingDrawSampler || 'DPM++ 2M SDE'
-                  })
-                }
-                const drawData = await fetch(Config.bingDrawApi, drawOption)
-                if (drawData.ok) {
-                  let draw = await drawData.json()
-                  if (draw.images?.length > 0) {
-                    for(let image of draw.images) {
-                      this.reply(segment.image(`base64://${image}`), true)
-                    }
-                  } else {
-                      await e.reply('绘图失败：未产生图片')
-                  }
-                } else {
-                  await e.reply('绘图失败：第三方绘图服务器错误')
-                }
-
+                let apDraw = new APTool()
+                apDraw.func({
+                  prompt: response.details.imageTag
+                }, e)
               } else {
                 let client = new BingDrawClient({
                   baseUrl: Config.sydneyReverseProxy,
