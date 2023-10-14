@@ -66,12 +66,12 @@ export class history extends plugin {
           let parentMessageId = previousConversation.parentMessageId
           let tmp = {}
           const previousCachedMessages = getMessagesForConversation(conversation.messages, parentMessageId)
-              .map((message) => {
-                return {
-                  text: message.message,
-                  author: message.role === 'User' ? 'user' : 'bot'
-                }
-              })
+            .map((message) => {
+              return {
+                text: message.message,
+                author: message.role === 'User' ? 'user' : 'bot'
+              }
+            })
           previousCachedMessages.forEach(m => {
             if (m.author === 'user') {
               tmp.prompt = m.text
@@ -100,7 +100,7 @@ export class history extends plugin {
       },
       bot: {
         qq: getUin(e),
-        name: Bot.nickname
+        name: e.bot.nickname
       },
       chat
     }, {})
