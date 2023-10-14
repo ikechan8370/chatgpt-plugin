@@ -19,13 +19,13 @@ export class SendRPSTool extends AbstractTool {
     const defaultTarget = e.isGroup ? e.group_id : e.sender.user_id
     const target = isNaN(targetGroupIdOrQQNumber) || !targetGroupIdOrQQNumber
       ? defaultTarget
-      : parseInt(targetGroupIdOrQQNumber) === Bot.uin ? defaultTarget : parseInt(targetGroupIdOrQQNumber)
-    let groupList = await Bot.getGroupList()
+      : parseInt(targetGroupIdOrQQNumber) === e.bot.uin ? defaultTarget : parseInt(targetGroupIdOrQQNumber)
+    let groupList = await e.bot.getGroupList()
     if (groupList.get(target)) {
-      let group = await Bot.pickGroup(target, true)
+      let group = await e.bot.pickGroup(target, true)
       await group.sendMsg(segment.rps(num))
     } else {
-      let friend = await Bot.pickFriend(target)
+      let friend = await e.bot.pickFriend(target)
       await friend.sendMsg(segment.rps(num))
     }
   }

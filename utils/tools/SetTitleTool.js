@@ -28,12 +28,12 @@ export class SetTitleTool extends AbstractTool {
     qq = isNaN(qq) || !qq ? e.sender.user_id : parseInt(qq.trim())
     groupId = isNaN(groupId) || !groupId ? e.group_id : parseInt(groupId.trim())
 
-    let group = await Bot.pickGroup(groupId)
+    let group = await e.bot.pickGroup(groupId)
     let mm = await group.getMemberMap()
     if (!mm.has(qq)) {
       return `failed, the user ${qq} is not in group ${groupId}`
     }
-    if (mm.get(Bot.uin).role !== 'owner') {
+    if (mm.get(e.bot.uin).role !== 'owner') {
       return 'on group owner can give title'
     }
     logger.info('edit card: ', groupId, qq)

@@ -23,10 +23,10 @@ export class SendMusicTool extends AbstractTool {
     const defaultTarget = e.isGroup ? e.group_id : e.sender.user_id
     const target = isNaN(targetGroupIdOrQQNumber) || !targetGroupIdOrQQNumber
       ? defaultTarget
-      : parseInt(targetGroupIdOrQQNumber) === Bot.uin ? defaultTarget : parseInt(targetGroupIdOrQQNumber)
+      : parseInt(targetGroupIdOrQQNumber) === e.bot.uin ? defaultTarget : parseInt(targetGroupIdOrQQNumber)
 
     try {
-      let group = await Bot.pickGroup(target)
+      let group = await e.bot.pickGroup(target)
       await group.shareMusic('163', id)
       return `the music has been shared to ${target}`
     } catch (e) {

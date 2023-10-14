@@ -86,10 +86,10 @@ export async function makeForwardMsg (e, msg = [], dec = '') {
   if (Version.isTrss) {
     return common.makeForwardMsg(e, msg, dec)
   }
-  let nickname = Bot.nickname
+  let nickname = e.bot.nickname
   if (e.isGroup) {
     try {
-      let info = await Bot.getGroupMemberInfo(e.group_id, getUin(e))
+      let info = await e.bot.getGroupMemberInfo(e.group_id, getUin(e))
       nickname = info.card || info.nickname
     } catch (err) {
       console.error(`Failed to get group member info: ${err}`)
@@ -792,7 +792,7 @@ export async function getImageOcrText (e) {
       let resultArr = []
       let eachImgRes = ''
       for (let i in img) {
-        const imgOCR = await Bot.imageOcr(img[i])
+        const imgOCR = await e.bot.imageOcr(img[i])
         for (let text of imgOCR.wordslist) {
           eachImgRes += (`${text?.words}  \n`)
         }
@@ -828,10 +828,17 @@ export function getMaxModelTokens (model = 'gpt-3.5-turbo') {
 
 export function getUin (e) {
   if (e?.bot?.uin) return e.bot.uin
-  if (Array.isArray(Bot.uin)) {
-    if (Config.trssBotUin && Bot.uin.indexOf(Config.trssBotUin) > -1) return Config.trssBotUin
-    else return Bot.uin[0]
-  } else return Bot.uin
+  if (e) {
+    if (Array.isArray(e.bot.uin)) {
+      if (Config.trssBotUin && e.bot.uin.indexOf(Config.trssBotUin) > -1) return Config.trssBotUin
+      else return e.bot.uin[0]
+    } else return e.bot.uin
+  } else {
+    if (Array.isArray(Bot.uin)) {
+      if (Config.trssBotUin && Bot.uin.indexOf(Config.trssBotUin) > -1) return Config.trssBotUin
+      else return Bot.uin[0]
+    } else return Bot.uin
+  }
 }
 
 /**

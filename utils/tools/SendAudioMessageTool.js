@@ -70,7 +70,7 @@ export class SendAudioMessageTool extends AbstractTool {
     const defaultTarget = e.isGroup ? e.group_id : e.sender.user_id
     const target = isNaN(targetGroupIdOrQQNumber) || !targetGroupIdOrQQNumber
       ? defaultTarget
-      : parseInt(targetGroupIdOrQQNumber) === Bot.uin ? defaultTarget : parseInt(targetGroupIdOrQQNumber)
+      : parseInt(targetGroupIdOrQQNumber) === e.bot.uin ? defaultTarget : parseInt(targetGroupIdOrQQNumber)
     try {
       switch (ttsMode) {
         case 1:
@@ -102,14 +102,14 @@ export class SendAudioMessageTool extends AbstractTool {
       return `audio generation failed,  error: ${JSON.stringify(err)}`
     }
     if (sendable) {
-      let groupList = await Bot.getGroupList()
+      let groupList = await e.bot.getGroupList()
       try {
         if (groupList.get(target)) {
-          let group = await Bot.pickGroup(target)
+          let group = await e.bot.pickGroup(target)
           await group.sendMsg(sendable)
           return 'audio has been sent to group' + target
         } else {
-          let user = await Bot.pickFriend(target)
+          let user = await e.bot.pickFriend(target)
           await user.sendMsg(sendable)
           return 'audio has been sent to user' + target
         }

@@ -20,7 +20,7 @@ export class EliMovieTool extends AbstractTool {
     if (yesOrNo === 'no') {
       return 'tell user why you don\'t want to check'
     }
-    if (e.at === Bot.uin) {
+    if (e.at === e.bot.uin) {
       e.at = null
     }
     e.atBot = false

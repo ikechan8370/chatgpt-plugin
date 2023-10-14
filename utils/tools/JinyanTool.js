@@ -31,13 +31,13 @@ export class JinyanTool extends AbstractTool {
     qq = qq !== 'all'
       ? isNaN(qq) || !qq ? e.sender.user_id : parseInt(qq.trim())
       : 'all'
-    let group = await Bot.pickGroup(groupId)
+    let group = await e.bot.pickGroup(groupId)
     if (qq !== 'all') {
       let m = await group.getMemberMap()
       if (!m.has(qq)) {
         return `failed, the user ${qq} is not in group ${groupId}`
       }
-      if (m.get(Bot.uin).role === 'member') {
+      if (m.get(e.bot.uin).role === 'member') {
         return `failed, you, not user, don't have permission to mute other in group ${groupId}`
       }
     }
