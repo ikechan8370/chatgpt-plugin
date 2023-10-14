@@ -827,7 +827,7 @@ export function getMaxModelTokens (model = 'gpt-3.5-turbo') {
 }
 
 export function getUin (e) {
-  if (e?.bot?.uin) return e.e.bot.uin
+  if (e?.bot?.uin) return e.bot.uin
   if (Array.isArray(e.bot.uin)) {
     if (Config.trssBotUin && e.bot.uin.indexOf(Config.trssBotUin) > -1) return Config.trssBotUin
     else return e.bot.uin[0]
