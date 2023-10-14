@@ -184,7 +184,7 @@ export class chatgpt extends plugin {
           reg: toggleMode === 'at' ? '^[^#][sS]*' : '^#chat[^gpt][sS]*',
           /** 执行方法 */
           fnc: 'chatgpt',
-          log: true
+          log: false
         },
         {
           reg: '^#(chatgpt)?对话列表$',
