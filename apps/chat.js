@@ -2215,7 +2215,7 @@ export class chatgpt extends plugin {
             logger.mark(logger.green('【ChatGPT-Plugin】插件avocado-plugin未安装') + '，安装后可查看最近热映电影与体验可玩性更高的点歌工具。\n可前往 https://github.com/Qz-Sean/avocado-plugin 获取')
           }
           if (e.isGroup) {
-            let botInfo = await Bot.getGroupMemberInfo(e.group_id, getUin(e), true)
+            let botInfo = await e.bot.getGroupMemberInfo(e.group_id, getUin(e), true)
             if (botInfo.role !== 'member') {
               // 管理员才给这些工具
               tools.push(...[new EditCardTool(), new JinyanTool(), new KickOutTool(), new HandleMessageMsgTool(), new SetTitleTool()])
