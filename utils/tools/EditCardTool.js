@@ -33,7 +33,7 @@ export class EditCardTool extends AbstractTool {
     if (!mm.has(qq)) {
       return `failed, the user ${qq} is not in group ${groupId}`
     }
-    if (mm.get(e.bot.uin).role === 'member') {
+    if (mm.get(e.bot.uin) && mm.get(e.bot.uin).role === 'member') {
       return `failed, you, not user, don't have permission to edit card in group ${groupId}`
     }
     logger.info('edit card: ', groupId, qq)
