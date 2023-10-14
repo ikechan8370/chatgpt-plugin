@@ -26,12 +26,12 @@ export class SendVideoTool extends AbstractTool {
     const defaultTarget = e.isGroup ? e.group_id : e.sender.user_id
     const target = isNaN(targetGroupIdOrQQNumber) || !targetGroupIdOrQQNumber
       ? defaultTarget
-      : parseInt(targetGroupIdOrQQNumber) === Bot.uin ? defaultTarget : parseInt(targetGroupIdOrQQNumber)
+      : parseInt(targetGroupIdOrQQNumber) === e.bot.uin ? defaultTarget : parseInt(targetGroupIdOrQQNumber)
 
     let msg = []
     try {
       let { arcurl, title, pic, description, videoUrl, headers, bvid, author, play, pubdate, like, honor } = await getBilibili(id)
-      let group = await Bot.pickGroup(target)
+      let group = await e.bot.pickGroup(target)
       msg.push(title.replace(/(<([^>]+)>)/ig, '') + '\n')
       msg.push(`UP主：${author} 发布日期：${formatDate(new Date(pubdate * 1000))} 播放量：${play} 点赞：${like}\n`)
       msg.push(arcurl + '\n')

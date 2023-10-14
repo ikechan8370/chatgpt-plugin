@@ -17,7 +17,7 @@ export class APTool extends AbstractTool {
 
   func = async function (opts, e) {
     let { prompt } = opts
-    if (e.at === Bot.uin) {
+    if (e.at === e.bot.uin) {
       e.at = null
     }
     e.atBot = false

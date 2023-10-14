@@ -26,12 +26,12 @@ export class SendAvatarTool extends AbstractTool {
     const defaultTarget = e.isGroup ? e.group_id : e.sender.user_id
     const target = isNaN(targetGroupIdOrQQNumber) || !targetGroupIdOrQQNumber
       ? defaultTarget
-      : parseInt(targetGroupIdOrQQNumber) === Bot.uin ? defaultTarget : parseInt(targetGroupIdOrQQNumber)
+      : parseInt(targetGroupIdOrQQNumber) === e.bot.uin ? defaultTarget : parseInt(targetGroupIdOrQQNumber)
 
-    let groupList = await Bot.getGroupList()
+    let groupList = await e.bot.getGroupList()
     console.log('sendAvatar', target, pictures)
     if (groupList.get(target)) {
-      let group = await Bot.pickGroup(target)
+      let group = await e.bot.pickGroup(target)
       await group.sendMsg(pictures)
     }
     return `the ${pictures.length > 1 ? 'users: ' + qq + '\'s avatar' : 'avatar'} has been sent to group ${target}`

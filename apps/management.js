@@ -990,7 +990,7 @@ Poe 模式会调用 Poe 中的 Claude-instant 进行对话。需要提供 Cookie
       }
     } else if (match) {
       const groupId = parseInt(match[1], 10)
-      if (Bot.getGroupList().get(groupId)) {
+      if (e.bot.getGroupList().get(groupId)) {
         if (await redis.get(`CHATGPT:SHUT_UP:${groupId}`)) {
           await redis.del(`CHATGPT:SHUT_UP:${groupId}`)
           await redis.set(`CHATGPT:SHUT_UP:${groupId}`, '1', { EX: time })
@@ -1040,7 +1040,7 @@ Poe 模式会调用 Poe 中的 Claude-instant 进行对话。需要提供 Cookie
         return false
       }
       const groupId = parseInt(match[1], 10)
-      if (Bot.getGroupList().get(groupId)) {
+      if (e.bot.getGroupList().get(groupId)) {
         if (await redis.get(`CHATGPT:SHUT_UP:${groupId}`)) {
           await redis.del(`CHATGPT:SHUT_UP:${groupId}`)
           await e.reply(`好的主人，我终于又可以在群${groupId}和大家聊天了`)

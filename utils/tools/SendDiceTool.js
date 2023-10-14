@@ -23,16 +23,16 @@ export class SendDiceTool extends AbstractTool {
     const defaultTarget = e.isGroup ? e.group_id : e.sender.user_id
     const target = isNaN(targetGroupIdOrQQNumber) || !targetGroupIdOrQQNumber
       ? defaultTarget
-      : parseInt(targetGroupIdOrQQNumber) === Bot.uin ? defaultTarget : parseInt(targetGroupIdOrQQNumber)
-    let groupList = await Bot.getGroupList()
+      : parseInt(targetGroupIdOrQQNumber) === e.bot.uin ? defaultTarget : parseInt(targetGroupIdOrQQNumber)
+    let groupList = await e.bot.getGroupList()
     num = isNaN(num) || !num ? 1 : num > 5 ? 5 : num
     if (groupList.get(target)) {
-      let group = await Bot.pickGroup(target, true)
+      let group = await e.bot.pickGroup(target, true)
       for (let i = 0; i < num; i++) {
         await group.sendMsg(segment.dice())
       }
     } else {
-      let friend = await Bot.pickFriend(target)
+      let friend = await e.bot.pickFriend(target)
       await friend.sendMsg(segment.dice())
     }
     if (num === 5) {
