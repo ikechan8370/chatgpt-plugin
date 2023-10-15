@@ -360,9 +360,13 @@ export async function createServer() {
               await connection.socket.send(JSON.stringify({ command: data.command, state: true, error: '普通用户无需进行初始化' }))
               return
             }
-            const groupList = await Bot[user.user].getGroupList()
+            let _Bot = Bot
+            if (isTrss) {
+              _Bot = Bot[user.user]
+            }
+            const groupList = await _Bot.getGroupList()
             groupList.forEach(async (item) => {
-              const group = Bot[user.user].pickGroup(item.group_id)
+              const group = _Bot.pickGroup(item.group_id)
               const groupMessages = await group.getChatHistory()
               groupMessages.forEach(async (e) => {
                 const messageData = {
@@ -387,6 +391,7 @@ export async function createServer() {
                 await connection.socket.send(JSON.stringify(messageData))
               })
             })
+
             break
           default:
             await connection.socket.send(JSON.stringify({ "data": data }))
