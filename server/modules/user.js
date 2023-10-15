@@ -9,12 +9,13 @@ async function User(fastify, options) {
         let guobaLoginService
         let guobaAPI = ''
         try {
-            let { LoginService } = await import('../../../../guoba-plugin/server/service/both/LoginService.js')
-            let { getAllWebAddress } = await import('../../../../guoba-plugin/utils/common.js')
+            let { LoginService } = await import('../../../Guoba-Plugin/server/service/both/LoginService.js')
+            let { getAllWebAddress } = await import('../../../Guoba-Plugin/utils/common.js')
             guobaLoginService = new LoginService()
-            guobaAPI = await getAllWebAddress().remote
+            guobaAPI = await getAllWebAddress()
         }
         catch (err) {
+            console.error(err)
             guobaLoginService = {
                 signToken: () => {return null}
             }
@@ -85,6 +86,26 @@ async function User(fastify, options) {
             autho: user.autho,
             version: 10016,
         })
+        return reply
+    })
+    // 获取锅巴登陆链接
+    fastify.post('/guobaLogin', async (request, reply) => {
+        const token = request.cookies.token || request.body?.token || 'unknown'
+        let user = UserInfo(token)
+        if (user && user.autho == 'admin') {
+            try {
+                let { LoginService } = await import('../../../Guoba-Plugin/server/service/both/LoginService.js')
+                const guobaLoginService = new LoginService()
+                const guobaAPI = await guobaLoginService.setQuickLogin(user.user)
+                reply.send({ guoba: guobaAPI })
+            }
+            catch (err) {
+                console.error(err)
+                reply.send({ state: false, error: err })
+            }
+        } else {
+            reply.send({ state: false, error: '用户权限不足' })
+        }
         return reply
     })
     // 获取用户数据
