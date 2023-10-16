@@ -2,14 +2,8 @@ import { Config } from './config.js'
 import fetch from 'node-fetch'
 import _ from 'lodash'
 import { wrapTextByLanguage } from './common.js'
-let proxy
-if (Config.proxy) {
-  try {
-    proxy = (await import('https-proxy-agent')).default
-  } catch (e) {
-    console.warn('未安装https-proxy-agent，请在插件目录下执行pnpm add https-proxy-agent')
-  }
-}
+import { getProxy } from './proxy.js'
+let proxy = getProxy()
 
 const newFetch = (url, options = {}) => {
   const defaultOptions = Config.proxy
