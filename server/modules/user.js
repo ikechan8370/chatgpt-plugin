@@ -88,26 +88,6 @@ async function User(fastify, options) {
         })
         return reply
     })
-    // 获取锅巴登陆链接
-    fastify.post('/guobaLogin', async (request, reply) => {
-        const token = request.cookies.token || request.body?.token || 'unknown'
-        let user = UserInfo(token)
-        if (user && user.autho == 'admin') {
-            try {
-                let { LoginService } = await import('../../../Guoba-Plugin/server/service/both/LoginService.js')
-                const guobaLoginService = new LoginService()
-                const guobaAPI = await guobaLoginService.setQuickLogin(user.user)
-                reply.send({ guoba: guobaAPI })
-            }
-            catch (err) {
-                console.error(err)
-                reply.send({ state: false, error: err })
-            }
-        } else {
-            reply.send({ state: false, error: '用户权限不足' })
-        }
-        return reply
-    })
     // 获取用户数据
     fastify.post('/userData', async (request, reply) => {
         const token = request.cookies.token || request.body?.token || 'unknown'

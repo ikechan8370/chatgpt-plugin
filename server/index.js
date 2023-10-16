@@ -16,28 +16,13 @@ import { getPublicIP, getUserData, getMasterQQ, randomString, getUin } from '../
 import webRoute from './modules/web_route.js'
 import webUser from './modules/user.js'
 import webPrompt from './modules/prompts.js'
+import Guoba from './modules/guoba.js'
 import SettingView from './modules/setting_view.js'
 
 const __dirname = path.resolve()
 const server = fastify({
   logger: Config.debug
 })
-
-async function getLoad() {
-  // 获取当前操作系统平台
-  const platform = os.platform()
-  // 判断平台是Linux还是Windows
-  if (platform === 'linux') {
-    // 如果是Linux，使用os.loadavg()方法获取负载平均值
-    const loadAvg = os.loadavg()
-    return loadAvg[0] * 100
-  } else if (platform === 'win32') {
-    // 如果是Windows不获取性能
-    return 0
-  } else {
-    return 0
-  }
-}
 
 async function setUserData(qq, data) {
   const dir = 'resources/ChatGPTCache/user'
@@ -64,6 +49,7 @@ await server.register(webRoute)
 await server.register(webUser)
 await server.register(SettingView)
 await server.register(webPrompt)
+await server.register(Guoba)
 
 // 无法访问端口的情况下创建与media的通讯
 async function mediaLink() {
