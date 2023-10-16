@@ -30,7 +30,6 @@ async function Guoba(fastify, options) {
             try {
                 let { getAllWebAddress } = await import('../../../Guoba-Plugin/utils/common.js')
                 const { custom, local, remote } = await getAllWebAddress()
-                console.log(local[0])
                 if (local.length > 0) {
                     const guobaOptions = {
                         method: body.post ? 'POST' : 'GET',
