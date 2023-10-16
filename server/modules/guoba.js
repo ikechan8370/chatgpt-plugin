@@ -28,16 +28,26 @@ async function Guoba(fastify, options) {
         let user = UserInfo(token)
         if (user && user.autho == 'admin' && body.guobaToken) {
             try {
-                let { LoginService } = await import('../../../Guoba-Plugin/server/service/both/LoginService.js')
-                const guobaLoginService = new LoginService()
-                const { custom, local, remote } = await guobaLoginService.setQuickLogin(user.user)
+                let { getAllWebAddress } = await import('../../../Guoba-Plugin/utils/common.js')
+                const { custom, local, remote } = await getAllWebAddress()
+                console.log(local[0])
                 if (local.length > 0) {
                     const guobaOptions = {
-                        method: 'GET',
+                        method: body.post ? 'POST' : 'GET',
                         headers: {
                             'Guoba-Access-Token': body.guobaToken
-                        },
-                        body: body.data
+                        }
+                    }
+                    if (body.data) {
+                        if (body.post) {
+                            guobaOptions.body = body.data
+                        } else {
+                            let paramsArray = []
+                            Object.keys(body.data).forEach(key => paramsArray.push(key + '=' + body.data[key]))
+                            if (paramsArray.length > 0) {
+                                body.path += '?' + paramsArray.join('&')
+                            }
+                        }
                     }
                     const response = await fetch(`${local[0]}/${body.path}`, guobaOptions)
                     if (response.ok) {
