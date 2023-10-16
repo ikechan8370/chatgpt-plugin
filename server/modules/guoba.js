@@ -40,7 +40,7 @@ async function Guoba(fastify, options) {
                     }
                     if (body.data) {
                         if (body.post) {
-                            guobaOptions.body = body.data
+                            guobaOptions.body = JSON.stringify(body.data)
                         } else {
                             let paramsArray = []
                             Object.keys(body.data).forEach(key => paramsArray.push(key + '=' + body.data[key]))
