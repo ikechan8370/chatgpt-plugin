@@ -34,6 +34,7 @@ async function Guoba(fastify, options) {
                     const guobaOptions = {
                         method: body.post ? 'POST' : 'GET',
                         headers: {
+                            'Content-Type': 'application/json',
                             'Guoba-Access-Token': body.guobaToken
                         }
                     }
