@@ -28,7 +28,7 @@ export class EditCardTool extends AbstractTool {
     qq = isNaN(qq) || !qq ? e.sender.user_id : parseInt(qq.trim())
     groupId = isNaN(groupId) || !groupId ? e.group_id : parseInt(groupId.trim())
 
-    let group = await e.bot.pickGroup(groupId)
+    let group = await e.bot.(groupId)
     try {
       let mm = await group.getMemberMap()
       if (!mm.has(qq)) {

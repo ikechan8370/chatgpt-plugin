@@ -502,7 +502,7 @@ export default class SydneyAIClient {
     } else if (toSummaryFileContent?.content) {
       obj.arguments[0].previousMessages.push({
         author: 'user',
-        description: limitString(toSummaryFileContent?.content, 50000, true),
+        description: limitString(toSummaryFileContent?.content, 20000, true),
         contextType: 'WebPage',
         messageType: 'Context',
         sourceName: toSummaryFileContent?.name,
