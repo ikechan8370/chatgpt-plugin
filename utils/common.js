@@ -16,22 +16,22 @@ import Version from './version.js'
 import fetch from 'node-fetch'
 let pdfjsLib
 try {
-  pdfjsLib = require('pdfjs-dist')
+  pdfjsLib = (await import('pdfjs-dist')).default
 } catch (err) {}
 
 let mammoth
 try {
-  mammoth = require('mammoth')
+  mammoth = (await import('mammoth')).default
 } catch (err) {}
 
 let XLSX
 try {
-  XLSX = require('xlsx')
+  XLSX = (await import('xlsx')).default
 } catch (err) {}
 
 let PPTX
 try {
-  PPTX = require('nodejs-pptx')
+  PPTX = (await import('nodejs-pptx')).default
 } catch (err) {}
 
 let _puppeteer
@@ -845,7 +845,7 @@ export function getUin (e) {
     else {
         Bot.uin.forEach((u) => {
           if (Bot[u].self_id) {
-            return Bot[u].self_id 
+            return Bot[u].self_id
           }
         })
         return Bot.uin[Bot.uin.length - 1]
