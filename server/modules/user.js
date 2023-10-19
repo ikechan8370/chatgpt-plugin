@@ -6,12 +6,27 @@ async function User(fastify, options) {
     // 登录
     fastify.post('/login', async (request, reply) => {
         const body = request.body || {}
+        let guobaLoginService
+        let guobaAPI = ''
+        try {
+            let { LoginService } = await import('../../../Guoba-Plugin/server/service/both/LoginService.js')
+            let { getAllWebAddress } = await import('../../../Guoba-Plugin/utils/common.js')
+            guobaLoginService = new LoginService()
+            guobaAPI = await getAllWebAddress()
+        }
+        catch (err) {
+            console.error(err)
+            guobaLoginService = {
+                signToken: () => {return null}
+            }
+        }
         if (body.qq && body.passwd) {
             const token = randomString(32)
             if (body.qq == getUin() && await redis.get('CHATGPT:ADMIN_PASSWD') == body.passwd) {
+                const guobaToken = await guobaLoginService.signToken(body.qq)
                 AddUser({ user: body.qq, token: token, autho: 'admin' })
                 reply.setCookie('token', token, { path: '/' })
-                reply.send({ login: true, autho: 'admin', token: token })
+                reply.send({ login: true, autho: 'admin', token: token, guobaToken: guobaToken, guoba: guobaAPI })
             } else {
                 const user = await getUserData(body.qq)
                 if (user.passwd != '' && user.passwd === body.passwd) {
@@ -26,9 +41,10 @@ async function User(fastify, options) {
             const token = randomString(32)
             const opt = await redis.get(`CHATGPT:SERVER_QUICK`)
             if (opt && body.otp == opt) {
+                const guobaToken = await guobaLoginService.signToken(getUin())
                 AddUser({ user: getUin(), token: token, autho: 'admin' })
                 reply.setCookie('token', token, { path: '/' })
-                reply.send({ login: true, autho: 'admin', token: token, user: getUin() })
+                reply.send({ login: true, autho: 'admin', token: token, user: getUin(), guobaToken: guobaToken, guoba: guobaAPI })
             } else {
                 reply.send({ login: false, err: `快捷登录代码错误，请检查后重试` })
             }
