@@ -26,7 +26,15 @@ import {
   getUserReplySetting,
   getImageOcrText,
   getImg,
-  getMaxModelTokens, formatDate, generateAudio, formatDate2, mkdirs, getUin
+  getMaxModelTokens,
+  formatDate,
+  generateAudio,
+  formatDate2,
+  mkdirs,
+  getUin,
+  downloadFile,
+  isPureText,
+  extractContentFromFile
 } from '../utils/common.js'
 import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
@@ -1626,6 +1634,20 @@ export class chatgpt extends plugin {
                   logger.warn('获取群聊聊天记录失败，本次对话不携带聊天记录', err)
                 }
               }
+              let toSummaryFileContent
+              try {
+                if (e.source) {
+                  let msgs = e.isGroup ? await e.group.getChatHistory(e.source.seq, 1) : await e.friend.getChatHistory(e.source.time, 1)
+                  let sourceMsg = msgs[0]
+                  let fileMsgElem = sourceMsg.message.find(msg => msg.type === 'file')
+                  if (fileMsgElem) {
+                    toSummaryFileContent = await extractContentFromFile(fileMsgElem, e)
+                  }
+                }
+              } catch (err) {
+                logger.warn('读取文件内容出错， 忽略文件内容', err)
+              }
+              opt.toSummaryFileContent = toSummaryFileContent
             } else {
               // 重新创建client，因为token可能换到别的了
               if (bingToken?.indexOf('=') > -1) {
@@ -1893,40 +1915,30 @@ export class chatgpt extends plugin {
           debug: Config.debug,
           proxy: Config.proxy
         })
-        let fileUrl, filename, attachments
-        if (e.source && e.source.message === '[文件]') {
-          if (e.isGroup) {
-            let source = (await e.group.getChatHistory(e.source.seq, 1))[0]
-            let file = source.message.find(m => m.type === 'file')
-            if (file) {
-              filename = file.name
-              fileUrl = await e.group.getFileUrl(file.fid)
-            }
-          } else {
-            let source = (await e.friend.getChatHistory(e.source.time, 1))[0]
-            let file = source.message.find(m => m.type === 'file')
-            if (file) {
-              filename = file.name
-              fileUrl = await e.group.getFileUrl(file.fid)
+        let toSummaryFileContent
+        try {
+          if (e.source) {
+            let msgs = e.isGroup ? await e.group.getChatHistory(e.source.seq, 1) : await e.friend.getChatHistory(e.source.time, 1)
+            let sourceMsg = msgs[0]
+            let fileMsgElem = sourceMsg.message.find(msg => msg.type === 'file')
+            if (fileMsgElem) {
+              toSummaryFileContent = await extractContentFromFile(fileMsgElem, e)
             }
           }
+        } catch (err) {
+          logger.warn('读取文件内容出错， 忽略文件内容', err)
         }
-        if (fileUrl) {
-          logger.info('文件地址：' + fileUrl)
-          mkdirs('data/chatgpt/files')
-          let destinationPath = 'data/chatgpt/files/' + filename
-          const response = await fetch(fileUrl)
-          const fileStream = fs.createWriteStream(destinationPath)
-          await new Promise((resolve, reject) => {
-            response.body.pipe(fileStream)
-            response.body.on('error', (err) => {
-              reject(err)
-            })
-            fileStream.on('finish', () => {
-              resolve()
-            })
+
+        let attachments = []
+        if (toSummaryFileContent?.content) {
+          attachments.push({
+            extracted_content: toSummaryFileContent.content,
+            file_name: toSummaryFileContent.name,
+            file_type: 'pdf',
+            file_size: 200312,
+            totalPages: 20
           })
-          attachments = [await client.convertDocument(destinationPath, filename)]
+          logger.info(toSummaryFileContent.content)
         }
         if (conversationId) {
           return await client.sendMessage(prompt, conversationId, attachments)
