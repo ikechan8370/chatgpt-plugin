@@ -154,7 +154,15 @@ const defaultConfig = {
   claudeAIUA: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
   // trss配置
   trssBotUin: '',
-  version: 'v2.7.6'
+  // 同义千问
+  qwenApiKey: '',
+  qwenModel: 'qwen-turbo',
+  qwenTopP: 0.5,
+  qwenTopK: 50,
+  qwenSeed: 0,
+  qwenTemperature: 1,
+  qwenEnableSearch: true,
+  version: 'v2.7.7'
 }
 const _path = process.cwd()
 let config = {}
