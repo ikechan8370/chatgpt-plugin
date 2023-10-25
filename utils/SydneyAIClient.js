@@ -491,15 +491,8 @@ export default class SydneyAIClient {
       }).join('\n')
       context += '\n'
     }
-    if (context) {
-      obj.arguments[0].previousMessages.push({
-        author: 'user',
-        description: context,
-        contextType: 'WebPage',
-        messageType: 'Context',
-        messageId: 'discover-web--page-ping-mriduna-----'
-      })
-    } else if (toSummaryFileContent?.content) {
+    if (toSummaryFileContent?.content) {
+      // 忽略context 不然可能会爆炸
       obj.arguments[0].previousMessages.push({
         author: 'user',
         description: limitString(toSummaryFileContent?.content, 20000, true),
@@ -509,6 +502,14 @@ export default class SydneyAIClient {
         sourceUrl: 'file:///C:/Users/turing/Downloads/Documents/' + toSummaryFileContent?.name || 'file.pdf',
         // locale: 'und',
         // privacy: 'Internal'
+      })
+    } else if (context) {
+      obj.arguments[0].previousMessages.push({
+        author: 'user',
+        description: context,
+        contextType: 'WebPage',
+        messageType: 'Context',
+        messageId: 'discover-web--page-ping-mriduna-----'
       })
     } else {
       obj.arguments[0].previousMessages.push({
