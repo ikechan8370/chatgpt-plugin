@@ -90,6 +90,8 @@ export default class XinghuoClient {
     let APILink = '/v1.1/chat'
     if (Config.xhmode == 'apiv2') {
       APILink = '/v2.1/chat'
+    } else if (Config.xhmode == 'apiv3') {
+      APILink = '/v3.1/chat'
     }
     const date = new Date().toGMTString()
     const algorithm = 'hmac-sha256'
