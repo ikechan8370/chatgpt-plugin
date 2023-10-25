@@ -125,6 +125,11 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
+          reg: '^#chatgpt切换(通义千问|qwen|千问)$',
+          fnc: 'useQwenSolution',
+          permission: 'master'
+        },
+        {
           reg: '^#chatgpt(必应|Bing)切换',
           fnc: 'changeBingTone',
           permission: 'master'
@@ -289,9 +294,9 @@ ${userSetting.useTTS === true ? '当前语音模式为' + Config.ttsMode : ''}`
     const matchCommand = e.msg.match(/^#(chatgpt)?(vits|azure|vox)?语音(服务|角色列表)/)
     if (matchCommand[3] === '服务') {
       await this.reply(`当前支持vox、vits、azure语音服务，可使用'#(vox|azure|vits)语音角色列表'查看支持的语音角色。
-      
+
 vits语音：主要有赛马娘，原神中文，原神日语，崩坏 3 的音色、结果有随机性，语调可能很奇怪。
-      
+
 vox语音：Voicevox 是一款由日本 DeNA 开发的语音合成软件，它可以将文本转换为自然流畅的语音。Voicevox 支持多种语言和声音，可以用于制作各种语音内容，如动画、游戏、广告等。Voicevox 还提供了丰富的调整选项，可以调整声音的音调、速度、音量等参数，以满足不同需求。除了桌面版软件外，Voicevox 还提供了 Web 版本和 API 接口，方便开发者在各种平台上使用。
 
 azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，它可以帮助开发者将语音转换为文本、将文本转换为语音、实现自然语言理解和对话等功能。Azure 语音支持多种语言和声音，可以用于构建各种语音应用程序，如智能客服、语音助手、自动化电话系统等。Azure 语音还提供了丰富的 API 和 SDK，方便开发者在各种平台上集成使用。
@@ -864,6 +869,7 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
       await this.reply('当前已经是星火模式了')
     }
   }
+
   async useAzureBasedSolution () {
     let use = await redis.get('CHATGPT:USE')
     if (use !== 'azure') {
@@ -881,6 +887,16 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
       await this.reply('已切换到基于Bard的解决方案')
     } else {
       await this.reply('当前已经是Bard模式了')
+    }
+  }
+
+  async useQwenSolution () {
+    let use = await redis.get('CHATGPT:USE')
+    if (use !== 'qwen') {
+      await redis.set('CHATGPT:USE', 'qwen')
+      await this.reply('已切换到基于通义千问的解决方案')
+    } else {
+      await this.reply('当前已经是通义千问模式了')
     }
   }
 
@@ -1275,9 +1291,9 @@ Poe 模式会调用 Poe 中的 Claude-instant 进行对话。需要提供 Cookie
     const viewHost = Config.serverHost ? `http://${Config.serverHost}/` : `http://${await getPublicIP()}:${Config.serverPort || 3321}/`
     const otp = randomString(6)
     await redis.set(
-        `CHATGPT:SERVER_QUICK`,
-        otp,
-        { EX: 60000 }
+      'CHATGPT:SERVER_QUICK',
+      otp,
+      { EX: 60000 }
     )
     await this.reply(`请登录http://tools.alcedogroup.com/login?server=${viewHost}&otp=${otp}`, true)
   }

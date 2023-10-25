@@ -7,7 +7,7 @@ import fetch, {
 import crypto from 'crypto'
 import WebSocket from 'ws'
 import { Config, pureSydneyInstruction } from './config.js'
-import { formatDate, getMasterQQ, isCN, getUserData } from './common.js'
+import { formatDate, getMasterQQ, isCN, getUserData, limitString } from './common.js'
 import delay from 'delay'
 import moment from 'moment'
 import { getProxy } from './proxy.js'
@@ -101,12 +101,12 @@ export default class SydneyAIClient {
       this.opts.host = 'https://edgeservices.bing.com/edgesvc'
     }
     logger.mark('使用host：' + this.opts.host)
-    let response = await fetch(`${this.opts.host}/turing/conversation/create?bundleVersion=1.1055.6`, fetchOptions)
+    let response = await fetch(`${this.opts.host}/turing/conversation/create?bundleVersion=1.1055.10`, fetchOptions)
     let text = await response.text()
     let retry = 10
     while (retry >= 0 && response.status === 200 && !text) {
       await delay(400)
-      response = await fetch(`${this.opts.host}/turing/conversation/create`, fetchOptions)
+      response = await fetch(`${this.opts.host}/turing/conversation/create?bundleVersion=1.1055.10`, fetchOptions)
       text = await response.text()
       retry--
     }
@@ -222,8 +222,8 @@ export default class SydneyAIClient {
       timeout = Config.defaultTimeoutMs,
       firstMessageTimeout = Config.sydneyFirstMessageTimeout,
       groupId, nickname, qq, groupName, chats, botName, masterName,
-      messageType = 'Chat'
-
+      messageType = 'Chat',
+      toSummaryFileContent
     } = opts
     // if (messageType === 'Chat') {
     //   logger.warn('该Bing账户token已被限流，降级至使用非搜索模式。本次对话AI将无法使用Bing搜索返回的内容')
@@ -372,6 +372,10 @@ export default class SydneyAIClient {
     let maxConv = Config.maxNumUserMessagesInConversation
     const currentDate = moment().format('YYYY-MM-DDTHH:mm:ssZ')
     const imageDate = await this.kblobImage(opts.imageUrl)
+    if (toSummaryFileContent?.content) {
+      // message = `请不要进行搜索，用户的问题是："${message}"`
+      messageType = 'Chat'
+    }
     let argument0 = {
       source: 'cib',
       optionsSets,
@@ -415,10 +419,12 @@ export default class SydneyAIClient {
         text: message,
         messageType,
         userIpAddress: await generateRandomIP(),
-        timestamp: currentDate
+        timestamp: currentDate,
+        privacy: 'Internal'
         // messageType: 'SearchQuery'
       },
       tone: 'Creative',
+      privacy: 'Internal',
       conversationSignature,
       participant: {
         id: clientId
@@ -440,7 +446,7 @@ export default class SydneyAIClient {
     }
     // simulates document summary function on Edge's Bing sidebar
     // unknown character limit, at least up to 7k
-    if (groupId) {
+    if (groupId && !toSummaryFileContent?.content) {
       context += '注意，你现在正在一个qq群里和人聊天，现在问你问题的人是' + `${nickname}(${qq})。`
       if (Config.enforceMaster && master) {
         if (qq === master) {
@@ -485,7 +491,19 @@ export default class SydneyAIClient {
       }).join('\n')
       context += '\n'
     }
-    if (context) {
+    if (toSummaryFileContent?.content) {
+      // 忽略context 不然可能会爆炸
+      obj.arguments[0].previousMessages.push({
+        author: 'user',
+        description: limitString(toSummaryFileContent?.content, 20000, true),
+        contextType: 'WebPage',
+        messageType: 'Context',
+        sourceName: toSummaryFileContent?.name,
+        sourceUrl: 'file:///C:/Users/turing/Downloads/Documents/' + toSummaryFileContent?.name || 'file.pdf',
+        // locale: 'und',
+        // privacy: 'Internal'
+      })
+    } else if (context) {
       obj.arguments[0].previousMessages.push({
         author: 'user',
         description: context,

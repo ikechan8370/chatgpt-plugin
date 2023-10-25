@@ -35,14 +35,18 @@
     "ws": "^8.13.0"
   },
   "optionalDependencies": {
+    "xlsx": "^0.18.5",
+    "mammoth": "^1.6.0",
+    "pdfjs-dist": "^3.11.174",
+    "nodejs-pptx": "^1.2.4",
     "@node-rs/jieba": "^1.6.2",
+    "cycletls": "^1.0.21",
     "jimp": "^0.22.7",
     "node-silk": "^0.1.0",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-recaptcha": "^3.6.8",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
-    "sharp": "^0.32.3",
-    "cycletls": "^1.0.21"
+    "sharp": "^0.32.3"
   },
   "devDependencies": {
     "ts-node": "^10.9.1",

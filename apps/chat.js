@@ -1,77 +1,82 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import _ from 'lodash'
-import { Config, defaultOpenAIAPI } from '../utils/config.js'
-import { v4 as uuid } from 'uuid'
+import {Config, defaultOpenAIAPI} from '../utils/config.js'
+import {v4 as uuid} from 'uuid'
 import delay from 'delay'
-import { ChatGPTAPI } from '../utils/openai/chatgpt-api.js'
-import { BingAIClient } from '@waylaidwanderer/chatgpt-api'
+import {ChatGPTAPI} from '../utils/openai/chatgpt-api.js'
+import {BingAIClient} from '@waylaidwanderer/chatgpt-api'
 import SydneyAIClient from '../utils/SydneyAIClient.js'
-import { PoeClient } from '../utils/poe/index.js'
+import {PoeClient} from '../utils/poe/index.js'
 import AzureTTS from '../utils/tts/microsoft-azure.js'
 import VoiceVoxTTS from '../utils/tts/voicevox.js'
 import Version from '../utils/version.js'
 import {
-  render,
-  renderUrl,
-  getMessageById,
-  makeForwardMsg,
-  upsertMessage,
-  randomString,
   completeJSON,
-  isImage,
-  getUserData,
+  extractContentFromFile,
+  formatDate,
+  formatDate2,
+  generateAudio,
   getDefaultReplySetting,
-  isCN,
-  getMasterQQ,
-  getUserReplySetting,
   getImageOcrText,
   getImg,
-  getMaxModelTokens, formatDate, generateAudio, formatDate2, mkdirs, getUin
+  getMasterQQ,
+  getMaxModelTokens,
+  getMessageById,
+  getUin,
+  getUserData,
+  getUserReplySetting,
+  isCN,
+  isImage,
+  makeForwardMsg,
+  randomString,
+  render,
+  renderUrl,
+  upsertMessage
 } from '../utils/common.js'
-import { ChatGPTPuppeteer } from '../utils/browser.js'
-import { KeyvFile } from 'keyv-file'
-import { OfficialChatGPTClient } from '../utils/message.js'
+import {ChatGPTPuppeteer} from '../utils/browser.js'
+import {KeyvFile} from 'keyv-file'
+import {OfficialChatGPTClient} from '../utils/message.js'
 import fetch from 'node-fetch'
-import { deleteConversation, getConversations, getLatestMessageIdByConversationId } from '../utils/conversation.js'
-import { convertSpeaker, speakers } from '../utils/tts.js'
+import {deleteConversation, getConversations, getLatestMessageIdByConversationId} from '../utils/conversation.js'
+import {convertSpeaker, speakers} from '../utils/tts.js'
 import ChatGLMClient from '../utils/chatglm.js'
-import { convertFaces } from '../utils/face.js'
-import { SlackClaudeClient } from '../utils/slack/slackClient.js'
-import { getPromptByName } from '../utils/prompts.js'
+import {convertFaces} from '../utils/face.js'
+import {SlackClaudeClient} from '../utils/slack/slackClient.js'
+import {getPromptByName} from '../utils/prompts.js'
 import BingDrawClient from '../utils/BingDraw.js'
 import XinghuoClient from '../utils/xinghuo/xinghuo.js'
 import Bard from '../utils/bard.js'
-import { JinyanTool } from '../utils/tools/JinyanTool.js'
-import { SendVideoTool } from '../utils/tools/SendBilibiliTool.js'
-import { KickOutTool } from '../utils/tools/KickOutTool.js'
-import { EditCardTool } from '../utils/tools/EditCardTool.js'
-import { SearchVideoTool } from '../utils/tools/SearchBilibiliTool.js'
-import { SearchMusicTool } from '../utils/tools/SearchMusicTool.js'
-import { QueryStarRailTool } from '../utils/tools/QueryStarRailTool.js'
-import { WebsiteTool } from '../utils/tools/WebsiteTool.js'
-import { WeatherTool } from '../utils/tools/WeatherTool.js'
-import { SerpTool } from '../utils/tools/SerpTool.js'
-import { SerpIkechan8370Tool } from '../utils/tools/SerpIkechan8370Tool.js'
-import { SendPictureTool } from '../utils/tools/SendPictureTool.js'
-import { SerpImageTool } from '../utils/tools/SearchImageTool.js'
-import { ImageCaptionTool } from '../utils/tools/ImageCaptionTool.js'
-import { SendAudioMessageTool } from '../utils/tools/SendAudioMessageTool.js'
-import { ProcessPictureTool } from '../utils/tools/ProcessPictureTool.js'
-import { APTool } from '../utils/tools/APTool.js'
-import { QueryGenshinTool } from '../utils/tools/QueryGenshinTool.js'
-import { HandleMessageMsgTool } from '../utils/tools/HandleMessageMsgTool.js'
-import { QueryUserinfoTool } from '../utils/tools/QueryUserinfoTool.js'
-import { EliMovieTool } from '../utils/tools/EliMovieTool.js'
-import { EliMusicTool } from '../utils/tools/EliMusicTool.js'
-import { SendMusicTool } from '../utils/tools/SendMusicTool.js'
-import { SendDiceTool } from '../utils/tools/SendDiceTool.js'
-import { SendAvatarTool } from '../utils/tools/SendAvatarTool.js'
-import { SendMessageToSpecificGroupOrUserTool } from '../utils/tools/SendMessageToSpecificGroupOrUserTool.js'
-import { SetTitleTool } from '../utils/tools/SetTitleTool.js'
-import { solveCaptchaOneShot } from '../utils/bingCaptcha.js'
-import { ClaudeAIClient } from '../utils/claude.ai/index.js'
-import fs from 'fs'
-import { getProxy } from '../utils/proxy.js'
+import {JinyanTool} from '../utils/tools/JinyanTool.js'
+import {SendVideoTool} from '../utils/tools/SendBilibiliTool.js'
+import {KickOutTool} from '../utils/tools/KickOutTool.js'
+import {EditCardTool} from '../utils/tools/EditCardTool.js'
+import {SearchVideoTool} from '../utils/tools/SearchBilibiliTool.js'
+import {SearchMusicTool} from '../utils/tools/SearchMusicTool.js'
+import {QueryStarRailTool} from '../utils/tools/QueryStarRailTool.js'
+import {WebsiteTool} from '../utils/tools/WebsiteTool.js'
+import {WeatherTool} from '../utils/tools/WeatherTool.js'
+import {SerpTool} from '../utils/tools/SerpTool.js'
+import {SerpIkechan8370Tool} from '../utils/tools/SerpIkechan8370Tool.js'
+import {SendPictureTool} from '../utils/tools/SendPictureTool.js'
+import {SerpImageTool} from '../utils/tools/SearchImageTool.js'
+import {ImageCaptionTool} from '../utils/tools/ImageCaptionTool.js'
+import {SendAudioMessageTool} from '../utils/tools/SendAudioMessageTool.js'
+import {ProcessPictureTool} from '../utils/tools/ProcessPictureTool.js'
+import {APTool} from '../utils/tools/APTool.js'
+import {QueryGenshinTool} from '../utils/tools/QueryGenshinTool.js'
+import {HandleMessageMsgTool} from '../utils/tools/HandleMessageMsgTool.js'
+import {QueryUserinfoTool} from '../utils/tools/QueryUserinfoTool.js'
+import {EliMovieTool} from '../utils/tools/EliMovieTool.js'
+import {EliMusicTool} from '../utils/tools/EliMusicTool.js'
+import {SendMusicTool} from '../utils/tools/SendMusicTool.js'
+import {SendDiceTool} from '../utils/tools/SendDiceTool.js'
+import {SendAvatarTool} from '../utils/tools/SendAvatarTool.js'
+import {SendMessageToSpecificGroupOrUserTool} from '../utils/tools/SendMessageToSpecificGroupOrUserTool.js'
+import {SetTitleTool} from '../utils/tools/SetTitleTool.js'
+import {solveCaptchaOneShot} from '../utils/bingCaptcha.js'
+import {ClaudeAIClient} from '../utils/claude.ai/index.js'
+import {getProxy} from '../utils/proxy.js'
+import {QwenApi} from '../utils/alibaba/qwen-api.js'
 
 try {
   await import('@azure/openai')
@@ -178,6 +183,12 @@ export class chatgpt extends plugin {
         {
           reg: '^#星火(搜索|查找)助手',
           fnc: 'searchxhBot'
+        },
+        {
+          /** 命令正则匹配 */
+          reg: '^#qwen[sS]*',
+          /** 执行方法 */
+          fnc: 'qwen'
         },
         {
           /** 命令正则匹配 */
@@ -366,6 +377,14 @@ export class chatgpt extends plugin {
           await redis.del(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
           await this.reply('已结束当前对话，请@我进行聊天以开启新的对话', true)
         }
+      } else if (use === 'qwen') {
+        let c = await redis.get(`CHATGPT:CONVERSATIONS_QWEN:${e.sender.user_id}`)
+        if (!c) {
+          await this.reply('当前没有开启对话', true)
+        } else {
+          await redis.del(`CHATGPT:CONVERSATIONS_QWEN:${e.sender.user_id}`)
+          await this.reply('已结束当前对话，请@我进行聊天以开启新的对话', true)
+        }
       } else if (use === 'bing') {
         let c = await redis.get(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
         if (!c) {
@@ -425,6 +444,14 @@ export class chatgpt extends plugin {
           await this.reply(`当前${atUser}没有开启对话`, true)
         } else {
           await redis.del(`CHATGPT:CONVERSATIONS:${qq}`)
+          await this.reply(`已结束${atUser}的对话，TA仍可以@我进行聊天以开启新的对话`, true)
+        }
+      } else if (use === 'qwen') {
+        let c = await redis.get(`CHATGPT:CONVERSATIONS_QWEN:${qq}`)
+        if (!c) {
+          await this.reply(`当前${atUser}没有开启对话`, true)
+        } else {
+          await redis.del(`CHATGPT:CONVERSATIONS_QWEN:${qq}`)
           await this.reply(`已结束${atUser}的对话，TA仍可以@我进行聊天以开启新的对话`, true)
         }
       } else if (use === 'bing') {
@@ -1029,6 +1056,10 @@ export class chatgpt extends plugin {
           key = `CHATGPT:CONVERSATIONS_AZURE:${e.sender.user_id}`
           break
         }
+        case 'qwen': {
+          key = `CHATGPT:CONVERSATIONS_QWEN:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`
+          break
+        }
       }
       let ctime = new Date()
       previousConversation = (key ? await redis.get(key) : null) || JSON.stringify({
@@ -1439,6 +1470,25 @@ export class chatgpt extends plugin {
     return true
   }
 
+  async qwen (e) {
+    if (!Config.allowOtherMode) {
+      return false
+    }
+    let ats = e.message.filter(m => m.type === 'at')
+    if (!(e.atme || e.atBot) && ats.length > 0) {
+      if (Config.debug) {
+        logger.mark('艾特别人了，没艾特我，忽略#xh')
+      }
+      return false
+    }
+    let prompt = _.replace(e.raw_message.trimStart(), '#qwen', '').trim()
+    if (prompt.length === 0) {
+      return false
+    }
+    await this.abstractChat(e, prompt, 'qwen')
+    return true
+  }
+
   async xh (e) {
     if (!Config.allowOtherMode) {
       return false
@@ -1626,6 +1676,20 @@ export class chatgpt extends plugin {
                   logger.warn('获取群聊聊天记录失败，本次对话不携带聊天记录', err)
                 }
               }
+              let toSummaryFileContent
+              try {
+                if (e.source) {
+                  let msgs = e.isGroup ? await e.group.getChatHistory(e.source.seq, 1) : await e.friend.getChatHistory(e.source.time, 1)
+                  let sourceMsg = msgs[0]
+                  let fileMsgElem = sourceMsg.message.find(msg => msg.type === 'file')
+                  if (fileMsgElem) {
+                    toSummaryFileContent = await extractContentFromFile(fileMsgElem, e)
+                  }
+                }
+              } catch (err) {
+                logger.warn('读取文件内容出错， 忽略文件内容', err)
+              }
+              opt.toSummaryFileContent = toSummaryFileContent
             } else {
               // 重新创建client，因为token可能换到别的了
               if (bingToken?.indexOf('=') > -1) {
@@ -1893,40 +1957,30 @@ export class chatgpt extends plugin {
           debug: Config.debug,
           proxy: Config.proxy
         })
-        let fileUrl, filename, attachments
-        if (e.source && e.source.message === '[文件]') {
-          if (e.isGroup) {
-            let source = (await e.group.getChatHistory(e.source.seq, 1))[0]
-            let file = source.message.find(m => m.type === 'file')
-            if (file) {
-              filename = file.name
-              fileUrl = await e.group.getFileUrl(file.fid)
-            }
-          } else {
-            let source = (await e.friend.getChatHistory(e.source.time, 1))[0]
-            let file = source.message.find(m => m.type === 'file')
-            if (file) {
-              filename = file.name
-              fileUrl = await e.group.getFileUrl(file.fid)
+        let toSummaryFileContent
+        try {
+          if (e.source) {
+            let msgs = e.isGroup ? await e.group.getChatHistory(e.source.seq, 1) : await e.friend.getChatHistory(e.source.time, 1)
+            let sourceMsg = msgs[0]
+            let fileMsgElem = sourceMsg.message.find(msg => msg.type === 'file')
+            if (fileMsgElem) {
+              toSummaryFileContent = await extractContentFromFile(fileMsgElem, e)
             }
           }
+        } catch (err) {
+          logger.warn('读取文件内容出错， 忽略文件内容', err)
         }
-        if (fileUrl) {
-          logger.info('文件地址：' + fileUrl)
-          mkdirs('data/chatgpt/files')
-          let destinationPath = 'data/chatgpt/files/' + filename
-          const response = await fetch(fileUrl)
-          const fileStream = fs.createWriteStream(destinationPath)
-          await new Promise((resolve, reject) => {
-            response.body.pipe(fileStream)
-            response.body.on('error', (err) => {
-              reject(err)
-            })
-            fileStream.on('finish', () => {
-              resolve()
-            })
+
+        let attachments = []
+        if (toSummaryFileContent?.content) {
+          attachments.push({
+            extracted_content: toSummaryFileContent.content,
+            file_name: toSummaryFileContent.name,
+            file_type: 'pdf',
+            file_size: 200312,
+            totalPages: 20
           })
-          attachments = [await client.convertDocument(destinationPath, filename)]
+          logger.info(toSummaryFileContent.content)
         }
         if (conversationId) {
           return await client.sendMessage(prompt, conversationId, attachments)
@@ -1975,6 +2029,57 @@ export class chatgpt extends plugin {
         const { choices } = await client.getChatCompletions(deploymentName, msg)
         let completion = choices[0].message
         return { text: completion.content, message: completion }
+      }
+      case 'qwen': {
+        let completionParams = {
+          parameters: {
+            top_p: Config.qwenTopP || 0.5,
+            top_k: Config.qwenTopK || 50,
+            seed: Config.qwenSeed > 0 ? Config.qwenSeed : Math.floor(Math.random() * 114514),
+            temperature: Config.qwenTemperature || 1,
+            enable_search: !!Config.qwenEnableSearch
+          }
+        }
+        if (Config.qwenModel) {
+          completionParams.model = Config.qwenModel
+        }
+        const currentDate = new Date().toISOString().split('T')[0]
+        async function um (message) {
+          return await upsertMessage(message, 'QWEN')
+        }
+        async function gm (id) {
+          return await getMessageById(id, 'QWEN')
+        }
+        let opts = {
+          apiKey: Config.qwenApiKey,
+          debug: false,
+          upsertMessage: um,
+          getMessageById: gm,
+          systemMessage: `You are ${Config.assistantLabel} ${useCast?.api || Config.promptPrefixOverride || defaultPropmtPrefix}
+        Current date: ${currentDate}`,
+          completionParams,
+          assistantLabel: Config.assistantLabel,
+          fetch: newFetch
+        }
+        this.qwenApi = new QwenApi(opts)
+        let option = {
+          timeoutMs: 600000,
+          completionParams
+        }
+        if (conversation) {
+          if (!conversation.conversationId) {
+            conversation.conversationId = uuid()
+          }
+          option = Object.assign(option, conversation)
+        }
+        let msg
+        try {
+          msg = await this.qwenApi.sendMessage(prompt, option)
+        } catch (err) {
+          logger.error(err)
+          throw new Error(err)
+        }
+        return msg
       }
       case 'bard': {
         // 处理cookie
@@ -2134,6 +2239,9 @@ export class chatgpt extends plugin {
         }
         option.systemMessage = system
         if (conversation) {
+          if (!conversation.conversationId) {
+            conversation.conversationId = uuid()
+          }
           option = Object.assign(option, conversation)
         }
         if (Config.smartMode) {

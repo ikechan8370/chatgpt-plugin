@@ -1,5 +1,3 @@
-// import { remark } from 'remark'
-// import stripMarkdown from 'strip-markdown'
 import { exec } from 'child_process'
 import lodash from 'lodash'
 import fs from 'node:fs'
@@ -15,12 +13,26 @@ import AzureTTS, { supportConfigurations as azureRoleList } from './tts/microsof
 import { translate } from './translate.js'
 import uploadRecord from './uploadRecord.js'
 import Version from './version.js'
-// export function markdownToText (markdown) {
-//  return remark()
-//    .use(stripMarkdown)
-//    .processSync(markdown ?? '')
-//    .toString()
-// }
+import fetch from 'node-fetch'
+let pdfjsLib
+try {
+  pdfjsLib = (await import('pdfjs-dist')).default
+} catch (err) {}
+
+let mammoth
+try {
+  mammoth = (await import('mammoth')).default
+} catch (err) {}
+
+let XLSX
+try {
+  XLSX = (await import('xlsx')).default
+} catch (err) {}
+
+let PPTX
+try {
+  PPTX = (await import('nodejs-pptx')).default
+} catch (err) {}
 
 let _puppeteer
 try {
@@ -61,12 +73,18 @@ export function randomString (length = 5) {
   return str.substr(0, length)
 }
 
-export async function upsertMessage (message) {
-  await redis.set(`CHATGPT:MESSAGE:${message.id}`, JSON.stringify(message))
+export async function upsertMessage (message, suffix = '') {
+  if (suffix) {
+    suffix = '_' + suffix
+  }
+  await redis.set(`CHATGPT:MESSAGE${suffix}:${message.id}`, JSON.stringify(message))
 }
 
-export async function getMessageById (id) {
-  let messageStr = await redis.get(`CHATGPT:MESSAGE:${id}`)
+export async function getMessageById (id, suffix = '') {
+  if (suffix) {
+    suffix = '_' + suffix
+  }
+  let messageStr = await redis.get(`CHATGPT:MESSAGE${suffix}:${id}`)
   return JSON.parse(messageStr)
 }
 
@@ -833,7 +851,7 @@ export function getUin (e) {
     else {
         Bot.uin.forEach((u) => {
           if (Bot[u].self_id) {
-            return Bot[u].self_id 
+            return Bot[u].self_id
           }
         })
         return Bot.uin[Bot.uin.length - 1]
@@ -970,5 +988,210 @@ export function getUserSpeaker (userSetting) {
     return userSetting.ttsRoleAzure || Config.azureTTSSpeaker
   } else if (Config.ttsMode === 'voicevox') {
     return userSetting.ttsRoleVoiceVox || Config.voicevoxTTSSpeaker
+  }
+}
+
+/**
+ *
+ * @param url 要下载的文件链接
+ * @param destPath 目标路径，如received/abc.pdf. 目前如果文件名重复会覆盖。
+ * @param absolute 是否是绝对路径，默认为false，此时拼接在data/chatgpt下
+ * @returns {Promise<string>} 最终下载文件的存储位置
+ */
+export async function downloadFile (url, destPath, absolute = false) {
+  let response = await fetch(url)
+  if (!response.ok) {
+    throw new Error(`download file http error: status: ${response.status}`)
+  }
+  let dest = destPath
+  if (!absolute) {
+    const _path = process.cwd()
+    dest = path.join(_path, 'data', 'chatgpt', dest)
+    const lastLevelDirPath = path.dirname(dest)
+    mkdirs(lastLevelDirPath)
+  }
+  const fileStream = fs.createWriteStream(dest)
+  await new Promise((resolve, reject) => {
+    response.body.pipe(fileStream)
+    response.body.on('error', err => {
+      reject(err)
+    })
+    fileStream.on('finish', function () {
+      resolve()
+    })
+  })
+  logger.info(`File downloaded successfully! URL: ${url}, Destination: ${dest}`)
+  return dest
+}
+
+export function isPureText (filename) {
+  const ext = path.extname(filename).toLowerCase()
+
+  // List of file extensions that can be treated as pure text
+  const textFileExtensions = ['.txt', '.log', '.md', '.csv', '.html', '.css', '.js', '.json', '.xml', '.py', '.java', '.cpp', '.c', '.rb', '.php', '.sql', '.sh', '.pl', '.r', '.swift', '.go', '.ts', '.htm', '.yaml', '.yml', '.ini', '.properties', '.tsv']
+
+  // File types that require additional processing
+  const processingExtensions = ['.docx', '.pptx', '.xlsx', '.pdf', '.epub']
+
+  if (textFileExtensions.includes(ext)) {
+    return 'text'
+  } else if (processingExtensions.includes(ext)) {
+    // Return the file extension if additional processing is needed
+    return ext.replace('.', '')
+  } else {
+    return false
+  }
+}
+
+/**
+ * 从文件中提取文本内容
+ * @param fileMsgElem MessageElem
+ * @returns {Promise<{}>} 提取的文本内容和文件名
+ */
+export async function extractContentFromFile (fileMsgElem, e) {
+  logger.info('filename: ' + fileMsgElem.name)
+  let fileType = isPureText(fileMsgElem.name)
+  if (fileType) {
+    // 可读的文件类型
+    let fileUrl = e.isGroup ? await e.group.getFileUrl(fileMsgElem.fid) : await e.friend.getFileUrl(fileMsgElem.fid)
+    let filePath = await downloadFile(fileUrl, path.join('received', fileMsgElem.name))
+    switch (fileType) {
+      case 'pdf': {
+        if (!pdfjsLib) {
+          return {}
+        }
+        const data = new Uint8Array(fs.readFileSync(filePath))
+        let loadingTask = pdfjsLib.getDocument(data)
+        try {
+          const pdfDocument = await loadingTask.promise
+          const numPages = pdfDocument.numPages
+          let pdfText = ''
+
+          // limit pages to prevent OOM or LLM down
+          let maxPage = 100
+          // Iterate through each page and extract text
+          for (let pageNum = 1; pageNum <= Math.min(numPages, maxPage); ++pageNum) {
+            const page = await pdfDocument.getPage(pageNum)
+            const textContent = await page.getTextContent()
+            const pageText = textContent.items.map(item => item.str).join(' ')
+            pdfText += pageText
+          }
+
+          return {
+            content: pdfText,
+            name: fileMsgElem.name
+          }
+        } catch (error) {
+          console.error('Error reading PDF file:', error)
+          return {}
+        }
+      }
+      case 'doc': {
+        logger.error('not supported file type now')
+        return ''
+      }
+      case 'docx': {
+        if (!mammoth) {
+          return {}
+        }
+        try {
+          const { value } = await mammoth.extractRawText({ path: filePath })
+          return {
+            content: value,
+            name: fileMsgElem.name
+          }
+        } catch (error) {
+          logger.error('Error reading .docx file:', error)
+          return {}
+        }
+      }
+      case 'xls': {
+        logger.error('not supported file type now')
+        return {}
+      }
+      case 'xlsx': {
+        if (!XLSX) {
+          return {}
+        }
+        try {
+          const workbook = XLSX.readFile(filePath)
+          const sheetName = workbook.SheetNames[0] // Assuming the first sheet is the one you want to read
+          const sheet = workbook.Sheets[sheetName]
+          const data = XLSX.utils.sheet_to_json(sheet, { header: 1 })
+
+          // Convert the 2D array to plain text
+          return {
+            content: data.map(row => row.join('\t')).join('\n'),
+            name: fileMsgElem.name
+          }
+        } catch (error) {
+          console.error('Error reading .xlsx file:', error)
+          return {}
+        }
+      }
+      case 'ppt': {
+        logger.error('not supported file type now')
+        return {}
+      }
+      case 'pptx': {
+        if (!PPTX) {
+          return {}
+        }
+        try {
+          let pptx = new PPTX.Composer()
+          await pptx.load(filePath)
+          let presentationContent = []
+          let slideNumber = 1
+          let maxSlideNumber = 60
+          while (slideNumber <= maxSlideNumber) {
+            let slide
+            try {
+              slide = pptx.getSlide(slideNumber)
+            } catch (error) {
+              // Slide number out of range, break the loop
+              break
+            }
+
+            let slideContent = []
+
+            // Iterate through slide elements and extract text content
+            slide.elements.forEach(element => {
+              if (element.text) {
+                slideContent.push(element.text)
+              }
+            })
+
+            // Add slide content to the presentation content array
+            presentationContent.push(slideContent.join('\n'))
+
+            // Move to the next slide
+            slideNumber++
+          }
+          return {
+            content: presentationContent.join('\n'),
+            name: fileMsgElem.name
+          }
+        } catch (error) {
+          console.error('Error reading .pptx file:', error)
+          return {}
+        }
+      }
+      case 'epub': {
+        logger.error('not supported file type now')
+        return {}
+      }
+      default: {
+        // text type
+        const data = fs.readFileSync(filePath)
+        let text = String(data)
+        if (text) {
+          return {
+            content: text,
+            name: fileMsgElem.name
+          }
+        }
+      }
+    }
+    return {}
   }
 }

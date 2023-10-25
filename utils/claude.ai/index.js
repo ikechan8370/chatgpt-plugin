@@ -186,6 +186,7 @@ export class ClaudeAIClient {
     } else if (streamDataRes.status === 408) {
       throw new Error('claude.ai响应超时，可能是回复文本太多，请调高超时时间重试')
     } else {
+      logger.error(streamDataRes.status, streamDataRes.body)
       throw new Error('unknown error')
     }
   }
