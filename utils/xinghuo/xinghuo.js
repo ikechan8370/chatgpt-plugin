@@ -181,7 +181,11 @@ export default class XinghuoClient {
     // 获取ws链接
     const wsUrl = Config.xhmode == 'assistants' ? Config.xhAssistants : await this.getWsUrl()
     if (!wsUrl) throw new Error('缺少依赖：crypto。请安装依赖后重试')
-
+    let domain = 'general'
+    if (Config.xhmode == 'apiv2') 
+      domain = "generalv2" 
+    else if (Config.xhmode == 'apiv3') 
+      domain = "generalv3"
     // 编写消息内容
     const wsSendData = {
       header: {
@@ -190,7 +194,7 @@ export default class XinghuoClient {
       },
       parameter: {
         chat: {
-          domain: Config.xhmode == 'api' ? "general" : "generalv2",
+          domain: domain,
           temperature: Config.xhTemperature, // 核采样阈值
           max_tokens: Config.xhMaxTokens, // tokens最大长度
           chat_id: chatId,
