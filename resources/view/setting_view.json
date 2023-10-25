@@ -719,6 +719,10 @@
                     "value": "apiv2"
                   },
                   {
+                    "label": "讯飞星火认知大模型V3.0",
+                    "value": "apiv3"
+                  },
+                  {
                     "label": "讯飞星火助手",
                     "value": "assistants"
                   }
