@@ -157,7 +157,8 @@ export class help extends plugin {
     const keyMap = {
       api: 'promptPrefixOverride',
       Custom: 'sydney',
-      claude: 'slackClaudeGlobalPreset'
+      claude: 'slackClaudeGlobalPreset',
+      qwen: 'promptPrefixOverride'
     }
 
     if (keyMap[use]) {
