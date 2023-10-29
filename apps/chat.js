@@ -565,6 +565,18 @@ export class chatgpt extends plugin {
         }
         break
       }
+      case 'qwen': {
+        let qcs = await redis.keys('CHATGPT:CONVERSATIONS_QWEN:*')
+        for (let i = 0; i < qcs.length; i++) {
+          await redis.del(qcs[i])
+          // todo clean last message id
+          if (Config.debug) {
+            logger.info('delete qwen conversation bind: ' + qcs[i])
+          }
+          deleted++
+        }
+        break
+      }
     }
     await this.reply(`结束了${deleted}个用户的对话。`, true)
   }
