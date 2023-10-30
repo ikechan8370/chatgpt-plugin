@@ -138,7 +138,11 @@ export default class SydneyAIClient {
         agent = proxy(this.opts.proxy)
       }
       if (Config.sydneyWebsocketUseProxy) {
-        sydneyHost = Config.sydneyReverseProxy.replace('https://', 'wss://').replace('http://', 'ws://')
+        if (!Config.sydneyReverseProxy) {
+          logger.warn('用户开启了对话反代，但是没有配置反代，忽略反代配置')
+        } else {
+          sydneyHost = Config.sydneyReverseProxy.replace('https://', 'wss://').replace('http://', 'ws://')
+        }
       }
       logger.mark(`use sydney websocket host: ${sydneyHost}`)
       let host = sydneyHost + '/sydney/ChatHub'

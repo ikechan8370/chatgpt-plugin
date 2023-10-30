@@ -1102,9 +1102,7 @@ export class chatgpt extends plugin {
         logger.mark({ conversation })
       }
       let chatMessage = await this.sendMessage(prompt, conversation, use, e)
-      if (chatMessage.image) {
-        this.setContext('solveBingCaptcha', false, 60)
-        await e.reply([chatMessage.text, segment.image(`base64://${chatMessage.image}`)])
+      if (chatMessage?.noMsg) {
         return false
       }
       // 处理星火和bard图片
@@ -1869,10 +1867,10 @@ export class chatgpt extends plugin {
             text: errorMessage,
             error: true
           }
-        } else {
+        } else if (response?.response) {
           return {
             text: response?.response,
-            quote: response.quote,
+            quote: response?.quote,
             suggestedResponses: response.suggestedResponses,
             conversationId: response.conversationId,
             clientId: response.clientId,
@@ -1880,6 +1878,11 @@ export class chatgpt extends plugin {
             conversationSignature: response.conversationSignature,
             parentMessageId: response.apology ? conversation.parentMessageId : response.messageId,
             bingToken
+          }
+        } else {
+          logger.debug('no message')
+          return {
+            noMsg: true
           }
         }
       }
