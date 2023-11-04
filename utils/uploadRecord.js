@@ -39,7 +39,7 @@ if (module) {
 // import { pcm2slk } from 'node-silk'
 let errors = {}
 
-async function uploadRecord (recordUrl, ttsMode = 'vits-uma-genshin-honkai') {
+async function uploadRecord (recordUrl, ttsMode = 'vits-uma-genshin-honkai', ignoreEncode = false) {
   let recordType = 'url'
   let tmpFile = ''
   if (ttsMode === 'azure') {
@@ -47,6 +47,9 @@ async function uploadRecord (recordUrl, ttsMode = 'vits-uma-genshin-honkai') {
   } else if (ttsMode === 'voicevox') {
     recordType = 'buffer'
     tmpFile = `data/chatgpt/tts/tmp/${crypto.randomUUID()}.wav`
+  }
+  if (ignoreEncode) {
+    return segment.record(recordUrl)
   }
   let result
   if (pcm2slk) {

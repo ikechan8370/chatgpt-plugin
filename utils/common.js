@@ -847,14 +847,13 @@ export function getMaxModelTokens (model = 'gpt-3.5-turbo') {
 export function getUin (e) {
   if (e?.bot?.uin) return e.bot.uin
   if (Array.isArray(Bot.uin)) {
-    if (Config.trssBotUin && Bot.uin.indexOf(Config.trssBotUin) > -1) {return Config.trssBotUin}
-    else {
-        Bot.uin.forEach((u) => {
-          if (Bot[u].self_id) {
-            return Bot[u].self_id
-          }
-        })
-        return Bot.uin[Bot.uin.length - 1]
+    if (Config.trssBotUin && Bot.uin.indexOf(Config.trssBotUin) > -1) { return Config.trssBotUin } else {
+      Bot.uin.forEach((u) => {
+        if (Bot[u].self_id) {
+          return Bot[u].self_id
+        }
+      })
+      return Bot.uin[Bot.uin.length - 1]
     }
   } else return Bot.uin
 }
@@ -871,6 +870,7 @@ export async function generateAudio (e, pendingText, speakingEmotion, emotionDeg
   if (!Config.ttsSpace && !Config.azureTTSKey && !Config.voicevoxSpace) return false
   let wav
   const speaker = getUserSpeaker(await getUserReplySetting(e))
+  let ignoreEncode = getUin(e) === 88888
   try {
     if (Config.ttsMode === 'vits-uma-genshin-honkai' && Config.ttsSpace) {
       if (Config.autoJapanese) {
@@ -883,7 +883,7 @@ export async function generateAudio (e, pendingText, speakingEmotion, emotionDeg
       }
       wav = await generateVitsAudio(pendingText, speaker, '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）')
     } else if (Config.ttsMode === 'azure' && Config.azureTTSKey) {
-      return await generateAzureAudio(pendingText, speaker, speakingEmotion, emotionDegree)
+      return await generateAzureAudio(pendingText, speaker, speakingEmotion, emotionDegree, ignoreEncode)
     } else if (Config.ttsMode === 'voicevox' && Config.voicevoxSpace) {
       pendingText = (await translate(pendingText, '日')).replace('\n', '')
       wav = await VoiceVoxTTS.generateAudio(pendingText, {
@@ -897,7 +897,7 @@ export async function generateAudio (e, pendingText, speakingEmotion, emotionDeg
   let sendable
   try {
     try {
-      sendable = await uploadRecord(wav, Config.ttsMode)
+      sendable = await uploadRecord(wav, Config.ttsMode, ignoreEncode)
       if (!sendable) {
         // 如果合成失败，尝试使用ffmpeg合成
         sendable = segment.record(wav)
@@ -927,9 +927,10 @@ export async function generateAudio (e, pendingText, speakingEmotion, emotionDeg
  * @param role - 发言人
  * @param speakingEmotion - 发言人情绪
  * @param emotionDegree - 发言人情绪强度
+ * @param ignoreEncode - 不在客户端处理编码
  * @returns {Promise<{file: string, type: string}|boolean>}
  */
-export async function generateAzureAudio (pendingText, role = '随机', speakingEmotion, emotionDegree = 1) {
+export async function generateAzureAudio (pendingText, role = '随机', speakingEmotion, emotionDegree = 1, ignoreEncode = false) {
   if (!Config.azureTTSKey) return false
   let speaker
   try {
@@ -970,11 +971,13 @@ export async function generateAzureAudio (pendingText, role = '随机', speaking
       pendingText,
       emotionDegree
     })
+    let record = await AzureTTS.generateAudio(pendingText, {
+      speaker
+    }, await ssml)
     return await uploadRecord(
-      await AzureTTS.generateAudio(pendingText, {
-        speaker
-      }, await ssml)
-      , Config.ttsMode
+      record
+      , Config.ttsMode,
+      ignoreEncode
     )
   } catch (err) {
     logger.error(err)
