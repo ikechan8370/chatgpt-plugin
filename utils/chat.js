@@ -1,6 +1,6 @@
 export async function getChatHistoryGroup (e, num) {
   if (e.adapter === 'shamrock') {
-    return await e.group.getChatHistory(0, num)
+    return await e.group.getChatHistory(0, num, false)
   } else {
     let latestChats = await e.group.getChatHistory(0, 1)
     if (latestChats.length > 0) {
