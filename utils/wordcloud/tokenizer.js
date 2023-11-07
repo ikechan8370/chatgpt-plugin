@@ -59,7 +59,10 @@ export class Tokenizer {
       }
       chats.push(...chatHistory)
       chats.sort(compareByTime)
-      seq = chatHistory[0].seq
+      seq = chatHistory?.[0]?.seq
+      if (!seq) {
+        break
+      }
       if (Config.debug) {
         logger.info(`拉取到${chatHistory.length}条聊天记录，当前已累计获取${chats.length}条聊天记录，继续拉...`)
       }
