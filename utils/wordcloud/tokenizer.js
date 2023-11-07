@@ -95,15 +95,15 @@ export class Tokenizer {
         .join('').trim()
       )
       .map(c => {
-        let length = c.length
-        let threshold = 10
-        if (length < 100 && length > 50) {
-          threshold = 6
-        } else if (length <= 50 && length > 25) {
-          threshold = 3
-        } else if (length <= 25) {
-          threshold = 2
-        }
+        // let length = c.length
+        let threshold = 2
+        // if (length < 100 && length > 50) {
+        //   threshold = 6
+        // } else if (length <= 50 && length > 25) {
+        //   threshold = 3
+        // } else if (length <= 25) {
+        //   threshold = 2
+        // }
         return nodejieba.extract(c, threshold)
       })
       .reduce((acc, curr) => acc.concat(curr), [])
