@@ -870,7 +870,7 @@ export async function generateAudio (e, pendingText, speakingEmotion, emotionDeg
   if (!Config.ttsSpace && !Config.azureTTSKey && !Config.voicevoxSpace) return false
   let wav
   const speaker = getUserSpeaker(await getUserReplySetting(e))
-  let ignoreEncode = getUin(e) === 88888
+  let ignoreEncode = e.adapter === 'shamrock'
   try {
     if (Config.ttsMode === 'vits-uma-genshin-honkai' && Config.ttsSpace) {
       if (Config.autoJapanese) {

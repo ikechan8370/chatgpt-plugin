@@ -77,6 +77,7 @@ import {solveCaptchaOneShot} from '../utils/bingCaptcha.js'
 import {ClaudeAIClient} from '../utils/claude.ai/index.js'
 import {getProxy} from '../utils/proxy.js'
 import {QwenApi} from '../utils/alibaba/qwen-api.js'
+import {getChatHistoryGroup} from '../utils/chat.js'
 
 try {
   await import('@azure/openai')
@@ -1660,28 +1661,7 @@ export class chatgpt extends plugin {
                   if (master && !e.group) {
                     opt.masterName = e.bot.getFriendList().get(parseInt(master))?.nickname
                   }
-                  let latestChats = await e.group.getChatHistory(0, 1)
-                  if (latestChats.length > 0) {
-                    let latestChat = latestChats[0]
-                    if (latestChat) {
-                      let seq = latestChat.seq
-                      let chats = []
-                      while (chats.length < Config.groupContextLength) {
-                        let chatHistory = await e.group.getChatHistory(seq, 20)
-                        chats.push(...chatHistory)
-                      }
-                      chats = chats.slice(0, Config.groupContextLength)
-                      let mm = await e.group.getMemberMap()
-                      chats.forEach(chat => {
-                        let sender = mm.get(chat.sender.user_id)
-                        if (sender) {
-                          chat.sender = sender
-                        }
-                      })
-                      // console.log(chats)
-                      opt.chats = chats
-                    }
-                  }
+                  opt.chats = await getChatHistoryGroup(e, Config.groupContextLength)
                 } catch (err) {
                   logger.warn('获取群聊聊天记录失败，本次对话不携带聊天记录', err)
                 }
@@ -2171,21 +2151,7 @@ export class chatgpt extends plugin {
             if (master && !e.group) {
               opt.masterName = e.bot.getFriendList().get(parseInt(master))?.nickname
             }
-            let latestChat = await e.group.getChatHistory(0, 1)
-            let seq = latestChat[0].seq
-            let chats = []
-            while (chats.length < Config.groupContextLength) {
-              let chatHistory = await e.group.getChatHistory(seq, 20)
-              chats.push(...chatHistory.reverse())
-            }
-            chats = chats.slice(0, Config.groupContextLength)
-            // 太多可能会干扰AI对自身qq号和用户qq的判断，感觉gpt3.5也处理不了那么多信息
-            chats = chats > 50 ? 50 : chats
-            let mm = await e.group.getMemberMap()
-            chats.forEach(chat => {
-              let sender = mm.get(chat.sender.user_id)
-              chat.sender = sender
-            })
+            let chats = await getChatHistoryGroup(e, Config.groupContextLength)
             opt.chats = chats
             const namePlaceholder = '[name]'
             const defaultBotName = 'ChatGPT'
