@@ -77,6 +77,7 @@ import {solveCaptchaOneShot} from '../utils/bingCaptcha.js'
 import {ClaudeAIClient} from '../utils/claude.ai/index.js'
 import {getProxy} from '../utils/proxy.js'
 import {QwenApi} from '../utils/alibaba/qwen-api.js'
+import {getChatHistoryGroup} from '../utils/chat.js'
 
 try {
   await import('@azure/openai')
@@ -560,6 +561,18 @@ export class chatgpt extends plugin {
           // todo clean last message id
           if (Config.debug) {
             logger.info('delete chatglm conversation bind: ' + qcs[i])
+          }
+          deleted++
+        }
+        break
+      }
+      case 'qwen': {
+        let qcs = await redis.keys('CHATGPT:CONVERSATIONS_QWEN:*')
+        for (let i = 0; i < qcs.length; i++) {
+          await redis.del(qcs[i])
+          // todo clean last message id
+          if (Config.debug) {
+            logger.info('delete qwen conversation bind: ' + qcs[i])
           }
           deleted++
         }
@@ -1090,9 +1103,7 @@ export class chatgpt extends plugin {
         logger.mark({ conversation })
       }
       let chatMessage = await this.sendMessage(prompt, conversation, use, e)
-      if (chatMessage.image) {
-        this.setContext('solveBingCaptcha', false, 60)
-        await e.reply([chatMessage.text, segment.image(`base64://${chatMessage.image}`)])
+      if (chatMessage?.noMsg) {
         return false
       }
       // 处理星火和bard图片
@@ -1650,28 +1661,7 @@ export class chatgpt extends plugin {
                   if (master && !e.group) {
                     opt.masterName = e.bot.getFriendList().get(parseInt(master))?.nickname
                   }
-                  let latestChats = await e.group.getChatHistory(0, 1)
-                  if (latestChats.length > 0) {
-                    let latestChat = latestChats[0]
-                    if (latestChat) {
-                      let seq = latestChat.seq
-                      let chats = []
-                      while (chats.length < Config.groupContextLength) {
-                        let chatHistory = await e.group.getChatHistory(seq, 20)
-                        chats.push(...chatHistory)
-                      }
-                      chats = chats.slice(0, Config.groupContextLength)
-                      let mm = await e.group.getMemberMap()
-                      chats.forEach(chat => {
-                        let sender = mm.get(chat.sender.user_id)
-                        if (sender) {
-                          chat.sender = sender
-                        }
-                      })
-                      // console.log(chats)
-                      opt.chats = chats
-                    }
-                  }
+                  opt.chats = await getChatHistoryGroup(e, Config.groupContextLength)
                 } catch (err) {
                   logger.warn('获取群聊聊天记录失败，本次对话不携带聊天记录', err)
                 }
@@ -1778,7 +1768,7 @@ export class chatgpt extends plugin {
             const { maxConv } = error
             if (message && typeof message === 'string' && message.indexOf('CaptchaChallenge') > -1) {
               if (bingToken) {
-                if (maxConv > 20) {
+                if (maxConv >= 20) {
                   // maxConv为30说明token有效，可以通过解验证码码服务过码
                   await e.reply('出现必应验证码，尝试解决中')
                   try {
@@ -1857,10 +1847,10 @@ export class chatgpt extends plugin {
             text: errorMessage,
             error: true
           }
-        } else {
+        } else if (response?.response) {
           return {
             text: response?.response,
-            quote: response.quote,
+            quote: response?.quote,
             suggestedResponses: response.suggestedResponses,
             conversationId: response.conversationId,
             clientId: response.clientId,
@@ -1868,6 +1858,11 @@ export class chatgpt extends plugin {
             conversationSignature: response.conversationSignature,
             parentMessageId: response.apology ? conversation.parentMessageId : response.messageId,
             bingToken
+          }
+        } else {
+          logger.debug('no message')
+          return {
+            noMsg: true
           }
         }
       }
@@ -2147,7 +2142,7 @@ export class chatgpt extends plugin {
             opt.groupId = e.group_id
             opt.qq = e.sender.user_id
             opt.nickname = e.sender.card
-            opt.groupName = e.group.name
+            opt.groupName = e.group.name || e.group_name
             opt.botName = e.isGroup ? (e.group.pickMember(getUin(e)).card || e.group.pickMember(getUin(e)).nickname) : e.bot.nickname
             let master = (await getMasterQQ())[0]
             if (master && e.group) {
@@ -2156,21 +2151,7 @@ export class chatgpt extends plugin {
             if (master && !e.group) {
               opt.masterName = e.bot.getFriendList().get(parseInt(master))?.nickname
             }
-            let latestChat = await e.group.getChatHistory(0, 1)
-            let seq = latestChat[0].seq
-            let chats = []
-            while (chats.length < Config.groupContextLength) {
-              let chatHistory = await e.group.getChatHistory(seq, 20)
-              chats.push(...chatHistory.reverse())
-            }
-            chats = chats.slice(0, Config.groupContextLength)
-            // 太多可能会干扰AI对自身qq号和用户qq的判断，感觉gpt3.5也处理不了那么多信息
-            chats = chats > 50 ? 50 : chats
-            let mm = await e.group.getMemberMap()
-            chats.forEach(chat => {
-              let sender = mm.get(chat.sender.user_id)
-              chat.sender = sender
-            })
+            let chats = await getChatHistoryGroup(e, Config.groupContextLength)
             opt.chats = chats
             const namePlaceholder = '[name]'
             const defaultBotName = 'ChatGPT'
