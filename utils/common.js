@@ -820,6 +820,7 @@ export async function getImageOcrText (e) {
       // logger.warn('resultArr', resultArr)
       return resultArr
     } catch (err) {
+      logger.warn('OCR失败，可能使用的适配器不支持OCR')
       return false
       // logger.error(err)
     }

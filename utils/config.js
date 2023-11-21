@@ -144,7 +144,7 @@ const defaultConfig = {
   serpSource: 'ikechan8370',
   extraUrl: 'https://cpe.ikechan8370.com',
   smartMode: false,
-  bingCaptchaOneShotUrl: 'http://bingcaptcha.ikechan8370.com/bing',
+  bingCaptchaOneShotUrl: '',
   // claude2
   claudeAIOrganizationId: '',
   claudeAISessionKey: '',
