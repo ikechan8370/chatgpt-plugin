@@ -24,7 +24,7 @@ export class SendDiceTool extends AbstractTool {
     const target = isNaN(targetGroupIdOrQQNumber) || !targetGroupIdOrQQNumber
       ? defaultTarget
       : parseInt(targetGroupIdOrQQNumber) === e.bot.uin ? defaultTarget : parseInt(targetGroupIdOrQQNumber)
-    let groupList = await e.bot.getGroupList()
+    let groupList = e.bot.gl || new Map()
     num = isNaN(num) || !num ? 1 : num > 5 ? 5 : num
     if (groupList.get(target)) {
       let group = await e.bot.pickGroup(target, true)

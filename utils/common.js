@@ -1049,6 +1049,7 @@ export function isPureText (filename) {
 /**
  * 从文件中提取文本内容
  * @param fileMsgElem MessageElem
+ * @param e
  * @returns {Promise<{}>} 提取的文本内容和文件名
  */
 export async function extractContentFromFile (fileMsgElem, e) {

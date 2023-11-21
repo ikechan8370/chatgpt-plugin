@@ -25,7 +25,7 @@ export class SendMessageToSpecificGroupOrUserTool extends AbstractTool {
       ? defaultTarget
       : parseInt(targetGroupIdOrQQNumber) === e.bot.uin ? defaultTarget : parseInt(targetGroupIdOrQQNumber)
 
-    let groupList = await e.bot.getGroupList()
+    let groupList = e.bot.gl || new Map()
     try {
       if (groupList.get(target)) {
         let group = await e.bot.pickGroup(target)

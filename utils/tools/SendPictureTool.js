@@ -32,7 +32,7 @@ export class SendPictureTool extends AbstractTool {
     let pictures = urlOfPicture.trim().split(' ')
     logger.mark('pictures to send: ', pictures)
     pictures = pictures.map(img => segment.image(img))
-    let groupList = await e.bot.getGroupList()
+    let groupList = e.bot.gl || new Map()
     try {
       if (groupList.get(target)) {
         let group = await e.bot.pickGroup(target)
