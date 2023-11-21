@@ -27,8 +27,12 @@ export class SendAvatarTool extends AbstractTool {
     const target = isNaN(targetGroupIdOrQQNumber) || !targetGroupIdOrQQNumber
       ? defaultTarget
       : parseInt(targetGroupIdOrQQNumber) === e.bot.uin ? defaultTarget : parseInt(targetGroupIdOrQQNumber)
-
-    let groupList = e.bot.gl || new Map()
+    let groupList
+    try {
+      groupList = await e.bot.getGroupList()
+    } catch (err) {
+      groupList = e.bot.gl
+    }
     console.log('sendAvatar', target, pictures)
     if (groupList.get(target)) {
       let group = await e.bot.pickGroup(target)

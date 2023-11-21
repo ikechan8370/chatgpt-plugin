@@ -832,8 +832,10 @@ export function getMaxModelTokens (model = 'gpt-3.5-turbo') {
   if (model.startsWith('gpt-3.5-turbo')) {
     if (model.includes('16k')) {
       return 16000
-    } else {
+    } else if (model.includes('0613') || model.includes('0314')) {
       return 4000
+    } else {
+      return 16000
     }
   } else {
     if (model.includes('32k')) {
@@ -870,7 +872,7 @@ export async function generateAudio (e, pendingText, speakingEmotion, emotionDeg
   if (!Config.ttsSpace && !Config.azureTTSKey && !Config.voicevoxSpace) return false
   let wav
   const speaker = getUserSpeaker(await getUserReplySetting(e))
-  let ignoreEncode = getUin(e) === 88888
+  let ignoreEncode = e.adapter === 'shamrock'
   try {
     if (Config.ttsMode === 'vits-uma-genshin-honkai' && Config.ttsSpace) {
       if (Config.autoJapanese) {

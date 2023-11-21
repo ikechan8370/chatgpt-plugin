@@ -476,7 +476,7 @@ export default class SydneyAIClient {
         context += chats
           .map(chat => {
             let sender = chat.sender || chat || {}
-            if (chat.raw_message.startsWith('建议的回复')) {
+            if (chat.raw_message?.startsWith('建议的回复')) {
               // 建议的回复太容易污染设定导致对话太固定跑偏了
               return ''
             }

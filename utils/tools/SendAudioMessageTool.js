@@ -102,7 +102,12 @@ export class SendAudioMessageTool extends AbstractTool {
       return `audio generation failed,  error: ${JSON.stringify(err)}`
     }
     if (sendable) {
-      let groupList = e.bot.gl || new Map()
+      let groupList
+      try {
+        groupList = await e.bot.getGroupList()
+      } catch (err) {
+        groupList = e.bot.gl
+      }
       try {
         if (groupList.get(target)) {
           let group = await e.bot.pickGroup(target)
