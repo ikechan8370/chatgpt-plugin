@@ -3,6 +3,7 @@ import { Config } from '../config.js'
 import { createParser } from 'eventsource-parser'
 import https from 'https'
 import WebSocket from 'ws'
+import { createHmac } from 'crypto'
 
 const referer = atob('aHR0cHM6Ly94aW5naHVvLnhmeXVuLmNuL2NoYXQ/aWQ9')
 const origin = atob('aHR0cHM6Ly94aW5naHVvLnhmeXVuLmNu')
@@ -14,13 +15,7 @@ try {
 } catch (err) {
   logger.warn('未安装form-data，无法使用星火模式')
 }
-let crypto
-try {
-  crypto = (await import('crypto')).default
-} catch (err) {
-  logger.warn('未安装crypto，无法使用星火api模式')
-}
-async function getKeyv() {
+async function getKeyv () {
   let Keyv
   try {
     Keyv = (await import('keyv')).default
@@ -30,7 +25,7 @@ async function getKeyv() {
   return Keyv
 }
 export default class XinghuoClient {
-  constructor(opts) {
+  constructor (opts) {
     this.cache = opts.cache
     this.ssoSessionId = opts.ssoSessionId
     this.headers = {
@@ -41,7 +36,7 @@ export default class XinghuoClient {
     }
   }
 
-  apiErrorInfo(code) {
+  apiErrorInfo (code) {
     switch (code) {
       case 10000: return '升级为ws出现错误'
       case 10001: return '通过ws读取用户的消息出错'
@@ -74,7 +69,7 @@ export default class XinghuoClient {
     }
   }
 
-  async initCache() {
+  async initCache () {
     if (!this.conversationsCache) {
       const cacheOptions = this.cache || {}
       cacheOptions.namespace = cacheOptions.namespace || 'xh'
@@ -83,36 +78,37 @@ export default class XinghuoClient {
     }
   }
 
-  async getWsUrl() {
-    if (!crypto) return false
+  async getWsUrl () {
     const APISecret = Config.xhAPISecret
     const APIKey = Config.xhAPIKey
     let APILink = '/v1.1/chat'
-    if (Config.xhmode == 'apiv2') {
+    if (Config.xhmode === 'apiv2') {
       APILink = '/v2.1/chat'
+    } else if (Config.xhmode === 'apiv3') {
+      APILink = '/v3.1/chat'
     }
     const date = new Date().toGMTString()
     const algorithm = 'hmac-sha256'
     const headers = 'host date request-line'
     const signatureOrigin = `host: spark-api.xf-yun.com\ndate: ${date}\nGET ${APILink} HTTP/1.1`
-    const hmac = crypto.createHmac('sha256', APISecret)
+    const hmac = createHmac('sha256', APISecret)
     hmac.update(signatureOrigin)
     const signature = hmac.digest('base64')
     const authorizationOrigin = `api_key="${APIKey}", algorithm="${algorithm}", headers="${headers}", signature="${signature}"`
     const authorization = Buffer.from(authorizationOrigin).toString('base64')
     const v = {
-      authorization: authorization,
-      date: date,
-      host: "spark-api.xf-yun.com"
+      authorization,
+      date,
+      host: 'spark-api.xf-yun.com'
     }
     const url = `wss://spark-api.xf-yun.com${APILink}?${Object.keys(v).map(key => `${key}=${v[key]}`).join('&')}`
     return url
   }
 
-  async uploadImage(url) {
+  async uploadImage (url) {
     // 获取图片
     let response = await fetch(url, {
-      method: 'GET',
+      method: 'GET'
     })
     const blob = await response.blob()
     const arrayBuffer = await blob.arrayBuffer()
@@ -123,7 +119,7 @@ export default class XinghuoClient {
     const respOss = await fetch('https://xinghuo.xfyun.cn/iflygpt/oss/sign', {
       method: 'POST',
       headers: {
-        Cookie: 'ssoSessionId=' + this.ssoSessionId + ';',
+        Cookie: 'ssoSessionId=' + this.ssoSessionId + ';'
       },
       body: formData
     })
@@ -165,7 +161,7 @@ export default class XinghuoClient {
     }
   }
 
-  async apiMessage(prompt, chatId, ePrompt = []) {
+  async apiMessage (prompt, chatId, ePrompt = []) {
     if (!chatId) chatId = (Math.floor(Math.random() * 1000000) + 100000).toString()
 
     //  初始化缓存
@@ -178,8 +174,9 @@ export default class XinghuoClient {
 
     // 获取ws链接
     const wsUrl = Config.xhmode == 'assistants' ? Config.xhAssistants : await this.getWsUrl()
-    if (!wsUrl) throw new Error('缺少依赖：crypto。请安装依赖后重试')
-
+    if (!wsUrl) throw new Error('获取ws链接失败')
+    let domain = 'general'
+    if (Config.xhmode == 'apiv2') { domain = 'generalv2' } else if (Config.xhmode == 'apiv3') { domain = 'generalv3' }
     // 编写消息内容
     const wsSendData = {
       header: {
@@ -188,7 +185,7 @@ export default class XinghuoClient {
       },
       parameter: {
         chat: {
-          domain: Config.xhmode == 'api' ? "general" : "generalv2",
+          domain,
           temperature: Config.xhTemperature, // 核采样阈值
           max_tokens: Config.xhMaxTokens, // tokens最大长度
           chat_id: chatId,
@@ -197,10 +194,10 @@ export default class XinghuoClient {
       },
       payload: {
         message: {
-          "text": [
+          text: [
             ...ePrompt,
             ...conversation.messages,
-            { "role": "user", "content": prompt }
+            { role: 'user', content: prompt }
           ]
         }
       }
@@ -223,8 +220,8 @@ export default class XinghuoClient {
               const half = Math.floor(conversation.messages.length / 2)
               conversation.messages.splice(0, half)
               await this.conversationsCache.set(conversationKey, conversation)
-              resolve({ 
-                id: (Math.floor(Math.random() * 1000000) + 100000).toString() ,
+              resolve({
+                id: (Math.floor(Math.random() * 1000000) + 100000).toString(),
                 response: '对话以达到上限，已自动清理对话，请重试'
               })
             } else {
@@ -250,8 +247,8 @@ export default class XinghuoClient {
               conversation.messages.splice(0, half)
             }
             await this.conversationsCache.set(conversationKey, conversation)
-            resolve({ 
-              id: chatId ,
+            resolve({
+              id: chatId,
               response: resMessage
             })
           }
@@ -265,7 +262,7 @@ export default class XinghuoClient {
     })
   }
 
-  async webMessage(prompt, chatId, botId) {
+  async webMessage (prompt, chatId, botId) {
     if (!FormData) {
       throw new Error('缺少依赖：form-data。请安装依赖后重试')
     }
@@ -275,7 +272,7 @@ export default class XinghuoClient {
       formData.append('clientType', '2')
       formData.append('chatId', chatId)
       if (prompt.image) {
-        prompt.text = prompt.text.replace("[图片]", "") // 清理消息中中首个被使用的图片
+        prompt.text = prompt.text.replace('[图片]', '') // 清理消息中中首个被使用的图片
         const imgdata = await this.uploadImage(prompt.image)
         if (imgdata) {
           formData.append('fileUrl', imgdata.url)
@@ -307,7 +304,7 @@ export default class XinghuoClient {
           logger.error('星火statusCode：' + statusCode)
         }
         let response = ''
-        function onMessage(data) {
+        function onMessage (data) {
           // console.log(data)
           if (data === '<end>') {
             return resolve({
@@ -374,11 +371,11 @@ export default class XinghuoClient {
     })
   }
 
-  async sendMessage(prompt, option) {
+  async sendMessage (prompt, option) {
     let chatId = option?.chatId
     let image = option?.image
 
-    if (Config.xhmode == 'api' || Config.xhmode == 'apiv2' || Config.xhmode == 'assistants') {
+    if (Config.xhmode == 'api' || Config.xhmode == 'apiv2' || Config.xhmode == 'apiv3' || Config.xhmode == 'assistants') {
       if (!Config.xhAppId || !Config.xhAPISecret || !Config.xhAPIKey) throw new Error('未配置api')
       let Prompt = []
       // 设定
@@ -390,9 +387,9 @@ export default class XinghuoClient {
           logger.warn('星火设定序列化失败,本次对话不附带设定')
         }
       } else {
-        Prompt = Config.xhPrompt ? [{ "role": "user", "content": Config.xhPrompt }] : []
+        Prompt = Config.xhPrompt ? [{ role: 'user', content: Config.xhPrompt }] : []
       }
-      if(Config.xhPromptEval) {
+      if (Config.xhPromptEval) {
         Prompt.forEach(obj => {
           try {
             obj.content = obj.content.replace(/{{(.*?)}}/g, (match, variable) => {
@@ -421,7 +418,7 @@ export default class XinghuoClient {
       if (!chatId) {
         chatId = (await this.createChatList()).chatListId
       }
-      let { response } = await this.webMessage({ text: prompt, image: image }, chatId, botId)
+      let { response } = await this.webMessage({ text: prompt, image }, chatId, botId)
       // logger.info(response)
       // let responseText = atob(response)
       // 处理图片
@@ -445,14 +442,14 @@ export default class XinghuoClient {
       return {
         conversationId: chatId,
         text: response,
-        images: images
+        images
       }
     } else {
       throw new Error('星火模式错误')
     }
   }
 
-  async createChatList(bot = false) {
+  async createChatList (bot = false) {
     let createChatListRes = await fetch(createChatUrl, {
       method: 'POST',
       headers: Object.assign(this.headers, {
@@ -481,6 +478,6 @@ export default class XinghuoClient {
   }
 }
 
-function atob(s) {
+function atob (s) {
   return Buffer.from(s, 'base64').toString()
 }

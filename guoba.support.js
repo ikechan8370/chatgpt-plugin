@@ -321,7 +321,7 @@ export function supportGuoba () {
         {
           field: 'model',
           label: 'OpenAI 模型',
-          bottomHelpMessage: 'gpt-4, gpt-4-0613, gpt-4-32k, gpt-4-32k-0613, gpt-3.5-turbo, gpt-3.5-turbo-0613, gpt-3.5-turbo-16k-0613。默认为gpt-3.5-turbo，gpt-4需账户支持',
+          bottomHelpMessage: 'gpt-4, gpt-4-0613, gpt-4-1106, gpt-4-32k, gpt-4-32k-0613, gpt-3.5-turbo, gpt-3.5-turbo-0613, gpt-3.5-turbo-1106, gpt-3.5-turbo-16k-0613。默认为gpt-3.5-turbo，gpt-4需账户支持',
           component: 'Input'
         },
         {
@@ -462,7 +462,7 @@ export function supportGuoba () {
         {
           field: 'sydneyWebsocketUseProxy',
           label: '对话使用sydney反代',
-          bottomHelpMessage: '【一般情况无需也不建议开启】默认情况下仅创建对话走反代，对话时仍然直连微软。开启本选项将使对话过程也走反，需反代支持',
+          bottomHelpMessage: '默认情况下仅创建对话走反代，对话时仍然直连微软。开启本选项将使对话过程也走反代，需反代支持。默认开启',
           component: 'Switch'
         },
         {
@@ -510,40 +510,6 @@ export function supportGuoba () {
           label: '使用GPT-4',
           bottomHelpMessage: '使用GPT-4，注意试用配额较低，如果用不了就关掉',
           component: 'Switch'
-        },
-        {
-          label: '以下为浏览器方式的配置.(Deprecated)',
-          component: 'Divider'
-        },
-        {
-          field: 'username',
-          label: '用户名',
-          bottomHelpMessage: 'OpenAI用户名。',
-          component: 'Input'
-        },
-        {
-          field: 'password',
-          label: '密码',
-          bottomHelpMessage: 'OpenAI密码。',
-          component: 'InputPassword'
-        },
-        {
-          field: 'UA',
-          label: '浏览器UA',
-          bottomHelpMessage: '模拟浏览器UA，无特殊需求保持默认即可',
-          component: 'InputTextArea'
-        },
-        {
-          field: 'headless',
-          label: '无头模式',
-          bottomHelpMessage: '无界面的服务器可以开启，但遇到验证码时可能无法使用。(实测很容易卡住，几乎不可用)',
-          component: 'Switch'
-        },
-        {
-          field: 'chromePath',
-          label: 'Chrome路径',
-          bottomHelpMessage: '为空使用默认puppeteer的chromium，也可以传递自己本机安装的Chrome可执行文件地址，提高通过率。windows可以是‘C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe’，linux通过which查找路径',
-          component: 'Input'
         },
         {
           label: '以下为Slack Claude方式的配置',
@@ -632,16 +598,6 @@ export function supportGuoba () {
           component: 'InputNumber'
         },
         {
-          label: '以下为ChatGLM方式的配置',
-          component: 'Divider'
-        },
-        {
-          field: 'chatglmBaseUrl',
-          label: 'ChatGLM API地址',
-          bottomHelpMessage: '如 http://localhost:8080',
-          component: 'Input'
-        },
-        {
           label: '以下为星火方式的配置',
           component: 'Divider'
         },
@@ -655,6 +611,7 @@ export function supportGuoba () {
               { label: '体验版', value: 'web' },
               { label: '讯飞星火认知大模型V1.5', value: 'api' },
               { label: '讯飞星火认知大模型V2.0', value: 'apiv2' },
+              { label: '讯飞星火认知大模型V3.0', value: 'apiv3' },
               { label: '讯飞星火助手', value: 'assistants' }
             ]
           }
@@ -745,6 +702,53 @@ export function supportGuoba () {
           field: 'bardForceUseReverse',
           label: 'Bard使用反代',
           bottomHelpMessage: '开启后将通过反代访问bard',
+          component: 'Switch'
+        },
+        {
+          label: '以下为通义千问API方式的配置',
+          component: 'Divider'
+        },
+        {
+          field: 'qwenApiKey',
+          label: '通义千问API Key',
+          component: 'InputPassword'
+        },
+        {
+          field: 'qwenModel',
+          label: '通义千问模型',
+          bottomHelpMessage: '指明需要调用的模型，目前可选 qwen-turbo 和 qwen-plus',
+          component: 'Input'
+        },
+        {
+          field: 'qwenTopP',
+          label: '通义千问topP',
+          bottomHelpMessage: '生成时，核采样方法的概率阈值。例如，取值为0.8时，仅保留累计概率之和大于等于0.8的概率分布中的token，作为随机采样的候选集。取值范围为（0,1.0)，取值越大，生成的随机性越高；取值越低，生成的随机性越低。默认值 0.5。注意，取值不要大于等于1',
+          component: 'InputNumber'
+        },
+        {
+          field: 'qwenTopK',
+          label: '通义千问topK',
+          bottomHelpMessage: '生成时，采样候选集的大小。例如，取值为50时，仅将单次生成中得分最高的50个token组成随机采样的候选集。取值越大，生成的随机性越高；取值越小，生成的确定性越高。注意：如果top_k的值大于100，top_k将采用默认值0，表示不启用top_k策略，此时仅有top_p策略生效。',
+          component: 'InputNumber'
+        },
+        {
+          field: 'qwenSeed',
+          label: '通义千问Seed',
+          bottomHelpMessage: '生成时，随机数的种子，用于控制模型生成的随机性。如果使用相同的种子，每次运行生成的结果都将相同；当需要复现模型的生成结果时，可以使用相同的种子。seed参数支持无符号64位整数类型。默认值 0, 表示每次随机生成',
+          component: 'InputNumber'
+        },
+        {
+          field: 'qwenTemperature',
+          label: '通义千问温度',
+          bottomHelpMessage: '用于控制随机性和多样性的程度。具体来说，temperature值控制了生成文本时对每个候选词的概率分布进行平滑的程度。较高的temperature值会降低概率分布的峰值，使得更多的低概率词被选择，生成结果更加多样化；而较低的temperature值则会增强概率分布的峰值，使得高概率词更容易被选择，生成结果更加确定。\n' +
+              '\n' +
+              '取值范围： (0, 2),系统默认值1.0',
+          component: 'InputNumber'
+        },
+        {
+          field: 'qwenEnableSearch',
+          label: '通义千问允许搜索',
+          bottomHelpMessage: '生成时，是否参考夸克搜索的结果。注意：打开搜索并不意味着一定会使用搜索结果；如果打开搜索，模型会将搜索结果作为prompt，进而“自行判断”是否生成结合搜索结果的文本，默认为false',
           component: 'Switch'
         },
         {

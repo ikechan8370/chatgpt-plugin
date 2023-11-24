@@ -30,11 +30,11 @@ const defaultConfig = {
   drawCD: 30,
   model: '',
   temperature: 0.8,
-  toneStyle: 'balanced', // or creative, precise
+  toneStyle: 'Sydney', // or creative, precise
   sydney: pureSydneyInstruction,
   sydneyReverseProxy: 'https://666102.201666.xyz',
   sydneyForceUseReverse: false,
-  sydneyWebsocketUseProxy: false,
+  sydneyWebsocketUseProxy: true,
   sydneyBrainWash: true,
   sydneyBrainWashStrength: 15,
   sydneyBrainWashName: 'Sydney',
@@ -93,9 +93,10 @@ const defaultConfig = {
   groupContextTip: '你看看我们群里的聊天记录吧，回答问题的时候要主动参考我们的聊天记录进行回答或提问。但要看清楚哦，不要把我和其他人弄混啦，也不要把自己看晕啦~~',
   groupContextLength: 50,
   enableRobotAt: true,
-  maxNumUserMessagesInConversation: 20,
+  maxNumUserMessagesInConversation: 30,
   sydneyApologyIgnored: true,
   enforceMaster: false,
+  bingAPDraw: false,
   serverPort: 3321,
   serverHost: '',
   viewHost: '',
@@ -144,7 +145,7 @@ const defaultConfig = {
   serpSource: 'ikechan8370',
   extraUrl: 'https://cpe.ikechan8370.com',
   smartMode: false,
-  bingCaptchaOneShotUrl: 'http://bingcaptcha.ikechan8370.com/bing',
+  bingCaptchaOneShotUrl: '',
   // claude2
   claudeAIOrganizationId: '',
   claudeAISessionKey: '',
@@ -152,7 +153,17 @@ const defaultConfig = {
   claudeAITimeout: 120,
   claudeAIJA3: '772,4865-4866-4867-49195-49199-49196-49200-52393-52392-49171-49172-156-157-47-53,27-5-65281-13-35-0-51-18-16-43-10-45-11-17513-23,29-23-24,0',
   claudeAIUA: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36',
-  version: 'v2.7.5'
+  // trss配置
+  trssBotUin: '',
+  // 同义千问
+  qwenApiKey: '',
+  qwenModel: 'qwen-turbo',
+  qwenTopP: 0.5,
+  qwenTopK: 50,
+  qwenSeed: 0,
+  qwenTemperature: 1,
+  qwenEnableSearch: true,
+  version: 'v2.7.7'
 }
 const _path = process.cwd()
 let config = {}

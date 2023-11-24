@@ -51,6 +51,10 @@ export class Entertainment extends plugin {
           fnc: 'wordcloud_latest'
         },
         {
+          reg: '^#(我的)?(本月|本周|今日)?词云$',
+          fnc: 'wordcloud_new'
+        },
+        {
           reg: '^#((寄批踢|gpt|GPT)?翻.*|chatgpt翻译帮助)',
           fnc: 'translate'
         },
@@ -215,10 +219,10 @@ ${translateLangLabels}
 
       const regExp = /词云(\d{0,2})(|h)/
       const match = e.msg.trim().match(regExp)
-      const duration = !match[1] ? 12 : parseInt(match[1])  // default 12h
+      const duration = !match[1] ? 12 : parseInt(match[1]) // default 12h
 
       if (duration > 24) {
-        await e.reply('最多只能统计24小时内的记录哦')
+        await e.reply('最多只能统计24小时内的记录哦，你可以使用#本周词云和#本月词云获取更长时间的统计~')
         return false
       }
       await e.reply('在统计啦，请稍等...')
@@ -231,6 +235,56 @@ ${translateLangLabels}
         await e.reply(err)
       }
       await redis.del(`CHATGPT:WORDCLOUD:${groupId}`)
+    } else {
+      await e.reply('请在群里发送此命令')
+    }
+  }
+
+  async wordcloud_new (e) {
+    if (e.isGroup) {
+      let groupId = e.group_id
+      let userId
+      if (e.msg.includes('我的')) {
+        userId = e.sender.user_id
+      }
+      let at = e.message.find(m => m.type === 'at')
+      if (at) {
+        userId = at.qq
+      }
+      let lock = await redis.get(`CHATGPT:WORDCLOUD_NEW:${groupId}_${userId}`)
+      if (lock) {
+        await e.reply('别着急，上次统计还没完呢')
+        return true
+      }
+      await e.reply('在统计啦，请稍等...')
+      let duration = 24
+      if (e.msg.includes('本周')) {
+        const now = new Date() // Get the current date and time
+        let day = now.getDay()
+        let diff = now.getDate() - day + (day === 0 ? -6 : 1)
+        const startOfWeek = new Date(new Date().setDate(diff))
+        startOfWeek.setHours(0, 0, 0, 0) // Set the time to midnight (start of the day)
+        duration = (now - startOfWeek) / 1000 / 60 / 60
+      } else if (e.msg.includes('本月')) {
+        const now = new Date() // Get the current date and time
+        const startOfMonth = new Date(new Date().setDate(0))
+        startOfMonth.setHours(0, 0, 0, 0) // Set the time to midnight (start of the day)
+        duration = (now - startOfMonth) / 1000 / 60 / 60
+      } else {
+        // 默认今天
+        const now = new Date()
+        const startOfToday = new Date() // Get the current date and time
+        startOfToday.setHours(0, 0, 0, 0) // Set the time to midnight (start of the day)
+        duration = (now - startOfToday) / 1000 / 60 / 60
+      }
+      await redis.set(`CHATGPT:WORDCLOUD_NEW:${groupId}_${userId}`, '1', { EX: 600 })
+      try {
+        await makeWordcloud(e, e.group_id, duration, userId)
+      } catch (err) {
+        logger.error(err)
+        await e.reply(err)
+      }
+      await redis.del(`CHATGPT:WORDCLOUD_NEW:${groupId}_${userId}`)
     } else {
       await e.reply('请在群里发送此命令')
     }
@@ -296,7 +350,7 @@ ${translateLangLabels}
     let groupId = e.msg.replace(/^#chatgpt打招呼/, '')
     logger.info(groupId)
     groupId = parseInt(groupId)
-    if (groupId && !Bot.getGroupList().get(groupId)) {
+    if (groupId && !e.bot.getGroupList().get(groupId)) {
       await e.reply('机器人不在这个群里！')
       return
     }
@@ -310,7 +364,7 @@ ${translateLangLabels}
     if (!groupId) {
       await e.reply(sendable)
     } else {
-      await Bot.sendGroupMsg(groupId, sendable)
+      await e.bot.sendGroupMsg(groupId, sendable)
       await e.reply('发送成功！')
     }
   }
@@ -325,7 +379,7 @@ ${translateLangLabels}
         continue
       }
       let groupId = parseInt(element)
-      if (Bot.getGroupList().get(groupId)) {
+      if (this.e.bot.getGroupList().get(groupId)) {
         // 打招呼概率
         if (Math.floor(Math.random() * 100) < Config.helloProbability) {
           let message = await generateHello()
@@ -381,12 +435,12 @@ ${translateLangLabels}
               }
             }
             if (useSilk) {
-              await Bot.sendGroupMsg(groupId, await uploadRecord(audio))
+              await this.e.bot.sendGroupMsg(groupId, await uploadRecord(audio))
             } else {
-              await Bot.sendGroupMsg(groupId, segment.record(audio))
+              await this.e.bot.sendGroupMsg(groupId, segment.record(audio))
             }
           } else {
-            await Bot.sendGroupMsg(groupId, message)
+            await this.e.bot.sendGroupMsg(groupId, message)
           }
         } else {
           logger.info(`时机未到，这次就不打招呼给群聊${groupId}了`)

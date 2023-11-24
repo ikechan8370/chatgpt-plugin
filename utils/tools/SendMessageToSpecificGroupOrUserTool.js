@@ -23,16 +23,21 @@ export class SendMessageToSpecificGroupOrUserTool extends AbstractTool {
     const defaultTarget = e.isGroup ? e.group_id : e.sender.user_id
     const target = isNaN(targetGroupIdOrQQNumber) || !targetGroupIdOrQQNumber
       ? defaultTarget
-      : parseInt(targetGroupIdOrQQNumber) === Bot.uin ? defaultTarget : parseInt(targetGroupIdOrQQNumber)
+      : parseInt(targetGroupIdOrQQNumber) === e.bot.uin ? defaultTarget : parseInt(targetGroupIdOrQQNumber)
 
-    let groupList = await Bot.getGroupList()
+    let groupList
+    try {
+      groupList = await e.bot.getGroupList()
+    } catch (err) {
+      groupList = e.bot.gl
+    }
     try {
       if (groupList.get(target)) {
-        let group = await Bot.pickGroup(target)
+        let group = await e.bot.pickGroup(target)
         await group.sendMsg(await convertFaces(msg, true, e))
         return 'msg has been sent to group' + target
       } else {
-        let user = await Bot.pickFriend(target)
+        let user = await e.bot.pickFriend(target)
         await user.sendMsg(msg)
         return 'msg has been sent to user' + target
       }

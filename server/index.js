@@ -7,57 +7,22 @@ import websocket from '@fastify/websocket'
 import fs from 'fs'
 import path from 'path'
 import os from 'os'
-import schedule from 'node-schedule'
 import websocketclient from 'ws'
 
 import { Config } from '../utils/config.js'
 import { UserInfo, GetUser, AddUser } from './modules/user_data.js'
-import { getPublicIP, getUserData, getMasterQQ, randomString } from '../utils/common.js'
+import { getPublicIP, getUserData, getMasterQQ, randomString, getUin } from '../utils/common.js'
 
 import webRoute from './modules/web_route.js'
 import webUser from './modules/user.js'
 import webPrompt from './modules/prompts.js'
+import Guoba from './modules/guoba.js'
 import SettingView from './modules/setting_view.js'
 
 const __dirname = path.resolve()
 const server = fastify({
   logger: Config.debug
 })
-
-let Statistics = {
-  SystemAccess: {
-    count: 0,
-    oldCount: 0
-  },
-  CacheFile: {
-    count: 0,
-    oldCount: 0
-  },
-  WebAccess: {
-    count: 0,
-    oldCount: 0
-  },
-  SystemLoad: {
-    count: 0,
-    oldCount: 0
-  }
-}
-
-async function getLoad() {
-  // 获取当前操作系统平台
-  const platform = os.platform()
-  // 判断平台是Linux还是Windows
-  if (platform === 'linux') {
-    // 如果是Linux，使用os.loadavg()方法获取负载平均值
-    const loadAvg = os.loadavg()
-    return loadAvg[0] * 100
-  } else if (platform === 'win32') {
-    // 如果是Windows不获取性能
-    return 0
-  } else {
-    return 0
-  }
-}
 
 async function setUserData(qq, data) {
   const dir = 'resources/ChatGPTCache/user'
@@ -84,6 +49,7 @@ await server.register(webRoute)
 await server.register(webUser)
 await server.register(SettingView)
 await server.register(webPrompt)
+await server.register(Guoba)
 
 // 无法访问端口的情况下创建与media的通讯
 async function mediaLink() {
@@ -107,7 +73,7 @@ async function mediaLink() {
       ws.on('open', () => {
         ws.send(JSON.stringify({
           command: 'register',
-          region: Bot.uin,
+          region: getUin(),
           type: 'server',
         }))
       })
@@ -118,7 +84,11 @@ async function mediaLink() {
             case 'register':
               if (data.state) {
                 let master = (await getMasterQQ())[0]
-                Bot.sendPrivateMsg(master, `当前chatgpt插件服务无法被外网访问，已启用代理链接，访问代码：${data.token}`, false)
+                if (Array.isArray(Bot.uin)) {
+                  Bot.pickFriend(master).sendMsg(`当前chatgpt插件服务无法被外网访问，已启用代理链接，访问代码：${data.token}`)
+                } else {
+                  Bot.sendPrivateMsg(master, `当前chatgpt插件服务无法被外网访问，已启用代理链接，访问代码：${data.token}`, false)
+                }
               } else {
                 console.log('注册区域失败')
               }
@@ -128,30 +98,30 @@ async function mediaLink() {
                 const user = UserInfo(data.token)
                 if (user) {
                   ws.login = true
-                  ws.send(JSON.stringify({ command: data.command, state: true, region: Bot.uin, type: 'server' }))
+                  ws.send(JSON.stringify({ command: data.command, state: true, region: getUin(), type: 'server' }))
                 } else {
-                  ws.send(JSON.stringify({ command: data.command, state: false, error: '权限验证失败', region: Bot.uin, type: 'server' }))
+                  ws.send(JSON.stringify({ command: data.command, state: false, error: '权限验证失败', region: getUin(), type: 'server' }))
                 }
               }
               break
             case 'post_login':
               if (data.qq && data.passwd) {
                 const token = randomString(32)
-                if (data.qq == Bot.uin && await redis.get('CHATGPT:ADMIN_PASSWD') == data.passwd) {
+                if (data.qq == getUin() && await redis.get('CHATGPT:ADMIN_PASSWD') == data.passwd) {
                   AddUser({ user: data.qq, token: token, autho: 'admin' })
-                  ws.send(JSON.stringify({ command: data.command, state: true, autho: 'admin', token: token, region: Bot.uin, type: 'server' }))
+                  ws.send(JSON.stringify({ command: data.command, state: true, autho: 'admin', token: token, region: getUin(), type: 'server' }))
 
                 } else {
                   const user = await getUserData(data.qq)
                   if (user.passwd != '' && user.passwd === data.passwd) {
                     AddUser({ user: data.qq, token: token, autho: 'user' })
-                    ws.send(JSON.stringify({ command: data.command, state: true, autho: 'user', token: token, region: Bot.uin, type: 'server' }))
+                    ws.send(JSON.stringify({ command: data.command, state: true, autho: 'user', token: token, region: getUin(), type: 'server' }))
                   } else {
-                    ws.send(JSON.stringify({ command: data.command, state: false, error: `用户名密码错误,如果忘记密码请私聊机器人输入 ${data.qq == Bot.uin ? '#修改管理密码' : '#修改用户密码'} 进行修改`, region: Bot.uin, type: 'server' }))
+                    ws.send(JSON.stringify({ command: data.command, state: false, error: `用户名密码错误,如果忘记密码请私聊机器人输入 ${data.qq == getUin() ? '#修改管理密码' : '#修改用户密码'} 进行修改`, region: getUin(), type: 'server' }))
                   }
                 }
               } else {
-                ws.send(JSON.stringify({ command: data.command, state: false, error: '未输入用户名或密码', region: Bot.uin, type: 'server' }))
+                ws.send(JSON.stringify({ command: data.command, state: false, error: '未输入用户名或密码', region: getUin(), type: 'server' }))
               }
               break
             case 'post_command':
@@ -163,7 +133,7 @@ async function mediaLink() {
               const response = await fetch(`http://localhost:${Config.serverPort || 3321}${data.postPath}`, fetchOptions)
               if (response.ok) {
                 const json = await response.json()
-                ws.send(JSON.stringify({ command: data.command, state: true, region: Bot.uin, type: 'server', path: data.postPath, data: json }))
+                ws.send(JSON.stringify({ command: data.command, state: true, region: getUin(), type: 'server', path: data.postPath, data: json }))
               }
               break
           }
@@ -189,7 +159,7 @@ export async function createServer() {
     if (body.code) {
       const pattern = /^[a-zA-Z0-9]+$/
       if (!pattern.test(body.code)) {
-        reply.send({error: 'bad request'})
+        reply.send({ error: 'bad request' })
       }
       const dir = 'resources/ChatGPTCache/page'
       const filename = body.code + '.json'
@@ -286,19 +256,12 @@ export async function createServer() {
           time: data.time
         })
         await setUserData(body.qq, user)
-        Statistics.CacheFile.count += 1
         reply.send({ file: body.entry, cacheUrl: `http://${ip}:${Config.serverPort || 3321}/page/${body.entry}` })
       } catch (err) {
         server.log.error(`用户生成缓存${body.entry}时发生错误： ${err}`)
         reply.send({ file: body.entry, cacheUrl: `http://${ip}:${Config.serverPort || 3321}/page/${body.entry}`, error: body.entry + '生成失败' })
       }
     }
-    return reply
-  })
-  // 获取系统状态
-  server.post('/system-statistics', async (request, reply) => {
-    Statistics.SystemLoad.count = await getLoad()
-    reply.send(Statistics)
     return reply
   })
 
@@ -329,6 +292,7 @@ export async function createServer() {
       connection.socket.send(JSON.stringify(response))
     })
     connection.socket.on('message', async (message) => {
+      const isTrss = Array.isArray(Bot.uin)
       try {
         const data = JSON.parse(message)
         const user = UserInfo(data.token)
@@ -340,9 +304,17 @@ export async function createServer() {
             }
             if (data.id && data.message) {
               if (data.group) {
-                Bot.sendGroupMsg(parseInt(data.id), data.message, data.quotable)
+                if (isTrss) {
+                  Bot[user.user].pickGroup(parseInt(data.id)).sendMsg(data.message)
+                } else {
+                  Bot.sendGroupMsg(parseInt(data.id), data.message, data.quotable)
+                }
               } else {
-                Bot.sendPrivateMsg(parseInt(data.id), data.message, data.quotable)
+                if (isTrss) {
+                  Bot[user.user].pickFriend(parseInt(data.id)).sendMsg(data.message)
+                } else {
+                  Bot.sendPrivateMsg(parseInt(data.id), data.message, data.quotable)
+                }
               }
               await connection.socket.send(JSON.stringify({ command: data.command, state: true, }))
             } else {
@@ -357,7 +329,6 @@ export async function createServer() {
             }
             break
           case 'login': // 登录
-
             if (user) {
               clients[user.user] = connection.socket
               connection.login = true
@@ -371,13 +342,17 @@ export async function createServer() {
               await connection.socket.send(JSON.stringify({ command: data.command, state: false, error: '请先登录账号' }))
               return
             }
-            if (user.autho != 'admin') {
+            if (user?.autho != 'admin') {
               await connection.socket.send(JSON.stringify({ command: data.command, state: true, error: '普通用户无需进行初始化' }))
               return
             }
-            const groupList = Bot.getGroupList()
+            let _Bot = Bot
+            if (isTrss) {
+              _Bot = Bot[user.user]
+            }
+            const groupList = await _Bot.getGroupList()
             groupList.forEach(async (item) => {
-              const group = Bot.pickGroup(item.group_id)
+              const group = _Bot.pickGroup(item.group_id)
               const groupMessages = await group.getChatHistory()
               groupMessages.forEach(async (e) => {
                 const messageData = {
@@ -402,12 +377,14 @@ export async function createServer() {
                 await connection.socket.send(JSON.stringify(messageData))
               })
             })
+
             break
           default:
             await connection.socket.send(JSON.stringify({ "data": data }))
             break
         }
       } catch (error) {
+        console.error(error)
         await connection.socket.send(JSON.stringify({ "error": error.message }))
       }
     })
@@ -424,7 +401,7 @@ export async function createServer() {
       message: e.message,
       sender: e.sender,
       group: {
-        isGroup: e.isGroup,
+        isGroup: e.isGroup || e.group_id != undefined,
         group_id: e.group_id,
         group_name: e.group_name
       },
@@ -596,28 +573,6 @@ export async function createServer() {
     }
     reply.send(serverState)
     return reply
-  })
-
-  server.addHook('onRequest', (request, reply, done) => {
-    if (request.method == 'POST') { Statistics.SystemAccess.count += 1 }
-    if (request.method == 'GET') { Statistics.WebAccess.count += 1 }
-    done()
-  })
-  // 定时任务
-  let rule = new schedule.RecurrenceRule()
-  rule.hour = 0
-  rule.minute = 0
-  let job_Statistics = schedule.scheduleJob(rule, function () {
-    Statistics.SystemAccess.oldCount = Statistics.SystemAccess.count
-    Statistics.CacheFile.oldCount = Statistics.CacheFile.count
-    Statistics.WebAccess.oldCount = Statistics.WebAccess.count
-    Statistics.SystemAccess.count = 0
-    Statistics.CacheFile.count = 0
-    Statistics.WebAccess.count = 0
-  })
-  let job_Statistics_SystemLoad = schedule.scheduleJob('0 * * * *', async function () {
-    Statistics.SystemLoad.count = await getLoad()
-    Statistics.SystemLoad.oldCount = Statistics.SystemLoad.count
   })
 
   server.listen({

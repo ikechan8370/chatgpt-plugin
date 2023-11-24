@@ -7,10 +7,11 @@ import fetch, {
 import crypto from 'crypto'
 import WebSocket from 'ws'
 import { Config, pureSydneyInstruction } from './config.js'
-import { formatDate, getMasterQQ, isCN, getUserData } from './common.js'
+import { formatDate, getMasterQQ, isCN, getUserData, limitString } from './common.js'
 import delay from 'delay'
 import moment from 'moment'
 import { getProxy } from './proxy.js'
+import Version from './version.js'
 
 if (!globalThis.fetch) {
   globalThis.fetch = fetch
@@ -80,7 +81,7 @@ export default class SydneyAIClient {
         // 'x-ms-client-request-id': crypto.randomUUID(),
         // 'x-ms-useragent': 'azsdk-js-api-client-factory/1.0.0-beta.1 core-rest-pipeline/1.10.3 OS/macOS',
         // cookie: this.opts.cookies || `_U=${this.opts.userToken}`,
-        Referer: 'https://edgeservices.bing.com/edgesvc/chat?udsframed=1&form=SHORUN&clientscopes=chat,noheader,channelstable,',
+        Referer: 'https://edgeservices.bing.com/edgesvc/chat?udsframed=1&form=SHORUN&clientscopes=chat,noheader,channelstable,'
         // 'Referrer-Policy': 'origin-when-cross-origin',
         // Workaround for request being blocked due to geolocation
         // 'x-forwarded-for': '1.1.1.1'
@@ -100,12 +101,12 @@ export default class SydneyAIClient {
       this.opts.host = 'https://edgeservices.bing.com/edgesvc'
     }
     logger.mark('使用host：' + this.opts.host)
-    let response = await fetch(`${this.opts.host}/turing/conversation/create?bundleVersion=1.1055.6`, fetchOptions)
+    let response = await fetch(`${this.opts.host}/turing/conversation/create?bundleVersion=1.1055.10`, fetchOptions)
     let text = await response.text()
     let retry = 10
     while (retry >= 0 && response.status === 200 && !text) {
       await delay(400)
-      response = await fetch(`${this.opts.host}/turing/conversation/create`, fetchOptions)
+      response = await fetch(`${this.opts.host}/turing/conversation/create?bundleVersion=1.1055.10`, fetchOptions)
       text = await response.text()
       retry--
     }
@@ -137,7 +138,11 @@ export default class SydneyAIClient {
         agent = proxy(this.opts.proxy)
       }
       if (Config.sydneyWebsocketUseProxy) {
-        sydneyHost = Config.sydneyReverseProxy.replace('https://', 'wss://').replace('http://', 'ws://')
+        if (!Config.sydneyReverseProxy) {
+          logger.warn('用户开启了对话反代，但是没有配置反代，忽略反代配置')
+        } else {
+          sydneyHost = Config.sydneyReverseProxy.replace('https://', 'wss://').replace('http://', 'ws://')
+        }
       }
       logger.mark(`use sydney websocket host: ${sydneyHost}`)
       let host = sydneyHost + '/sydney/ChatHub'
@@ -221,8 +226,8 @@ export default class SydneyAIClient {
       timeout = Config.defaultTimeoutMs,
       firstMessageTimeout = Config.sydneyFirstMessageTimeout,
       groupId, nickname, qq, groupName, chats, botName, masterName,
-      messageType = 'Chat'
-
+      messageType = 'Chat',
+      toSummaryFileContent
     } = opts
     // if (messageType === 'Chat') {
     //   logger.warn('该Bing账户token已被限流，降级至使用非搜索模式。本次对话AI将无法使用Bing搜索返回的内容')
@@ -371,6 +376,10 @@ export default class SydneyAIClient {
     let maxConv = Config.maxNumUserMessagesInConversation
     const currentDate = moment().format('YYYY-MM-DDTHH:mm:ssZ')
     const imageDate = await this.kblobImage(opts.imageUrl)
+    if (toSummaryFileContent?.content) {
+      // message = `请不要进行搜索，用户的问题是："${message}"`
+      messageType = 'Chat'
+    }
     let argument0 = {
       source: 'cib',
       optionsSets,
@@ -414,10 +423,12 @@ export default class SydneyAIClient {
         text: message,
         messageType,
         userIpAddress: await generateRandomIP(),
-        timestamp: currentDate
+        timestamp: currentDate,
+        privacy: 'Internal'
         // messageType: 'SearchQuery'
       },
       tone: 'Creative',
+      privacy: 'Internal',
       conversationSignature,
       participant: {
         id: clientId
@@ -439,7 +450,7 @@ export default class SydneyAIClient {
     }
     // simulates document summary function on Edge's Bing sidebar
     // unknown character limit, at least up to 7k
-    if (groupId) {
+    if (groupId && !toSummaryFileContent?.content) {
       context += '注意，你现在正在一个qq群里和人聊天，现在问你问题的人是' + `${nickname}(${qq})。`
       if (Config.enforceMaster && master) {
         if (qq === master) {
@@ -461,13 +472,11 @@ export default class SydneyAIClient {
         admin: '管理员'
       }
       if (chats) {
-        context += `以下是一段qq群内的对话，提供给你作为上下文，你在回答所有问题时必须优先考虑这些信息，结合这些上下文进行回答，这很重要！！！。"
-      `
+        context += '以下是一段qq群内的对话，提供给你作为上下文，你在回答所有问题时必须优先考虑这些信息，结合这些上下文进行回答，这很重要！！！。"'
         context += chats
           .map(chat => {
-            let sender = chat.sender || {}
-            // if (sender.user_id === Bot.uin && chat.raw_message.startsWith('建议的回复')) {
-            if (chat.raw_message.startsWith('建议的回复')) {
+            let sender = chat.sender || chat || {}
+            if (chat.raw_message?.startsWith('建议的回复')) {
               // 建议的回复太容易污染设定导致对话太固定跑偏了
               return ''
             }
@@ -486,7 +495,19 @@ export default class SydneyAIClient {
       }).join('\n')
       context += '\n'
     }
-    if (context) {
+    if (toSummaryFileContent?.content) {
+      // 忽略context 不然可能会爆炸
+      obj.arguments[0].previousMessages.push({
+        author: 'user',
+        description: limitString(toSummaryFileContent?.content, 20000, true),
+        contextType: 'WebPage',
+        messageType: 'Context',
+        sourceName: toSummaryFileContent?.name,
+        sourceUrl: 'file:///C:/Users/turing/Downloads/Documents/' + toSummaryFileContent?.name || 'file.pdf',
+        // locale: 'und',
+        // privacy: 'Internal'
+      })
+    } else if (context) {
       obj.arguments[0].previousMessages.push({
         author: 'user',
         description: context,
@@ -655,7 +676,7 @@ export default class SydneyAIClient {
                   text: replySoFar.join('')
                 }
             // 获取到图片内容
-            if (messages.some(obj => obj.contentType === "IMAGE")) {
+            if (messages.some(obj => obj.contentType === 'IMAGE')) {
               message.imageTag = messages.filter(m => m.contentType === 'IMAGE').map(m => m.text).join('')
             }
             message.text = messages.filter(m => m.author === 'bot' && m.contentType != 'IMAGE').map(m => m.text).join('')

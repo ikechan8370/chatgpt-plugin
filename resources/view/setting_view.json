@@ -122,6 +122,12 @@
         "label": "额外工具url",
         "placeholder": "测试期间提供一个公益接口，一段时间后撤掉",
         "data": "extraUrl"
+      },
+      {
+        "type": "text",
+        "label": "Trss主账号",
+        "placeholder": "用于Trss配置脚本时使用的主账号",
+        "data": "trssBotUin"
       }
     ]
   },
@@ -630,6 +636,12 @@
                 "label": "必应验证码pass服务",
                 "placeholder": "必应出验证码会自动用该服务绕过",
                 "data": "bingCaptchaOneShotUrl"
+              },
+              {
+                "type": "check",
+                "label": "第三方绘图",
+                "placeholder": "使用AP插件代替Bing进行绘图",
+                "data": "bingAPDraw"
               }
             ]
           },
@@ -705,6 +717,10 @@
                   {
                     "label": "讯飞星火认知大模型V2.0",
                     "value": "apiv2"
+                  },
+                  {
+                    "label": "讯飞星火认知大模型V3.0",
+                    "value": "apiv3"
                   },
                   {
                     "label": "讯飞星火助手",
