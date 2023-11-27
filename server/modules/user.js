@@ -1,20 +1,8 @@
 import { UserInfo, AddUser } from './user_data.js'
 import { randomString, getUserData, getMasterQQ, getUin } from '../../utils/common.js'
+import { getBots } from '../../utils/bot.js';
 import fs from 'fs'
-
-function getBots () {
-  if (Bot.uin === 88888) {
-    // 找适配器
-    let adapters = Bot.adapter
-    return adapters?.map(uin => Bot[uin])
-  } else if (Bot.adapter && Bot.adapter.length > 0) {
-    let bots = [Bot]
-    Bot.adapter.forEach(uin => {
-      bots.push(Bot[uin])
-    })
-    return bots
-  }
-}
+import path from 'path';
 
 async function User (fastify, options) {
   // 登录
