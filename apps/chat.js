@@ -803,7 +803,7 @@ export class chatgpt extends plugin {
       if (!msg || e.msg?.startsWith('#')) {
         return false
       }
-      if ((e.isGroup || e.group_id) && !(e.atme || e.atBot || e.at == getUin(e))) {
+      if ((e.isGroup || e.group_id) && !(e.atme || e.atBot || (e.at === e.self_id))) {
         return false
       }
       if (e.user_id == getUin(e)) return false
