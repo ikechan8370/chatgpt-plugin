@@ -803,7 +803,7 @@ export class chatgpt extends plugin {
       if (!msg || e.msg?.startsWith('#')) {
         return false
       }
-      if ((e.isGroup || e.group_id) && !(e.atme || e.atBot)) {
+      if ((e.isGroup || e.group_id) && !(e.atme || e.atBot || e.at == getUin(e))) {
         return false
       }
       if (e.user_id == getUin(e)) return false
@@ -1652,7 +1652,7 @@ export class chatgpt extends plugin {
                   opt.groupId = e.group_id
                   opt.qq = e.sender.user_id
                   opt.nickname = e.sender.card
-                  opt.groupName = e.group.name
+                  opt.groupName = e.group.name || e.group_name
                   opt.botName = e.isGroup ? (e.group.pickMember(getUin(e)).card || e.group.pickMember(getUin(e)).nickname) : e.bot.nickname
                   let master = (await getMasterQQ())[0]
                   if (master && e.group) {
