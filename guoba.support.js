@@ -218,6 +218,12 @@ export function supportGuoba () {
           }
         },
         {
+          field: 'groupMerge',
+          label: '群组消息合并',
+          bottomHelpMessage: '开启后，群聊消息将被视为同一对话',
+          component: 'Switch'
+        },
+        {
           field: 'allowOtherMode',
           label: '允许其他模式',
           bottomHelpMessage: '开启后，则允许用户使用#chat1/#chat3/#chatglm/#bing等命令无视全局模式进行聊天',
@@ -233,18 +239,6 @@ export function supportGuoba () {
           field: 'showQRCode',
           label: '启用二维码',
           bottomHelpMessage: '在图片模式中启用二维码。该对话内容将被发送至第三方服务器以进行渲染展示，如果不希望对话内容被上传到第三方服务器请关闭此功能',
-          component: 'Switch'
-        },
-        {
-          field: 'cacheUrl',
-          label: '渲染服务器地址',
-          bottomHelpMessage: '用于缓存图片模式会话内容并渲染的服务器地址',
-          component: 'Input'
-        },
-        {
-          field: 'cacheEntry',
-          label: '预制渲染服务器访问代码',
-          bottomHelpMessage: '图片内容渲染服务器开启预制访问代码，当渲染服务器访问较慢时可以开启,但无法保证访问代码可以正常访问页面',
           component: 'Switch'
         },
         {
@@ -321,7 +315,7 @@ export function supportGuoba () {
         {
           field: 'model',
           label: 'OpenAI 模型',
-          bottomHelpMessage: 'gpt-4, gpt-4-0613, gpt-4-32k, gpt-4-32k-0613, gpt-3.5-turbo, gpt-3.5-turbo-0613, gpt-3.5-turbo-16k-0613。默认为gpt-3.5-turbo，gpt-4需账户支持',
+          bottomHelpMessage: 'gpt-4, gpt-4-0613, gpt-4-1106, gpt-4-32k, gpt-4-32k-0613, gpt-3.5-turbo, gpt-3.5-turbo-0613, gpt-3.5-turbo-1106, gpt-3.5-turbo-16k-0613。默认为gpt-3.5-turbo，gpt-4需账户支持',
           component: 'Input'
         },
         {
@@ -462,8 +456,14 @@ export function supportGuoba () {
         {
           field: 'sydneyWebsocketUseProxy',
           label: '对话使用sydney反代',
-          bottomHelpMessage: '【一般情况无需也不建议开启】默认情况下仅创建对话走反代，对话时仍然直连微软。开启本选项将使对话过程也走反，需反代支持',
+          bottomHelpMessage: '默认情况下仅创建对话走反代，对话时仍然直连微软。开启本选项将使对话过程也走反代，需反代支持。默认开启',
           component: 'Switch'
+        },
+        {
+          field: 'bingCaptchaOneShotUrl',
+          label: '必应验证码pass服务',
+          bottomHelpMessage: '必应出验证码会自动用该服务绕过',
+          component: 'Input'
         },
         {
           field: 'sydneyMood',
@@ -504,40 +504,6 @@ export function supportGuoba () {
           label: '使用GPT-4',
           bottomHelpMessage: '使用GPT-4，注意试用配额较低，如果用不了就关掉',
           component: 'Switch'
-        },
-        {
-          label: '以下为浏览器方式的配置.(Deprecated)',
-          component: 'Divider'
-        },
-        {
-          field: 'username',
-          label: '用户名',
-          bottomHelpMessage: 'OpenAI用户名。',
-          component: 'Input'
-        },
-        {
-          field: 'password',
-          label: '密码',
-          bottomHelpMessage: 'OpenAI密码。',
-          component: 'InputPassword'
-        },
-        {
-          field: 'UA',
-          label: '浏览器UA',
-          bottomHelpMessage: '模拟浏览器UA，无特殊需求保持默认即可',
-          component: 'InputTextArea'
-        },
-        {
-          field: 'headless',
-          label: '无头模式',
-          bottomHelpMessage: '无界面的服务器可以开启，但遇到验证码时可能无法使用。(实测很容易卡住，几乎不可用)',
-          component: 'Switch'
-        },
-        {
-          field: 'chromePath',
-          label: 'Chrome路径',
-          bottomHelpMessage: '为空使用默认puppeteer的chromium，也可以传递自己本机安装的Chrome可执行文件地址，提高通过率。windows可以是‘C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe’，linux通过which查找路径',
-          component: 'Input'
         },
         {
           label: '以下为Slack Claude方式的配置',
@@ -586,24 +552,198 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
-          label: '以下为ChatGLM方式的配置',
+          label: '以下为Claude2方式的配置',
           component: 'Divider'
         },
         {
-          field: 'chatglmBaseUrl',
-          label: 'ChatGLM API地址',
-          bottomHelpMessage: '如 http://localhost:8080',
+          field: 'claudeAIOrganizationId',
+          label: 'claude2 OrganizationId',
+          bottomHelpMessage: 'claude.ai的OrganizationId',
           component: 'Input'
+        },
+        {
+          field: 'claudeAISessionKey',
+          label: 'claude2 SessionKey',
+          bottomHelpMessage: 'claude.ai Cookie中的SessionKey',
+          component: 'Input'
+        },
+        {
+          field: 'claudeAIReverseProxy',
+          label: 'claude2 反代',
+          bottomHelpMessage: 'claude.ai 的反代。或许可以参考https://github.com/ikechan8370/sydney-ws-proxy/tree/claude.ai搭建',
+          component: 'Input'
+        },
+        {
+          field: 'claudeAIJA3',
+          label: 'claude2浏览器指纹',
+          bottomHelpMessage: 'claude.ai使用的浏览器TLS指纹，去https://scrapfly.io/web-scraping-tools/ja3-fingerprint或https://ja3.zone/check查看。如果用了反代就不用管',
+          component: 'Input'
+        },
+        {
+          field: 'claudeAIUA',
+          label: 'claude2浏览器UA',
+          bottomHelpMessage: 'claude.ai使用的浏览器UA，https://scrapfly.io/web-scraping-tools/http2-fingerprint或https://ja3.zone/check查看。如果用了反代就不用管',
+          component: 'Input'
+        },
+        {
+          field: 'claudeAITimeout',
+          label: 'claude2超时时间',
+          bottomHelpMessage: '等待响应的超时时间，单位为秒，默认为120。如果不使用反代而是使用代理可以适当调低。',
+          component: 'InputNumber'
         },
         {
           label: '以下为星火方式的配置',
           component: 'Divider'
         },
         {
+          field: 'xhmode',
+          label: '星火模式',
+          bottomHelpMessage: '设置星火使用的对话模式',
+          component: 'Select',
+          componentProps: {
+            options: [
+              { label: '体验版', value: 'web' },
+              { label: '讯飞星火认知大模型V1.5', value: 'api' },
+              { label: '讯飞星火认知大模型V2.0', value: 'apiv2' },
+              { label: '讯飞星火认知大模型V3.0', value: 'apiv3' },
+              { label: '讯飞星火助手', value: 'assistants' }
+            ]
+          }
+        },
+        {
           field: 'xinghuoToken',
           label: '星火Cookie',
           bottomHelpMessage: '获取对话页面的ssoSessionId cookie。不要带等号和分号',
+          component: 'InputPassword'
+        },
+        {
+          field: 'xhAppId',
+          label: 'AppId',
+          bottomHelpMessage: '应用页面获取',
           component: 'Input'
+        },
+        {
+          field: 'xhAPISecret',
+          label: 'APISecret',
+          bottomHelpMessage: '应用页面获取',
+          component: 'InputPassword'
+        },
+        {
+          field: 'xhAPIKey',
+          label: '星火APIKey',
+          bottomHelpMessage: '应用页面获取',
+          component: 'InputPassword'
+        },
+        {
+          field: 'xhAssistants',
+          label: '助手接口',
+          bottomHelpMessage: '助手页面获取',
+          component: 'Input'
+        },
+        {
+          field: 'xhTemperature',
+          label: '核采样阈值',
+          bottomHelpMessage: '核采样阈值。用于决定结果随机性，取值越高随机性越强即相同的问题得到的不同答案的可能性越高',
+          component: 'InputNumber'
+        },
+        {
+          field: 'xhMaxTokens',
+          label: '最大Token',
+          bottomHelpMessage: '模型回答的tokens的最大长度',
+          component: 'InputNumber'
+        },
+        {
+          field: 'xhPromptSerialize',
+          label: '序列化设定',
+          bottomHelpMessage: '是否将设定内容进行json序列化',
+          component: 'Switch'
+        },
+        {
+          field: 'xhPrompt',
+          label: '设定',
+          bottomHelpMessage: '若开启序列化，请传入json数据，例如[{ \"role\": \"user\", \"content\": \"现在是10点\" },{ \"role\": \"assistant\", \"content\": \"了解，现在10点了\" }]',
+          component: 'InputTextArea'
+        },
+        {
+          field: 'xhRetRegExp',
+          label: '回复替换正则',
+          bottomHelpMessage: '要替换文本的正则',
+          component: 'Input'
+        },
+        {
+          field: 'xhRetReplace',
+          label: '回复内容替换',
+          bottomHelpMessage: '替换回复内容中的文本',
+          component: 'Input'
+        },
+        {
+          label: '以下为Bard方式的配置',
+          component: 'Divider'
+        },
+        {
+          field: 'bardPsid',
+          label: 'BardCookie',
+          bottomHelpMessage: '获取https://bard.google.com/页面的cookie，可完整输入，需至少包含__Secure-1PSID和__Secure-1PSIDTS',
+          component: 'Input'
+        },
+        {
+          field: 'bardReverseProxy',
+          label: 'Bard反代地址',
+          bottomHelpMessage: 'bard反代服务器地址，用于绕过地区限制',
+          component: 'Input'
+        },
+        {
+          field: 'bardForceUseReverse',
+          label: 'Bard使用反代',
+          bottomHelpMessage: '开启后将通过反代访问bard',
+          component: 'Switch'
+        },
+        {
+          label: '以下为通义千问API方式的配置',
+          component: 'Divider'
+        },
+        {
+          field: 'qwenApiKey',
+          label: '通义千问API Key',
+          component: 'InputPassword'
+        },
+        {
+          field: 'qwenModel',
+          label: '通义千问模型',
+          bottomHelpMessage: '指明需要调用的模型，目前可选 qwen-turbo 和 qwen-plus',
+          component: 'Input'
+        },
+        {
+          field: 'qwenTopP',
+          label: '通义千问topP',
+          bottomHelpMessage: '生成时，核采样方法的概率阈值。例如，取值为0.8时，仅保留累计概率之和大于等于0.8的概率分布中的token，作为随机采样的候选集。取值范围为（0,1.0)，取值越大，生成的随机性越高；取值越低，生成的随机性越低。默认值 0.5。注意，取值不要大于等于1',
+          component: 'InputNumber'
+        },
+        {
+          field: 'qwenTopK',
+          label: '通义千问topK',
+          bottomHelpMessage: '生成时，采样候选集的大小。例如，取值为50时，仅将单次生成中得分最高的50个token组成随机采样的候选集。取值越大，生成的随机性越高；取值越小，生成的确定性越高。注意：如果top_k的值大于100，top_k将采用默认值0，表示不启用top_k策略，此时仅有top_p策略生效。',
+          component: 'InputNumber'
+        },
+        {
+          field: 'qwenSeed',
+          label: '通义千问Seed',
+          bottomHelpMessage: '生成时，随机数的种子，用于控制模型生成的随机性。如果使用相同的种子，每次运行生成的结果都将相同；当需要复现模型的生成结果时，可以使用相同的种子。seed参数支持无符号64位整数类型。默认值 0, 表示每次随机生成',
+          component: 'InputNumber'
+        },
+        {
+          field: 'qwenTemperature',
+          label: '通义千问温度',
+          bottomHelpMessage: '用于控制随机性和多样性的程度。具体来说，temperature值控制了生成文本时对每个候选词的概率分布进行平滑的程度。较高的temperature值会降低概率分布的峰值，使得更多的低概率词被选择，生成结果更加多样化；而较低的temperature值则会增强概率分布的峰值，使得高概率词更容易被选择，生成结果更加确定。\n' +
+              '\n' +
+              '取值范围： (0, 2),系统默认值1.0',
+          component: 'InputNumber'
+        },
+        {
+          field: 'qwenEnableSearch',
+          label: '通义千问允许搜索',
+          bottomHelpMessage: '生成时，是否参考夸克搜索的结果。注意：打开搜索并不意味着一定会使用搜索结果；如果打开搜索，模型会将搜索结果作为prompt，进而“自行判断”是否生成结合搜索结果的文本，默认为false',
+          component: 'Switch'
         },
         {
           label: '以下为杂七杂八的配置',
@@ -742,14 +882,30 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
-          label: '以下为后台与渲染相关配置',
+          label: '以下为Azure chatGPT的配置',
           component: 'Divider'
         },
         {
-          field: 'oldview',
-          label: '旧版本渲染',
-          bottomHelpMessage: '开启预览版本',
-          component: 'Switch'
+          field: 'azApiKey',
+          label: 'Azure API Key',
+          bottomHelpMessage: '管理密钥，用于访问Azure的API接口',
+          component: 'InputPassword'
+        },
+        {
+          field: 'azureUrl',
+          label: '端点地址',
+          bottomHelpMessage: 'https://xxxx.openai.azure.com/',
+          component: 'Input'
+        },
+        {
+          field: 'azureDeploymentName',
+          label: '部署名称',
+          bottomHelpMessage: '创建部署时输入的名称',
+          component: 'Input'
+        },
+        {
+          label: '以下为后台与渲染相关配置',
+          component: 'Divider'
         },
         {
           field: 'serverPort',

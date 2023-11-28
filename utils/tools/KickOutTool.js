@@ -30,7 +30,7 @@ export class KickOutTool extends AbstractTool {
       return 'the user is not admin, he cannot kickout other people. he should be punished'
     }
     console.log('kickout', groupId, qq)
-    let group = await Bot.pickGroup(groupId)
+    let group = await e.bot.pickGroup(groupId)
     await group.kickMember(qq)
     if (isPunish === 'true') {
       return `the user ${qq} has been kicked out from group ${groupId} as punishment because of his 不正当行为`

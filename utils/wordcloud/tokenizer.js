@@ -10,11 +10,11 @@ try {
 }
 
 export class Tokenizer {
-  async getHistory (groupId, date = new Date(), duration = 0) {
+  async getHistory (e, groupId, date = new Date(), duration = 0, userId) {
     if (!groupId) {
       throw new Error('no valid group id')
     }
-    let group = Bot.pickGroup(groupId, true)
+    let group = e.bot.pickGroup(groupId, true)
     let latestChat = await group.getChatHistory(0, 1)
     let seq = latestChat[0].seq
     let chats = latestChat
@@ -41,14 +41,15 @@ export class Tokenizer {
     let startOfSpecifiedDate = date.getTime()
     // if duration > 0, go back to the specified number of hours
     if (duration > 0) {
-        // duration should be in range [0, 24]
-        duration = Math.min(duration, 24)
-        startOfSpecifiedDate = currentTime - (duration * 60 * 60 * 1000)
+      // duration should be in range [0, 24]
+      // duration = Math.min(duration, 24)
+      startOfSpecifiedDate = currentTime - (duration * 60 * 60 * 1000)
     }
 
-    // Step 4: Get the end of the specified date by adding 24 hours (in milliseconds)
-    const endOfSpecifiedDate = startOfSpecifiedDate + (24 * 60 * 60 * 1000)
-    while (isTimestampInDateRange(chats[0]?.time, startOfSpecifiedDate, endOfSpecifiedDate) && isTimestampInDateRange(chats[chats.length - 1]?.time, startOfSpecifiedDate, endOfSpecifiedDate)) {
+    // Step 4: Get the end of the specified date by current time
+    const endOfSpecifiedDate = currentTime
+    while (isTimestampInDateRange(chats[0]?.time, startOfSpecifiedDate, endOfSpecifiedDate) &&
+    isTimestampInDateRange(chats[chats.length - 1]?.time, startOfSpecifiedDate, endOfSpecifiedDate)) {
       let chatHistory = await group.getChatHistory(seq, 20)
       if (chatHistory.length === 1) {
         if (chats[0].seq === chatHistory[0].seq) {
@@ -58,45 +59,51 @@ export class Tokenizer {
       }
       chats.push(...chatHistory)
       chats.sort(compareByTime)
-      seq = chatHistory[0].seq
+      seq = chatHistory?.[0]?.seq
+      if (!seq) {
+        break
+      }
       if (Config.debug) {
         logger.info(`拉取到${chatHistory.length}条聊天记录，当前已累计获取${chats.length}条聊天记录，继续拉...`)
       }
     }
     chats = chats.filter(chat => isTimestampInDateRange(chat.time, startOfSpecifiedDate, endOfSpecifiedDate))
+    if (userId) {
+      chats = chats.filter(chat => chat.sender.user_id === userId)
+    }
     return chats
   }
 
-  async getKeywordTopK (groupId, topK = 100, duration = 0) {
+  async getKeywordTopK (e, groupId, topK = 100, duration = 0, userId) {
     if (!nodejieba) {
       throw new Error('未安装node-rs/jieba，娱乐功能-词云统计不可用')
     }
     // duration represents the number of hours to go back, should in range [0, 24]
-    let chats = await this.getHistory(groupId, new Date(), duration)
-    let duration_str = duration > 0 ? `${duration}小时` : '今日'
-    logger.mark(`聊天记录拉取完成，获取到${duration_str}内${chats.length}条聊天记录，准备分词中`)
-   
+    let chats = await this.getHistory(e, groupId, new Date(), duration, userId)
+    let durationStr = duration > 0 ? `${duration}小时` : '今日'
+    logger.mark(`聊天记录拉取完成，获取到${durationStr}内${chats.length}条聊天记录，准备分词中`)
+
     const _path = process.cwd()
     let stopWordsPath = `${_path}/plugins/chatgpt-plugin/utils/wordcloud/cn_stopwords.txt`
     const data = fs.readFileSync(stopWordsPath)
     const stopWords = String(data)?.split('\n') || []
     let chatContent = chats
       .map(c => c.message
-           //只统计文本内容
-           .filter(item => item.type == 'text')
-           .map(textItem => `${textItem.text}`)
-           .join("").trim()
+      // 只统计文本内容
+        .filter(item => item.type == 'text')
+        .map(textItem => `${textItem.text}`)
+        .join('').trim()
       )
       .map(c => {
-        let length = c.length
-        let threshold = 10
-        if (length < 100 && length > 50) {
-          threshold = 6
-        } else if (length <= 50 && length > 25) {
-          threshold = 3
-        } else if (length <= 25) {
-          threshold = 2
-        }
+        // let length = c.length
+        let threshold = 2
+        // if (length < 100 && length > 50) {
+        //   threshold = 6
+        // } else if (length <= 50 && length > 25) {
+        //   threshold = 3
+        // } else if (length <= 25) {
+        //   threshold = 2
+        // }
         return nodejieba.extract(c, threshold)
       })
       .reduce((acc, curr) => acc.concat(curr), [])
@@ -129,6 +136,85 @@ export class Tokenizer {
     }
     logger.mark('分词统计完成，绘制词云中...')
     return list.filter(s => s[1] > 2).sort(compareByFrequency).slice(0, topK)
+  }
+}
+
+export class ShamrockTokenizer extends Tokenizer {
+  async getHistory (e, groupId, date = new Date(), duration = 0, userId) {
+    logger.mark('当前使用Shamrock适配器')
+    if (!groupId) {
+      throw new Error('no valid group id')
+    }
+    let group = e.bot.pickGroup(groupId, true)
+    // 直接加大力度
+    let pageSize = 500
+    let chats = (await group.getChatHistory(0, pageSize, false)) || []
+    // Get the current timestamp
+    let currentTime = date.getTime()
+
+    // Step 2: Set the hours, minutes, seconds, and milliseconds to 0
+    date.setHours(0, 0, 0, 0)
+
+    // Step 3: Calculate the timestamp representing the start of the specified date
+    // duration represents the number of hours to go back
+    // if duration is 0, keeping the original date (start of today)
+    let startOfSpecifiedDate = date.getTime()
+    // if duration > 0, go back to the specified number of hours
+    if (duration > 0) {
+      // duration should be in range [0, 24]
+      // duration = Math.min(duration, 24)
+      startOfSpecifiedDate = currentTime - (duration * 60 * 60 * 1000)
+    }
+
+    // Step 4: Get the end of the specified date by currentTime
+    const endOfSpecifiedDate = currentTime
+    let cursor = chats.length
+    // -------------------------------------------------------
+    //               |             |            |
+    // -------------------------------------------------------
+    //                             ^            ^
+    // long ago           cursor+pageSize     cursor       current
+    while (isTimestampInDateRange(chats[0]?.time, startOfSpecifiedDate, endOfSpecifiedDate)) {
+      // 由于Shamrock消息是从最新的开始拉，结束时由于动态更新，一旦有人发送消息就会立刻停止，所以不判断结束时间
+      // 拉到后面会巨卡，所以增大page减少次数
+      pageSize = Math.floor(Math.max(cursor / 2, pageSize))
+      cursor = cursor + pageSize
+      let retries = 3
+      let chatHistory
+      while (retries >= 0) {
+        try {
+          chatHistory = await group.getChatHistory(0, cursor, false)
+          break
+        } catch (err) {
+          if (retries === 0) {
+            logger.error(err)
+          }
+          retries--
+        }
+      }
+      if (retries < 0) {
+        logger.warn('拉不动了，就这样吧')
+        break
+      }
+      if (chatHistory.length === 1) {
+        break
+      }
+      if (chatHistory.length === chats.length) {
+        // 没有了！再拉也没有了
+        break
+      }
+      let oldLength = chats.length
+      chats = chatHistory
+      // chats.sort(compareByTime)
+      if (Config.debug) {
+        logger.info(`拉取到${chats.length - oldLength}条聊天记录，当前已累计获取${chats.length}条聊天记录，继续拉...`)
+      }
+    }
+    chats = chats.filter(chat => isTimestampInDateRange(chat.time, startOfSpecifiedDate, endOfSpecifiedDate))
+    if (userId) {
+      chats = chats.filter(chat => chat.sender.user_id === userId)
+    }
+    return chats
   }
 }
 

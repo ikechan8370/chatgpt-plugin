@@ -1,5 +1,5 @@
 import plugin from '../../../lib/plugins/plugin.js'
-import { render } from '../utils/common.js'
+import { render, getUin } from '../utils/common.js'
 import { Config } from '../utils/config.js'
 import { KeyvFile } from 'keyv-file'
 
@@ -32,7 +32,7 @@ export class history extends plugin {
   async history (e) {
     let use = await redis.get('CHATGPT:USE') || 'api'
     let chat = []
-    let filtered = e.message.filter(m => m.type === 'at').filter(m => m.qq !== Bot.uin)
+    let filtered = e.message.filter(m => m.type === 'at').filter(m => m.qq !== getUin(e))
     let queryUser = e.sender.user_id
     let user = e.sender
     if (filtered.length > 0) {
@@ -66,12 +66,12 @@ export class history extends plugin {
           let parentMessageId = previousConversation.parentMessageId
           let tmp = {}
           const previousCachedMessages = getMessagesForConversation(conversation.messages, parentMessageId)
-              .map((message) => {
-                return {
-                  text: message.message,
-                  author: message.role === 'User' ? 'user' : 'bot'
-                }
-              })
+            .map((message) => {
+              return {
+                text: message.message,
+                author: message.role === 'User' ? 'user' : 'bot'
+              }
+            })
           previousCachedMessages.forEach(m => {
             if (m.author === 'user') {
               tmp.prompt = m.text
@@ -99,8 +99,8 @@ export class history extends plugin {
         name: user.card || user.nickname || user.user_id
       },
       bot: {
-        qq: Bot.uin,
-        name: Bot.nickname
+        qq: getUin(e),
+        name: e.bot.nickname
       },
       chat
     }, {})

@@ -1,15 +1,9 @@
 import fetch, { FormData } from 'node-fetch'
 import { makeForwardMsg } from './common.js'
 import { Config } from './config.js'
+import { getProxy } from './proxy.js'
 
-let proxy
-if (Config.proxy) {
-  try {
-    proxy = (await import('https-proxy-agent')).default
-  } catch (e) {
-    console.warn('未安装https-proxy-agent，请在插件目录下执行pnpm add https-proxy-agent')
-  }
-}
+let proxy = getProxy()
 export default class BingDrawClient {
   constructor (opts) {
     this.opts = opts
@@ -65,14 +59,14 @@ export default class BingDrawClient {
     let retry = 5
     let response
     while (!success && retry >= 0) {
-      response = await fetch(url, Object.assign(fetchOptions, { body, redirect: 'manual', method: 'POST' }))
+      response = await fetch(url, Object.assign(fetchOptions, { body, redirect: 'manual', method: 'POST', credentials: 'include' }))
       let res = await response.text()
       if (res.toLowerCase().indexOf('this prompt has been blocked') > -1) {
         throw new Error('Your prompt has been blocked by Bing. Try to change any bad words and try again.')
       }
       if (response.status !== 302) {
         url = `${this.opts.baseUrl}/images/create?q=${urlEncodedPrompt}&rt=3&FORM=GENCRE`
-        response = await fetch(url, Object.assign(fetchOptions, { body, redirect: 'manual', method: 'POST' }))
+        response = await fetch(url, Object.assign(fetchOptions, { body, redirect: 'manual', method: 'POST', credentials: 'include' }))
       }
       if (response.status === 302) {
         success = true
@@ -82,7 +76,15 @@ export default class BingDrawClient {
       }
     }
     if (!success) {
-      throw new Error('绘图失败，请检查Bing token和代理/反代配置')
+      // 最后尝试使用https://cn.bing.com进行一次绘图
+      logger.info('尝试使用https://cn.bing.com进行绘图')
+      url = `https://cn.bing.com/images/create?q=${urlEncodedPrompt}&rt=3&FORM=GENCRE`
+      fetchOptions.referrer = 'https://cn.bing.com/images/create/'
+      fetchOptions.origin = 'https://cn.bing.com'
+      response = await fetch(url, Object.assign(fetchOptions, { body, redirect: 'manual', method: 'POST', credentials: 'include' }))
+      if (response.status !== 302) {
+        throw new Error('绘图失败，请检查Bing token和代理/反代配置')
+      }
     }
     let redirectUrl = response.headers.get('Location').replace('&nfy=1', '')
     let requestId = redirectUrl.split('id=')[1]

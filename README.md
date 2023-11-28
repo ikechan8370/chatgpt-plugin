@@ -1,7 +1,7 @@
 ![chatgpt-plugin](https://user-images.githubusercontent.com/21212372/232115814-de9a0633-371f-4733-8da0-dd6e912c8a1e.png)
-<div align=center> <h1>云崽QQ机器人的ChatGPT插件</h1> </div>
+<div align=center> <h1>云崽系机器人的智能聊天插件</h1> </div>
 <div align=center>
-   
+
    <img src ="https://img.shields.io/github/issues/ikechan8370/chatgpt-plugin?logo=github"/>
 <img src ="https://img.shields.io/github/license/ikechan8370/chatgpt-plugin"/>
 <img src ="https://img.shields.io/github/v/tag/ikechan8370/chatgpt-plugin?label=latest%20version&logo=github"/>
@@ -18,10 +18,10 @@
 
 ### 推荐的相关文档和参考资料
 本README
-[手册](https://chatgptplugin.ikechan8370.com/)
-[文档1（建设中）](https://chatgpt-docs.err0r.top/) 
-[插件常见问题（鹤望兰版）](https://www.wolai.com/4FCxxWAdjbrHF29MCJmAQK) 
-[Yunzai常见问题（LUCK小运版）](https://www.wolai.com/oA43vuW71aBnv7UsEysn4T) 
+[手册](https://yunzai.chat)
+[文档1（建设中）](https://chatgpt-docs.err0r.top/)
+[插件常见问题（鹤望兰版）](https://chatgptplugin.ikechan8370.com/guide/)
+[Yunzai常见问题（LUCK小运版）](https://www.wolai.com/oA43vuW71aBnv7UsEysn4T)
 [憨憨博客](https://blog.hanhanz.top/)
 
 ## 特点
@@ -40,7 +40,9 @@
 * 2023-05-12 支持星火大模型
 * 2023-05-29 支持gpt-4 API.必应无需cookie即可对话（Sydney和自定义模式）
 * 2023-07 支持智能模式，机器人可以实现禁言、群名片/头衔（需给机器人管理员/群主）、分享音乐视频、主动发音频、对接ap,sr和喵喵等插件、联网搜索等，需api模式0613系列模型。智能模式所需的额外api和搜索api分别可以参考[chatgpt-plugin-extras](https://github.com/ikechan8370/chatgpt-plugin-extras) 和 [search-api](https://github.com/ikechan8370/search-api) 自行搭建，其中后者提供了一个公益版本，前者可使用[huggingface](https://huggingface.co/spaces/ikechan8370/cp-extra)部署
-
+* 2023-09-10 支持来自claude.ai的claude-2模型
+* 2023-10-19 支持读取文件，（目前适配必应模式和Claude2模式）
+* 2023-10-25 增加支持通义千问官方API
 ### 如果觉得这个插件有趣或者对你有帮助，请点一个star吧！
 
 ## 版本要求
@@ -50,16 +52,6 @@ Node.js >= 18 / Node.js >= 14(with node-fetch)
 ## 安装与使用方法
 
 ### 安装
-
-在安装之前，请先判断自己需要使用哪种模式，本插件支持官方API/第三方API/~~浏览器~~/必应四种模式。也可以选择**我全都要**(通过qq发送命令`#chatgpt切换浏览器/API/API3/Bing`实时切换)
-
-> #### API模式和浏览器模式如何选择？
->
-> * API模式会调用OpenAI官方提供的gpt-3.5-turbo API，ChatGPT官网同款模型，只需要提供API Key。一般情况下，该种方式响应速度更快，可配置项多，且不会像chatGPT官网一样总出现不可用的现象，但注意API调用是收费的，新用户有18美元试用金可用于支付，价格为`$0.0020/ 1K tokens`。（问题和回答**加起来**算token）
-> * API3模式会调用第三方提供的官网反代API，他会帮你绕过CF防护，需要提供ChatGPT的Token。效果与官网和浏览器一致，但稳定性不一定。发送#chatgpt设置token来设置token。
-> * (Deprecated)浏览器模式通过在本地启动Chrome等浏览器模拟用户访问ChatGPT网站，使得获得和官方以及API2模式一模一样的回复质量，同时保证安全性。缺点是本方法对环境要求较高，需要提供桌面环境和一个可用的代理（能够访问ChatGPT的IP地址），且响应速度不如API，而且高峰期容易无法使用。一般作为API3的下位替代。
-> * 必应（Bing）将调用微软新必应接口进行对话。需要在必应网页能够正常使用新必应且设置有效的Bing登录Cookie方可使用。强烈推荐
-
 1. 进入 Yunzai根目录
 
 2. 请将 chatgpt-plugin 放置在 Yunzai-Bot 的 plugins 目录下
@@ -81,12 +73,8 @@ pnpm i
 
 如果是手工下载的 zip 压缩包，请将解压后的 chatgpt-plugin 文件夹（请删除压缩自带的-master或版本号后缀）放置在 Yunzai-Bot 目录下的 plugins 文件夹内
 
-> ~~浏览器模式仅为备选，如您需要使用浏览器模式，您还需要有**桌面环境**，优先级建议：API≈必应>API3>浏览器~~\
-> ~~2.20更新：必应被大削，变得蠢了，建议还是API/API3优先~~\
-> 4.2更新：必应站起来了，必应天下第一。建议都用必应，别用API/API3了。浏览器模式除非极其特殊的需求否则强烈建议不使用，已经不维护了。
-
 3. 修改配置
-**本插件配置项比较多，强烈建议使用后台面板或[锅巴面板](https://github.com/guoba-yunzai/Guoba-Plugin)修改**
+**本插件配置项比较多，强烈建议使用后台工具箱或[锅巴面板](https://github.com/guoba-yunzai/Guoba-Plugin)修改**
 
    或者创建和编辑config/config.json文件。
 
@@ -97,7 +85,7 @@ pnpm i
 
    用户同样可私聊机器人 `#设置用户密码` 进行账号注册和密码设置
 用户设置密码后，所有聊天信息将记录在用户缓存数据下，同时用户可通过私聊机器人 `#chatgpt用户配置` 登录后台用户配置面板，查看自己的聊天数据和自定义机器人对自己的回复参数
-   
+
    如果后台面板访问出现 time out 请检查机器人启动时是否有报错，服务器端口是否开放，可尝试ping一下服务器ip看能否直接ping通。
 
 5. 重启Yunzai-Bot
@@ -263,9 +251,9 @@ pnpm i
    > 原因：没装依赖
    >
    > 解决方式：请参考文档在本插件目录下用`pnpm install`安装依赖，安装完就不报错了
-   
+
 4. 反代能自己搭吗？
-   
+
    能。参考[这里](https://ikechan8370.com/archives/da-jian-chatgpt-guan-fang-fan-xiang-dai-li)
 
    必应可以用[azure](https://ikechan8370.com/archives/ji-yu-azure-container-web-applicationda-jian-mian-fei-bi-ying-fan-dai)或~cloudflare workers~的serverless服务：
@@ -279,7 +267,7 @@ pnpm i
 7. 系统后台无法进入怎么办？
 
    多数情况下是由于服务器未开放3321端口导致，请根据服务器系统和服务器供应商配置，开放3321端口后再试。
-   
+
 ## 交流群
 
 * QQ 559567232 [问题交流]

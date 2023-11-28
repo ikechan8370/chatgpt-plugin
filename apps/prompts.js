@@ -2,7 +2,7 @@ import plugin from '../../../lib/plugins/plugin.js'
 import fs from 'fs'
 import _ from 'lodash'
 import { Config } from '../utils/config.js'
-import { getMasterQQ, limitString, makeForwardMsg, maskQQ } from '../utils/common.js'
+import { getMasterQQ, limitString, makeForwardMsg, maskQQ, getUin } from '../utils/common.js'
 import { deleteOnePrompt, getPromptByName, readPrompts, saveOnePrompt } from '../utils/prompts.js'
 import AzureTTS from "../utils/tts/microsoft-azure.js";
 export class help extends plugin {
@@ -157,7 +157,8 @@ export class help extends plugin {
     const keyMap = {
       api: 'promptPrefixOverride',
       Custom: 'sydney',
-      claude: 'slackClaudeGlobalPreset'
+      claude: 'slackClaudeGlobalPreset',
+      qwen: 'promptPrefixOverride'
     }
 
     if (keyMap[use]) {
@@ -246,7 +247,7 @@ export class help extends plugin {
   async removeSharePrompt (e) {
     let master = (await getMasterQQ())[0]
     let name = e.msg.replace(/^#(chatgpt|ChatGPT)(删除|取消|撤销)共享设定/, '')
-    let response = await fetch(`https://chatgpt.roki.best/prompt?name=${name}&qq=${master || (Bot.uin + '')}`, {
+    let response = await fetch(`https://chatgpt.roki.best/prompt?name=${name}&qq=${master || (getUin(e) + '')}`, {
       method: 'DELETE',
       headers: {
         'FROM-CHATGPT': 'ikechan8370'
@@ -354,7 +355,7 @@ export class help extends plugin {
     let toUploadBody = {
       title: currentUse,
       prompt: content,
-      qq: master || (Bot.uin + ''), // 上传者设定为主人qq或机器人qq
+      qq: master || (getUin(this.e) + ''), // 上传者设定为主人qq或机器人qq
       use: extraData.use === 'Custom' ? 'Sydney' : 'ChatGPT',
       r18,
       description

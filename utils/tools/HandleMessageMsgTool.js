@@ -27,11 +27,11 @@ export class HandleMessageMsgTool extends AbstractTool {
           break
         }
         case 'essence': {
-          await Bot.setEssenceMessage(messageId)
+          await e.bot.setEssenceMessage(messageId)
           break
         }
         case 'un-essence': {
-          await Bot.removeEssenceMessage(messageId)
+          await e.bot.removeEssenceMessage(messageId)
           break
         }
       }
