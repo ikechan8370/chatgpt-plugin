@@ -820,6 +820,7 @@ export async function getImageOcrText (e) {
       // logger.warn('resultArr', resultArr)
       return resultArr
     } catch (err) {
+      logger.warn('OCR失败，可能使用的适配器不支持OCR')
       return false
       // logger.error(err)
     }
@@ -1052,6 +1053,7 @@ export function isPureText (filename) {
 /**
  * 从文件中提取文本内容
  * @param fileMsgElem MessageElem
+ * @param e
  * @returns {Promise<{}>} 提取的文本内容和文件名
  */
 export async function extractContentFromFile (fileMsgElem, e) {
