@@ -12,6 +12,7 @@ import { translate, translateLangSupports } from '../utils/translate.js'
 import AzureTTS from '../utils/tts/microsoft-azure.js'
 import VoiceVoxTTS from '../utils/tts/voicevox.js'
 import { URL } from 'node:url'
+import { getBots } from '../utils/bot.js'
 
 let useSilk = false
 try {
@@ -350,7 +351,7 @@ ${translateLangLabels}
     let groupId = e.msg.replace(/^#chatgpt打招呼/, '')
     logger.info(groupId)
     groupId = parseInt(groupId)
-    if (groupId && !e.bot.getGroupList().get(groupId)) {
+    if (groupId && !e.bot.gl.get(groupId)) {
       await e.reply('机器人不在这个群里！')
       return
     }
@@ -379,74 +380,77 @@ ${translateLangLabels}
         continue
       }
       let groupId = parseInt(element)
-      if (this.e.bot.getGroupList().get(groupId)) {
-        // 打招呼概率
-        if (Math.floor(Math.random() * 100) < Config.helloProbability) {
-          let message = await generateHello()
-          logger.info(`打招呼给群聊${groupId}：` + message)
-          if (Config.defaultUseTTS) {
-            let audio
-            const [defaultVitsTTSRole, defaultAzureTTSRole, defaultVoxTTSRole] = [Config.defaultTTSRole, Config.azureTTSSpeaker, Config.voicevoxTTSSpeaker]
-            let ttsSupportKinds = []
-            if (Config.azureTTSKey) ttsSupportKinds.push(1)
-            if (Config.ttsSpace) ttsSupportKinds.push(2)
-            if (Config.voicevoxSpace) ttsSupportKinds.push(3)
-            if (!ttsSupportKinds.length) {
-              logger.warn('没有配置任何语音服务！')
-              return false
-            }
-            const randomIndex = Math.floor(Math.random() * ttsSupportKinds.length)
-            switch (ttsSupportKinds[randomIndex]) {
-              case 1 : {
-                const isEn = AzureTTS.supportConfigurations.find(config => config.code === defaultAzureTTSRole)?.language.includes('en')
-                if (isEn) {
-                  message = (await translate(message, '英')).replace('\n', '')
-                }
-                audio = await AzureTTS.generateAudio(message, {
-                  defaultAzureTTSRole
-                })
-                break
+      let bots = this.e ? [this.e.bot] : getBots()
+      for (let bot of bots) {
+        if (bot.gl?.get(groupId)) {
+          // 打招呼概率
+          if (Math.floor(Math.random() * 100) < Config.helloProbability) {
+            let message = await generateHello()
+            logger.info(`打招呼给群聊${groupId}：` + message)
+            if (Config.defaultUseTTS) {
+              let audio
+              const [defaultVitsTTSRole, defaultAzureTTSRole, defaultVoxTTSRole] = [Config.defaultTTSRole, Config.azureTTSSpeaker, Config.voicevoxTTSSpeaker]
+              let ttsSupportKinds = []
+              if (Config.azureTTSKey) ttsSupportKinds.push(1)
+              if (Config.ttsSpace) ttsSupportKinds.push(2)
+              if (Config.voicevoxSpace) ttsSupportKinds.push(3)
+              if (!ttsSupportKinds.length) {
+                logger.warn('没有配置任何语音服务！')
+                return false
               }
-              case 2 : {
-                if (Config.autoJapanese) {
+              const randomIndex = Math.floor(Math.random() * ttsSupportKinds.length)
+              switch (ttsSupportKinds[randomIndex]) {
+                case 1 : {
+                  const isEn = AzureTTS.supportConfigurations.find(config => config.code === defaultAzureTTSRole)?.language.includes('en')
+                  if (isEn) {
+                    message = (await translate(message, '英')).replace('\n', '')
+                  }
+                  audio = await AzureTTS.generateAudio(message, {
+                    defaultAzureTTSRole
+                  })
+                  break
+                }
+                case 2 : {
+                  if (Config.autoJapanese) {
+                    try {
+                      message = await translate(message, '日')
+                    } catch (err) {
+                      logger.error(err)
+                    }
+                  }
                   try {
-                    message = await translate(message, '日')
+                    audio = await generateVitsAudio(message, defaultVitsTTSRole, '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）')
                   } catch (err) {
                     logger.error(err)
                   }
+                  break
                 }
-                try {
-                  audio = await generateVitsAudio(message, defaultVitsTTSRole, '中日混合（中文用[ZH][ZH]包裹起来，日文用[JA][JA]包裹起来）')
-                } catch (err) {
-                  logger.error(err)
+                case 3 : {
+                  message = (await translate(message, '日')).replace('\n', '')
+                  try {
+                    audio = await VoiceVoxTTS.generateAudio(message, {
+                      speaker: defaultVoxTTSRole
+                    })
+                  } catch (err) {
+                    logger.error(err)
+                  }
+                  break
                 }
-                break
               }
-              case 3 : {
-                message = (await translate(message, '日')).replace('\n', '')
-                try {
-                  audio = await VoiceVoxTTS.generateAudio(message, {
-                    speaker: defaultVoxTTSRole
-                  })
-                } catch (err) {
-                  logger.error(err)
-                }
-                break
+              if (useSilk) {
+                await this.e.bot.sendGroupMsg(groupId, await uploadRecord(audio))
+              } else {
+                await this.e.bot.sendGroupMsg(groupId, segment.record(audio))
               }
-            }
-            if (useSilk) {
-              await this.e.bot.sendGroupMsg(groupId, await uploadRecord(audio))
             } else {
-              await this.e.bot.sendGroupMsg(groupId, segment.record(audio))
+              await this.e.bot.sendGroupMsg(groupId, message)
             }
           } else {
-            await this.e.bot.sendGroupMsg(groupId, message)
+            logger.info(`时机未到，这次就不打招呼给群聊${groupId}了`)
           }
         } else {
-          logger.info(`时机未到，这次就不打招呼给群聊${groupId}了`)
+          logger.warn('机器人不在要发送的群组里，忽略群。同时建议检查配置文件修改要打招呼的群号。' + groupId)
         }
-      } else {
-        logger.warn('机器人不在要发送的群组里，忽略群。同时建议检查配置文件修改要打招呼的群号。' + groupId)
       }
     }
   }

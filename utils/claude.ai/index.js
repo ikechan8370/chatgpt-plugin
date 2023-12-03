@@ -136,7 +136,7 @@ export class ClaudeAIClient {
       attachments,
       completion: {
         incremental: true,
-        model: 'claude-2',
+        model: 'claude-2.1',
         prompt: text,
         timezone: 'Asia/Hong_Kong'
       }
