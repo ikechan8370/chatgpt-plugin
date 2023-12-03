@@ -272,6 +272,25 @@ export class ChatgptManagement extends plugin {
           reg: '^#chatgpt(开启|关闭)智能模式$',
           fnc: 'switchSmartMode',
           permission: 'master'
+        },
+        {
+          reg: '^#chatgpt模型列表$',
+          fnc: 'viewAPIModel'
+        },
+        {
+          reg: '^#chatgpt设置(API|api)模型$',
+          fnc: 'setAPIModel',
+          permission: 'master'
+        },
+        {
+          reg: '^#chatgpt设置(API|api)反代$',
+          fnc: 'setOpenAiBaseUrl',
+          permission: 'master'
+        },
+        {
+          reg: '^#chatgpt设置星火模型$',
+          fnc: 'setXinghuoModel',
+          permission: 'master'
         }
       ]
     })
@@ -1434,5 +1453,95 @@ Poe 模式会调用 Poe 中的 Claude-instant 进行对话。需要提供 Cookie
       Config.smartMode = false
       await e.reply('好的，已经关闭智能模式')
     }
+  }
+
+  async viewAPIModel (e) {
+    const contents = [
+      '仅列出部分模型以供参考',
+      'gpt-3.5-turbo',
+      'gpt-3.5-turbo-0301',
+      'gpt-3.5-turbo-0613',
+      'gpt-3.5-turbo-1106',
+      'gpt-3.5-turbo-16k',
+      'gpt-3.5-turbo-16k-0613',
+      'gpt-4',
+      'gpt-4-32k',
+      'gpt-4-1106-preview'
+    ]
+    let modelList = []
+    contents.forEach(value => {
+      // console.log(value)
+      modelList.push(value)
+    })
+    await this.e.reply(makeForwardMsg(e, modelList, '模型列表'))
+  }
+
+  async setAPIModel (e) {
+    this.setContext('saveAPIModel')
+    await this.reply('请发送API模型', true)
+    return false
+  }
+
+  async saveAPIModel () {
+    if (!this.e.msg) return
+    let token = this.e.msg
+    Config.model = token
+    await this.reply('API模型设置成功', true)
+    this.finish('saveAPIModel')
+  }
+
+  async setOpenAiBaseUrl (e) {
+    this.setContext('saveOpenAiBaseUrl')
+    await this.reply('请发送API反代', true)
+    return false
+  }
+
+  async saveOpenAiBaseUrl () {
+    if (!this.e.msg) return
+    let token = this.e.msg
+    // console.log(token.startsWith('http://') || token.startsWith('https://'))
+    if (token.startsWith('http://') || token.startsWith('https://')) {
+      Config.openAiBaseUrl = token
+      await this.reply('API反代设置成功', true)
+      this.finish('saveOpenAiBaseUrl')
+      return
+    }
+    await this.reply('你的输入不是一个有效的URL,请检查是否含有http://或https://', true)
+    this.finish('saveOpenAiBaseUrl')
+  }
+
+  async setXinghuoModel (e) {
+    this.setContext('saveXinghuoModel')
+    await this.reply('1：星火V1.5\n2：星火V2\n3：星火V3\n4：星火助手')
+    await this.reply('请发送序号', true)
+    return false
+  }
+
+  async saveXinghuoModel (e) {
+    if (!this.e.msg) return
+    let token = this.e.msg
+    let ver
+    switch (token) {
+      case '3':
+        ver = 'V3'
+        Config.xhmode = 'apiv3'
+        break
+      case '2':
+        ver = 'V2'
+        Config.xhmode = 'apiv2'
+        break
+      case '1':
+        ver = 'V1.5'
+        Config.xhmode = 'api'
+        break
+      case '4':
+        ver = '助手'
+        Config.xhmode = 'assistants'
+        break
+      default:
+        break
+    }
+    await this.reply(`已成功切换到星火${ver}`, true)
+    this.finish('saveXinghuoModel')
   }
 }
