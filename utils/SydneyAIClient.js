@@ -313,14 +313,14 @@ export default class SydneyAIClient {
     if (pureSydney) {
       previousMessages = invocationId === 0
         ? [
-            {
-              text,
-              author: 'bot'
-            },
-            {
-              text: `好的，我是${botName || defaultBotName}，你的AI助手。`,
-              author: 'bot'
-            },
+            // {
+            //   text,
+            //   author: 'bot'
+            // },
+            // {
+            //   text: `好的，我是${botName || defaultBotName}，你的AI助手。`,
+            //   author: 'bot'
+            // },
             ...pm
           ]
         : []
