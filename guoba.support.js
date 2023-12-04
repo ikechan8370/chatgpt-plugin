@@ -315,7 +315,7 @@ export function supportGuoba () {
         {
           field: 'model',
           label: 'OpenAI 模型',
-          bottomHelpMessage: 'gpt-4, gpt-4-0613, gpt-4-32k, gpt-4-32k-0613, gpt-3.5-turbo, gpt-3.5-turbo-0613, gpt-3.5-turbo-16k-0613。默认为gpt-3.5-turbo，gpt-4需账户支持',
+          bottomHelpMessage: 'gpt-4, gpt-4-0613, gpt-4-1106, gpt-4-32k, gpt-4-32k-0613, gpt-3.5-turbo, gpt-3.5-turbo-0613, gpt-3.5-turbo-1106, gpt-3.5-turbo-16k-0613。默认为gpt-3.5-turbo，gpt-4需账户支持',
           component: 'Input'
         },
         {
@@ -456,7 +456,7 @@ export function supportGuoba () {
         {
           field: 'sydneyWebsocketUseProxy',
           label: '对话使用sydney反代',
-          bottomHelpMessage: '【一般情况无需也不建议开启】默认情况下仅创建对话走反代，对话时仍然直连微软。开启本选项将使对话过程也走反，需反代支持',
+          bottomHelpMessage: '默认情况下仅创建对话走反代，对话时仍然直连微软。开启本选项将使对话过程也走反代，需反代支持。默认开启',
           component: 'Switch'
         },
         {
@@ -504,40 +504,6 @@ export function supportGuoba () {
           label: '使用GPT-4',
           bottomHelpMessage: '使用GPT-4，注意试用配额较低，如果用不了就关掉',
           component: 'Switch'
-        },
-        {
-          label: '以下为浏览器方式的配置.(Deprecated)',
-          component: 'Divider'
-        },
-        {
-          field: 'username',
-          label: '用户名',
-          bottomHelpMessage: 'OpenAI用户名。',
-          component: 'Input'
-        },
-        {
-          field: 'password',
-          label: '密码',
-          bottomHelpMessage: 'OpenAI密码。',
-          component: 'InputPassword'
-        },
-        {
-          field: 'UA',
-          label: '浏览器UA',
-          bottomHelpMessage: '模拟浏览器UA，无特殊需求保持默认即可',
-          component: 'InputTextArea'
-        },
-        {
-          field: 'headless',
-          label: '无头模式',
-          bottomHelpMessage: '无界面的服务器可以开启，但遇到验证码时可能无法使用。(实测很容易卡住，几乎不可用)',
-          component: 'Switch'
-        },
-        {
-          field: 'chromePath',
-          label: 'Chrome路径',
-          bottomHelpMessage: '为空使用默认puppeteer的chromium，也可以传递自己本机安装的Chrome可执行文件地址，提高通过率。windows可以是‘C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe’，linux通过which查找路径',
-          component: 'Input'
         },
         {
           label: '以下为Slack Claude方式的配置',
@@ -626,16 +592,6 @@ export function supportGuoba () {
           component: 'InputNumber'
         },
         {
-          label: '以下为ChatGLM方式的配置',
-          component: 'Divider'
-        },
-        {
-          field: 'chatglmBaseUrl',
-          label: 'ChatGLM API地址',
-          bottomHelpMessage: '如 http://localhost:8080',
-          component: 'Input'
-        },
-        {
           label: '以下为星火方式的配置',
           component: 'Divider'
         },
@@ -649,6 +605,7 @@ export function supportGuoba () {
               { label: '体验版', value: 'web' },
               { label: '讯飞星火认知大模型V1.5', value: 'api' },
               { label: '讯飞星火认知大模型V2.0', value: 'apiv2' },
+              { label: '讯飞星火认知大模型V3.0', value: 'apiv3' },
               { label: '讯飞星火助手', value: 'assistants' }
             ]
           }
