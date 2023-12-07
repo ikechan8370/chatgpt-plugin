@@ -269,11 +269,13 @@ export class ChatgptManagement extends plugin {
         },
         {
           reg: '^#chatgpt设置后台(刷新|refresh)(t|T)oken$',
-          fnc: 'setOpenAIPlatformToken'
+          fnc: 'setOpenAIPlatformToken',
+          permission: 'master'
         },
         {
           reg: '^#chatgpt设置sessKey$',
-          fnc: 'getSessKey'
+          fnc: 'getSessKey',
+          permission: 'master'
         },
         {
           reg: '^#(chatgpt)?查看回复设置$',
@@ -1345,6 +1347,7 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
     })
     if (refreshRes.status !== 200) {
       let errMsg = await refreshRes.json()
+      logger.error(JSON.stringify(errMsg))
       if (errMsg.error === 'access_denied') {
         await e.reply('刷新令牌失效，请重新发送【#chatgpt设置后台刷新token】进行配置。建议退出platform.openai.com重新登录后再获取和配置')
       } else {
