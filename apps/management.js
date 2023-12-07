@@ -1343,7 +1343,11 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
         refresh_token: Config.OpenAiPlatformRefreshToken,
         client_id: 'DRivsnm2Mu42T3KOpqdtwB3NYviHYzwD',
         grant_type: 'refresh_token'
-      })
+      }),
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+        'Content-Type': 'application/json'
+      }
     })
     if (refreshRes.status !== 200) {
       let errMsg = await refreshRes.json()
@@ -1364,7 +1368,8 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
     let res = await newFetch(`${host}/dashboard/onboarding/login`, {
       headers: {
         // eslint-disable-next-line camelcase
-        Authorization: `Bearer ${access_token}`
+        Authorization: `Bearer ${access_token}`,
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
       },
       method: 'POST'
     })
@@ -1373,7 +1378,7 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
       let sess = authRes.user.session.sensitive_id
       if (sess) {
         Config.apiKey = sess
-        await e.reply('已成功将sessKey设置为apiKey，您可以发送#open余额来查看该账号余额')
+        await e.reply('已成功将sessKey设置为apiKey，您可以发送#openai余额来查看该账号余额')
       } else {
         await e.reply('设置失败！')
       }
