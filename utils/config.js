@@ -1,7 +1,7 @@
 import fs from 'fs'
 import lodash from 'lodash'
-export const defaultChatGPTAPI = 'https://pimon.d201.cn/backend-api/conversation'
-export const officialChatGPTAPI = 'https://pimon.d201.cn/backend-api/conversation'
+export const defaultChatGPTAPI = 'https://chat3.avocado.wiki/backend-api/conversation'
+export const officialChatGPTAPI = 'https://chat3.avocado.wiki/backend-api/conversation'
 // Reverse proxy of https://api.openai.com
 export const defaultOpenAIReverseProxy = 'https://mondstadt.d201.eu.org/v1'
 // blocked in China Mainland
@@ -43,7 +43,7 @@ const defaultConfig = {
   sydneyMoodTip: 'Your response should be divided into two parts, namely, the text and your mood. The mood available to you can only include: blandness, happy, shy, frustrated, disgusted, and frightened.All content should be replied in this format {"text": "", "mood": ""}.All content except mood should be placed in text, It is important to ensure that the content you reply to can be parsed by json.',
   enableSuggestedResponses: false,
   api: defaultChatGPTAPI,
-  apiBaseUrl: 'https://pimon.d201.cn/backend-api',
+  apiBaseUrl: 'https://chat3.avocado.wiki/backend-api',
   apiForceUseReverse: false,
   plus: false,
   useGPT4: false,
