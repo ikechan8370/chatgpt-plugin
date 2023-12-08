@@ -369,11 +369,8 @@ export function supportGuoba () {
           component: 'Select',
           componentProps: {
             options: [
-              { label: '均衡', value: 'balanced' },
-              { label: '创意', value: 'creative' },
-              { label: '精确', value: 'precise' },
-              { label: 'Sydney(可能存在风险)', value: 'Sydney' },
-              { label: '自设定(可能存在风险)', value: 'Custom' }
+              { label: '默认（创意）', value: 'Sydney' },
+              { label: '自设定', value: 'Custom' }
             ]
           }
         },
@@ -443,19 +440,19 @@ export function supportGuoba () {
         },
         {
           field: 'sydneyReverseProxy',
-          label: 'sydney反代',
-          bottomHelpMessage: '仅悉尼和自设定模式下有效，用于创建对话（默认不用于正式对话）。目前国内ip和部分境外IDC IP由于微软限制创建对话，如果有bing.com的反代可以填在此处，或者使用proxy',
+          label: '必应反代',
+          bottomHelpMessage: '用于创建对话（默认不用于正式对话）。目前国内ip和部分境外IDC IP由于微软限制创建对话，如果有bing.com的反代可以填在此处，或者使用proxy',
           component: 'Input'
         },
         {
           field: 'sydneyForceUseReverse',
           label: '强制使用sydney反代',
-          bottomHelpMessage: '即使配置了proxy，创建对话时依然使用sydney反代',
+          bottomHelpMessage: '即使配置了proxy，创建对话时依然使用必应反代',
           component: 'Switch'
         },
         {
           field: 'sydneyWebsocketUseProxy',
-          label: '对话使用sydney反代',
+          label: '对话使用必应反代',
           bottomHelpMessage: '默认情况下仅创建对话走反代，对话时仍然直连微软。开启本选项将使对话过程也走反代，需反代支持。默认开启',
           component: 'Switch'
         },

@@ -209,7 +209,12 @@ let helpData = [
       {
         icon: 'token',
         title: '#chatgpt设置后台刷新token',
-        desc: '用于查看API余额。注意和配置的key保持同一账号。'
+        desc: '用于获取刷新令牌，以便获取sessKey。'
+      },
+      {
+        icon: 'key',
+        title: '#chatgpt设置sessKey',
+        desc: '使用sessKey作为APIKey，适用于未手机号验证的用户'
       },
       {
         icon: 'token',

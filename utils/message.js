@@ -36,11 +36,14 @@ export class OfficialChatGPTClient {
           content: {
             content_type: 'text',
             parts: [prompt]
-          }
+          },
+          metadata: {}
         }
       ],
       model: Config.useGPT4 ? 'gpt-4' : 'text-davinci-002-render-sha',
-      parent_message_id: parentMessageId
+      parent_message_id: parentMessageId,
+      timezone_offset_min: -480,
+      history_and_training_disabled: false
     }
     if (conversationId) {
       body.conversation_id = conversationId

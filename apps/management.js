@@ -20,6 +20,23 @@ import fs from 'fs'
 import loader from '../../../lib/plugins/loader.js'
 import VoiceVoxTTS, { supportConfigurations as voxRoleList } from '../utils/tts/voicevox.js'
 import { supportConfigurations as azureRoleList } from '../utils/tts/microsoft-azure.js'
+import fetch from 'node-fetch'
+import { getProxy } from '../utils/proxy.js'
+
+let proxy = getProxy()
+const newFetch = (url, options = {}) => {
+  const defaultOptions = Config.proxy
+    ? {
+        agent: proxy(Config.proxy)
+      }
+    : {}
+  const mergedOptions = {
+    ...defaultOptions,
+    ...options
+  }
+
+  return fetch(url, mergedOptions)
+}
 
 export class ChatgptManagement extends plugin {
   constructor (e) {
@@ -252,7 +269,13 @@ export class ChatgptManagement extends plugin {
         },
         {
           reg: '^#chatgpt设置后台(刷新|refresh)(t|T)oken$',
-          fnc: 'setOpenAIPlatformToken'
+          fnc: 'setOpenAIPlatformToken',
+          permission: 'master'
+        },
+        {
+          reg: '^#chatgpt设置sessKey$',
+          fnc: 'getSessKey',
+          permission: 'master'
         },
         {
           reg: '^#(chatgpt)?查看回复设置$',
@@ -925,12 +948,13 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
       return
     }
     let map = {
-      精准: 'precise',
-      创意: 'creative',
-      均衡: 'balanced',
+      精准: 'Sydney',
+      创意: 'Sydney',
+      均衡: 'Sydney',
       Sydney: 'Sydney',
       sydney: 'Sydney',
       悉尼: 'Sydney',
+      默认: 'Sydney',
       自设定: 'Custom',
       自定义: 'Custom'
     }
@@ -938,7 +962,7 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
       Config.toneStyle = map[tongStyle]
       await e.reply('切换成功')
     } else {
-      await e.reply('没有这种风格。支持的风格：精准、创意、均衡、悉尼、自设定')
+      await e.reply('没有这种风格。支持的风格：默认/创意/悉尼、自设定')
     }
   }
 
@@ -963,7 +987,7 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
   async modeHelp () {
     let mode = await redis.get('CHATGPT:USE')
     const modeMap = {
-      browser: '浏览器',
+      // browser: '浏览器',
       azure: 'Azure',
       // apiReverse: 'API2',
       api: 'API',
@@ -971,30 +995,12 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
       api3: 'API3',
       chatglm: 'ChatGLM-6B',
       claude: 'Claude',
-      poe: 'Poe'
+      poe: 'Poe',
+      xh: '星火',
+      qwen: '通义千问'
     }
     let modeText = modeMap[mode || 'api']
-    let message = `API模式和浏览器模式如何选择？
-
-API模式会调用 OpenAI 官方提供的 gpt-3.5-turbo API，只需要提供 API Key。一般情况下，该种方式响应速度更快，不会像 chatGPT 官网一样总出现不可用的现象，但要注意 gpt-3.5-turbo 的 API 调用是收费的，新用户有 $5 的试用金可用于支付，价格为 $0.0020/1K tokens。（问题和回答加起来算 token）
-
-API3 模式会调用官网反代 API，它会帮你绕过 CF 防护，需要提供 ChatGPT 的 Token。效果与官网和浏览器一致。设置 Token 指令：#chatgpt设置token。
-
-浏览器模式通过在本地启动 Chrome 等浏览器模拟用户访问 ChatGPT 网站，使得获得和官方以及 API2 模式一模一样的回复质量，同时保证安全性。缺点是本方法对环境要求较高，需要提供桌面环境和一个可用的代理（能够访问 ChatGPT 的 IP 地址），且响应速度不如 API，而且高峰期容易无法使用。
-
-必应（Bing）将调用微软新必应接口进行对话。需要在必应网页能够正常使用新必应且设置有效的 Bing 登录 Cookie 方可使用。#chatgpt设置必应 Token。
-
-自建 ChatGLM 模式会调用自建的 ChatGLM-6B 服务器 API 进行对话，需要自建。参考 https://github.com/ikechan8370/SimpleChatGLM6BAPI。
-
-Claude 模式会调用 Slack 中的 Claude 机器人进行对话，与其他模式不同的是全局共享一个对话。配置参考 https://ikechan8370.com/archives/chatgpt-plugin-for-yunzaipei-zhi-slack-claude。
-
-Poe 模式会调用 Poe 中的 Claude-instant 进行对话。需要提供 Cookie：#chatgpt设置 Poe Token。
-
-星火 模式会调用科大讯飞推出的新一代认知智能大模型 '星火认知大模型' 进行对话。需要提供Cookie：#chatgpt设置星火token。
-
-您可以使用 "#chatgpt切换浏览器/API/API3/Bing/ChatGLM/Claude/Poe/星火" 来切换到指定模式。
-
-当前为 ${modeText} 模式。`
+    let message = `请访问yunzai.chat查看文档。当前为 ${modeText} 模式。`
     await this.reply(message)
   }
 
@@ -1131,8 +1137,8 @@ Poe 模式会调用 Poe 中的 Claude-instant 进行对话。需要提供 Cookie
   async saveAPIKey () {
     if (!this.e.msg) return
     let token = this.e.msg
-    if (!token.startsWith('sk-')) {
-      await this.reply('OpenAI API Key格式错误', true)
+    if (!token.startsWith('sk-') && !token.startsWith('sess-')) {
+      await this.reply('OpenAI API Key格式错误。如果是格式特殊的非官方Key请前往锅巴或工具箱手动设置', true)
       this.finish('saveAPIKey')
       return
     }
@@ -1319,7 +1325,64 @@ Poe 模式会调用 Poe 中的 Claude-instant 进行对话。需要提供 Cookie
 
   async setOpenAIPlatformToken (e) {
     this.setContext('doSetOpenAIPlatformToken')
-    await e.reply('请发送refreshToken\n你可以在已登录的platform.openai.com后台界面打开调试窗口，在终端中执行\nJSON.parse(localStorage.getItem(Object.keys(localStorage).filter(k => k.includes(\'auth0\'))[0])).body.refresh_token\n如果仍不能查看余额，请退出登录重新获取刷新令牌')
+    await e.reply('请发送refreshToken\n你可以在已登录的platform.openai.com后台界面打开调试窗口，在终端中执行\nJSON.parse(localStorage.getItem(Object.keys(localStorage).filter(k => k.includes(\'auth0\'))[0])).body.refresh_token\n如果仍不能查看余额，请退出登录重新获取刷新令牌.设置后可以发送#chatgpt设置sessKey来将sessKey作为API Key使用')
+  }
+
+  async getSessKey (e) {
+    if (!Config.OpenAiPlatformRefreshToken) {
+      this.reply('当前未配置platform.openai.com的刷新token，请发送【#chatgpt设置后台刷新token】进行配置。')
+      return false
+    }
+    let authHost = 'https://auth0.openai.com'
+    if (Config.openAiBaseUrl && !Config.openAiBaseUrl.startsWith('https://api.openai.com')) {
+      authHost = Config.openAiBaseUrl.replace('/v1', '').replace('/v1/', '')
+    }
+    let refreshRes = await newFetch(`${authHost}/oauth/token`, {
+      method: 'POST',
+      body: JSON.stringify({
+        refresh_token: Config.OpenAiPlatformRefreshToken,
+        client_id: 'DRivsnm2Mu42T3KOpqdtwB3NYviHYzwD',
+        grant_type: 'refresh_token'
+      }),
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+        'Content-Type': 'application/json'
+      }
+    })
+    if (refreshRes.status !== 200) {
+      let errMsg = await refreshRes.json()
+      logger.error(JSON.stringify(errMsg))
+      if (errMsg.error === 'access_denied') {
+        await e.reply('刷新令牌失效，请重新发送【#chatgpt设置后台刷新token】进行配置。建议退出platform.openai.com重新登录后再获取和配置')
+      } else {
+        await e.reply('获取失败')
+      }
+      return false
+    }
+    let newToken = await refreshRes.json()
+    // eslint-disable-next-line camelcase
+    const { access_token, refresh_token } = newToken
+    // eslint-disable-next-line camelcase
+    Config.OpenAiPlatformRefreshToken = refresh_token
+    let host = Config.openAiBaseUrl.replace('/v1', '').replace('/v1/', '')
+    let res = await newFetch(`${host}/dashboard/onboarding/login`, {
+      headers: {
+        // eslint-disable-next-line camelcase
+        Authorization: `Bearer ${access_token}`,
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
+      },
+      method: 'POST'
+    })
+    if (res.status === 200) {
+      let authRes = await res.json()
+      let sess = authRes.user.session.sensitive_id
+      if (sess) {
+        Config.apiKey = sess
+        await e.reply('已成功将sessKey设置为apiKey，您可以发送#openai余额来查看该账号余额')
+      } else {
+        await e.reply('设置失败！')
+      }
+    }
   }
 
   async doSetOpenAIPlatformToken () {
