@@ -67,7 +67,11 @@ async function User (fastify, options) {
     let bots = getBots()
     for (let bot of bots) {
       if(isTrss) {
-        bot.pickFriend(master).sendMsg(`收到工具箱快捷登录请求，1分钟内有效：${otp}`)
+        try {
+          bot.pickFriend(master).sendMsg(`收到工具箱快捷登录请求，1分钟内有效：${otp}`)
+        } catch (error) {
+          logger.error(error)
+        }
       } else {
         bot.pickUser(master).sendMsg(`收到工具箱快捷登录请求，1分钟内有效：${otp}`)
       }
