@@ -1302,11 +1302,13 @@ export class chatgpt extends plugin {
             this.reply(`建议的回复：\n${chatMessage.suggestedResponses}`)
           }
         }
-        const sendable = await generateAudio(this.e, ttsResponse, emotion, emotionDegree)
-        if (sendable) {
-          await this.reply(sendable)
-        } else {
-          await this.reply('合成语音发生错误~')
+        if(ttsResponse.length <= parseInt(Config.ttsAutoFallbackThreshold)) {
+            const sendable = await generateAudio(this.e, ttsResponse, emotion, emotionDegree)
+            if (sendable) {
+            await this.reply(sendable)
+            } else {
+            await this.reply('合成语音发生错误~')
+            }
         }
       } else if (userSetting.usePicture || (Config.autoUsePicture && response.length > Config.autoUsePictureThreshold)) {
         // todo use next api of chatgpt to complete incomplete respoonse
