@@ -1674,8 +1674,8 @@ export class chatgpt extends plugin {
                     seq = e.source.message_id
                   }
                   let msgs = e.isGroup ? await e.group.getChatHistory(seq, 1) : await e.friend.getChatHistory(seq, 1)
-                  let sourceMsg = msgs[0]
-                  let fileMsgElem = sourceMsg.message.find(msg => msg.type === 'file')
+                  let sourceMsg = msgs[msgs.length - 1]
+                  let fileMsgElem = sourceMsg.file || sourceMsg.message.find(msg => msg.type === 'file')
                   if (fileMsgElem) {
                     toSummaryFileContent = await extractContentFromFile(fileMsgElem, e)
                   }
