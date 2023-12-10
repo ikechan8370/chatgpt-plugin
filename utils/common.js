@@ -13,7 +13,7 @@ import AzureTTS, { supportConfigurations as azureRoleList } from './tts/microsof
 import { translate } from './translate.js'
 import uploadRecord from './uploadRecord.js'
 import Version from './version.js'
-import fetch from 'node-fetch'
+import fetch, { FormData, fileFromSync } from 'node-fetch'
 let pdfjsLib
 try {
   pdfjsLib = (await import('pdfjs-dist')).default
@@ -785,10 +785,14 @@ export async function getImg (e) {
   }
   if (e.source) {
     let reply
+    let seq = e.isGroup ? e.source.seq : e.source.time
+    if (e.adapter === 'shamrock') {
+      seq = e.source.message_id
+    }
     if (e.isGroup) {
-      reply = (await e.group.getChatHistory(e.source.seq, 1)).pop()?.message
+      reply = (await e.group.getChatHistory(seq, 1)).pop()?.message
     } else {
-      reply = (await e.friend.getChatHistory(e.source.time, 1)).pop()?.message
+      reply = (await e.friend.getChatHistory(seq, 1)).pop()?.message
     }
     if (reply) {
       let i = []
@@ -809,8 +813,34 @@ export async function getImageOcrText (e) {
     try {
       let resultArr = []
       let eachImgRes = ''
+      if (!e.bot.imageOcr || typeof e.bot.imageOcr !== 'function') {
+        e.bot.imageOcr = async (image) => {
+          if (Config.extraUrl) {
+            let md5 = image.split(/[/-]/).find(s => s.length === 32)?.toUpperCase()
+            let filePath = await downloadFile(image, `ocr/${md5}.png`)
+            let formData = new FormData()
+            formData.append('file', fileFromSync(filePath))
+            let res = await fetch(`${Config.extraUrl}/ocr?lang=chi_sim%2Beng`, {
+              body: formData,
+              method: 'POST',
+              headers: {
+                from: 'ikechan8370'
+              }
+            })
+            if (res.status === 200) {
+              return {
+                wordslist: [{ words: await res.text() }]
+              }
+            }
+          }
+          return {
+            wordslist: []
+          }
+        }
+      }
       for (let i in img) {
         const imgOCR = await e.bot.imageOcr(img[i])
+
         for (let text of imgOCR.wordslist) {
           eachImgRes += (`${text?.words}  \n`)
         }
@@ -820,6 +850,7 @@ export async function getImageOcrText (e) {
       // logger.warn('resultArr', resultArr)
       return resultArr
     } catch (err) {
+      logger.warn(err)
       logger.warn('OCR失败，可能使用的适配器不支持OCR')
       return false
       // logger.error(err)
@@ -1061,7 +1092,7 @@ export async function extractContentFromFile (fileMsgElem, e) {
   let fileType = isPureText(fileMsgElem.name)
   if (fileType) {
     // 可读的文件类型
-    let fileUrl = e.isGroup ? await e.group.getFileUrl(fileMsgElem.fid) : await e.friend.getFileUrl(fileMsgElem.fid)
+    let fileUrl = fileMsgElem.url || (e.isGroup ? await e.group.getFileUrl(fileMsgElem.fid) : await e.friend.getFileUrl(fileMsgElem.fid))
     let filePath = await downloadFile(fileUrl, path.join('received', fileMsgElem.name))
     switch (fileType) {
       case 'pdf': {
