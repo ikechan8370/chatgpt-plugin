@@ -2323,7 +2323,7 @@ export class chatgpt extends plugin {
             }
           }
           let img = await getImg(e)
-          if (img.length > 0 && Config.extraUrl) {
+          if (img?.length > 0 && Config.extraUrl) {
             tools.push(new ImageCaptionTool())
             tools.push(new ProcessPictureTool())
             prompt += `\nthe url of the picture(s) above: ${img.join(', ')}`
