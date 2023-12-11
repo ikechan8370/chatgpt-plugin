@@ -1,12 +1,12 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import _ from 'lodash'
-import {Config, defaultOpenAIAPI} from '../utils/config.js'
-import {v4 as uuid} from 'uuid'
+import { Config, defaultOpenAIAPI } from '../utils/config.js'
+import { v4 as uuid } from 'uuid'
 import delay from 'delay'
-import {ChatGPTAPI} from '../utils/openai/chatgpt-api.js'
-import {BingAIClient} from '@waylaidwanderer/chatgpt-api'
+import { ChatGPTAPI } from '../utils/openai/chatgpt-api.js'
+import { BingAIClient } from '@waylaidwanderer/chatgpt-api'
 import SydneyAIClient from '../utils/SydneyAIClient.js'
-import {PoeClient} from '../utils/poe/index.js'
+import { PoeClient } from '../utils/poe/index.js'
 import AzureTTS from '../utils/tts/microsoft-azure.js'
 import VoiceVoxTTS from '../utils/tts/voicevox.js'
 import Version from '../utils/version.js'
@@ -33,51 +33,51 @@ import {
   renderUrl,
   upsertMessage
 } from '../utils/common.js'
-import {ChatGPTPuppeteer} from '../utils/browser.js'
-import {KeyvFile} from 'keyv-file'
-import {OfficialChatGPTClient} from '../utils/message.js'
+import { ChatGPTPuppeteer } from '../utils/browser.js'
+import { KeyvFile } from 'keyv-file'
+import { OfficialChatGPTClient } from '../utils/message.js'
 import fetch from 'node-fetch'
-import {deleteConversation, getConversations, getLatestMessageIdByConversationId} from '../utils/conversation.js'
-import {convertSpeaker, speakers} from '../utils/tts.js'
+import { deleteConversation, getConversations, getLatestMessageIdByConversationId } from '../utils/conversation.js'
+import { convertSpeaker, speakers } from '../utils/tts.js'
 import ChatGLMClient from '../utils/chatglm.js'
-import {convertFaces} from '../utils/face.js'
-import {SlackClaudeClient} from '../utils/slack/slackClient.js'
-import {getPromptByName} from '../utils/prompts.js'
+import { convertFaces } from '../utils/face.js'
+import { SlackClaudeClient } from '../utils/slack/slackClient.js'
+import { getPromptByName } from '../utils/prompts.js'
 import BingDrawClient from '../utils/BingDraw.js'
 import XinghuoClient from '../utils/xinghuo/xinghuo.js'
 import Bard from '../utils/bard.js'
-import {JinyanTool} from '../utils/tools/JinyanTool.js'
-import {SendVideoTool} from '../utils/tools/SendBilibiliTool.js'
-import {KickOutTool} from '../utils/tools/KickOutTool.js'
-import {EditCardTool} from '../utils/tools/EditCardTool.js'
-import {SearchVideoTool} from '../utils/tools/SearchBilibiliTool.js'
-import {SearchMusicTool} from '../utils/tools/SearchMusicTool.js'
-import {QueryStarRailTool} from '../utils/tools/QueryStarRailTool.js'
-import {WebsiteTool} from '../utils/tools/WebsiteTool.js'
-import {WeatherTool} from '../utils/tools/WeatherTool.js'
-import {SerpTool} from '../utils/tools/SerpTool.js'
-import {SerpIkechan8370Tool} from '../utils/tools/SerpIkechan8370Tool.js'
-import {SendPictureTool} from '../utils/tools/SendPictureTool.js'
-import {SerpImageTool} from '../utils/tools/SearchImageTool.js'
-import {ImageCaptionTool} from '../utils/tools/ImageCaptionTool.js'
-import {SendAudioMessageTool} from '../utils/tools/SendAudioMessageTool.js'
-import {ProcessPictureTool} from '../utils/tools/ProcessPictureTool.js'
-import {APTool} from '../utils/tools/APTool.js'
-import {QueryGenshinTool} from '../utils/tools/QueryGenshinTool.js'
-import {HandleMessageMsgTool} from '../utils/tools/HandleMessageMsgTool.js'
-import {QueryUserinfoTool} from '../utils/tools/QueryUserinfoTool.js'
-import {EliMovieTool} from '../utils/tools/EliMovieTool.js'
-import {EliMusicTool} from '../utils/tools/EliMusicTool.js'
-import {SendMusicTool} from '../utils/tools/SendMusicTool.js'
-import {SendDiceTool} from '../utils/tools/SendDiceTool.js'
-import {SendAvatarTool} from '../utils/tools/SendAvatarTool.js'
-import {SendMessageToSpecificGroupOrUserTool} from '../utils/tools/SendMessageToSpecificGroupOrUserTool.js'
-import {SetTitleTool} from '../utils/tools/SetTitleTool.js'
-import {solveCaptchaOneShot} from '../utils/bingCaptcha.js'
-import {ClaudeAIClient} from '../utils/claude.ai/index.js'
-import {getProxy} from '../utils/proxy.js'
-import {QwenApi} from '../utils/alibaba/qwen-api.js'
-import {getChatHistoryGroup} from '../utils/chat.js'
+import { JinyanTool } from '../utils/tools/JinyanTool.js'
+import { SendVideoTool } from '../utils/tools/SendBilibiliTool.js'
+import { KickOutTool } from '../utils/tools/KickOutTool.js'
+import { EditCardTool } from '../utils/tools/EditCardTool.js'
+import { SearchVideoTool } from '../utils/tools/SearchBilibiliTool.js'
+import { SearchMusicTool } from '../utils/tools/SearchMusicTool.js'
+import { QueryStarRailTool } from '../utils/tools/QueryStarRailTool.js'
+import { WebsiteTool } from '../utils/tools/WebsiteTool.js'
+import { WeatherTool } from '../utils/tools/WeatherTool.js'
+import { SerpTool } from '../utils/tools/SerpTool.js'
+import { SerpIkechan8370Tool } from '../utils/tools/SerpIkechan8370Tool.js'
+import { SendPictureTool } from '../utils/tools/SendPictureTool.js'
+import { SerpImageTool } from '../utils/tools/SearchImageTool.js'
+import { ImageCaptionTool } from '../utils/tools/ImageCaptionTool.js'
+import { SendAudioMessageTool } from '../utils/tools/SendAudioMessageTool.js'
+import { ProcessPictureTool } from '../utils/tools/ProcessPictureTool.js'
+import { APTool } from '../utils/tools/APTool.js'
+import { QueryGenshinTool } from '../utils/tools/QueryGenshinTool.js'
+import { HandleMessageMsgTool } from '../utils/tools/HandleMessageMsgTool.js'
+import { QueryUserinfoTool } from '../utils/tools/QueryUserinfoTool.js'
+import { EliMovieTool } from '../utils/tools/EliMovieTool.js'
+import { EliMusicTool } from '../utils/tools/EliMusicTool.js'
+import { SendMusicTool } from '../utils/tools/SendMusicTool.js'
+import { SendDiceTool } from '../utils/tools/SendDiceTool.js'
+import { SendAvatarTool } from '../utils/tools/SendAvatarTool.js'
+import { SendMessageToSpecificGroupOrUserTool } from '../utils/tools/SendMessageToSpecificGroupOrUserTool.js'
+import { SetTitleTool } from '../utils/tools/SetTitleTool.js'
+import { solveCaptchaOneShot } from '../utils/bingCaptcha.js'
+import { ClaudeAIClient } from '../utils/claude.ai/index.js'
+import { getProxy } from '../utils/proxy.js'
+import { QwenApi } from '../utils/alibaba/qwen-api.js'
+import { getChatHistoryGroup } from '../utils/chat.js'
 
 try {
   await import('@azure/openai')
@@ -97,6 +97,9 @@ try {
 }
 let version = Config.version
 let proxy = getProxy()
+
+const originalValues  = ['星火', '通义千问', '克劳德', '克劳德2', '必应', 'api', 'API', 'api3', 'API3', 'glm', '巴德']
+const correspondingValues = ['xh', 'qwen', 'claude', 'claude2', 'bing', 'api', 'api', 'api3', 'api3', 'chatglm', 'bard']
 /**
  * 每个对话保留的时长。单个对话内ai是保留上下文的。超时后销毁对话，再次对话创建新的对话。
  * 单位：秒
@@ -204,11 +207,11 @@ export class chatgpt extends plugin {
           permission: 'master'
         },
         {
-          reg: '^#(chatgpt)?(结束|新开|摧毁|毁灭|完结)对话([sS]*)',
+          reg: '^#(chatgpt|星火|通义千问|克劳德|克劳德2|必应|api|API|api3|API3|glm|巴德)?(结束|新开|摧毁|毁灭|完结)对话([sS]*)',
           fnc: 'destroyConversations'
         },
         {
-          reg: '^#(chatgpt)?(结束|新开|摧毁|毁灭|完结)全部对话$',
+          reg: '^#(chatgpt|星火|通义千问|克劳德|克劳德2|必应|api|API|api3|API3|glm|巴德)?(结束|新开|摧毁|毁灭|完结)全部对话$',
           fnc: 'endAllConversations',
           permission: 'master'
         },
@@ -299,7 +302,15 @@ export class chatgpt extends plugin {
    */
   async destroyConversations (e) {
     const userData = await getUserData(e.user_id)
-    const use = (userData.mode === 'default' ? null : userData.mode) || await redis.get('CHATGPT:USE')
+    const match = e.msg.trim().match('^#?(.*)(结束|新开|摧毁|毁灭|完结)对话')
+    console.log(match[1])
+    let use
+    if (match[1] && match[1] != 'chatgpt') {
+      use = correspondingValues[originalValues.indexOf(match[1])]
+    } else {
+      use = (userData.mode === 'default' ? null : userData.mode) || await redis.get('CHATGPT:USE')
+    }
+    console.log(use)
     await redis.del(`CHATGPT:WRONG_EMOTION:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`)
     if (use === 'claude') {
       // let client = new SlackClaudeClient({
@@ -476,7 +487,15 @@ export class chatgpt extends plugin {
   }
 
   async endAllConversations (e) {
-    let use = await redis.get('CHATGPT:USE') || 'api'
+    const match = e.msg.trim().match('^#?(.*)(结束|新开|摧毁|毁灭|完结)全部对话')
+    console.log(match[1])
+    let use
+    if (match[1] && match[1] != 'chatgpt') {
+      use = correspondingValues[originalValues.indexOf(match[1])]
+    } else {
+      use = await redis.get('CHATGPT:USE') || 'api'
+    }
+    console.log(use)
     let deleted = 0
     switch (use) {
       case 'claude': {
