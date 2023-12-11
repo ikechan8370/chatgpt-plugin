@@ -797,13 +797,13 @@ export class chatgpt extends plugin {
    * #chatgpt
    */
   async chatgpt (e) {
-    let msg = Version.isTrss ? e.msg : e.raw_message
+    let msg = (Version.isTrss || e.adapter === 'shamrock') ? e.msg : e.raw_message
     let prompt
     if (this.toggleMode === 'at') {
       if (!msg || e.msg?.startsWith('#')) {
         return false
       }
-      if ((e.isGroup || e.group_id) && !(e.atme || e.atBot || e.at == getUin(e))) {
+      if ((e.isGroup || e.group_id) && !(e.atme || e.atBot || (e.at === e.self_id))) {
         return false
       }
       if (e.user_id == getUin(e)) return false
@@ -1669,9 +1669,13 @@ export class chatgpt extends plugin {
               let toSummaryFileContent
               try {
                 if (e.source) {
-                  let msgs = e.isGroup ? await e.group.getChatHistory(e.source.seq, 1) : await e.friend.getChatHistory(e.source.time, 1)
-                  let sourceMsg = msgs[0]
-                  let fileMsgElem = sourceMsg.message.find(msg => msg.type === 'file')
+                  let seq = e.isGroup ? e.source.seq : e.source.time
+                  if (e.adapter === 'shamrock') {
+                    seq = e.source.message_id
+                  }
+                  let msgs = e.isGroup ? await e.group.getChatHistory(seq, 1) : await e.friend.getChatHistory(seq, 1)
+                  let sourceMsg = msgs[msgs.length - 1]
+                  let fileMsgElem = sourceMsg.file || sourceMsg.message.find(msg => msg.type === 'file')
                   if (fileMsgElem) {
                     toSummaryFileContent = await extractContentFromFile(fileMsgElem, e)
                   }
@@ -2127,6 +2131,7 @@ export class chatgpt extends plugin {
         }
       }
       default: {
+        // openai api
         let completionParams = {}
         if (Config.model) {
           completionParams.model = Config.model
@@ -2317,28 +2322,8 @@ export class chatgpt extends plugin {
               }
             }
           }
-          let img = []
-          if (e.source) {
-            // 优先从回复找图
-            let reply
-            if (e.isGroup) {
-              reply = (await e.group.getChatHistory(e.source.seq, 1)).pop()?.message
-            } else {
-              reply = (await e.friend.getChatHistory(e.source.time, 1)).pop()?.message
-            }
-            if (reply) {
-              for (let val of reply) {
-                if (val.type === 'image') {
-                  console.log(val)
-                  img.push(val.url)
-                }
-              }
-            }
-          }
-          if (e.img) {
-            img.push(...e.img)
-          }
-          if (img.length > 0 && Config.extraUrl) {
+          let img = await getImg(e)
+          if (img?.length > 0 && Config.extraUrl) {
             tools.push(new ImageCaptionTool())
             tools.push(new ProcessPictureTool())
             prompt += `\nthe url of the picture(s) above: ${img.join(', ')}`

@@ -57,6 +57,7 @@ async function User (fastify, options) {
   // 快速登录
   fastify.post('/quick', async (request, reply) => {
     const otp = randomString(6)
+    const isTrss = Array.isArray(Bot.uin)
     await redis.set(
       'CHATGPT:SERVER_QUICK',
       otp,
@@ -65,7 +66,15 @@ async function User (fastify, options) {
     const master = (await getMasterQQ())[0]
     let bots = getBots()
     for (let bot of bots) {
-      bot.pickUser(master).sendMsg(`收到工具箱快捷登录请求，1分钟内有效：${otp}`)
+      if(isTrss) {
+        try {
+          bot.pickFriend(master).sendMsg(`收到工具箱快捷登录请求，1分钟内有效：${otp}`)
+        } catch (error) {
+          logger.error(error)
+        }
+      } else {
+        bot.pickUser(master).sendMsg(`收到工具箱快捷登录请求，1分钟内有效：${otp}`)
+      }
     }
     reply.send({ state: true })
     return reply
