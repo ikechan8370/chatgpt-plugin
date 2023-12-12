@@ -113,7 +113,10 @@ export default class BingDrawClient {
           // 很可能是微软内部error，重试即可
           return
         }
-        imageLinks = imageLinks.map(link => link.split('?w=')[0]).map(link => link.replace('src="', ''))
+        imageLinks = imageLinks
+          .map(link => link.split('?w=')[0])
+          .map(link => link.replace('src="', ''))
+          .filter(link => !link.endsWith('.svg'))
         imageLinks = [...new Set(imageLinks)]
         const badImages = [
           'https://r.bing.com/rp/in-2zU3AJUdkgFe7ZKv19yPBHVs.png',
