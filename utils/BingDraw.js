@@ -95,7 +95,7 @@ export default class BingDrawClient {
     let pollingUrl = `${this.opts.baseUrl}/images/create/async/results/${requestId}?q=${urlEncodedPrompt}`
     logger.info({ pollingUrl })
     logger.info('waiting for bing draw results...')
-    let timeoutTimes = 30
+    let timeoutTimes = 50
     let found = false
     let timer = setInterval(async () => {
       if (found) {
@@ -113,15 +113,20 @@ export default class BingDrawClient {
           // 很可能是微软内部error，重试即可
           return
         }
-        imageLinks = imageLinks.map(link => link.split('?w=')[0]).map(link => link.replace('src="', ''))
+        imageLinks = imageLinks
+          .map(link => link.split('?w=')[0])
+          .map(link => link.replace('src="', ''))
+          .filter(link => !link.includes('.svg'))
         imageLinks = [...new Set(imageLinks)]
         const badImages = [
+          'https://r.bing.com/rp/in-2zU3AJUdkgFe7ZKv19yPBHVs.png"',
+          'https://r.bing.com/rp/TX9QuO3WzcCJz1uaaSwQAz39Kb0.jpg"',
           'https://r.bing.com/rp/in-2zU3AJUdkgFe7ZKv19yPBHVs.png',
           'https://r.bing.com/rp/TX9QuO3WzcCJz1uaaSwQAz39Kb0.jpg'
         ]
         for (let imageLink of imageLinks) {
           if (badImages.indexOf(imageLink) > -1) {
-            await e.reply('绘图失败：Bad images', true)
+            await e.reply('❌绘图失败：Bad images', true)
             logger.error(rText)
           }
         }
@@ -132,7 +137,7 @@ export default class BingDrawClient {
         clearInterval(timer)
       } else {
         if (timeoutTimes === 0) {
-          await e.reply('绘图超时', true)
+          await e.reply('❌绘图超时', true)
           clearInterval(timer)
           timer = null
         } else {
@@ -140,6 +145,6 @@ export default class BingDrawClient {
           timeoutTimes--
         }
       }
-    }, 2000)
+    }, 3000)
   }
 }
