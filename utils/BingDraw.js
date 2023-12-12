@@ -119,6 +119,8 @@ export default class BingDrawClient {
           .filter(link => !link.includes('.svg'))
         imageLinks = [...new Set(imageLinks)]
         const badImages = [
+          'https://r.bing.com/rp/in-2zU3AJUdkgFe7ZKv19yPBHVs.png"',
+          'https://r.bing.com/rp/TX9QuO3WzcCJz1uaaSwQAz39Kb0.jpg"',
           'https://r.bing.com/rp/in-2zU3AJUdkgFe7ZKv19yPBHVs.png',
           'https://r.bing.com/rp/TX9QuO3WzcCJz1uaaSwQAz39Kb0.jpg'
         ]
