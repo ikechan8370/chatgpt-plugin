@@ -1039,11 +1039,13 @@ export function getUserSpeaker (userSetting) {
  * @returns {Promise<string>} 最终下载文件的存储位置
  */
 export async function downloadFile (url, destPath, absolute = false, ignoreCertificateError = true) {
-  let response = await fetch(url, {
-    agent: new https.Agent({
+  let init = {}
+  if (ignoreCertificateError && url.startsWith('https')) {
+    init.agent = new https.Agent({
       rejectUnauthorized: !ignoreCertificateError
     })
-  })
+  }
+  let response = await fetch(url, init)
   if (!response.ok) {
     throw new Error(`download file http error: status: ${response.status}`)
   }
