@@ -126,7 +126,7 @@ export default class BingDrawClient {
         ]
         for (let imageLink of imageLinks) {
           if (badImages.indexOf(imageLink) > -1) {
-            await e.reply('❌绘图失败：Bad images', true)
+            await e.reply('❌绘图失败：绘图完成但被屏蔽，请调整提示词。', true)
             logger.error(rText)
           }
         }
