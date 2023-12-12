@@ -227,7 +227,8 @@ export default class SydneyAIClient {
       firstMessageTimeout = Config.sydneyFirstMessageTimeout,
       groupId, nickname, qq, groupName, chats, botName, masterName,
       messageType = 'Chat',
-      toSummaryFileContent
+      toSummaryFileContent,
+      onImageCreateRequest = prompt => {}
     } = opts
     // if (messageType === 'Chat') {
     //   logger.warn('该Bing账户token已被限流，降级至使用非搜索模式。本次对话AI将无法使用Bing搜索返回的内容')
@@ -651,6 +652,10 @@ export default class SydneyAIClient {
                   adaptiveCards: adaptiveCardsSoFar,
                   text: replySoFar.join('')
                 }
+            if (messages[0].contentType === 'IMAGE') {
+              onImageCreateRequest(messages[0].text)
+              return
+            }
             if (messages[0].contentOrigin === 'Apology') {
               console.log('Apology found')
               if (!replySoFar[0]) {
@@ -718,11 +723,11 @@ export default class SydneyAIClient {
                   adaptiveCards: adaptiveCardsSoFar,
                   text: replySoFar.join('')
                 }
-            // 获取到图片内容
-            if (messages.some(obj => obj.contentType === 'IMAGE')) {
-              message.imageTag = messages.filter(m => m.contentType === 'IMAGE').map(m => m.text).join('')
-            }
-            message.text = messages.filter(m => m.author === 'bot' && m.contentType != 'IMAGE').map(m => m.text).join('')
+            // // 获取到图片内容
+            // if (messages.some(obj => obj.contentType === 'IMAGE')) {
+            //   message.imageTag = messages.filter(m => m.contentType === 'IMAGE').map(m => m.text).join('')
+            // }
+            message.text = messages.filter(m => m.author === 'bot' && m.contentType !== 'IMAGE').map(m => m.text).join('')
             if (!message) {
               reject('No message was generated.')
               return

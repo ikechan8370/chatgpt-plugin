@@ -1588,36 +1588,22 @@ export class chatgpt extends plugin {
           cookies = bingToken
         }
         let bingAIClient
-        if (Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom') {
-          const cacheOptions = {
-            namespace: Config.toneStyle,
-            store: new KeyvFile({ filename: 'cache.json' })
-          }
-          bingAIClient = new SydneyAIClient({
-            userToken: bingToken, // "_U" cookie from bing.com
-            cookies,
-            debug: Config.debug,
-            cache: cacheOptions,
-            user: e.sender.user_id,
-            proxy: Config.proxy
-          })
-          // Sydney不实现上下文传递，删除上下文索引
-          delete conversation.clientId
-          delete conversation.invocationId
-          delete conversation.conversationSignature
-        } else {
-          let bingOption = {
-            userToken: bingToken, // "_U" cookie from bing.com
-            cookies,
-            debug: Config.debug,
-            proxy: Config.proxy,
-            host: Config.sydneyReverseProxy
-          }
-          if (Config.proxy && Config.sydneyReverseProxy && !Config.sydneyForceUseReverse) {
-            delete bingOption.host
-          }
-          bingAIClient = new BingAIClient(bingOption)
+        const cacheOptions = {
+          namespace: Config.toneStyle,
+          store: new KeyvFile({ filename: 'cache.json' })
         }
+        bingAIClient = new SydneyAIClient({
+          userToken: bingToken, // "_U" cookie from bing.com
+          cookies,
+          debug: Config.debug,
+          cache: cacheOptions,
+          user: e.sender.user_id,
+          proxy: Config.proxy
+        })
+        // Sydney不实现上下文传递，删除上下文索引
+        delete conversation.clientId
+        delete conversation.invocationId
+        delete conversation.conversationSignature
         let response
         let reply = ''
         let retry = 3
@@ -1702,6 +1688,31 @@ export class chatgpt extends plugin {
               const image = await getImg(e)
               opt.imageUrl = image ? image[0] : undefined
             }
+            if (Config.enableGenerateContents) {
+              opt.onImageCreateRequest = prompt => {
+                logger.mark(`开始生成内容：${prompt}`)
+                if (Config.bingAPDraw) {
+                  // 调用第三方API进行绘图
+                  let apDraw = new APTool()
+                  apDraw.func({
+                    prompt
+                  }, e)
+                } else {
+                  let client = new BingDrawClient({
+                    baseUrl: Config.sydneyReverseProxy,
+                    userToken: bingToken
+                  })
+                  redis.set(`CHATGPT:DRAW:${e.sender.user_id}`, 'c', { EX: 30 }).then(() => {
+                    try {
+                      client.getImages(prompt, e)
+                    } catch (err) {
+                      redis.del(`CHATGPT:DRAW:${e.sender.user_id}`)
+                      e.reply('绘图失败：' + err)
+                    }
+                  })
+                }
+              }
+            }
             response = await bingAIClient.sendMessage(prompt, opt, (token) => {
               reply += token
             })
@@ -1727,32 +1738,6 @@ export class chatgpt extends plugin {
                 })
               }
             }
-            // 处理内容生成的图片
-            if (response.details.imageTag) {
-              if (Config.debug) {
-                logger.mark(`开始生成内容：${response.details.imageTag}`)
-              }
-              if (Config.bingAPDraw) {
-                // 调用第三方API进行绘图
-                let apDraw = new APTool()
-                apDraw.func({
-                  prompt: response.details.imageTag
-                }, e)
-              } else {
-                let client = new BingDrawClient({
-                  baseUrl: Config.sydneyReverseProxy,
-                  userToken: bingToken
-                })
-                await redis.set(`CHATGPT:DRAW:${e.sender.user_id}`, 'c', { EX: 30 })
-                try {
-                  await client.getImages(response.details.imageTag, e)
-                } catch (err) {
-                  await redis.del(`CHATGPT:DRAW:${e.sender.user_id}`)
-                  await e.reply('绘图失败：' + err)
-                }
-              }
-            }
-
             // 如果token曾经有异常，则清除异常
             let Tokens = JSON.parse((await redis.get('CHATGPT:BING_TOKENS')) || '[]')
             const TokenIndex = Tokens?.findIndex(element => element.Token === abtrs.bingToken)
@@ -1768,7 +1753,7 @@ export class chatgpt extends plugin {
             const { maxConv } = error
             if (message && typeof message === 'string' && message.indexOf('CaptchaChallenge') > -1) {
               if (bingToken) {
-                if (maxConv >= 20) {
+                if (maxConv >= 20 && Config.bingCaptchaOneShotUrl) {
                   // maxConv为30说明token有效，可以通过解验证码码服务过码
                   await e.reply('出现必应验证码，尝试解决中')
                   try {
@@ -1777,6 +1762,7 @@ export class chatgpt extends plugin {
                       await e.reply('验证码已解决')
                     } else {
                       logger.error(captchaResolveResult)
+                      errorMessage = message
                       await e.reply('验证码解决失败: ' + captchaResolveResult.error)
                       retry = 0
                     }
@@ -1787,7 +1773,8 @@ export class chatgpt extends plugin {
                   }
                 } else {
                   // 未登录用户maxConv目前为5或10，出验证码没救
-                  logger.warn(`token [${bingToken}] 无效或已过期，如确认token无误，请前往网页版必应对话一次`)
+                  logger.warn(`token [${bingToken}] 出现必应验证码，请前往网页版或app手动解决`)
+                  errorMessage = message
                   retry = 0
                 }
               } else {
@@ -1838,9 +1825,9 @@ export class chatgpt extends plugin {
           response = response || {}
           if (errorMessage.includes('CaptchaChallenge')) {
             if (bingToken) {
-              errorMessage = '出现验证码，请使用当前账户前往https://www.bing.com/chat或Edge侧边栏手动解除验证码'
+              errorMessage = '出现验证码，请使用当前账户前往https://www.bing.com/chat或Edge侧边栏或移动端APP手动解除验证码'
             } else {
-              errorMessage = '出现验证码，且未配置必应账户，请尝试更换代理/反代或绑定必应账户以解除验证码'
+              errorMessage = '未配置必应账户，请绑定必应账户再使用必应模式'
             }
           }
           return {
