@@ -95,7 +95,7 @@ export default class BingDrawClient {
     let pollingUrl = `${this.opts.baseUrl}/images/create/async/results/${requestId}?q=${urlEncodedPrompt}`
     logger.info({ pollingUrl })
     logger.info('waiting for bing draw results...')
-    let timeoutTimes = 30
+    let timeoutTimes = 50
     let found = false
     let timer = setInterval(async () => {
       if (found) {
@@ -124,7 +124,7 @@ export default class BingDrawClient {
         ]
         for (let imageLink of imageLinks) {
           if (badImages.indexOf(imageLink) > -1) {
-            await e.reply('绘图失败：Bad images', true)
+            await e.reply('❌绘图失败：Bad images', true)
             logger.error(rText)
           }
         }
@@ -135,7 +135,7 @@ export default class BingDrawClient {
         clearInterval(timer)
       } else {
         if (timeoutTimes === 0) {
-          await e.reply('绘图超时', true)
+          await e.reply('❌绘图超时', true)
           clearInterval(timer)
           timer = null
         } else {
@@ -143,6 +143,6 @@ export default class BingDrawClient {
           timeoutTimes--
         }
       }
-    }, 2000)
+    }, 3000)
   }
 }

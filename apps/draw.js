@@ -277,7 +277,7 @@ export class dalle extends plugin {
       await client.getImages(prompt, e)
     } catch (err) {
       await redis.del(`CHATGPT:DRAW:${e.sender.user_id}`)
-      await e.reply('绘图失败：' + err)
+      await e.reply('❌绘图失败：' + err)
     }
   }
 }

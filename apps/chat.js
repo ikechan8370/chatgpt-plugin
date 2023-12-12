@@ -1752,7 +1752,7 @@ export class chatgpt extends plugin {
                   await client.getImages(response.details.imageTag, e)
                 } catch (err) {
                   await redis.del(`CHATGPT:DRAW:${e.sender.user_id}`)
-                  await e.reply('绘图失败：' + err)
+                  await e.reply('❌绘图失败：' + err)
                 }
               }
             }
