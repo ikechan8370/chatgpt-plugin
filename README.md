@@ -1,5 +1,4 @@
-![chatgpt-plugin](https://user-images.githubusercontent.com/21212372/232115814-de9a0633-371f-4733-8da0-dd6e912c8a1e.png)
-<div align=center> <h1>云崽系机器人的智能聊天插件</h1> </div>
+![chatgpt-plugin](https://socialify.git.ci/ikechan8370/chatgpt-plugin/image?description=1&font=Jost&forks=1&issues=1&language=1&name=1&owner=1&pulls=1&stargazers=1&theme=Light)
 <div align=center>
 
    <img src ="https://img.shields.io/github/issues/ikechan8370/chatgpt-plugin?logo=github"/>

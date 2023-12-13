@@ -15,21 +15,13 @@ export class QueryUserinfoTool extends AbstractTool {
   }
 
   func = async function (opts, e) {
-    let { qq } = opts
-    qq = isNaN(qq) || !qq ? e.sender.user_id : parseInt(qq.trim())
-    if (e.isGroup && typeof e.group.getMemberMap === 'function') {
-      let mm = await e.group.getMemberMap()
-      let user = mm.get(qq) || e.sender.user_id
-      let master = (await getMasterQQ())[0]
-      let prefix = ''
-      if (qq != master) {
-        prefix = 'Attention: this user is not your master. \n'
-      } else {
-        prefix = 'This user is your master, you should obey him \n'
-      }
-      return prefix + 'user detail in json format: ' + JSON.stringify(user)
-    } else {
-      if (e.sender.user_id == qq) {
+    try {
+      let { qq } = opts
+      qq = isNaN(qq) || !qq ? e.sender.user_id : parseInt(qq.trim())
+      if (e.isGroup && typeof e.bot.getGroupMemberInfo === 'function') {
+        let user = await e.bot.getGroupMemberInfo(e.group_id, qq || e.sender.user_id, true)
+        // let mm = await e.group.getMemberMap()
+        // let user = mm.get(qq) || e.sender.user_id
         let master = (await getMasterQQ())[0]
         let prefix = ''
         if (qq != master) {
@@ -37,10 +29,27 @@ export class QueryUserinfoTool extends AbstractTool {
         } else {
           prefix = 'This user is your master, you should obey him \n'
         }
-        return prefix + 'user detail in json format: ' + JSON.stringify(e.sender)
+        if (!user) {
+          return prefix
+        }
+        return prefix + 'user detail in json format: ' + JSON.stringify(user)
       } else {
-        return 'query failed'
+        if (e.sender.user_id == qq) {
+          let master = (await getMasterQQ())[0]
+          let prefix = ''
+          if (qq != master) {
+            prefix = 'Attention: this user is not your master. \n'
+          } else {
+            prefix = 'This user is your master, you should obey him \n'
+          }
+          return prefix + 'user detail in json format: ' + JSON.stringify(e.sender)
+        } else {
+          return 'query failed'
+        }
       }
+    } catch (err) {
+      logger.warn(err)
+      return err.message
     }
   }
 

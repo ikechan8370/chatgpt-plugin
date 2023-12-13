@@ -163,7 +163,7 @@ const defaultConfig = {
   qwenSeed: 0,
   qwenTemperature: 1,
   qwenEnableSearch: true,
-  version: 'v2.7.7'
+  version: 'v2.7.8'
 }
 const _path = process.cwd()
 let config = {}
