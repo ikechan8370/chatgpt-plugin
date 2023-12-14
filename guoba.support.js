@@ -764,6 +764,12 @@ export function supportGuoba () {
           component: 'InputTextArea'
         },
         {
+          field: 'geminiBaseUrl',
+          label: 'Gemini反代',
+          bottomHelpMessage: '对https://generativelanguage.googleapis.com的反代',
+          component: 'Input'
+        },
+        {
           label: '以下为杂七杂八的配置',
           component: 'Divider'
         },
