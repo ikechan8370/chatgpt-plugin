@@ -14,6 +14,9 @@ export class BaseClient {
   constructor (props = {}) {
     this.supportFunction = false
     this.maxToken = 4096
+    /**
+     * @type {Array<AbstractTool>}
+     */
     this.tools = []
     const {
       e, getMessageById, upsertMessage, deleteMessageById, userId
@@ -38,7 +41,6 @@ export class BaseClient {
    * insert or update a message with the id
    *
    * @type function
-   * @param {string} id
    * @param {object} message
    * @return {Promise<void>}
    */
@@ -90,14 +92,18 @@ export class BaseClient {
     throw new Error('not implemented in abstract client')
   }
 
-  addTools (...tools) {
+  /**
+   * 增加tools
+   * @param {[AbstractTool]} tools
+   */
+  addTools (tools) {
     if (!this.isSupportFunction) {
       throw new Error('function not supported')
     }
     if (!this.tools) {
       this.tools = []
     }
-    this.tools.push(tools)
+    this.tools.push(...tools)
   }
 
   getTools () {

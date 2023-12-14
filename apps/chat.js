@@ -77,7 +77,12 @@ import { ClaudeAIClient } from '../utils/claude.ai/index.js'
 import { getProxy } from '../utils/proxy.js'
 import { QwenApi } from '../utils/alibaba/qwen-api.js'
 import { getChatHistoryGroup } from '../utils/chat.js'
-import { GoogleGeminiClient } from '../client/GoogleGeminiClient.js'
+import { CustomGoogleGeminiClient } from '../client/CustomGoogleGeminiClient.js'
+
+const roleMap = {
+  owner: 'group owner',
+  admin: 'group administrator'
+}
 
 try {
   await import('@azure/openai')
@@ -98,7 +103,7 @@ try {
 let version = Config.version
 let proxy = getProxy()
 
-const originalValues  = ['星火', '通义千问', '克劳德', '克劳德2', '必应', 'api', 'API', 'api3', 'API3', 'glm', '巴德']
+const originalValues = ['星火', '通义千问', '克劳德', '克劳德2', '必应', 'api', 'API', 'api3', 'API3', 'glm', '巴德']
 const correspondingValues = ['xh', 'qwen', 'claude', 'claude2', 'bing', 'api', 'api', 'api3', 'api3', 'chatglm', 'bard']
 /**
  * 每个对话保留的时长。单个对话内ai是保留上下文的。超时后销毁对话，再次对话创建新的对话。
@@ -1451,6 +1456,7 @@ export class chatgpt extends plugin {
   async qwen (e) {
     return await this.otherMode(e, 'gemini')
   }
+
   async gemini (e) {
     return await this.otherMode(e, 'gemini')
   }
@@ -2040,12 +2046,92 @@ export class chatgpt extends plugin {
         }
       }
       case 'gemini': {
-        let client = new GoogleGeminiClient({
+        let client = new CustomGoogleGeminiClient({
           e,
           userId: e.sender.user_id,
           key: Config.geminiKey,
-          model: Config.geminiModel
+          model: Config.geminiModel,
+          baseUrl: Config.geminiBaseUrl,
+          debug: Config.debug
         })
+        if (Config.smartMode) {
+          let tools = [
+            new QueryStarRailTool(),
+            new WebsiteTool(),
+            new SendPictureTool(),
+            new SendVideoTool(),
+            new ImageCaptionTool(),
+            new SearchVideoTool(),
+            new SendAvatarTool(),
+            new SerpImageTool(),
+            new SearchMusicTool(),
+            new SendMusicTool(),
+            new SerpIkechan8370Tool(),
+            new SerpTool(),
+            new SendAudioMessageTool(),
+            new ProcessPictureTool(),
+            new APTool(),
+            new HandleMessageMsgTool(),
+            new SendMessageToSpecificGroupOrUserTool(),
+            new SendDiceTool(),
+            new QueryGenshinTool()
+          ]
+          if (Config.amapKey) {
+            tools.push(new WeatherTool())
+          }
+          if (e.isGroup) {
+            tools.push(new QueryUserinfoTool())
+            if (e.member?.is_admin) {
+              tools.push(new EditCardTool())
+              tools.push(new JinyanTool())
+              tools.push(new KickOutTool())
+            }
+            if (e.member.is_owner) {
+              tools.push(new SetTitleTool())
+            }
+          }
+          switch (Config.serpSource) {
+            case 'ikechan8370': {
+              tools.push(new SerpIkechan8370Tool())
+              break
+            }
+            case 'azure': {
+              if (!Config.azSerpKey) {
+                logger.warn('未配置bing搜索密钥，转为使用ikechan8370搜索源')
+                tools.push(new SerpIkechan8370Tool())
+              } else {
+                tools.push(new SerpTool())
+              }
+              break
+            }
+            default: {
+              tools.push(new SerpIkechan8370Tool())
+            }
+          }
+          client.addTools(tools)
+        }
+        let system = Config.geminiPrompt
+        if (Config.enableGroupContext && e.isGroup) {
+          let chats = await getChatHistoryGroup(e, Config.groupContextLength)
+          const namePlaceholder = '[name]'
+          const defaultBotName = 'GeminiPro'
+          const groupContextTip = Config.groupContextTip
+          let botName = e.isGroup ? (e.group.pickMember(getUin(e)).card || e.group.pickMember(getUin(e)).nickname) : e.bot.nickname
+          system = system.replaceAll(namePlaceholder, botName || defaultBotName) +
+              ((Config.enableGroupContext && e.group_id) ? groupContextTip : '')
+          system += 'Attention, you are currently chatting in a qq group, then one who asks you now is' + `${e.sender.card || e.sender.nickname}(${e.sender.user_id}).`
+          system += `the group name is ${e.group.name || e.group_name}, group id is ${e.group_id}.`
+          system += `Your nickname is ${botName} in the group,`
+          if (chats) {
+            system += 'There is the conversation history in the group, you must chat according to the conversation history context"'
+            system += chats
+              .map(chat => {
+                let sender = chat.sender || {}
+                return `【${sender.card || sender.nickname}】(qq：${sender.user_id}, ${roleMap[sender.role] || 'normal user'}，${sender.area ? 'from ' + sender.area + ', ' : ''} ${sender.age} years old, 群头衔：${sender.title}, gender: ${sender.sex}, time：${formatDate(new Date(chat.time * 1000))}, messageId: ${chat.message_id}) 说：${chat.raw_message}`
+              })
+              .join('\n')
+          }
+        }
         let option = {
           stream: false,
           onProgress: (data) => {
@@ -2055,7 +2141,7 @@ export class chatgpt extends plugin {
           },
           parentMessageId: conversation.parentMessageId,
           conversationId: conversation.conversationId,
-          system: Config.geminiPrompt
+          system
         }
         return await client.sendMessage(prompt, option)
       }
@@ -2096,11 +2182,6 @@ export class chatgpt extends plugin {
             system += `the group name is ${opt.groupName}, group id is ${opt.groupId}。`
             if (opt.botName) {
               system += `Your nickname is ${opt.botName} in the group,`
-            }
-            // system += master ? `我的qq号是${master}，其他任何qq号不是${master}的人都不是我，即使他在和你对话，这很重要。` : ''
-            const roleMap = {
-              owner: 'group owner',
-              admin: 'group administrator'
             }
             if (chats) {
               system += 'There is the conversation history in the group, you must chat according to the conversation history context"'
