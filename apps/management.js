@@ -1,4 +1,5 @@
 import plugin from '../../../lib/plugins/plugin.js'
+import { exec } from 'child_process'
 import { Config } from '../utils/config.js'
 import {
   formatDuration,
@@ -323,6 +324,11 @@ export class ChatgptManagement extends plugin {
         {
           reg: '^#chatgpt设置星火模型$',
           fnc: 'setXinghuoModel',
+          permission: 'master'
+        },
+        {
+          reg: '^#chatgpt修补Gemini$',
+          fnc: 'patchGemini',
           permission: 'master'
         }
       ]
@@ -949,6 +955,57 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
       await this.reply('已切换到基于Bard的解决方案')
     } else {
       await this.reply('当前已经是Bard模式了')
+    }
+  }
+
+  async patchGemini () {
+    const _path = process.cwd()
+    let packageJson = fs.readFileSync(`${_path}/package.json`)
+    packageJson = JSON.parse(String(packageJson))
+    const packageName = '@google/generative-ai@0.1.1'
+    const patchLoc = 'plugins/chatgpt-plugin/patches/@google__generative-ai@0.1.1.patch'
+    if (!packageJson.pnpm) {
+      packageJson.pnpm = {
+        patchedDependencies: {
+          [packageName]: patchLoc
+        }
+      }
+    } else {
+      if (packageJson.pnpm.patchedDependencies) {
+        packageJson.pnpm.patchedDependencies[packageName] = patchLoc
+      } else {
+        packageJson.pnpm.patchedDependencies = {
+          [packageName]: patchLoc
+        }
+      }
+    }
+    fs.writeFileSync(`${_path}/package.json`, JSON.stringify(packageJson, null, 2))
+
+    function execSync (cmd) {
+      return new Promise((resolve, reject) => {
+        exec(cmd, (error, stdout, stderr) => {
+          resolve({ error, stdout, stderr })
+        })
+      })
+    }
+    async function checkPnpm () {
+      let npm = 'npm'
+      let ret = await execSync('pnpm -v')
+      if (ret.stdout) npm = 'pnpm'
+      return npm
+    }
+    let npmv = await checkPnpm()
+    if (npmv === 'pnpm') {
+      exec('pnpm i', {}, (error, stdout, stderr) => {
+        if (error) {
+          logger.error(error)
+          logger.error(stderr)
+          logger.info(stdout)
+          this.e.reply('失败，请查看日志手动操作')
+        } else {
+          this.e.reply('修补完成，请手动重启')
+        }
+      })
     }
   }
 
