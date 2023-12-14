@@ -50,5 +50,10 @@
   "devDependencies": {
     "ts-node": "^10.9.1",
     "ts-node-register": "^1.0.0"
+  },
+  "pnpm": {
+    "patchedDependencies": {
+      "@google/generative-ai@0.1.1": "patches/@google__generative-ai@0.1.1.patch"
+    }
   }
 }
