@@ -13,6 +13,9 @@ try {
 }
 export class GoogleGeminiClient extends BaseClient {
   constructor (props) {
+    if (!GoogleGenerativeAI) {
+      throw new Error('未安装@google/generative-ai，无法使用Gemini，请在chatgpt-plugin目录下执行pnpm i安装新依赖')
+    }
     if (!props.upsertMessage) {
       props.upsertMessage = async function umGemini (message) {
         return await upsertMessage(message, 'Gemini')
