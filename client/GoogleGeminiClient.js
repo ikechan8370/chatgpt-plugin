@@ -89,7 +89,7 @@ export class GoogleGeminiClient extends BaseClient {
           // todo configuration
           maxOutputTokens: 1000,
           temperature: 0.9,
-          topP: 0.1,
+          topP: 0.95,
           topK: 16
         },
         safetySettings: [
