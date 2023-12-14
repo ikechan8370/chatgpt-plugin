@@ -743,15 +743,36 @@ export function supportGuoba () {
           component: 'Switch'
         },
         {
-          label: '以下为杂七杂八的配置',
+          label: '以下为Gemini方式的配置',
           component: 'Divider'
         },
         {
-          field: '2captchaToken',
-          label: '验证码平台Token',
-          bottomHelpMessage: '可注册2captcha实现跳过验证码，收费服务但很便宜。否则可能会遇到验证码而卡住',
+          field: 'geminiKey',
+          label: 'API密钥',
+          bottomHelpMessage: '前往https://makersuite.google.com/app/apikey获取',
           component: 'InputPassword'
         },
+        {
+          field: 'geminiModel',
+          label: '模型',
+          bottomHelpMessage: '目前仅支持gemini-pro',
+          component: 'Input'
+        },
+        {
+          field: 'geminiPrompt',
+          label: '设定',
+          component: 'InputTextArea'
+        },
+        {
+          label: '以下为杂七杂八的配置',
+          component: 'Divider'
+        },
+        // {
+        //   field: '2captchaToken',
+        //   label: '验证码平台Token',
+        //   bottomHelpMessage: '可注册2captcha实现跳过验证码，收费服务但很便宜。否则可能会遇到验证码而卡住',
+        //   component: 'InputPassword'
+        // },
         {
           field: 'ttsSpace',
           label: 'vits-uma-genshin-honkai语音转换API地址',
