@@ -80,7 +80,7 @@ export async function imageVariation (imageUrl, n = 1, size = '512x512') {
   return response.data.data?.map(pic => pic.b64_json)
 }
 
-async function resizeAndCropImage (inputFilePath, outputFilePath, size = 512) {
+export async function resizeAndCropImage (inputFilePath, outputFilePath, size = 512) {
   // Determine the maximum dimension of the input image
   let sharp
   try {

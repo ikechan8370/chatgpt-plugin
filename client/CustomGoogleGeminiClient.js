@@ -68,7 +68,7 @@ export class CustomGoogleGeminiClient extends GoogleGeminiClient {
   /**
      *
      * @param text
-     * @param {{conversationId: string?, parentMessageId: string?, stream: boolean?, onProgress: function?, functionResponse: FunctionResponse?, system: string?}} opt
+     * @param {{conversationId: string?, parentMessageId: string?, stream: boolean?, onProgress: function?, functionResponse: FunctionResponse?, system: string?, image: string?}} opt
      * @returns {Promise<{conversationId: string?, parentMessageId: string, text: string, id: string}>}
      */
   async sendMessage (text, opt) {
@@ -111,8 +111,16 @@ export class CustomGoogleGeminiClient extends GoogleGeminiClient {
           id: idThis,
           parentMessageId: opt.parentMessageId || undefined
         }
+    if (opt.image) {
+      thisMessage.parts.push({
+        inline_data: {
+          mime_type: 'image/jpeg',
+          data: opt.image
+        }
+      })
+    }
     history.push(_.cloneDeep(thisMessage))
-    let url = `${this.baseUrl}/v1beta/models/gemini-pro:generateContent?key=${this._key}`
+    let url = `${this.baseUrl}/v1beta/models/${this.model}:generateContent?key=${this._key}`
     let body = {
       // 不去兼容官方的简单格式了，直接用，免得function还要转换
       /**

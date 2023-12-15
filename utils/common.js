@@ -1031,6 +1031,25 @@ export function getUserSpeaker (userSetting) {
 }
 
 /**
+ * 获取或者下载文件，如果文件存在则直接返回不会重新下载
+ * @param destPath 相对路径，如received/abc.pdf
+ * @param url
+ * @param ignoreCertificateError 忽略证书错误
+ * @return {Promise<string>} 最终下载文件的存储位置
+ */
+export async function getOrDownloadFile (destPath, url, ignoreCertificateError = true) {
+  const _path = process.cwd()
+  let dest = path.join(_path, 'data', 'chatgpt', destPath)
+  const p = path.dirname(dest)
+  mkdirs(p)
+  if (fs.existsSync(dest)) {
+    return dest
+  } else {
+    return await downloadFile(url, destPath, false, ignoreCertificateError)
+  }
+}
+
+/**
  *
  * @param url 要下载的文件链接
  * @param destPath 目标路径，如received/abc.pdf. 目前如果文件名重复会覆盖。
