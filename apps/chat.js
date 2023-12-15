@@ -2055,6 +2055,9 @@ export class chatgpt extends plugin {
           debug: Config.debug
         })
         if (Config.smartMode) {
+          /**
+           * @type {AbstractTool[]}
+           */
           let tools = [
             new QueryStarRailTool(),
             new WebsiteTool(),
@@ -2081,12 +2084,13 @@ export class chatgpt extends plugin {
           }
           if (e.isGroup) {
             tools.push(new QueryUserinfoTool())
-            if (e.member?.is_admin) {
+            // let self = e.group.pickMember(e.self_id)
+            if (e.group.is_admin || e.group.is_owner) {
               tools.push(new EditCardTool())
               tools.push(new JinyanTool())
               tools.push(new KickOutTool())
             }
-            if (e.member.is_owner) {
+            if (e.group.is_owner) {
               tools.push(new SetTitleTool())
             }
           }

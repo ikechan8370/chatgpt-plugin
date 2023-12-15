@@ -34,7 +34,7 @@ export class SetTitleTool extends AbstractTool {
       return `failed, the user ${qq} is not in group ${groupId}`
     }
     if (mm.get(e.bot.uin).role !== 'owner') {
-      return 'on group owner can give title'
+      return 'failed, only group owner can give title'
     }
     logger.info('edit card: ', groupId, qq)
     let result = await group.setTitle(qq, title)

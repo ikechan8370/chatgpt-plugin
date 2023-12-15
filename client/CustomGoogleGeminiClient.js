@@ -199,7 +199,12 @@ export class CustomGoogleGeminiClient extends GoogleGeminiClient {
         } else {
           // execute function
           try {
-            functionResponse.response.content = await chosenTool.func(functionCall.args, this.e)
+            let args = Object.assign(functionCall.args, {
+              isAdmin: this.e.group.is_admin,
+              isOwner: this.e.group.is_owner,
+              sender: this.e.sender
+            })
+            functionResponse.response.content = await chosenTool.func(args, this.e)
             if (this.debug) {
               logger.info(JSON.stringify(functionResponse.response.content))
             }
