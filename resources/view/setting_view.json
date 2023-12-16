@@ -53,36 +53,40 @@
         "data": "useMode",
         "items": [
           {
-            "label": "必应",
-            "value": "bing"
-          },
-          {
-            "label": "Azure OpenAI",
-            "value": "azure"
-          },
-          {
             "label": "ChatGPT API",
             "value": "api"
           },
           {
-            "label": "ChatGPT API3",
-            "value": "api3"
-          },
-          {
-            "label": "Slack Claude",
-            "value": "claude"
-          },
-          {
-            "label": "ChatGLM",
-            "value": "chatglm"
+            "label": "必应",
+            "value": "bing"
           },
           {
             "label": "星火",
             "value": "xh"
           },
           {
+            "label": "Slack Claude",
+            "value": "claude"
+          },
+          {
+            "label": "Gemini",
+            "value": "gemini"
+          },
+          {
+            "label": "Azure OpenAI",
+            "value": "azure"
+          },
+          {
             "label": "Bard",
             "value": "bard"
+          },
+          {
+            "label": "ChatGPT API3",
+            "value": "api3"
+          },
+          {
+            "label": "ChatGLM",
+            "value": "chatglm"
           },
           {
             "label": "浏览器",
@@ -461,86 +465,6 @@
             ]
           },
           {
-            "title": "API3",
-            "tab": "api3",
-            "view": [
-              {
-                "type": "url",
-                "label": "ChatGPT API反代服务器地址",
-                "placeholder": "ChatGPT的API反代服务器，用于绕过Cloudflare访问ChatGPT API。",
-                "data": "api"
-              },
-              {
-                "type": "url",
-                "label": "apiBaseUrl地址",
-                "data": "apiBaseUrl"
-              },
-              {
-                "type": "password",
-                "label": "OpenAI refreshToken",
-                "placeholder": "OpenAI的refreshToken，用于刷新Access Token",
-                "data": "OpenAiPlatformRefreshToken"
-              },
-              {
-                "type": "password",
-                "label": "OpenAI AccessToken",
-                "model": "redisConfig",
-                "data": "openAiPlatformAccessToken"
-              },
-              {
-                "type": "check",
-                "label": "强制使用ChatGPT反代",
-                "data": "apiForceUseReverse"
-              },
-              {
-                "type": "check",
-                "label": "使用GPT-4",
-                "data": "useGPT4"
-              }
-            ]
-          },
-          {
-            "title": "浏览器",
-            "tab": "browser",
-            "view": [
-              {
-                "type": "check",
-                "label": "无头模式",
-                "data": "headless"
-              },
-              {
-                "type": "text",
-                "label": "用户名",
-                "placeholder": "OpenAI用户名",
-                "data": "username"
-              },
-              {
-                "type": "password",
-                "label": "密码",
-                "placeholder": "OpenAI密码",
-                "data": "password"
-              },
-              {
-                "type": "text",
-                "label": "Chrome路径",
-                "placeholder": "为空使用默认puppeteer的chromium，也可以传递自己本机安装的Chrome可执行文件地址，提高通过率。",
-                "data": "chromePath"
-              },
-              {
-                "type": "textarea",
-                "label": "浏览器UA",
-                "placeholder": "模拟浏览器UA，无特殊需求保持默认即可",
-                "data": "UA"
-              },
-              {
-                "type": "password",
-                "label": "验证码平台Token",
-                "placeholder": "可注册2captcha实现跳过验证码",
-                "data": "2captchaToken"
-              }
-            ]
-          },
-          {
             "title": "必应",
             "tab": "bing",
             "view": [
@@ -642,17 +566,6 @@
                 "label": "第三方绘图",
                 "placeholder": "使用AP插件代替Bing进行绘图",
                 "data": "bingAPDraw"
-              }
-            ]
-          },
-          {
-            "title": "ChatGLM",
-            "tab": "chatglm",
-            "view": [
-              {
-                "type": "url",
-                "label": "ChatGLM API地址",
-                "data": "chatglmBaseUrl"
               }
             ]
           },
@@ -796,6 +709,34 @@
             ]
           },
           {
+            "title": "Gemini",
+            "tab": "gemini",
+            "view": [
+              {
+                "type": "password",
+                "label": "API密钥",
+                "data": "geminiKey"
+              },
+              {
+                "type": "text",
+                "label": "模型",
+                "placeholder": "目前仅支持gemini-pro",
+                "data": "geminiModel"
+              },
+              {
+                "type": "textarea",
+                "label": "设定",
+                "data": "geminiPrompt"
+              },
+              {
+                "type": "url",
+                "label": "Gemini反代",
+                "placeholder": "对https://generativelanguage.googleapis.com的反代",
+                "data": "geminiBaseUrl"
+              }
+            ]
+          },
+          {
             "title": "Bard",
             "tab": "bard",
             "view": [
@@ -834,6 +775,91 @@
                 "type": "url",
                 "label": "部署名称",
                 "data": "azureDeploymentName"
+              }
+            ]
+          },
+          {
+            "title": "ChatGLM",
+            "tab": "chatglm",
+            "view": [
+              {
+                "type": "url",
+                "label": "ChatGLM API地址",
+                "data": "chatglmBaseUrl"
+              }
+            ]
+          },
+          {
+            "title": "浏览器",
+            "tab": "browser",
+            "view": [
+              {
+                "type": "check",
+                "label": "无头模式",
+                "data": "headless"
+              },
+              {
+                "type": "text",
+                "label": "用户名",
+                "placeholder": "OpenAI用户名",
+                "data": "username"
+              },
+              {
+                "type": "password",
+                "label": "密码",
+                "placeholder": "OpenAI密码",
+                "data": "password"
+              },
+              {
+                "type": "text",
+                "label": "Chrome路径",
+                "placeholder": "为空使用默认puppeteer的chromium，也可以传递自己本机安装的Chrome可执行文件地址，提高通过率。",
+                "data": "chromePath"
+              },
+              {
+                "type": "textarea",
+                "label": "浏览器UA",
+                "placeholder": "模拟浏览器UA，无特殊需求保持默认即可",
+                "data": "UA"
+              }
+            ]
+          },
+          {
+            "title": "API3",
+            "tab": "api3",
+            "view": [
+              {
+                "type": "url",
+                "label": "ChatGPT API反代服务器地址",
+                "placeholder": "ChatGPT的API反代服务器，用于绕过Cloudflare访问ChatGPT API。",
+                "data": "api"
+              },
+              {
+                "type": "url",
+                "label": "apiBaseUrl地址",
+                "data": "apiBaseUrl"
+              },
+              {
+                "type": "password",
+                "label": "OpenAI refreshToken",
+                "placeholder": "OpenAI的refreshToken，用于刷新Access Token",
+                "data": "OpenAiPlatformRefreshToken"
+              },
+              {
+                "type": "password",
+                "label": "OpenAI AccessToken",
+                "model": "redisConfig",
+                "data": "openAiPlatformAccessToken"
+              },
+              {
+                "type": "check",
+                "label": "强制使用ChatGPT反代",
+                "data": "apiForceUseReverse"
+              },
+              {
+                "type": "check",
+                "label": "使用GPT-4",
+                "data": "useGPT4"
               }
             ]
           }
