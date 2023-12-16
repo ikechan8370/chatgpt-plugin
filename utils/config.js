@@ -162,7 +162,12 @@ const defaultConfig = {
   qwenSeed: 0,
   qwenTemperature: 1,
   qwenEnableSearch: true,
-  version: 'v2.7.7'
+  geminiKey: '',
+  geminiModel: 'gemini-pro',
+  geminiPrompt: 'You are Gemini. Your answer shouldn\'t be too verbose. Prefer to answer in Chinese.',
+  // origin: https://generativelanguage.googleapis.com
+  geminiBaseUrl: 'https://gemini.ikechan8370.com',
+  version: 'v2.7.8'
 }
 const _path = process.cwd()
 let config = {}

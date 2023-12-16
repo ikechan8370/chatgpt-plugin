@@ -1,4 +1,5 @@
 import plugin from '../../../lib/plugins/plugin.js'
+import { exec } from 'child_process'
 import { Config } from '../utils/config.js'
 import {
   formatDuration,
@@ -127,6 +128,11 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
+          reg: '^#chatgpt切换(Gemini|gemini)$',
+          fnc: 'useGeminiSolution',
+          permission: 'master'
+        },
+        {
           reg: '^#chatgpt切换星火$',
           fnc: 'useXinghuoBasedSolution',
           permission: 'master'
@@ -182,6 +188,11 @@ export class ChatgptManagement extends plugin {
         {
           reg: '^#chatgpt设置(API|key)(Key|key)$',
           fnc: 'setAPIKey',
+          permission: 'master'
+        },
+        {
+          reg: '^#chatgpt设置(Gemini|gemini)(Key|key)$',
+          fnc: 'setGeminiKey',
           permission: 'master'
         },
         {
@@ -313,6 +324,11 @@ export class ChatgptManagement extends plugin {
         {
           reg: '^#chatgpt设置星火模型$',
           fnc: 'setXinghuoModel',
+          permission: 'master'
+        },
+        {
+          reg: '^#chatgpt修补Gemini$',
+          fnc: 'patchGemini',
           permission: 'master'
         }
       ]
@@ -902,6 +918,16 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
     }
   }
 
+  async useGeminiSolution () {
+    let use = await redis.get('CHATGPT:USE')
+    if (use !== 'gemini') {
+      await redis.set('CHATGPT:USE', 'gemini')
+      await this.reply('已切换到基于Google Gemini的解决方案')
+    } else {
+      await this.reply('当前已经是gemini模式了')
+    }
+  }
+
   async useXinghuoBasedSolution () {
     let use = await redis.get('CHATGPT:USE')
     if (use !== 'xh') {
@@ -929,6 +955,57 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
       await this.reply('已切换到基于Bard的解决方案')
     } else {
       await this.reply('当前已经是Bard模式了')
+    }
+  }
+
+  async patchGemini () {
+    const _path = process.cwd()
+    let packageJson = fs.readFileSync(`${_path}/package.json`)
+    packageJson = JSON.parse(String(packageJson))
+    const packageName = '@google/generative-ai@0.1.1'
+    const patchLoc = 'plugins/chatgpt-plugin/patches/@google__generative-ai@0.1.1.patch'
+    if (!packageJson.pnpm) {
+      packageJson.pnpm = {
+        patchedDependencies: {
+          [packageName]: patchLoc
+        }
+      }
+    } else {
+      if (packageJson.pnpm.patchedDependencies) {
+        packageJson.pnpm.patchedDependencies[packageName] = patchLoc
+      } else {
+        packageJson.pnpm.patchedDependencies = {
+          [packageName]: patchLoc
+        }
+      }
+    }
+    fs.writeFileSync(`${_path}/package.json`, JSON.stringify(packageJson, null, 2))
+
+    function execSync (cmd) {
+      return new Promise((resolve, reject) => {
+        exec(cmd, (error, stdout, stderr) => {
+          resolve({ error, stdout, stderr })
+        })
+      })
+    }
+    async function checkPnpm () {
+      let npm = 'npm'
+      let ret = await execSync('pnpm -v')
+      if (ret.stdout) npm = 'pnpm'
+      return npm
+    }
+    let npmv = await checkPnpm()
+    if (npmv === 'pnpm') {
+      exec('pnpm i', {}, (error, stdout, stderr) => {
+        if (error) {
+          logger.error(error)
+          logger.error(stderr)
+          logger.info(stdout)
+          this.e.reply('失败，请查看日志手动操作')
+        } else {
+          this.e.reply('修补完成，请手动重启')
+        }
+      })
     }
   }
 
@@ -1146,6 +1223,21 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
     Config.apiKey = token
     await this.reply('OpenAI API Key设置成功', true)
     this.finish('saveAPIKey')
+  }
+
+  async setGeminiKey (e) {
+    this.setContext('saveGeminiKey')
+    await this.reply('请发送Gemini API Key.获取地址：https://makersuite.google.com/app/apikey', true)
+    return false
+  }
+
+  async saveGeminiKey () {
+    if (!this.e.msg) return
+    let token = this.e.msg
+    // todo
+    Config.geminiKey = token
+    await this.reply('请发送Gemini API Key设置成功', true)
+    this.finish('saveGeminiKey')
   }
 
   async setXinghuoToken () {

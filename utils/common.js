@@ -13,7 +13,8 @@ import AzureTTS, { supportConfigurations as azureRoleList } from './tts/microsof
 import { translate } from './translate.js'
 import uploadRecord from './uploadRecord.js'
 import Version from './version.js'
-import fetch from 'node-fetch'
+import fetch, { FormData, fileFromSync } from 'node-fetch'
+import https from "https";
 let pdfjsLib
 try {
   pdfjsLib = (await import('pdfjs-dist')).default
@@ -785,10 +786,14 @@ export async function getImg (e) {
   }
   if (e.source) {
     let reply
+    let seq = e.isGroup ? e.source.seq : e.source.time
+    if (e.adapter === 'shamrock') {
+      seq = e.source.message_id
+    }
     if (e.isGroup) {
-      reply = (await e.group.getChatHistory(e.source.seq, 1)).pop()?.message
+      reply = (await e.group.getChatHistory(seq, 1)).pop()?.message
     } else {
-      reply = (await e.friend.getChatHistory(e.source.time, 1)).pop()?.message
+      reply = (await e.friend.getChatHistory(seq, 1)).pop()?.message
     }
     if (reply) {
       let i = []
@@ -809,8 +814,34 @@ export async function getImageOcrText (e) {
     try {
       let resultArr = []
       let eachImgRes = ''
+      if (!e.bot.imageOcr || typeof e.bot.imageOcr !== 'function') {
+        e.bot.imageOcr = async (image) => {
+          if (Config.extraUrl) {
+            let md5 = image.split(/[/-]/).find(s => s.length === 32)?.toUpperCase()
+            let filePath = await downloadFile(image, `ocr/${md5}.png`)
+            let formData = new FormData()
+            formData.append('file', fileFromSync(filePath))
+            let res = await fetch(`${Config.extraUrl}/ocr?lang=chi_sim%2Beng`, {
+              body: formData,
+              method: 'POST',
+              headers: {
+                from: 'ikechan8370'
+              }
+            })
+            if (res.status === 200) {
+              return {
+                wordslist: [{ words: await res.text() }]
+              }
+            }
+          }
+          return {
+            wordslist: []
+          }
+        }
+      }
       for (let i in img) {
         const imgOCR = await e.bot.imageOcr(img[i])
+
         for (let text of imgOCR.wordslist) {
           eachImgRes += (`${text?.words}  \n`)
         }
@@ -820,6 +851,7 @@ export async function getImageOcrText (e) {
       // logger.warn('resultArr', resultArr)
       return resultArr
     } catch (err) {
+      logger.warn(err)
       logger.warn('OCR失败，可能使用的适配器不支持OCR')
       return false
       // logger.error(err)
@@ -999,14 +1031,40 @@ export function getUserSpeaker (userSetting) {
 }
 
 /**
+ * 获取或者下载文件，如果文件存在则直接返回不会重新下载
+ * @param destPath 相对路径，如received/abc.pdf
+ * @param url
+ * @param ignoreCertificateError 忽略证书错误
+ * @return {Promise<string>} 最终下载文件的存储位置
+ */
+export async function getOrDownloadFile (destPath, url, ignoreCertificateError = true) {
+  const _path = process.cwd()
+  let dest = path.join(_path, 'data', 'chatgpt', destPath)
+  const p = path.dirname(dest)
+  mkdirs(p)
+  if (fs.existsSync(dest)) {
+    return dest
+  } else {
+    return await downloadFile(url, destPath, false, ignoreCertificateError)
+  }
+}
+
+/**
  *
  * @param url 要下载的文件链接
  * @param destPath 目标路径，如received/abc.pdf. 目前如果文件名重复会覆盖。
  * @param absolute 是否是绝对路径，默认为false，此时拼接在data/chatgpt下
+ * @param ignoreCertificateError 忽略证书错误
  * @returns {Promise<string>} 最终下载文件的存储位置
  */
-export async function downloadFile (url, destPath, absolute = false) {
-  let response = await fetch(url)
+export async function downloadFile (url, destPath, absolute = false, ignoreCertificateError = true) {
+  let init = {}
+  if (ignoreCertificateError && url.startsWith('https')) {
+    init.agent = new https.Agent({
+      rejectUnauthorized: !ignoreCertificateError
+    })
+  }
+  let response = await fetch(url, init)
   if (!response.ok) {
     throw new Error(`download file http error: status: ${response.status}`)
   }
@@ -1061,7 +1119,7 @@ export async function extractContentFromFile (fileMsgElem, e) {
   let fileType = isPureText(fileMsgElem.name)
   if (fileType) {
     // 可读的文件类型
-    let fileUrl = e.isGroup ? await e.group.getFileUrl(fileMsgElem.fid) : await e.friend.getFileUrl(fileMsgElem.fid)
+    let fileUrl = fileMsgElem.url || (e.isGroup ? await e.group.getFileUrl(fileMsgElem.fid) : await e.friend.getFileUrl(fileMsgElem.fid))
     let filePath = await downloadFile(fileUrl, path.join('received', fileMsgElem.name))
     switch (fileType) {
       case 'pdf': {

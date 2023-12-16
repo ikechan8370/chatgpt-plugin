@@ -19,6 +19,9 @@ export class SendPictureTool extends AbstractTool {
 
   func = async function (opt, e) {
     let { urlOfPicture, targetGroupIdOrQQNumber } = opt
+    if (typeof urlOfPicture === 'object') {
+      urlOfPicture = urlOfPicture.join(' ')
+    }
     const defaultTarget = e.isGroup ? e.group_id : e.sender.user_id
     const target = isNaN(targetGroupIdOrQQNumber) || !targetGroupIdOrQQNumber
       ? defaultTarget
