@@ -8,11 +8,9 @@
     "@fastify/cors": "^8.2.0",
     "@fastify/static": "^6.9.0",
     "@fastify/websocket": "^8.2.0",
+    "@google/generative-ai": "^0.1.1",
     "@slack/bolt": "^3.13.2",
-    "@waylaidwanderer/chatgpt-api": "^1.37.1",
     "asn1.js": "^5.0.0",
-    "chatgpt": "^5.2.4",
-    "crypto": "^1.0.1",
     "delay": "^6.0.0",
     "diff": "^5.1.0",
     "emoji-strip": "^1.0.1",
@@ -24,6 +22,7 @@
     "js-tiktoken": "^1.0.5",
     "keyv": "^4.5.3",
     "keyv-file": "^0.2.0",
+    "lodash": "^4.17.21",
     "microsoft-cognitiveservices-speech-sdk": "1.32.0",
     "node-fetch": "^3.3.1",
     "openai": "^3.2.1",
@@ -35,21 +34,26 @@
     "ws": "^8.13.0"
   },
   "optionalDependencies": {
-    "xlsx": "^0.18.5",
-    "mammoth": "^1.6.0",
-    "pdfjs-dist": "^3.11.174",
-    "nodejs-pptx": "^1.2.4",
     "@node-rs/jieba": "^1.6.2",
     "cycletls": "^1.0.21",
     "jimp": "^0.22.7",
+    "mammoth": "^1.6.0",
     "node-silk": "^0.1.0",
+    "nodejs-pptx": "^1.2.4",
+    "pdfjs-dist": "^3.11.174",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-recaptcha": "^3.6.8",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
-    "sharp": "^0.32.3"
+    "sharp": "^0.32.3",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "ts-node": "^10.9.1",
     "ts-node-register": "^1.0.0"
+  },
+  "pnpm": {
+    "patchedDependencies": {
+      "@google/generative-ai@0.1.1": "patches/@google__generative-ai@0.1.1.patch"
+    }
   }
 }

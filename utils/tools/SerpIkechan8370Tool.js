@@ -19,7 +19,7 @@ export class SerpIkechan8370Tool extends AbstractTool {
 
   func = async function (opts) {
     let { q, source } = opts
-    if (!source) {
+    if (!source || !['google', 'bing', 'baidu'].includes(source)) {
       source = 'bing'
     }
     let serpRes = await fetch(`https://serp.ikechan8370.com/${source}?q=${encodeURIComponent(q)}&lang=zh-CN&limit=5`, {

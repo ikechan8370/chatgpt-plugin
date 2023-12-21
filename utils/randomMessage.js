@@ -1,5 +1,5 @@
 import { Config } from './config.js'
-import { ChatGPTAPI } from 'chatgpt'
+import { ChatGPTAPI } from './openai/chatgpt-api.js'
 import fetch from 'node-fetch'
 import { getProxy } from './proxy.js'
 let proxy = getProxy()

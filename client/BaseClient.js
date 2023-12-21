@@ -14,13 +14,18 @@ export class BaseClient {
   constructor (props = {}) {
     this.supportFunction = false
     this.maxToken = 4096
+    /**
+     * @type {Array<AbstractTool>}
+     */
     this.tools = []
     const {
-      e, getMessageById, upsertMessage
+      e, getMessageById, upsertMessage, deleteMessageById, userId
     } = props
     this.e = e
     this.getMessageById = getMessageById
     this.upsertMessage = upsertMessage
+    this.deleteMessageById = deleteMessageById || (() => {})
+    this.userId = userId
   }
 
   /**
@@ -36,20 +41,28 @@ export class BaseClient {
    * insert or update a message with the id
    *
    * @type function
-   * @param {string} id
    * @param {object} message
    * @return {Promise<void>}
    */
   upsertMessage
 
   /**
+   * delete a message with the id
+   *
+   * @type function
+   * @param {string} id
+   * @return {Promise<void>}
+   */
+  deleteMessageById
+
+  /**
    * Send prompt message with history and return response message \
    * if function called, handled internally \
    * override this method to implement logic of sending and receiving message
    *
-   * @param msg
-   * @param opt other options, optional fields: [conversationId, parentMessageId], if not set, random uuid instead
-   * @returns {Promise<Message>} required fields: [text, conversationId, parentMessageId, id]
+   * @param {string} msg
+   * @param {{conversationId: string?, parentMessageId: string?, stream: boolean?, onProgress: function?}} opt other options, optional fields: [conversationId, parentMessageId], if not set, random uuid instead
+   * @returns {Promise<{text, conversationId, parentMessageId, id}>} required fields: [text, conversationId, parentMessageId, id]
    */
   async sendMessage (msg, opt = {}) {
     throw new Error('not implemented in abstract client')
@@ -60,11 +73,12 @@ export class BaseClient {
    * override this method to implement logic of getting history
    * keyv with local file or redis recommended
    *
-   * @param userId such as qq number
-   * @param opt other options
-   * @returns {Promise<void>}
+   * @param userId optional, such as qq number
+   * @param parentMessageId if blank, no history
+   * @param opt optional, other options
+   * @returns {Promise<object[]>}
    */
-  async getHistory (userId, opt = {}) {
+  async getHistory (parentMessageId, userId = this.userId, opt = {}) {
     throw new Error('not implemented in abstract client')
   }
 
@@ -78,14 +92,18 @@ export class BaseClient {
     throw new Error('not implemented in abstract client')
   }
 
-  addTools (...tools) {
+  /**
+   * 增加tools
+   * @param {[AbstractTool]} tools
+   */
+  addTools (tools) {
     if (!this.isSupportFunction) {
       throw new Error('function not supported')
     }
     if (!this.tools) {
       this.tools = []
     }
-    this.tools.push(tools)
+    this.tools.push(...tools)
   }
 
   getTools () {
