@@ -101,12 +101,12 @@ export default class SydneyAIClient {
       this.opts.host = 'https://edgeservices.bing.com/edgesvc'
     }
     logger.mark('使用host：' + this.opts.host)
-    let response = await fetch(`${this.opts.host}/turing/conversation/create?bundleVersion=1.1366.5`, fetchOptions)
+    let response = await fetch(`${this.opts.host}/turing/conversation/create?bundleVersion=1.1381.12`, fetchOptions)
     let text = await response.text()
     let retry = 10
     while (retry >= 0 && response.status === 200 && !text) {
       await delay(400)
-      response = await fetch(`${this.opts.host}/turing/conversation/create?bundleVersion=1.1366.5`, fetchOptions)
+      response = await fetch(`${this.opts.host}/turing/conversation/create?bundleVersion=1.1381.12`, fetchOptions)
       text = await response.text()
       retry--
     }
@@ -362,7 +362,7 @@ export default class SydneyAIClient {
       // 'dagslnv1',
       // 'sportsansgnd',
       // 'dl_edge_desc',
-      'noknowimg',
+      // 'noknowimg',
       // 'dtappid',
       // 'cricinfo',
       // 'cricinfov2',
@@ -370,21 +370,21 @@ export default class SydneyAIClient {
       // 'gencontentv3',
       'iycapbing',
       'iyxapbing',
-      'revimglnk',
-      'revimgsrc1',
-      'revimgur',
+      // 'revimglnk',
+      // 'revimgsrc1',
+      // 'revimgur',
+      'clgalileo',
       'eredirecturl'
     ]
     if (Config.enableGenerateContents) {
       optionsSets.push(...['gencontentv3'])
     }
+    if (!Config.sydneyEnableSearch || toSummaryFileContent?.content) {
+      optionsSets.push(...['nosearchall'])
+    }
     let maxConv = Config.maxNumUserMessagesInConversation
     const currentDate = moment().format('YYYY-MM-DDTHH:mm:ssZ')
     const imageDate = await this.kblobImage(opts.imageUrl)
-    if (toSummaryFileContent?.content) {
-      // message = `请不要进行搜索，用户的问题是："${message}"`
-      messageType = 'Chat'
-    }
     let argument0 = {
       source: 'cib',
       optionsSets,
@@ -392,17 +392,17 @@ export default class SydneyAIClient {
         // 'InternalSearchQuery', 'InternalSearchResult', 'Disengaged', 'InternalLoaderMessage', 'Progress', 'RenderCardRequest', 'AdsQuery',
         'InvokeAction', 'SemanticSerp', 'GenerateContentQuery', 'SearchQuery'],
       sliceIds: [
-        'e2eperf',
-        'gbacf',
-        'srchqryfix',
-        'caccnctacf',
-        'translref',
-        'fluxnosearchc',
-        'fluxnosearch',
-        '1115rai289s0',
-        '1130deucs0',
-        '1116pythons0',
-        'cacmuidarb'
+        // 'e2eperf',
+        // 'gbacf',
+        // 'srchqryfix',
+        // 'caccnctacf',
+        // 'translref',
+        // 'fluxnosearchc',
+        // 'fluxnosearch',
+        // '1115rai289s0',
+        // '1130deucs0',
+        // '1116pythons0',
+        // 'cacmuidarb'
       ],
       requestId: crypto.randomUUID(),
       traceId: genRanHex(32),
@@ -476,9 +476,9 @@ export default class SydneyAIClient {
       conversationId,
       previousMessages,
       plugins: [
-        {
-          id: 'c310c353-b9f0-4d76-ab0d-1dd5e979cf68'
-        }
+        // {
+        //   id: 'c310c353-b9f0-4d76-ab0d-1dd5e979cf68'
+        // }
       ]
     }
     if (encryptedconversationsignature) {
@@ -799,6 +799,7 @@ export default class SydneyAIClient {
               message,
               conversationExpiryTime: event?.item?.conversationExpiryTime
             })
+            break
           }
           default:
         }
