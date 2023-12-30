@@ -171,17 +171,17 @@ export class ChatgptManagement extends plugin {
           fnc: 'versionChatGPTPlugin'
         },
         {
-          reg: '^#chatgpt(本群)?(群\\d+)?(关闭|闭嘴|关机|休眠|下班)',
+          reg: '^#chatgpt(本群)?(群\\d+)?(闭嘴|关机|休眠|下班)',
           fnc: 'shutUp',
           permission: 'master'
         },
         {
-          reg: '^#chatgpt(本群)?(群\\d+)?(开启|启动|激活|张嘴|开口|说话|上班)$',
+          reg: '^#chatgpt(本群)?(群\\d+)?(张嘴|开口|说话|上班)$',
           fnc: 'openMouth',
           permission: 'master'
         },
         {
-          reg: '^#chatgpt查看?(关闭|闭嘴|关机|休眠|下班|休眠)列表$',
+          reg: '^#chatgpt查看?(闭嘴|关机|休眠|下班)列表$',
           fnc: 'listShutUp',
           permission: 'master'
         },
