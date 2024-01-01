@@ -11,7 +11,6 @@
     "@google/generative-ai": "^0.1.1",
     "@slack/bolt": "^3.13.2",
     "asn1.js": "^5.0.0",
-    "delay": "^6.0.0",
     "diff": "^5.1.0",
     "emoji-strip": "^1.0.1",
     "eventsource": "^2.0.2",

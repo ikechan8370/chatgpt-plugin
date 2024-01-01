@@ -8,10 +8,9 @@ import crypto from 'crypto'
 import WebSocket from 'ws'
 import { Config, pureSydneyInstruction } from './config.js'
 import { formatDate, getMasterQQ, isCN, getUserData, limitString } from './common.js'
-import delay from 'delay'
 import moment from 'moment'
 import { getProxy } from './proxy.js'
-import Version from './version.js'
+import common from '../../../lib/common/common.js'
 
 if (!globalThis.fetch) {
   globalThis.fetch = fetch
@@ -87,9 +86,12 @@ export default class SydneyAIClient {
         // 'x-forwarded-for': '1.1.1.1'
       }
     }
-    if (this.opts.cookies || this.opts.userToken) {
+    let initCk = 'SRCHD=AF=NOFORM; PPLState=1; SRCHHPGUSR=HV=' + new Date().getTime() + ';'
+    if (this.opts.userToken) {
       // 疑似无需token了
-      fetchOptions.headers.cookie = this.opts.cookies || `_U=${this.opts.userToken}`
+      fetchOptions.headers.cookie = `${initCk} _U=${this.opts.userToken}`
+    } else {
+      fetchOptions.headers.cookie = initCk
     }
     if (this.opts.proxy) {
       fetchOptions.agent = proxy(Config.proxy)
@@ -105,7 +107,7 @@ export default class SydneyAIClient {
     let text = await response.text()
     let retry = 10
     while (retry >= 0 && response.status === 200 && !text) {
-      await delay(400)
+      await common.sleep(400)
       response = await fetch(`${this.opts.host}/turing/conversation/create?bundleVersion=1.1381.12`, fetchOptions)
       text = await response.text()
       retry--
@@ -308,8 +310,7 @@ export default class SydneyAIClient {
     const text = (pureSydney ? pureSydneyInstruction : (useCast?.bing || Config.sydney)).replaceAll(namePlaceholder, botName || defaultBotName) +
       ((Config.enableGroupContext && groupId) ? groupContextTip : '') +
       ((Config.enforceMaster && master) ? masterTip : '') +
-      (Config.sydneyMood ? moodTip : '') +
-      (Config.sydneySystemCode ? '' : '')
+      (Config.sydneyMood ? moodTip : '')
     // logger.info(text)
     if (pureSydney) {
       previousMessages = invocationId === 0

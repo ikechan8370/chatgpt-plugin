@@ -4,6 +4,7 @@ import StealthPlugin from 'puppeteer-extra-plugin-stealth'
 import { getOpenAIAuth } from './openai-auth.js'
 import delay from 'delay'
 import { v4 as uuidv4 } from 'uuid'
+import common from '../../../lib/common/common.js'
 const chatUrl = 'https://chat.openai.com/chat'
 let puppeteer = {}
 
@@ -181,7 +182,7 @@ export class ChatGPTPuppeteer extends Puppeteer {
           if (Config['2captchaToken']) {
             await this._page.solveRecaptchas()
           }
-          await delay(300)
+          await common.sleep(300)
           timeout = timeout - 300
         }
       } catch (e) {
@@ -243,7 +244,7 @@ export class ChatGPTPuppeteer extends Puppeteer {
         break
       }
 
-      await delay(300)
+      await common.sleep(300)
     } while (true)
 
     if (!await this.getIsAuthenticated()) {
@@ -405,7 +406,7 @@ export class ChatGPTPuppeteer extends Puppeteer {
       if (isAuthenticated) {
         while (!this._accessToken) {
           // wait for async response hook result
-          await delay(300)
+          await common.sleep(300)
           timeout = timeout - 300
           if (timeout < 0) {
             const error = new Error('Not signed in')
@@ -493,7 +494,7 @@ export class ChatGPTPuppeteer extends Puppeteer {
     // const responseP = new Promise<string>(async (resolve, reject) => {
     //   try {
     //     do {
-    //       await delay(1000)
+    //       await common.sleep(1000)
 
     //       // TODO: this logic needs some work because we can have repeat messages...
     //       const newLastMessage = await this.getLastMessage()
