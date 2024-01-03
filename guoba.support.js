@@ -381,6 +381,12 @@ export function supportGuoba () {
           }
         },
         {
+          field: 'sydneyEnableSearch',
+          label: '是否允许必应进行搜索',
+          bottomHelpMessage: '关闭后必应将禁用搜索',
+          component: 'Switch'
+        },
+        {
           field: 'enableSuggestedResponses',
           label: '是否开启建议回复',
           bottomHelpMessage: '开启了会像官网上一样，每个问题给出建议的用户问题',

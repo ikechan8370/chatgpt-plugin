@@ -1,7 +1,7 @@
 import { Config } from '../config.js'
 import slack from '@slack/bolt'
-import delay from 'delay'
 import { limitString } from '../common.js'
+import common from '../../../../lib/common/common.js'
 let proxy
 if (Config.proxy) {
   try {
@@ -24,7 +24,7 @@ export class SlackClaudeClient {
       if (Config.proxy) {
         option.agent = proxy(Config.proxy)
       }
-      option.logLevel = Config.debug ? 'debug': 'info'
+      option.logLevel = Config.debug ? 'debug' : 'info'
       this.app = new slack.App(option)
     } else {
       throw new Error('未配置Slack信息')
@@ -61,7 +61,7 @@ export class SlackClaudeClient {
           channel: channel.id,
           users: Config.slackClaudeUserId
         })
-        await delay(1000)
+        await common.sleep(1000)
       } else {
         channel = channel[0]
       }
@@ -78,7 +78,7 @@ export class SlackClaudeClient {
       let response = '_Typing…_'
       let tryTimes = 0
       // 发完先等3喵
-      await delay(3000)
+      await common.sleep(3000)
       while (response.trim().endsWith('_Typing…_')) {
         let replies = await this.app.client.conversations.replies({
           token: this.config.slackUserToken,
@@ -106,7 +106,7 @@ export class SlackClaudeClient {
             }
           }
         }
-        await delay(2000)
+        await common.sleep(2000)
         tryTimes++
         if (tryTimes > 3 && response === '_Typing…_') {
           // 过了6秒还没任何回复，就重新发一下试试
@@ -127,7 +127,7 @@ export class SlackClaudeClient {
       let response = '_Typing…_'
       let tryTimes = 0
       // 发完先等3喵
-      await delay(3000)
+      await common.sleep(3000)
       while (response.trim().endsWith('_Typing…_')) {
         let replies = await this.app.client.conversations.replies({
           token: this.config.slackUserToken,
@@ -156,7 +156,7 @@ export class SlackClaudeClient {
             }
           }
         }
-        await delay(2000)
+        await common.sleep(2000)
         tryTimes++
         if (tryTimes > 3 && response === '_Typing…_') {
           // 过了6秒还没任何回复，就重新发一下试试

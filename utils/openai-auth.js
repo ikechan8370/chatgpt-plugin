@@ -1,6 +1,6 @@
 import { Config } from '../utils/config.js'
-import delay from 'delay'
 import random from 'random'
+import common from '../../../lib/common/common.js'
 
 let hasRecaptchaPlugin = !!Config['2captchaToken']
 
@@ -58,7 +58,7 @@ export async function getOpenAIAuth (opt) {
       await waitForConditionOrAtCapacity(page, () =>
         page.waitForSelector('#__next .btn-primary', { timeout: timeoutMs / 3 })
       )
-      await delay(500)
+      await common.sleep(500)
 
       // click login button and wait for navigation to finish
       do {
@@ -69,7 +69,7 @@ export async function getOpenAIAuth (opt) {
           }),
           page.click('#__next .btn-primary')
         ])
-        await delay(1000)
+        await common.sleep(1000)
       } while (page.url().endsWith('/auth/login'))
       logger.mark('进入登录页面')
       await checkForChatGPTAtCapacity(page)
@@ -90,7 +90,7 @@ export async function getOpenAIAuth (opt) {
       } else {
         await page.waitForSelector('#username')
         await page.type('#username', email, { delay: 20 })
-        await delay(100)
+        await common.sleep(100)
 
         if (hasRecaptchaPlugin) {
           // console.log('solveRecaptchas()')
@@ -114,7 +114,7 @@ export async function getOpenAIAuth (opt) {
         submitP()
       ])
     } else {
-      await delay(2000)
+      await common.sleep(2000)
       await checkForChatGPTAtCapacity(page)
     }
 
@@ -183,7 +183,7 @@ async function checkForChatGPTAtCapacity (page, opts = {}) {
           timeout: timeoutMs
         })
 
-        await delay(pollingIntervalMs)
+        await common.sleep(pollingIntervalMs)
       }
     } catch (err) {
       // ignore errors likely due to navigation
@@ -251,29 +251,29 @@ async function solveSimpleCaptchas (page) {
     const verifyYouAreHuman = await page.$('text=Verify you are human')
     if (verifyYouAreHuman) {
       logger.mark('encounter cloudflare simple captcha "Verify you are human"')
-      await delay(2000)
+      await common.sleep(2000)
       await verifyYouAreHuman.click({
         delay: random.int(5, 25)
       })
-      await delay(1000)
+      await common.sleep(1000)
     }
     const verifyYouAreHumanCN = await page.$('text=确认您是真人')
     if (verifyYouAreHumanCN) {
       logger.mark('encounter cloudflare simple captcha "确认您是真人"')
-      await delay(2000)
+      await common.sleep(2000)
       await verifyYouAreHumanCN.click({
         delay: random.int(5, 25)
       })
-      await delay(1000)
+      await common.sleep(1000)
     }
 
     const cloudflareButton = await page.$('.hcaptcha-box')
     if (cloudflareButton) {
-      await delay(2000)
+      await common.sleep(2000)
       await cloudflareButton.click({
         delay: random.int(5, 25)
       })
-      await delay(1000)
+      await common.sleep(1000)
     }
   } catch (err) {
     // ignore errors
