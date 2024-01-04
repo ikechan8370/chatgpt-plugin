@@ -171,17 +171,17 @@ export class ChatgptManagement extends plugin {
           fnc: 'versionChatGPTPlugin'
         },
         {
-          reg: '^#chatgpt(本群)?(群\\d+)?(关闭|闭嘴|关机|休眠|下班)',
+          reg: '^#chatgpt(本群)?(群\\d+)?(闭嘴|关机|休眠|下班)',
           fnc: 'shutUp',
           permission: 'master'
         },
         {
-          reg: '^#chatgpt(本群)?(群\\d+)?(开启|启动|激活|张嘴|开口|说话|上班)$',
+          reg: '^#chatgpt(本群)?(群\\d+)?(张嘴|开口|说话|上班)$',
           fnc: 'openMouth',
           permission: 'master'
         },
         {
-          reg: '^#chatgpt查看?(关闭|闭嘴|关机|休眠|下班|休眠)列表$',
+          reg: '^#chatgpt查看?(闭嘴|关机|休眠|下班)列表$',
           fnc: 'listShutUp',
           permission: 'master'
         },
@@ -327,8 +327,8 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
-          reg: '^#chatgpt修补Gemini$',
-          fnc: 'patchGemini',
+          reg: '^#chatgpt必应(禁用|禁止|关闭|启用|开启)搜索$',
+          fnc: 'switchBingSearch',
           permission: 'master'
         }
       ]
@@ -1670,6 +1670,16 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
     await this.reply('1：星火V1.5\n2：星火V2\n3：星火V3\n4：星火助手')
     await this.reply('请发送序号', true)
     return false
+  }
+
+  async switchBingSearch (e) {
+    if (e.msg.includes('启用') || e.msg.includes('开启')) {
+      Config.sydneyEnableSearch = true
+      await e.reply('已开启必应搜索')
+    } else {
+      Config.sydneyEnableSearch = false
+      await e.reply('已禁用必应搜索')
+    }
   }
 
   async saveXinghuoModel (e) {
