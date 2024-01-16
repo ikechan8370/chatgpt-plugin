@@ -39,6 +39,7 @@ const defaultConfig = {
   sydneyBrainWashStrength: 15,
   sydneyBrainWashName: 'Sydney',
   sydneyMood: false,
+  sydneyGPT4Turbo: false,
   sydneyImageRecognition: false,
   sydneyMoodTip: 'Your response should be divided into two parts, namely, the text and your mood. The mood available to you can only include: blandness, happy, shy, frustrated, disgusted, and frightened.All content should be replied in this format {"text": "", "mood": ""}.All content except mood should be placed in text, It is important to ensure that the content you reply to can be parsed by json.',
   enableSuggestedResponses: false,

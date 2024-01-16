@@ -383,6 +383,9 @@ export default class SydneyAIClient {
     if (!Config.sydneyEnableSearch || toSummaryFileContent?.content) {
       optionsSets.push(...['nosearchall'])
     }
+    if (Config.sydneyGPT4Turbo) {
+      optionsSets.push('gpt4tmnc')
+    }
     let maxConv = Config.maxNumUserMessagesInConversation
     const currentDate = moment().format('YYYY-MM-DDTHH:mm:ssZ')
     const imageDate = await this.kblobImage(opts.imageUrl)
@@ -482,6 +485,7 @@ export default class SydneyAIClient {
         // }
       ]
     }
+
     if (encryptedconversationsignature) {
       delete argument0.conversationSignature
     }
