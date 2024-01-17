@@ -119,7 +119,7 @@ export class ChatGLM4Client extends BaseClient {
                 onProgress(partialResponse)
               }
             }
-            let content = convoResponseEvent?.content[0]
+            let content = partialResponse?.content[0]
             if (content.type === 'image' && content.status === 'finish') {
               image = content.image[0].image_url
             }
