@@ -90,7 +90,8 @@ export class ChatGLM4Client extends BaseClient {
           referer: 'https://www.chatglm.cn/main/alltoolsdetail',
           origin: 'https://www.chatglm.cn'
         },
-        referrer: 'https://www.chatglm.cn/main/alltoolsdetail'
+        referrer: 'https://www.chatglm.cn/main/alltoolsdetail',
+        timeout: 60000
       }
       const req = https.request(BASEURL, option, (res) => {
         statusCode = res.statusCode
