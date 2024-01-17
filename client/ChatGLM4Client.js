@@ -120,7 +120,7 @@ export class ChatGLM4Client extends BaseClient {
               }
             }
             let content = partialResponse?.content[0]
-            if (content.type === 'image' && content.status === 'finish') {
+            if (content?.type === 'image' && content?.status === 'finish') {
               image = content.image[0].image_url
             }
             if (convoResponseEvent.status === 'finish') {
