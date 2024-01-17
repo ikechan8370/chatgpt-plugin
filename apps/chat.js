@@ -81,6 +81,7 @@ import { getChatHistoryGroup } from '../utils/chat.js'
 import { CustomGoogleGeminiClient } from '../client/CustomGoogleGeminiClient.js'
 import { resizeAndCropImage } from '../utils/dalle.js'
 import fs from 'fs'
+import { ChatGLM4Client } from '../client/ChatGLM4Client.js'
 
 const roleMap = {
   owner: 'group owner',
@@ -195,6 +196,12 @@ export class chatgpt extends plugin {
         {
           reg: '^#星火(搜索|查找)助手',
           fnc: 'searchxhBot'
+        },
+        {
+          /** 命令正则匹配 */
+          reg: '^#glm4[sS]*',
+          /** 执行方法 */
+          fnc: 'glm4'
         },
         {
           /** 命令正则匹配 */
@@ -419,6 +426,14 @@ export class chatgpt extends plugin {
           await redis.del(`CHATGPT:CONVERSATIONS_GEMINI:${e.sender.user_id}`)
           await this.reply('已结束当前对话，请@我进行聊天以开启新的对话', true)
         }
+      } else if (use === 'chatglm4') {
+        let c = await redis.get(`CHATGPT:CONVERSATIONS_CHATGLM4:${e.sender.user_id}`)
+        if (!c) {
+          await this.reply('当前没有开启对话', true)
+        } else {
+          await redis.del(`CHATGPT:CONVERSATIONS_CHATGLM4:${e.sender.user_id}`)
+          await this.reply('已结束当前对话，请@我进行聊天以开启新的对话', true)
+        }
       } else if (use === 'bing') {
         let c = await redis.get(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
         if (!c) {
@@ -494,6 +509,14 @@ export class chatgpt extends plugin {
           await this.reply(`当前${atUser}没有开启对话`, true)
         } else {
           await redis.del(`CHATGPT:CONVERSATIONS_GEMINI:${qq}`)
+          await this.reply(`已结束${atUser}的对话，TA仍可以@我进行聊天以开启新的对话`, true)
+        }
+      } else if (use === 'chatglm4') {
+        let c = await redis.get(`CHATGPT:CONVERSATIONS_CHATGLM4:${qq}`)
+        if (!c) {
+          await this.reply(`当前${atUser}没有开启对话`, true)
+        } else {
+          await redis.del(`CHATGPT:CONVERSATIONS_CHATGLM4:${qq}`)
           await this.reply(`已结束${atUser}的对话，TA仍可以@我进行聊天以开启新的对话`, true)
         }
       } else if (use === 'bing') {
@@ -634,6 +657,18 @@ export class chatgpt extends plugin {
           // todo clean last message id
           if (Config.debug) {
             logger.info('delete gemini conversation bind: ' + qcs[i])
+          }
+          deleted++
+        }
+        break
+      }
+      case 'chatglm4': {
+        let qcs = await redis.keys('CHATGPT:CONVERSATIONS_CHATGLM4:*')
+        for (let i = 0; i < qcs.length; i++) {
+          await redis.del(qcs[i])
+          // todo clean last message id
+          if (Config.debug) {
+            logger.info('delete chatglm4 conversation bind: ' + qcs[i])
           }
           deleted++
         }
@@ -972,24 +1007,8 @@ export class chatgpt extends plugin {
         }
       }
     }
-
     let userSetting = await getUserReplySetting(this.e)
     let useTTS = !!userSetting.useTTS
-    let speaker
-    if (Config.ttsMode === 'vits-uma-genshin-honkai') {
-      speaker = convertSpeaker(userSetting.ttsRole || Config.defaultTTSRole)
-    } else if (Config.ttsMode === 'azure') {
-      speaker = userSetting.ttsRoleAzure || Config.azureTTSSpeaker
-    } else if (Config.ttsMode === 'voicevox') {
-      speaker = userSetting.ttsRoleVoiceVox || Config.voicevoxTTSSpeaker
-    }
-    // 每个回答可以指定
-    let trySplit = prompt.split('回答：')
-    if (trySplit.length > 1 && speakers.indexOf(convertSpeaker(trySplit[0])) > -1) {
-      useTTS = true
-      speaker = convertSpeaker(trySplit[0])
-      prompt = trySplit[1]
-    }
     const isImg = await getImg(e)
     if (Config.imgOcr && !!isImg) {
       let imgOcrText = await getImageOcrText(e)
@@ -1138,6 +1157,10 @@ export class chatgpt extends plugin {
           key = `CHATGPT:CONVERSATIONS_GEMINI:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`
           break
         }
+        case 'chatglm4': {
+          key = `CHATGPT:CONVERSATIONS_CHATGLM4:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`
+          break
+        }
       }
       let ctime = new Date()
       previousConversation = (key ? await redis.get(key) : null) || JSON.stringify({
@@ -1177,6 +1200,7 @@ export class chatgpt extends plugin {
           await e.reply([element.tag, segment.image(element.url)])
         })
       }
+      // chatglm4图片，调整至sendMessage中处理
       if (use === 'api' && !chatMessage) {
         // 字数超限直接返回
         return false
@@ -1458,6 +1482,10 @@ export class chatgpt extends plugin {
 
   async qwen (e) {
     return await this.otherMode(e, 'gemini')
+  }
+
+  async glm4 (e) {
+    return await this.otherMode(e, 'chatglm4')
   }
 
   async gemini (e) {
@@ -2159,6 +2187,15 @@ export class chatgpt extends plugin {
       }
       option.system = system
       return await client.sendMessage(prompt, option)
+    } else if (use === 'chatglm4') {
+      const client = new ChatGLM4Client({
+        refreshToken: Config.chatglmRefreshToken
+      })
+      let resp = await client.sendMessage(prompt, conversation)
+      if (resp.image) {
+        e.reply(segment.image(resp.image), true)
+      }
+      return resp
     } else {
       // openai api
       let completionParams = {}

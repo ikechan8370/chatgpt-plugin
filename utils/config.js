@@ -169,7 +169,8 @@ const defaultConfig = {
   geminiPrompt: 'You are Gemini. Your answer shouldn\'t be too verbose. Prefer to answer in Chinese.',
   // origin: https://generativelanguage.googleapis.com
   geminiBaseUrl: 'https://gemini.ikechan8370.com',
-  version: 'v2.7.8'
+  chatglmRefreshToken: '',
+  version: 'v2.7.9'
 }
 const _path = process.cwd()
 let config = {}

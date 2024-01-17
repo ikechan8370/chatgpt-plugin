@@ -515,6 +515,16 @@ export function supportGuoba () {
           component: 'Switch'
         },
         {
+          label: '以下为智谱清言（ChatGLM）方式的配置。',
+          component: 'Divider'
+        },
+        {
+          field: 'chatglmRefreshToken',
+          label: 'refresh token',
+          bottomHelpMessage: 'chatglm_refresh_token 6个月有效期',
+          component: 'Input'
+        },
+        {
           label: '以下为Slack Claude方式的配置',
           component: 'Divider'
         },
