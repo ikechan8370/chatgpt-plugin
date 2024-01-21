@@ -107,8 +107,8 @@ try {
 let version = Config.version
 let proxy = getProxy()
 
-const originalValues = ['星火', '通义千问', '克劳德', '克劳德2', '必应', 'api', 'API', 'api3', 'API3', 'glm', '巴德']
-const correspondingValues = ['xh', 'qwen', 'claude', 'claude2', 'bing', 'api', 'api', 'api3', 'api3', 'chatglm', 'bard']
+const originalValues = ['星火', '通义千问', '克劳德', '克劳德2', '必应', 'api', 'API', 'api3', 'API3', 'glm', '巴德', '双子星', '双子座', '智谱']
+const correspondingValues = ['xh', 'qwen', 'claude', 'claude2', 'bing', 'api', 'api', 'api3', 'api3', 'chatglm', 'bard', 'gemini', 'gemini', 'chatglm4']
 /**
  * 每个对话保留的时长。单个对话内ai是保留上下文的。超时后销毁对话，再次对话创建新的对话。
  * 单位：秒
@@ -228,11 +228,11 @@ export class chatgpt extends plugin {
           permission: 'master'
         },
         {
-          reg: '^#(chatgpt|星火|通义千问|克劳德|克劳德2|必应|api|API|api3|API3|glm|巴德)?(结束|新开|摧毁|毁灭|完结)对话([sS]*)',
+          reg: `^#?(${originalValues.join('|')})?(结束|新开|摧毁|毁灭|完结)对话([sS]*)$`,
           fnc: 'destroyConversations'
         },
         {
-          reg: '^#(chatgpt|星火|通义千问|克劳德|克劳德2|必应|api|API|api3|API3|glm|巴德)?(结束|新开|摧毁|毁灭|完结)全部对话$',
+          reg: `^#?(${originalValues.join('|')})?(结束|新开|摧毁|毁灭|完结)全部对话$`,
           fnc: 'endAllConversations',
           permission: 'master'
         },
@@ -1481,7 +1481,7 @@ export class chatgpt extends plugin {
   }
 
   async qwen (e) {
-    return await this.otherMode(e, 'gemini')
+    return await this.otherMode(e, 'qwen')
   }
 
   async glm4 (e) {
