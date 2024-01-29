@@ -97,11 +97,11 @@ export class ChatgptManagement extends plugin {
           fnc: 'useOpenAIAPIBasedSolution',
           permission: 'master'
         },
-        {
-          reg: '^#chatgpt切换(ChatGLM|chatglm)$',
-          fnc: 'useChatGLMSolution',
-          permission: 'master'
-        },
+        // {
+        //   reg: '^#chatgpt切换(ChatGLM|chatglm)$',
+        //   fnc: 'useChatGLMSolution',
+        //   permission: 'master'
+        // },
         {
           reg: '^#chatgpt切换API3$',
           fnc: 'useReversedAPIBasedSolution2',
@@ -150,6 +150,11 @@ export class ChatgptManagement extends plugin {
         {
           reg: '^#chatgpt切换(通义千问|qwen|千问)$',
           fnc: 'useQwenSolution',
+          permission: 'master'
+        },
+        {
+          reg: '^#chatgpt切换(智谱|智谱清言|ChatGLM|ChatGLM4|chatglm)$',
+          fnc: 'useGLM4Solution',
           permission: 'master'
         },
         {
@@ -1029,6 +1034,16 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
       await this.reply('已切换到基于通义千问的解决方案')
     } else {
       await this.reply('当前已经是通义千问模式了')
+    }
+  }
+
+  async useGLM4Solution () {
+    let use = await redis.get('CHATGPT:USE')
+    if (use !== 'chatglm4') {
+      await redis.set('CHATGPT:USE', 'chatglm4')
+      await this.reply('已切换到基于ChatGLM的解决方案')
+    } else {
+      await this.reply('当前已经是ChatGLM模式了')
     }
   }
 

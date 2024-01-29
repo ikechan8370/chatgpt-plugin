@@ -71,7 +71,7 @@ export class CustomGoogleGeminiClient extends GoogleGeminiClient {
      * @param {{conversationId: string?, parentMessageId: string?, stream: boolean?, onProgress: function?, functionResponse: FunctionResponse?, system: string?, image: string?}} opt
      * @returns {Promise<{conversationId: string?, parentMessageId: string, text: string, id: string}>}
      */
-  async sendMessage (text, opt) {
+  async sendMessage (text, opt = {}) {
     let history = await this.getHistory(opt.parentMessageId)
     let systemMessage = opt.system
     if (systemMessage) {
@@ -208,9 +208,10 @@ export class CustomGoogleGeminiClient extends GoogleGeminiClient {
           // execute function
           try {
             let args = Object.assign(functionCall.args, {
-              isAdmin: this.e.group.is_admin,
-              isOwner: this.e.group.is_owner,
-              sender: this.e.sender
+              isAdmin: this.e.group?.is_admin,
+              isOwner: this.e.group?.is_owner,
+              sender: this.e.sender,
+              mode: 'gemini'
             })
             functionResponse.response.content = await chosenTool.func(args, this.e)
             if (this.debug) {

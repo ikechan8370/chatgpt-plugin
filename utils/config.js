@@ -39,6 +39,7 @@ const defaultConfig = {
   sydneyBrainWashStrength: 15,
   sydneyBrainWashName: 'Sydney',
   sydneyMood: false,
+  sydneyGPT4Turbo: false,
   sydneyImageRecognition: false,
   sydneyMoodTip: 'Your response should be divided into two parts, namely, the text and your mood. The mood available to you can only include: blandness, happy, shy, frustrated, disgusted, and frightened.All content should be replied in this format {"text": "", "mood": ""}.All content except mood should be placed in text, It is important to ensure that the content you reply to can be parsed by json.',
   enableSuggestedResponses: false,
@@ -169,7 +170,8 @@ const defaultConfig = {
   geminiPrompt: 'You are Gemini. Your answer shouldn\'t be too verbose. Prefer to answer in Chinese.',
   // origin: https://generativelanguage.googleapis.com
   geminiBaseUrl: 'https://gemini.ikechan8370.com',
-  version: 'v2.7.8'
+  chatglmRefreshToken: '',
+  version: 'v2.7.9'
 }
 const _path = process.cwd()
 let config = {}

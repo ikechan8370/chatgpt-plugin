@@ -1,4 +1,4 @@
-import { GoogleGeminiClient } from './GoogleGeminiClient.js'
+import { GoogleGeminiClient } from '../GoogleGeminiClient.js'
 
 async function test () {
   const client = new GoogleGeminiClient({

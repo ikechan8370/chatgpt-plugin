@@ -410,6 +410,12 @@ export function supportGuoba () {
           component: 'Switch'
         },
         {
+          field: 'sydneyGPT4Turbo',
+          label: '使用GPT4-turbo',
+          bottomHelpMessage: '目前仅Copilot Pro可开启。非pro用户开启会报错。',
+          component: 'Switch'
+        },
+        {
           field: 'enableGenerateContents',
           label: '允许生成图像等内容',
           bottomHelpMessage: '开启后类似网页版能够发图。但是此选项会占用大量token，自设定等模式下容易爆token',
@@ -513,6 +519,16 @@ export function supportGuoba () {
           label: '使用GPT-4',
           bottomHelpMessage: '使用GPT-4，注意试用配额较低，如果用不了就关掉',
           component: 'Switch'
+        },
+        {
+          label: '以下为智谱清言（ChatGLM）方式的配置。',
+          component: 'Divider'
+        },
+        {
+          field: 'chatglmRefreshToken',
+          label: 'refresh token',
+          bottomHelpMessage: 'chatglm_refresh_token 6个月有效期',
+          component: 'Input'
         },
         {
           label: '以下为Slack Claude方式的配置',
