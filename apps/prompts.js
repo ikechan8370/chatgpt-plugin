@@ -159,7 +159,8 @@ export class help extends plugin {
       Custom: 'sydney',
       claude: 'slackClaudeGlobalPreset',
       qwen: 'promptPrefixOverride',
-      gemini: 'geminiPrompt'
+      gemini: 'geminiPrompt',
+      xh: 'xhPrompt'
     }
 
     if (keyMap[use]) {
@@ -168,6 +169,9 @@ export class help extends plugin {
         logger.warn(Config[keyMap[use]])
       } else {
         Config[keyMap[use]] = prompt.content
+      }
+      if (use === 'xh') {
+        Config.xhPromptSerialize = false
       }
       await redis.set(`CHATGPT:PROMPT_USE_${use}`, promptName)
       await e.reply(`你当前正在使用${use}模式，已将该模式设定应用为"${promptName}"。更该设定后建议结束对话以使设定更好生效`, true)
