@@ -178,7 +178,13 @@ export default class XinghuoClient {
     const wsUrl = Config.xhmode == 'assistants' ? Config.xhAssistants : await this.getWsUrl()
     if (!wsUrl) throw new Error('获取ws链接失败')
     let domain = 'general'
-    if (Config.xhmode == 'apiv2') { domain = 'generalv2' } else if (Config.xhmode == 'apiv3') { domain = 'generalv3' }
+    if (Config.xhmode == 'apiv2') {
+      domain = 'generalv2'
+    } else if (Config.xhmode == 'apiv3') {
+      domain = 'generalv3'
+    } else if (Config.xhmode == 'apiv3.5') {
+      domain = 'generalv3.5'
+    }
     // 编写消息内容
     const wsSendData = {
       header: {
