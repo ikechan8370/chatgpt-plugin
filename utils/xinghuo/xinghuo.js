@@ -377,7 +377,7 @@ export default class XinghuoClient {
     let chatId = option?.chatId
     let image = option?.image
 
-    if (Config.xhmode == 'api' || Config.xhmode == 'apiv2' || Config.xhmode == 'apiv3' || Config.xhmode == 'assistants') {
+    if (Config.xhmode == 'api' || Config.xhmode == 'apiv2' || Config.xhmode == 'apiv3' || Config.xhmode == 'apiv3.5' || Config.xhmode == 'assistants') {
       if (!Config.xhAppId || !Config.xhAPISecret || !Config.xhAPIKey) throw new Error('未配置api')
       let Prompt = []
       // 设定
