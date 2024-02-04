@@ -86,6 +86,8 @@ export default class XinghuoClient {
       APILink = '/v2.1/chat'
     } else if (Config.xhmode === 'apiv3') {
       APILink = '/v3.1/chat'
+    } else if (Config.xhmode === 'apiv3.5') {
+      APILink = '/v3.5/chat'
     }
     const date = new Date().toGMTString()
     const algorithm = 'hmac-sha256'
@@ -176,7 +178,13 @@ export default class XinghuoClient {
     const wsUrl = Config.xhmode == 'assistants' ? Config.xhAssistants : await this.getWsUrl()
     if (!wsUrl) throw new Error('获取ws链接失败')
     let domain = 'general'
-    if (Config.xhmode == 'apiv2') { domain = 'generalv2' } else if (Config.xhmode == 'apiv3') { domain = 'generalv3' }
+    if (Config.xhmode == 'apiv2') {
+      domain = 'generalv2'
+    } else if (Config.xhmode == 'apiv3') {
+      domain = 'generalv3'
+    } else if (Config.xhmode == 'apiv3.5') {
+      domain = 'generalv3.5'
+    }
     // 编写消息内容
     const wsSendData = {
       header: {
@@ -375,7 +383,7 @@ export default class XinghuoClient {
     let chatId = option?.chatId
     let image = option?.image
 
-    if (Config.xhmode == 'api' || Config.xhmode == 'apiv2' || Config.xhmode == 'apiv3' || Config.xhmode == 'assistants') {
+    if (Config.xhmode == 'api' || Config.xhmode == 'apiv2' || Config.xhmode == 'apiv3' || Config.xhmode == 'apiv3.5' || Config.xhmode == 'assistants') {
       if (!Config.xhAppId || !Config.xhAPISecret || !Config.xhAPIKey) throw new Error('未配置api')
       let Prompt = []
       // 设定
@@ -387,7 +395,7 @@ export default class XinghuoClient {
           logger.warn('星火设定序列化失败,本次对话不附带设定')
         }
       } else {
-        Prompt = Config.xhPrompt ? [{ role: 'user', content: Config.xhPrompt }] : []
+        Prompt = Config.xhPrompt ? [{ role: 'system', content: Config.xhPrompt }] : []
       }
       if (Config.xhPromptEval) {
         Prompt.forEach(obj => {
