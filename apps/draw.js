@@ -32,9 +32,42 @@ export class dalle extends plugin {
         {
           reg: '^#bing(画图|绘图)',
           fnc: 'bingDraw'
+        },
+        {
+          reg: '^#dalle3(画图|绘图)',
+          fnc: 'dalle3'
         }
       ]
     })
+  }
+
+  // dalle3
+  async dalle3 (e) {
+    if (!Config.enableDraw) {
+      this.reply('画图功能未开启')
+      return false
+    }
+    let ttl = await redis.ttl(`CHATGPT:DALLE3:${e.sender.user_id}`)
+    if (ttl > 0 && !e.isMaster) {
+      this.reply(`冷却中，请${ttl}秒后再试`)
+      return false
+    }
+    let prompt = e.msg.replace(/^#?dalle3(画图|绘图)/, '').trim()
+    console.log('draw方法被调用，消息内容：', prompt)
+    await redis.set(`CHATGPT:DALLE3:${e.sender.user_id}`, 'c', { EX: 30 })
+    await this.reply('正在为您绘制大小为1024x1024的1张图片，预计消耗0.24美元余额，请稍候……')
+    try {
+      let images = (await createImage(prompt, '1', '1024x1024')).map(image => segment.image(`base64://${image}`))
+      if (images.length > 1) {
+        this.reply(await makeForwardMsg(e, images, prompt))
+      } else {
+        this.reply(images[0], true)
+      }
+    } catch (err) {
+      logger.error(err.response?.data?.error?.message)
+      this.reply(`绘图失败: ${err.response?.data?.error?.message}`, true)
+      await redis.del(`CHATGPT:DALLE3:${e.sender.user_id}`)
+    }
   }
 
   async draw (e) {
@@ -215,7 +248,7 @@ export class dalle extends plugin {
     }
     try {
       let images = (await editImage(imgUrl, position.split(',').map(p => parseInt(p, 10)), prompt, num, size))
-          .map(image => segment.image(`base64://${image}`))
+        .map(image => segment.image(`base64://${image}`))
       if (images.length > 1) {
         this.reply(await makeForwardMsg(e, images, prompt))
       } else {
