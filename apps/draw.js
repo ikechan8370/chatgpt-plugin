@@ -4,6 +4,7 @@ import { makeForwardMsg } from '../utils/common.js'
 import _ from 'lodash'
 import { Config } from '../utils/config.js'
 import BingDrawClient from '../utils/BingDraw.js'
+import fetch from 'node-fetch'
 
 export class dalle extends plugin {
   constructor (e) {
@@ -57,15 +58,38 @@ export class dalle extends plugin {
     await redis.set(`CHATGPT:DALLE3:${e.sender.user_id}`, 'c', { EX: 30 })
     await this.reply('正在为您绘制大小为1024x1024的1张图片，预计消耗0.24美元余额，请稍候……')
     try {
-      let images = (await createImage(prompt, '1', '1024x1024')).map(image => segment.image(`base64://${image}`))
-      if (images.length > 1) {
-        this.reply(await makeForwardMsg(e, images, prompt))
-      } else {
-        this.reply(images[0], true)
+      const response = await fetch(`${Config.openAiBaseUrl}/images/generations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${Config.apiKey}`
+        },
+        body: JSON.stringify({
+          model: 'dall-e-3',
+          prompt,
+          n: 1,
+          size: '1024x1024',
+          response_format: 'b64_json'
+        })
+      })
+      // 如果需要，可以解析响应体
+      const dataJson = await response.json()
+      console.log(dataJson)
+      if (dataJson.error) {
+        e.reply(`画图失败：${dataJson.error?.code}：${dataJson.error?.message}`)
+        await redis.del(`CHATGPT:DALLE3:${e.sender.user_id}`)
+        return
+      }
+      if (dataJson.data[0].b64_json) {
+        e.reply(`描述：${dataJson.data[0].revised_prompt}`)
+        e.reply(segment.image(`base64://${dataJson.data[0].b64_json}`))
+      } else if (dataJson.data[0].url) {
+        e.reply(`哈哈哈，图来了~\n防止图💥，附上链接：\n${dataJson.data[0].url}`)
+        e.reply(segment.image(dataJson.data[0].url))
       }
     } catch (err) {
-      logger.error(err.response?.data?.error?.message)
-      this.reply(`绘图失败: ${err.response?.data?.error?.message}`, true)
+      logger.error(err)
+      this.reply(`画图失败: ${err}`, true)
       await redis.del(`CHATGPT:DALLE3:${e.sender.user_id}`)
     }
   }
