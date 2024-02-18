@@ -365,12 +365,12 @@ export function supportGuoba () {
         {
           field: 'toneStyle',
           label: 'Bing模式',
-          bottomHelpMessage: '微软必应官方的三种应答风格。默认为均衡，Sydney为实验风格，独立与三种风格之外；自设定为自定义AI的回答风格',
+          bottomHelpMessage: 'Copilot的应答风格。默认为创意，可切换为精准，均支持添加设定',
           component: 'Select',
           componentProps: {
             options: [
-              { label: '默认（创意）', value: 'Sydney' },
-              { label: '自设定', value: 'Custom' }
+              { label: '创意', value: 'Creative' },
+              { label: '精准', value: 'Precise' }
             ]
           }
         },
@@ -423,7 +423,7 @@ export function supportGuoba () {
         {
           field: 'groupContextLength',
           label: '允许机器人读取近期的最多群聊聊天记录条数。',
-          bottomHelpMessage: '允许机器人读取近期的最多群聊聊天记录条数。太多可能会超。默认50',
+          bottomHelpMessage: '允许机器人读取近期的最多群聊聊天记录条数。太多可能会超。默认50。同时影响所有模式，不止必应',
           component: 'InputNumber'
         },
         {
@@ -435,7 +435,7 @@ export function supportGuoba () {
         {
           field: 'sydney',
           label: 'Custom的设定',
-          bottomHelpMessage: '仅自设定模式下有效。你可以自己改写设定，让Sydney变成你希望的样子。可能存在不稳定的情况',
+          bottomHelpMessage: '你可以自己改写设定，让Copilot变成你希望的样子。可能存在不稳定的情况',
           component: 'InputTextArea'
         },
         {

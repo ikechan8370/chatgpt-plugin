@@ -1040,21 +1040,21 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
       return
     }
     let map = {
-      精准: 'Sydney',
-      创意: 'Sydney',
-      均衡: 'Sydney',
-      Sydney: 'Sydney',
-      sydney: 'Sydney',
-      悉尼: 'Sydney',
-      默认: 'Sydney',
-      自设定: 'Custom',
-      自定义: 'Custom'
+      精准: 'Precise',
+      创意: 'Creative',
+      均衡: 'Precise',
+      Sydney: 'Creative',
+      sydney: 'Creative',
+      悉尼: 'Creative',
+      默认: 'Creative',
+      自设定: 'Creative',
+      自定义: 'Creative'
     }
     if (map[tongStyle]) {
       Config.toneStyle = map[tongStyle]
       await e.reply('切换成功')
     } else {
-      await e.reply('没有这种风格。支持的风格：默认/创意/悉尼、自设定')
+      await e.reply('没有这种风格。支持的风格：`精准`和`创意`，均支持设定')
     }
   }
 

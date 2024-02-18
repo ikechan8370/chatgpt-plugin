@@ -472,8 +472,7 @@
                 "type": "select",
                 "label": "Bing模式",
                 "data": "toneStyle",
-                "items": [ {   "label": "均衡",   "value": "balanced" }, {   "label": "创意",   "value": "creative" }, {   "label": "精确",   "value": "precise" }, {   "label": "Sydney(可能存在风险)",   "value": "Sydney" }, {   "label": "自设定(可能存在风险)",   "value": "Custom" }
-                ]
+                "items": [ {   "label": "创意",   "value": "Creative" }, {   "label": "精确",   "value": "Precise" } ]
               },
               {
                 "type": "check",

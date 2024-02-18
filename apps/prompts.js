@@ -149,14 +149,9 @@ export class help extends plugin {
       }
     }
     let use = await redis.get('CHATGPT:USE') || 'api'
-    if (use.toLowerCase() === 'bing') {
-      if (Config.toneStyle === 'Custom') {
-        use = 'Custom'
-      }
-    }
     const keyMap = {
       api: 'promptPrefixOverride',
-      Custom: 'sydney',
+      bing: 'sydney',
       claude: 'slackClaudeGlobalPreset',
       qwen: 'promptPrefixOverride',
       gemini: 'geminiPrompt',
@@ -176,7 +171,7 @@ export class help extends plugin {
       await redis.set(`CHATGPT:PROMPT_USE_${use}`, promptName)
       await e.reply(`你当前正在使用${use}模式，已将该模式设定应用为"${promptName}"。更该设定后建议结束对话以使设定更好生效`, true)
     } else {
-      await e.reply(`你当前正在使用${use}模式，该模式不支持设定。支持设定的模式有：API、自定义、Claude、通义千问和Gemini`, true)
+      await e.reply(`你当前正在使用${use}模式，该模式不支持设定。支持设定的模式有：API、必应、Claude、通义千问、星火和Gemini`, true)
     }
   }
 
@@ -277,11 +272,6 @@ export class help extends plugin {
       // return
     }
     let use = await redis.get('CHATGPT:USE') || 'api'
-    if (use.toLowerCase() === 'bing') {
-      if (Config.toneStyle === 'Custom') {
-        use = 'Custom'
-      }
-    }
     let currentUse = e.msg.replace(/^#(chatgpt|ChatGPT)(上传|分享|共享)设定/, '')
     if (!currentUse) {
       currentUse = await redis.get(`CHATGPT:PROMPT_USE_${use}`)
@@ -361,7 +351,7 @@ export class help extends plugin {
       title: currentUse,
       prompt: content,
       qq: master || (getUin(this.e) + ''), // 上传者设定为主人qq或机器人qq
-      use: extraData.use === 'Custom' ? 'Sydney' : 'ChatGPT',
+      use: extraData.use === 'bing' ? 'Bing' : 'ChatGPT',
       r18,
       description
     }
