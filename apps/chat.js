@@ -134,6 +134,7 @@ const newFetch = (url, options = {}) => {
 export class chatgpt extends plugin {
   constructor () {
     let toggleMode = Config.toggleMode
+    let apiStream = Config.apiStream
     super({
       /** 功能名称 */
       name: 'ChatGpt 对话',
@@ -291,6 +292,7 @@ export class chatgpt extends plugin {
       ]
     })
     this.toggleMode = toggleMode
+    this.apiStream = apiStream
   }
 
   /**
@@ -2272,7 +2274,7 @@ export class chatgpt extends plugin {
       let option = {
         timeoutMs: 600000,
         completionParams,
-        stream: true,
+        stream: this.apiStream,
         onProgress: (data) => {
           if (Config.debug) {
             logger.info(data?.text || data.functionCall || data)
