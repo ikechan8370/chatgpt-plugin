@@ -358,7 +358,8 @@ export default class SydneyAIClient {
       logger.mark('sydney websocket constructed successful')
     }
     let tone = Config.toneStyle || 'Creative'
-    if (tone.toLowerCase() === 'sydney') {
+    // 兼容老版本
+    if (tone.toLowerCase() === 'sydney' || tone.toLowerCase() === 'custom') {
       Config.toneStyle = 'Creative'
     }
     const isCreative = tone.toLowerCase().includes('creative')
@@ -408,7 +409,7 @@ export default class SydneyAIClient {
       invocationId = 2
     }
     if (Config.sydneyGPT4Turbo) {
-      tone = 'Creative'
+      // tone = 'Creative'
       // optionsSets.push('gpt4tmnc')
       invocationId = 1
     }
