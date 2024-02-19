@@ -134,6 +134,7 @@ const newFetch = (url, options = {}) => {
 export class chatgpt extends plugin {
   constructor () {
     let toggleMode = Config.toggleMode
+    let apiStream = Config.apiStream
     super({
       /** 功能名称 */
       name: 'ChatGpt 对话',
@@ -291,6 +292,7 @@ export class chatgpt extends plugin {
       ]
     })
     this.toggleMode = toggleMode
+    this.apiStream = apiStream
   }
 
   /**
@@ -365,7 +367,7 @@ export class chatgpt extends plugin {
       if (use === 'api3') {
         await redis.del(`CHATGPT:QQ_CONVERSATION:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`)
         await this.reply('已退出当前对话，该对话仍然保留。请@我进行聊天以开启新的对话', true)
-      } else if (use === 'bing' && (Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom')) {
+      } else if (use === 'bing') {
         let c = await redis.get(`CHATGPT:CONVERSATIONS_BING:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`)
         if (!c) {
           await this.reply('当前没有开启对话', true)
@@ -458,7 +460,7 @@ export class chatgpt extends plugin {
       if (use === 'api3') {
         await redis.del(`CHATGPT:QQ_CONVERSATION:${qq}`)
         await this.reply(`${atUser}已退出TA当前的对话，TA仍可以@我进行聊天以开启新的对话`, true)
-      } else if (use === 'bing' && (Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom')) {
+      } else if (use === 'bing') {
         const conversation = {
           store: new KeyvFile({ filename: 'cache.json' }),
           namespace: Config.toneStyle
@@ -1214,11 +1216,7 @@ export class chatgpt extends plugin {
           previousConversation.invocationId = chatMessage.invocationId
           previousConversation.parentMessageId = chatMessage.parentMessageId
           previousConversation.conversationSignature = chatMessage.conversationSignature
-          if (Config.toneStyle !== 'Sydney' && Config.toneStyle !== 'Custom') {
-            previousConversation.bingToken = chatMessage.bingToken
-          } else {
-            previousConversation.bingToken = ''
-          }
+          previousConversation.bingToken = ''
         } else if (chatMessage.id) {
           previousConversation.parentMessageId = chatMessage.id
         } else if (chatMessage.message) {
@@ -1580,7 +1578,7 @@ export class chatgpt extends plugin {
           opt.toneStyle = Config.toneStyle
           // 如果当前没有开启对话或者当前是Sydney模式、Custom模式，则本次对话携带拓展资料
           let c = await redis.get(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
-          if (!c || Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom') {
+          if (!c) {
             opt.context = useCast?.bing_resource || Config.sydneyContext
           }
           // 重新拿存储的token，因为可能之前有过期的被删了
@@ -2265,7 +2263,7 @@ export class chatgpt extends plugin {
       let option = {
         timeoutMs: 600000,
         completionParams,
-        stream: true,
+        stream: this.apiStream,
         onProgress: (data) => {
           if (Config.debug) {
             logger.info(data?.text || data.functionCall || data)
@@ -2814,12 +2812,6 @@ async function getAvailableBingToken (conversation, throttled = []) {
     return {
       bingToken: null,
       allThrottled
-    }
-  }
-  if (Config.toneStyle != 'Sydney' && Config.toneStyle != 'Custom') {
-    // bing 下，需要保证同一对话使用同一账号的token
-    if (bingTokens.findIndex(element => element.Token === conversation.bingToken) > -1) {
-      bingToken = conversation.bingToken
     }
   }
   // 记录使用情况

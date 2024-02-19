@@ -341,6 +341,16 @@ export class ChatgptManagement extends plugin {
           reg: '^#chatgpt必应(禁用|禁止|关闭|启用|开启)搜索$',
           fnc: 'switchBingSearch',
           permission: 'master'
+        },
+        {
+          reg: '^#chatgpt查看当前配置$',
+          fnc: 'queryConfig',
+          permission: 'master'
+        },
+        {
+          reg: '^#chatgpt(开启|关闭)(api|API)流$',
+          fnc: 'switchStream',
+          permission: 'master'
         }
       ]
     })
@@ -1053,21 +1063,21 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
       return
     }
     let map = {
-      精准: 'Sydney',
-      创意: 'Sydney',
-      均衡: 'Sydney',
-      Sydney: 'Sydney',
-      sydney: 'Sydney',
-      悉尼: 'Sydney',
-      默认: 'Sydney',
-      自设定: 'Custom',
-      自定义: 'Custom'
+      精准: 'Precise',
+      创意: 'Creative',
+      均衡: 'Precise',
+      Sydney: 'Creative',
+      sydney: 'Creative',
+      悉尼: 'Creative',
+      默认: 'Creative',
+      自设定: 'Creative',
+      自定义: 'Creative'
     }
     if (map[tongStyle]) {
       Config.toneStyle = map[tongStyle]
       await e.reply('切换成功')
     } else {
-      await e.reply('没有这种风格。支持的风格：默认/创意/悉尼、自设定')
+      await e.reply('没有这种风格。支持的风格：`精准`和`创意`，均支持设定')
     }
   }
 
@@ -1695,19 +1705,9 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
 
   async setXinghuoModel (e) {
     this.setContext('saveXinghuoModel')
-    await this.reply('1：星火V1.5\n2：星火V2\n3：星火V3\n4：星火助手')
+    await this.reply('1：星火V1.5\n2：星火V2\n3：星火V3\n4：星火V3.5\n5：星火助手')
     await this.reply('请发送序号', true)
     return false
-  }
-
-  async switchBingSearch (e) {
-    if (e.msg.includes('启用') || e.msg.includes('开启')) {
-      Config.sydneyEnableSearch = true
-      await e.reply('已开启必应搜索')
-    } else {
-      Config.sydneyEnableSearch = false
-      await e.reply('已禁用必应搜索')
-    }
   }
 
   async saveXinghuoModel (e) {
@@ -1715,6 +1715,10 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
     let token = this.e.msg
     let ver
     switch (token) {
+      case '4':
+        ver = 'V3.5'
+        Config.xhmode = 'apiv3.5'
+        break
       case '3':
         ver = 'V3'
         Config.xhmode = 'apiv3'
@@ -1727,7 +1731,7 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
         ver = 'V1.5'
         Config.xhmode = 'api'
         break
-      case '4':
+      case '5':
         ver = '助手'
         Config.xhmode = 'assistants'
         break
@@ -1736,5 +1740,47 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
     }
     await this.reply(`已成功切换到星火${ver}`, true)
     this.finish('saveXinghuoModel')
+  }
+
+  async switchBingSearch (e) {
+    if (e.msg.includes('启用') || e.msg.includes('开启')) {
+      Config.sydneyEnableSearch = true
+      await e.reply('已开启必应搜索')
+    } else {
+      Config.sydneyEnableSearch = false
+      await e.reply('已禁用必应搜索')
+    }
+  }
+
+  async queryConfig (e) {
+    let use = await redis.get('CHATGPT:USE')
+    let config = []
+    config.push(`当前模式：${use}`)
+    config.push(`\n当前API模型：${Config.model}`)
+    if (e.isPrivate) {
+      config.push(`\n当前APIKey：${Config.apiKey}`)
+      config.push(`\n当前API反代：${Config.openAiBaseUrl}`)
+      config.push(`\n当前必应反代：${Config.sydneyReverseProxy}`)
+    }
+    config.push(`\n当前星火模型：${Config.xhmode}`)
+    e.reply(config)
+  }
+
+  async switchStream (e) {
+    if (e.msg.includes('开启')) {
+      if (Config.apiStream) {
+        await e.reply('已经开启了')
+        return
+      }
+      Config.apiStream = true
+      await e.reply('好的，已经打开API流式输出')
+    } else {
+      if (!Config.apiStream) {
+        await e.reply('已经是关闭得了')
+        return
+      }
+      Config.apiStream = false
+      await e.reply('好的，已经关闭API流式输出')
+    }
   }
 }

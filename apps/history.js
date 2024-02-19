@@ -49,42 +49,38 @@ export class history extends plugin {
         return true
       }
       case 'bing': {
-        if (Config.toneStyle === 'Sydney' || Config.toneStyle === 'Custom') {
-          const cacheOptions = {
-            namespace: Config.toneStyle,
-            store: new KeyvFile({ filename: 'cache.json' })
-          }
-          let Keyv = await getKeyv()
-          let conversationsCache = new Keyv(cacheOptions)
-          const conversation = (await conversationsCache.get(`SydneyUser_${queryUser}`)) || {
-            messages: [],
-            createdAt: Date.now()
-          }
-          let key = `CHATGPT:CONVERSATIONS_BING:${queryUser}`
-          let previousConversation = await redis.get(key) || JSON.stringify({})
-          previousConversation = JSON.parse(previousConversation)
-          let parentMessageId = previousConversation.parentMessageId
-          let tmp = {}
-          const previousCachedMessages = getMessagesForConversation(conversation.messages, parentMessageId)
-            .map((message) => {
-              return {
-                text: message.message,
-                author: message.role === 'User' ? 'user' : 'bot'
-              }
-            })
-          previousCachedMessages.forEach(m => {
-            if (m.author === 'user') {
-              tmp.prompt = m.text
-            } else {
-              tmp.response = m.text
-              chat.push(tmp)
-              tmp = {}
+        const cacheOptions = {
+          namespace: Config.toneStyle,
+          store: new KeyvFile({ filename: 'cache.json' })
+        }
+        let Keyv = await getKeyv()
+        let conversationsCache = new Keyv(cacheOptions)
+        const conversation = (await conversationsCache.get(`SydneyUser_${queryUser}`)) || {
+          messages: [],
+          createdAt: Date.now()
+        }
+        let key = `CHATGPT:CONVERSATIONS_BING:${queryUser}`
+        let previousConversation = await redis.get(key) || JSON.stringify({})
+        previousConversation = JSON.parse(previousConversation)
+        let parentMessageId = previousConversation.parentMessageId
+        let tmp = {}
+        const previousCachedMessages = getMessagesForConversation(conversation.messages, parentMessageId)
+          .map((message) => {
+            return {
+              text: message.message,
+              author: message.role === 'User' ? 'user' : 'bot'
             }
           })
-        } else {
-          await e.reply('还不支持BING模式呢')
-          return true
-        }
+        previousCachedMessages.forEach(m => {
+          if (m.author === 'user') {
+            tmp.prompt = m.text
+          } else {
+            tmp.response = m.text
+            chat.push(tmp)
+            tmp = {}
+          }
+        })
+
         break
       }
     }
