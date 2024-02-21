@@ -95,6 +95,7 @@ export class Vocal extends plugin {
         await e.reply(common.makeForwardMsg(e, messages, '音乐合成结果'))
         return true
       }
+      await e.reply('所有账户余额不足')
     } catch (err) {
       console.error(err)
       await e.reply('生成失败,请查看日志')
