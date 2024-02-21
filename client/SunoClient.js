@@ -57,20 +57,27 @@ export class SunoClient {
     let ids = createData?.clips?.map(clip => clip.id)
     let queryUrl = `https://studio-api.suno.ai/api/feed/?ids=${ids[0]}%2C${ids[1]}`
     let allDone = false; let songs = []
-    while (!allDone) {
-      let queryRes = await newFetch(queryUrl, {
-        headers: {
-          Authorization: `Bearer ${sess}`
+    let timeout = 60
+    while (timeout > 0 && !allDone) {
+      try {
+        let queryRes = await newFetch(queryUrl, {
+          headers: {
+            Authorization: `Bearer ${sess}`
+          }
+        })
+        if (queryRes.status !== 200) {
+          logger.error(await queryRes.text())
+          console.error('Failed to query song')
         }
-      })
-      if (queryRes.status !== 200) {
-        throw new Error('Failed to query song')
+        let queryData = await queryRes.json()
+        logger.debug(queryData)
+        allDone = queryData.every(clip => clip.status === 'complete')
+        songs = queryData
+      } catch (err) {
+        console.error(err)
       }
-      let queryData = await queryRes.json()
-      logger.debug(queryData)
-      allDone = queryData.every(clip => clip.status === 'complete')
-      songs = queryData
       await common.sleep(1000)
+      timeout--
     }
     return songs
   }
