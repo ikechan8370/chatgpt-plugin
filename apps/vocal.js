@@ -52,12 +52,10 @@ export class Vocal extends plugin {
     if (description === '额度' || description === 'credit' || description === '余额') {
       let sessTokens = Config.sunoSessToken.split(',')
       let clientTokens = Config.sunoClientToken.split(',')
-      let tried = 0
       let msg = ''
-      while (tried < sessTokens.length) {
-        let index = tried
-        let sess = sessTokens[index]
-        let clientToken = clientTokens[index]
+      for (let i = 0; i < sessTokens.length; i++) {
+        let sess = sessTokens[i]
+        let clientToken = clientTokens[i]
         let client = new SunoClient({ sessToken: sess, clientToken })
         let { credit, email } = await client.queryCredit()
         logger.info({ credit, email })
