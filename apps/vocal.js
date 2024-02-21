@@ -1,7 +1,7 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import { SunoClient } from '../client/SunoClient.js'
 import { Config } from '../utils/config.js'
-import { downloadFile } from '../utils/common.js'
+import { downloadFile, maskEmail } from '../utils/common.js'
 import common from '../../../lib/common/common.js'
 
 export class Vocal extends plugin {
@@ -59,7 +59,9 @@ export class Vocal extends plugin {
         let client = new SunoClient({ sessToken: sess, clientToken })
         let { credit, email } = await client.queryCredit()
         logger.info({ credit, email })
-        msg += `用户${email}余额：${credit}\n`
+        msg += `用户: ${maskEmail(email)} 余额：${credit}\n`
+        msg += '-------------------\n'
+        msg += 'Notice：每首歌消耗5credit，每次生成2首歌'
       }
       await e.reply(msg)
       return true
