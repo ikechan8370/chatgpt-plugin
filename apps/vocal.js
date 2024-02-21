@@ -60,9 +60,9 @@ export class Vocal extends plugin {
         let { credit, email } = await client.queryCredit()
         logger.info({ credit, email })
         msg += `用户: ${maskEmail(email)} 余额：${credit}\n`
-        msg += '-------------------\n'
-        msg += 'Notice：每首歌消耗5credit，每次生成2首歌'
       }
+      msg += '-------------------\n'
+      msg += 'Notice：每首歌消耗5credit，每次生成2首歌'
       await e.reply(msg)
       return true
     }
