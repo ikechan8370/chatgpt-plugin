@@ -793,6 +793,22 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
+          label: '以下为Suno音乐合成的配置。',
+          component: 'Divider'
+        },
+        {
+          field: 'sunoSessToken',
+          label: 'sunoSessToken',
+          bottomHelpMessage: 'suno的__sess token，需要与sunoClientToken一一对应数量相同，多个用逗号隔开',
+          component: 'InputTextArea'
+        },
+        {
+          field: 'sunoClientToken',
+          label: 'sunoClientToken',
+          bottomHelpMessage: 'suno的__client token，需要与sunoSessToken一一对应数量相同，多个用逗号隔开',
+          component: 'InputTextArea'
+        },
+        {
           label: '以下为杂七杂八的配置',
           component: 'Divider'
         },

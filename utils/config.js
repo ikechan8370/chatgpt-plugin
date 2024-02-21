@@ -175,6 +175,8 @@ const defaultConfig = {
   // origin: https://generativelanguage.googleapis.com
   geminiBaseUrl: 'https://gemini.ikechan8370.com',
   chatglmRefreshToken: '',
+  sunoSessToken: '',
+  sunoClientToken: '',
   version: 'v2.7.10'
 }
 const _path = process.cwd()

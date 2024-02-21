@@ -324,10 +324,14 @@ export class dalle extends plugin {
     const index = bingTokens.findIndex(element => element.Token === bingToken)
     bingTokens[index].Usage += 1
     await redis.set('CHATGPT:BING_TOKENS', JSON.stringify(bingTokens))
-
+    let cookie
+    if (bingToken.includes('=')) {
+      cookie = bingToken
+    }
     let client = new BingDrawClient({
       baseUrl: Config.sydneyReverseProxy,
-      userToken: bingToken
+      userToken: bingToken,
+      cookies: cookie
     })
     await redis.set(`CHATGPT:DRAW:${e.sender.user_id}`, 'c', { EX: 30 })
     try {
