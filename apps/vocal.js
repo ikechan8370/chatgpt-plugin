@@ -93,6 +93,7 @@ export class Vocal extends plugin {
           messages.push(segment.video(videoPath))
         }
         await e.reply(common.makeForwardMsg(e, messages, '音乐合成结果'))
+        return true
       }
     } catch (err) {
       console.error(err)
