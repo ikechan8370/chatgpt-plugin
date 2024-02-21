@@ -48,6 +48,24 @@ export class Vocal extends plugin {
       await e.reply('未配置Suno Token')
       return true
     }
+    let description = e.msg.replace(/#((创作)?歌曲|suno|Suno)/, '')
+    if (description === '额度' || description === 'credit' || description === '余额') {
+      let sessTokens = Config.sunoSessToken.split(',')
+      let clientTokens = Config.sunoClientToken.split(',')
+      let tried = 0
+      let msg = ''
+      while (tried < sessTokens.length) {
+        let index = tried
+        let sess = sessTokens[index]
+        let clientToken = clientTokens[index]
+        let client = new SunoClient({ sessToken: sess, clientToken })
+        let { credit, email } = await client.queryCredit()
+        logger.info({ credit, email })
+        msg += `用户${email}余额：${credit}\n`
+      }
+      await e.reply(msg)
+      return true
+    }
     await e.reply('正在生成，请稍后')
     try {
       let sessTokens = Config.sunoSessToken.split(',')
@@ -59,12 +77,13 @@ export class Vocal extends plugin {
         let clientToken = clientTokens[index]
         let client = new SunoClient({ sessToken: sess, clientToken })
         let { credit, email } = await client.queryCredit()
+        logger.info({ credit, email })
         if (credit < 10) {
           tried++
           logger.info(`账户${email}余额不足，尝试下一个账户`)
           continue
         }
-        let description = e.msg.replace(/#((创作)?歌曲|suno|Suno)/, '')
+
         let songs = await client.createSong(description)
         let messages = ['提示词：' + description]
         for (let song of songs) {

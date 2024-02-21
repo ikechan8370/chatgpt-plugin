@@ -17,7 +17,7 @@ export class SunoClient {
     let lastToken = this.sessToken
     let payload = decrypt(lastToken)
     let sid = JSON.parse(payload).sid
-    logger.mark('sid: ' + sid)
+    logger.debug('sid: ' + sid)
     let tokenRes = await newFetch(`https://clerk.suno.ai/v1/client/sessions/${sid}/tokens/api?_clerk_js_version=4.70.0`, {
       method: 'POST',
       headers: {
@@ -120,7 +120,7 @@ export class SunoClient {
     let lastToken = this.sessToken
     let payload = decrypt(lastToken)
     let sid = JSON.parse(payload).sid
-    logger.mark('sid: ' + sid)
+    logger.debug('sid: ' + sid)
     let heartbeatUrl = `https://clerk.suno.ai/v1/client/sessions/${sid}/touch?_clerk_js_version=4.70.0`
     let heartbeatRes = await fetch(heartbeatUrl, {
       method: 'POST',
