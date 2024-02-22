@@ -3,6 +3,7 @@ import { SunoClient } from '../client/SunoClient.js'
 import { Config } from '../utils/config.js'
 import { downloadFile, maskEmail } from '../utils/common.js'
 import common from '../../../lib/common/common.js'
+import lodash from 'lodash'
 
 export class Vocal extends plugin {
   constructor (e) {
@@ -87,10 +88,13 @@ export class Vocal extends plugin {
         let songs = await client.createSong(description)
         let messages = ['提示词：' + description]
         for (let song of songs) {
-          messages.push(`歌名：${song.title}, 风格: ${song.metadata.tags}, 长度: ${song.metadata.duration}秒\n歌词：\n${song.metadata.prompt}`)
+          messages.push(`歌名：${song.title}\n风格: ${song.metadata.tags}\n长度: ${lodash.round(song.metadata.duration, 0)}秒\n歌词：\n${song.metadata.prompt}\n`)
+          messages.push(`音频链接：${song.audio_url}\n视频链接：${song.video_url}\n封面链接：${song.image_url}\n`)
           messages.push(segment.image(song.image_url))
-          let videoPath = await downloadFile(song.video_url, `suno/${song.title}.mp4`)
-          messages.push(segment.video(videoPath))
+          // let videoPath = await downloadFile(song.video_url, `suno/${song.title}.mp4`, false, false, {
+          //   'User-Agent': ''
+          // })
+          messages.push(segment.video(song.video_url))
         }
         await e.reply(common.makeForwardMsg(e, messages, '音乐合成结果'))
         return true

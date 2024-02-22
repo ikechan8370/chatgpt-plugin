@@ -1055,10 +1055,14 @@ export async function getOrDownloadFile (destPath, url, ignoreCertificateError =
  * @param destPath 目标路径，如received/abc.pdf. 目前如果文件名重复会覆盖。
  * @param absolute 是否是绝对路径，默认为false，此时拼接在data/chatgpt下
  * @param ignoreCertificateError 忽略证书错误
+ * @param headers
  * @returns {Promise<string>} 最终下载文件的存储位置
  */
-export async function downloadFile (url, destPath, absolute = false, ignoreCertificateError = true) {
+export async function downloadFile (url, destPath, absolute = false, ignoreCertificateError = true, headers) {
   let init = {}
+  if (headers) {
+    init.headers = headers
+  }
   if (ignoreCertificateError && url.startsWith('https')) {
     init.agent = new https.Agent({
       rejectUnauthorized: !ignoreCertificateError
