@@ -177,6 +177,7 @@ const defaultConfig = {
   chatglmRefreshToken: '',
   sunoSessToken: '',
   sunoClientToken: '',
+  translateSource: 'openai',
   version: 'v2.7.10'
 }
 const _path = process.cwd()

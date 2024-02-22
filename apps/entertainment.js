@@ -56,7 +56,7 @@ export class Entertainment extends plugin {
           fnc: 'wordcloud_new'
         },
         {
-          reg: '^#((寄批踢|gpt|GPT)?翻.*|chatgpt翻译帮助)',
+          reg: '^#((寄批踢|gpt|GPT)?翻[sS]*|chatgpt翻译帮助)',
           fnc: 'translate'
         },
         {

@@ -1942,7 +1942,8 @@ export class chatgpt extends plugin {
       let response = await client.sendMessage(prompt, {
         e,
         chatId: conversation?.conversationId,
-        image: image ? image[0] : undefined
+        image: image ? image[0] : undefined,
+        system: Config.xhPrompt
       })
       return response
     } else if (use === 'azure') {
