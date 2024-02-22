@@ -112,9 +112,12 @@ export async function translateOld (msg, to = 'auto') {
  * @param ai ai来源，支持openai, gemini, xh, qwen
  * @returns {Promise<*|string>}
  */
-export async function translate (msg, to = '中', from = 'auto', ai = Config.translateSource) {
+export async function translate (msg, to = 'auto', from = 'auto', ai = Config.translateSource) {
   try {
-    const lang = translateLangSupports.find(item => item.abbr == to)?.code
+    let lang = '中'
+    if (to !== 'auto') {
+      lang = translateLangSupports.find(item => item.abbr == to)?.code
+    }
     if (!lang) return `未找到翻译的语种，支持的语言为：\n${translateLangSupports.map(item => item.abbr).join('，')}\n`
     // if ai is not in the list, throw error
     if (!['openai', 'gemini', 'xh', 'qwen'].includes(ai)) throw new Error('ai来源错误')
