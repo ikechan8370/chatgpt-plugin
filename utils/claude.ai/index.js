@@ -137,7 +137,7 @@ export class ClaudeAIClient {
       timezone: 'Asia/Hong_Kong'
     }
     let host = Config.claudeAIReverseProxy || 'https://claude.ai'
-    let url = host + `/api/${this.organizationId}/chat_conversations/${conversationId}/completion`
+    let url = host + `/api/organizations/${this.organizationId}/chat_conversations/${conversationId}/completion`
     const cycleTLS = await initCycleTLS()
     let streamDataRes = await cycleTLS(url, {
       ja3: this.JA3,
