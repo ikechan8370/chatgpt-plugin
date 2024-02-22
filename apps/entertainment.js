@@ -195,15 +195,15 @@ ${translateLangLabels}
     let command = e.msg
     if (command.includes('openai')) {
       Config.translateSource = 'openai'
-    } else if (command.msg.includes('gemini')) {
+    } else if (command.includes('gemini')) {
       Config.translateSource = 'gemini'
-    } else if (command.msg.includes('星火')) {
+    } else if (command.includes('星火')) {
       Config.translateSource = 'xh'
-    } else if (command.msg.includes('通义千问')) {
+    } else if (command.includes('通义千问')) {
       Config.translateSource = 'qwen'
-    } else if (command.msg.includes('xh')) {
+    } else if (command.includes('xh')) {
       Config.translateSource = 'xh'
-    } else if (command.msg.includes('qwen')) {
+    } else if (command.includes('qwen')) {
       Config.translateSource = 'qwen'
     } else {
       e.reply('暂不支持该翻译源')
