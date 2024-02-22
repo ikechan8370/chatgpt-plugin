@@ -130,19 +130,14 @@ export class ClaudeAIClient {
 
   async sendMessage (text, conversationId, attachments = []) {
     let body = {
-      conversation_uuid: conversationId,
-      organization_uuid: this.organizationId,
-      text,
       attachments,
-      completion: {
-        incremental: true,
-        model: 'claude-2.1',
-        prompt: text,
-        timezone: 'Asia/Hong_Kong'
-      }
+      files: [],
+      model: 'claude-2.1',
+      prompt: text,
+      timezone: 'Asia/Hong_Kong'
     }
     let host = Config.claudeAIReverseProxy || 'https://claude.ai'
-    let url = host + '/api/append_message'
+    let url = host + `/api/${this.organizationId}/chat_conversations/${conversationId}/completion`
     const cycleTLS = await initCycleTLS()
     let streamDataRes = await cycleTLS(url, {
       ja3: this.JA3,
