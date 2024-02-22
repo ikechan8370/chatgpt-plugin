@@ -205,7 +205,10 @@ ${translateLangLabels}
       Config.translateSource = 'xh'
     } else if (command.msg.includes('qwen')) {
       Config.translateSource = 'qwen'
+    } else {
+      e.reply('暂不支持该翻译源')
     }
+    e.reply('√成功设置翻译源为' + Config.translateSource)
   }
 
   async wordcloud (e) {
