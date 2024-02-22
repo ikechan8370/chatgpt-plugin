@@ -155,7 +155,7 @@ export class ClaudeAIClient {
       let streamData = streamDataRes.body
       // console.log(streamData)
       let responseText = ''
-      let streams = streamData.split('\n\n')
+      let streams = streamData.split('\n').filter(s => s?.includes('data: '))
       for (let s of streams) {
         let jsonStr = s.replace('data: ', '').trim()
         try {
