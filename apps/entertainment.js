@@ -60,6 +60,10 @@ export class Entertainment extends plugin {
           fnc: 'translate'
         },
         {
+          reg: '^#(chatgpt)?(设置|修改)翻译来源(openai|gemini|星火|通义千问|xh|qwen)$',
+          fnc: 'translateSource'
+        },
+        {
           reg: '^#ocr',
           fnc: 'ocr'
         },
@@ -185,6 +189,23 @@ ${translateLangLabels}
     result = Array.isArray(result) ? result.join('\n') : result
     await this.reply(result, e.isGroup)
     return true
+  }
+
+  translateSource (e) {
+    let command = e.msg
+    if (command.includes('openai')) {
+      Config.translateSource = 'openai'
+    } else if (command.msg.includes('gemini')) {
+      Config.translateSource = 'gemini'
+    } else if (command.msg.includes('星火')) {
+      Config.translateSource = 'xh'
+    } else if (command.msg.includes('通义千问')) {
+      Config.translateSource = 'qwen'
+    } else if (command.msg.includes('xh')) {
+      Config.translateSource = 'xh'
+    } else if (command.msg.includes('qwen')) {
+      Config.translateSource = 'qwen'
+    }
   }
 
   async wordcloud (e) {
