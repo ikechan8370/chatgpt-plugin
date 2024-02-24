@@ -170,10 +170,10 @@ ${translateLangLabels}
       await this.reply(err.message, e.isGroup)
       return false
     }
-    const totalLength = Array.isArray(result)
-      ? result.reduce((acc, cur) => acc + cur.length, 0)
-      : result.length
-    if (totalLength > 300 || multiText) {
+    // const totalLength = Array.isArray(result)
+    //   ? result.reduce((acc, cur) => acc + cur.length, 0)
+    //   : result.length
+    if (multiText) {
       // 多条翻译结果
       if (Array.isArray(result)) {
         result = await makeForwardMsg(e, result, '翻译结果')

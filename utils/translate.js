@@ -122,6 +122,15 @@ export async function translate (msg, to = 'auto', from = 'auto', ai = Config.tr
     // if ai is not in the list, throw error
     if (!['openai', 'gemini', 'xh', 'qwen'].includes(ai)) throw new Error('ai来源错误')
     let system = `You will be provided with a sentence in the language with language code [${from}], and your task is to translate it into [${lang}]. Just print the result without any other words.`
+    if (Array.isArray(msg)) {
+      let result = []
+      for (let i = 0; i < msg.length; i++) {
+        let item = msg[i]
+        let res = await translate(item, to, from, ai)
+        result.push(res)
+      }
+      return result
+    }
     switch (ai) {
       case 'openai': {
         let api = new ChatGPTAPI({
