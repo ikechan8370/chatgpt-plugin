@@ -67,16 +67,16 @@ export class ChatGPTButtonHandler extends plugin {
       case `[${PLUGIN_CHAT}][${FUNCTION_CLAUDE2}]`:
       case `[${PLUGIN_CHAT}][${FUNCTION_GLM4}]`:
       case `[${PLUGIN_CHAT}][${FUNCTION_CHAT}]`: {
-        return this.makeButtonChat(options)
+        return this.makeButtonChat(options?.btnData)
       }
       case `[${PLUGIN_CHAT}][${FUNCTION_END}]`:
       case `[${PLUGIN_CHAT}][${FUNCTION_END_ALL}]`: {
-        return this.makeButtonEnd(options)
+        return this.makeButtonEnd(options?.btnData)
       }
       case `[${PLUGIN_CHAT}][${FUNCTION_PIC}]`:
       case `[${PLUGIN_CHAT}][${FUNCTION_AUDIO}]`:
       case `[${PLUGIN_CHAT}][${FUNCTION_TEXT}]`: {
-        return this.makeButtonMode(options)
+        return this.makeButtonMode(options?.btnData)
       }
       case `[${PLUGIN_MANAGEMENT}][${FUNCTION_VERSION}]`:
       case `[${PLUGIN_MANAGEMENT}][${FUNCTION_SHUTUP}]`:
@@ -86,10 +86,10 @@ export class ChatGPTButtonHandler extends plugin {
       case `[${PLUGIN_MANAGEMENT}][${FUNCTION_ENABLE_CONTEXT}]`:
       case `[${PLUGIN_MANAGEMENT}][${FUNCTION_CONFIRM_OFF}]`:
       case `[${PLUGIN_MANAGEMENT}][${FUNCTION_CONFIRM_ON}]`: {
-        return this.makeButtonConfirm(options)
+        return this.makeButtonConfirm(options?.btnData)
       }
       case `[${PLUGIN_MANAGEMENT}][${FUNCTION_SWITCH_BING}]`: {
-        return this.makeButtonBingMode(options)
+        return this.makeButtonBingMode(options?.btnData)
       }
       case `[${PLUGIN_ENTERTAINMENT}][${FUNCTION_WORDCLOUD}]`:
       case `[${PLUGIN_ENTERTAINMENT}][${FUNCTION_WORDCLOUD_LATEST}]`:
@@ -98,7 +98,7 @@ export class ChatGPTButtonHandler extends plugin {
       case `[${PLUGIN_ENTERTAINMENT}][${FUNCTION_TRANSLATE_SOURCE}]`:
       case `[${PLUGIN_ENTERTAINMENT}][${FUNCTION_TRANSLATE_OCR}]`:
       case `[${PLUGIN_ENTERTAINMENT}][${FUNCTION_TRANSLATE_SCREENSHOT}]`: {
-        return this.makeButtonEntertainment(options)
+        return this.makeButtonEntertainment(options?.btnData)
       }
       default:
     }
