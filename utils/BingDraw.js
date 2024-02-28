@@ -19,9 +19,9 @@ export default class BingDrawClient {
     // let d = Math.ceil(Math.random() * 255)
     // let randomIp = '141.11.138.' + d
     let headers = {
-      accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-      'accept-language': 'en-US,en;q=0.9',
-      'cache-control': 'max-age=0',
+      // accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+      // 'accept-language': 'en-US,en;q=0.9',
+      // 'cache-control': 'max-age=0',
       'content-type': 'application/x-www-form-urlencoded',
       referrer: 'https://www.bing.com/images/create/',
       origin: 'https://www.bing.com',
@@ -56,7 +56,7 @@ export default class BingDrawClient {
       fetchOptions.agent = proxy(Config.proxy)
     }
     let success = false
-    let retry = 5
+    let retry = 1
     let response
     while (!success && retry >= 0) {
       response = await fetch(url, Object.assign(fetchOptions, { body, redirect: 'manual', method: 'POST', credentials: 'include' }))
