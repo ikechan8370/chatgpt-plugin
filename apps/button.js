@@ -290,7 +290,7 @@ function createButtonBase (label, data, enter = true, style = 1) {
         type: 2
       },
       data,
-      enter: true,
+      enter,
       unsupport_tips: ''
     }
   }
