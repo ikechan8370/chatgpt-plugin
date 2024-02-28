@@ -908,7 +908,7 @@ export class chatgpt extends plugin {
       prompt = msg.trim()
       try {
         if (e.isGroup) {
-          let mm = await this.e.bot.gml
+          let mm = this.e.bot.gml
           let me = mm.get(getUin(e)) || {}
           let card = me.card
           let nickname = me.nickname
