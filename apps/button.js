@@ -133,9 +133,9 @@ export class ChatGPTButtonHandler extends plugin {
         ]
       }
     ]
-    if (options?.data?.suggested) {
+    if (options?.suggested) {
       rows.unshift({
-        buttons: options.data.suggested.split('\n').map(s => {
+        buttons: options.suggested.split('\n').map(s => {
           return createButtonBase(s, s)
         })
       })
