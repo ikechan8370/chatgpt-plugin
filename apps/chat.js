@@ -295,7 +295,7 @@ export class chatgpt extends plugin {
     this.apiStream = apiStream
     this.reply = async (msg, quote, data) => {
       let handler = e.runtime?.handler || {}
-      const btns = await handler.call('chatgpt.button.post', this.e)
+      const btns = await handler.call('chatgpt.button.post', this.e, data)
       const btnElement = {
         type: 'button',
         content: btns
@@ -1450,7 +1450,12 @@ export class chatgpt extends plugin {
           this.reply(await makeForwardMsg(this.e, quotemessage.map(msg => `${msg.text} - ${msg.url}`)))
         }
 
-        this.reply(responseText)
+        this.reply(responseText, e.isGroup, {
+          btnData: {
+            use,
+            suggested: chatMessage.suggestedResponses
+          }
+        })
         if (Config.enableSuggestedResponses && chatMessage.suggestedResponses) {
           this.reply(`建议的回复：\n${chatMessage.suggestedResponses}`)
         }
