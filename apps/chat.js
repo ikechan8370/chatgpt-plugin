@@ -870,8 +870,8 @@ export class chatgpt extends plugin {
       if (e.user_id == getUin(e)) return false
       prompt = msg.trim()
       try {
-        if (e.isGroup && typeof this.e.group.getMemberMap === 'function') {
-          let mm = await this.e.group.getMemberMap()
+        if (e.isGroup) {
+          let mm = await this.e.bot.gml
           let me = mm.get(getUin(e)) || {}
           let card = me.card
           let nickname = me.nickname
@@ -1580,7 +1580,7 @@ export class chatgpt extends plugin {
           bingAIClient.opts.userToken = bingToken
           bingAIClient.opts.cookies = cookies
           // opt.messageType = allThrottled ? 'Chat' : 'SearchQuery'
-          if (Config.enableGroupContext && e.isGroup && typeof e.group.getMemberMap === 'function') {
+          if (Config.enableGroupContext && e.isGroup) {
             try {
               opt.groupId = e.group_id
               opt.qq = e.sender.user_id
