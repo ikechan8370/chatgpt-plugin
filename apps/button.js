@@ -53,7 +53,7 @@ export class ChatGPTButtonHandler extends plugin {
 
   async btnHandler (e, options, reject) {
     logger.mark('[chatgpt按钮处理器]')
-    if (e.adapter !== 'shamrock' && (!segment.button || segment.button(1) !== 1)) {
+    if (e.adapter !== 'shamrock' && (!segment.button || segment.button(1)?.content !== 1)) {
       return null
     }
     const fnc = e.logFnc
