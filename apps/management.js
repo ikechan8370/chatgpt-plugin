@@ -1017,9 +1017,9 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
           logger.error(error)
           logger.error(stderr)
           logger.info(stdout)
-          this.this.reply('失败，请查看日志手动操作')
+          this.reply('失败，请查看日志手动操作')
         } else {
-          this.this.reply('修补完成，请手动重启')
+          this.reply('修补完成，请手动重启')
         }
       })
     }
@@ -1510,7 +1510,7 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
       return false
     }
     Config.OpenAiPlatformRefreshToken = token.replaceAll('\'', '')
-    await this.this.reply('设置成功')
+    await this.reply('设置成功')
     this.finish('doSetOpenAIPlatformToken')
   }
 
@@ -1655,7 +1655,7 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
       // console.log(value)
       modelList.push(value)
     })
-    await this.this.reply(makeForwardMsg(e, modelList, '模型列表'))
+    await this.reply(makeForwardMsg(e, modelList, '模型列表'))
   }
 
   async setAPIModel (e) {
