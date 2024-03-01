@@ -14,10 +14,8 @@ export class ChatGPTMarkdownHandler extends plugin {
   }
 
   async mdHandler (e, options, reject) {
-    if (cfg.bot.global_md) {
-      const { content, prompt, use } = options
-      let md = `> ${prompt}\n\n---\n${content}\n\n---\n*当前模式：${use}*`
-      return md
-    }
+    const { content, prompt, use } = options
+    let md = `> ${prompt}\n\n---\n${content}\n\n---\n*当前模式：${use}*`
+    return md
   }
 }
