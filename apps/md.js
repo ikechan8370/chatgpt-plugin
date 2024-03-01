@@ -15,7 +15,11 @@ export class ChatGPTMarkdownHandler extends plugin {
 
   async mdHandler (e, options, reject) {
     const { content, prompt, use } = options
-    let md = `> ${prompt}\n\n---\n${content}\n\n---\n*当前模式：${use}*`
-    return md
+    if (cfg.bot.global_md || e.adapter === 'shamrock') {
+      let md = `> ${prompt}\n\n---\n${content}\n\n---\n*当前模式：${use}*`
+      return md
+    } else {
+      return content
+    }
   }
 }
