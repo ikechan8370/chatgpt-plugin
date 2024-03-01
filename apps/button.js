@@ -114,7 +114,8 @@ export class ChatGPTButtonHandler extends plugin {
       {
         buttons: [
           createButtonBase('结束对话', '#摧毁对话'),
-          createButtonBase('切换模式', '#chatgpt切换', false)
+          createButtonBase('切换模式', '#chatgpt切换', false),
+          createButtonBase('at我对话', '', false)
         ]
       },
       {
