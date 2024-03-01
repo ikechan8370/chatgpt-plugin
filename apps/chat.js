@@ -1201,7 +1201,7 @@ export class chatgpt extends plugin {
         bingToken: previousConversation.bingToken
       }
     }
-
+    let handler = this.e.runtime?.handler || {}
     try {
       if (Config.debug) {
         logger.mark({ conversation })
@@ -1396,7 +1396,15 @@ export class chatgpt extends plugin {
           if (Config.ttsMode === 'vits-uma-genshin-honkai' && ttsResponse.length > parseInt(Config.ttsAutoFallbackThreshold)) {
             await this.reply('回复的内容过长，已转为文本模式')
           }
-          await this.reply(await convertFaces(response, Config.enableRobotAt, e), e.isGroup)
+          let responseText = await convertFaces(response, Config.enableRobotAt, e)
+          if (handler.has('chatgpt.markdown.convert')) {
+            responseText = await handler.call('chatgpt.markdown.convert', this.e, {
+              content: responseText,
+              use,
+              prompt
+            })
+          }
+          await this.reply(finalResponse, e.isGroup)
           if (quotemessage.length > 0) {
             this.reply(await makeForwardMsg(this.e, quotemessage.map(msg => `${msg.text} - ${msg.url}`)))
           }
@@ -1436,7 +1444,6 @@ export class chatgpt extends plugin {
           this.reply('今日对话已达上限')
           return false
         }
-        let handler = this.e.runtime?.handler || {}
         let responseText = await convertFaces(response, Config.enableRobotAt, e)
         if (handler.has('chatgpt.markdown.convert')) {
           responseText = await handler.call('chatgpt.markdown.convert', this.e, {
