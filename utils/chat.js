@@ -16,7 +16,7 @@ export async function getChatHistoryGroup (e, num) {
       }
       chats = chats.slice(0, num)
       try {
-        let mm = await e.group.getMemberMap()
+        let mm = await e.bot.gml
         for (const chat of chats) {
           if (e.adapter === 'shamrock') {
             if (chat.sender?.user_id === 0) {

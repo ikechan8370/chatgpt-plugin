@@ -56,8 +56,12 @@ export class Entertainment extends plugin {
           fnc: 'wordcloud_new'
         },
         {
-          reg: '^#((寄批踢|gpt|GPT)?翻.*|chatgpt翻译帮助)',
+          reg: '^#((寄批踢|gpt|GPT)?翻[sS]*|chatgpt翻译帮助)',
           fnc: 'translate'
+        },
+        {
+          reg: '^#(chatgpt)?(设置|修改)翻译来源(openai|gemini|星火|通义千问|xh|qwen)$',
+          fnc: 'translateSource'
         },
         {
           reg: '^#ocr',
@@ -166,10 +170,10 @@ ${translateLangLabels}
       await this.reply(err.message, e.isGroup)
       return false
     }
-    const totalLength = Array.isArray(result)
-      ? result.reduce((acc, cur) => acc + cur.length, 0)
-      : result.length
-    if (totalLength > 300 || multiText) {
+    // const totalLength = Array.isArray(result)
+    //   ? result.reduce((acc, cur) => acc + cur.length, 0)
+    //   : result.length
+    if (multiText) {
       // 多条翻译结果
       if (Array.isArray(result)) {
         result = await makeForwardMsg(e, result, '翻译结果')
@@ -185,6 +189,26 @@ ${translateLangLabels}
     result = Array.isArray(result) ? result.join('\n') : result
     await this.reply(result, e.isGroup)
     return true
+  }
+
+  translateSource (e) {
+    let command = e.msg
+    if (command.includes('openai')) {
+      Config.translateSource = 'openai'
+    } else if (command.includes('gemini')) {
+      Config.translateSource = 'gemini'
+    } else if (command.includes('星火')) {
+      Config.translateSource = 'xh'
+    } else if (command.includes('通义千问')) {
+      Config.translateSource = 'qwen'
+    } else if (command.includes('xh')) {
+      Config.translateSource = 'xh'
+    } else if (command.includes('qwen')) {
+      Config.translateSource = 'qwen'
+    } else {
+      e.reply('暂不支持该翻译源')
+    }
+    e.reply('√成功设置翻译源为' + Config.translateSource)
   }
 
   async wordcloud (e) {

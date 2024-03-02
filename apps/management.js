@@ -22,22 +22,7 @@ import loader from '../../../lib/plugins/loader.js'
 import VoiceVoxTTS, { supportConfigurations as voxRoleList } from '../utils/tts/voicevox.js'
 import { supportConfigurations as azureRoleList } from '../utils/tts/microsoft-azure.js'
 import fetch from 'node-fetch'
-import { getProxy } from '../utils/proxy.js'
-
-let proxy = getProxy()
-const newFetch = (url, options = {}) => {
-  const defaultOptions = Config.proxy
-    ? {
-        agent: proxy(Config.proxy)
-      }
-    : {}
-  const mergedOptions = {
-    ...defaultOptions,
-    ...options
-  }
-
-  return fetch(url, mergedOptions)
-}
+import { newFetch } from '../utils/proxy.js'
 
 export class ChatgptManagement extends plugin {
   constructor (e) {
@@ -87,11 +72,11 @@ export class ChatgptManagement extends plugin {
           fnc: 'migrateBingAccessToken',
           permission: 'master'
         },
-        {
-          reg: '^#chatgpt切换浏览器$',
-          fnc: 'useBrowserBasedSolution',
-          permission: 'master'
-        },
+        // {
+        //   reg: '^#chatgpt切换浏览器$',
+        //   fnc: 'useBrowserBasedSolution',
+        //   permission: 'master'
+        // },
         {
           reg: '^#chatgpt切换API$',
           fnc: 'useOpenAIAPIBasedSolution',
@@ -243,7 +228,7 @@ export class ChatgptManagement extends plugin {
         },
         {
           /** 命令正则匹配 */
-          reg: '^#(关闭|打开)群聊上下文$',
+          reg: '^#(chatgpt)?(关闭|打开)群聊上下文$',
           /** 执行方法 */
           fnc: 'enableGroupContext',
           permission: 'master'
@@ -254,16 +239,16 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
-          reg: '^#(设置|修改)管理密码',
+          reg: '^#(chatgpt)?(设置|修改)管理密码',
           fnc: 'setAdminPassword',
           permission: 'master'
         },
         {
-          reg: '^#(设置|修改)用户密码',
+          reg: '^#(chatgpt)?(设置|修改)用户密码',
           fnc: 'setUserPassword'
         },
         {
-          reg: '^#工具箱',
+          reg: '^#(chatgpt)?工具箱',
           fnc: 'toolsPage',
           permission: 'master'
         },
@@ -281,7 +266,7 @@ export class ChatgptManagement extends plugin {
           fnc: 'commandHelp'
         },
         {
-          reg: '^#语音切换.*',
+          reg: '^#(chatgpt)?语音切换.*',
           fnc: 'ttsSwitch',
           permission: 'master'
         },
@@ -910,7 +895,7 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
     let use = await redis.get('CHATGPT:USE')
     if (use !== 'bing') {
       await redis.set('CHATGPT:USE', 'bing')
-      await this.reply('已切换到基于微软新必应的解决方案，如果已经对话过务必执行`#结束对话`避免引起404错误')
+      await this.reply('已切换到基于微软Copilot(必应)的解决方案，如果已经对话过务必执行`#结束对话`避免引起404错误')
     } else {
       await this.reply('当前已经是必应Bing模式了')
     }
@@ -1577,7 +1562,7 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
           const data = await response.json()
           const chatdata = data.chatConfig || {}
           for (let [keyPath, value] of Object.entries(chatdata)) {
-            if (keyPath === 'blockWords' || keyPath === 'promptBlockWords' || keyPath === 'initiativeChatGroups') { value = value.toString().split(/[,，;；\|]/) }
+            if (keyPath === 'blockWords' || keyPath === 'promptBlockWords' || keyPath === 'initiativeChatGroups') { value = value.toString().split(/[,，;；|]/) }
             if (Config[keyPath] != value) {
               changeConfig.push({
                 item: keyPath,

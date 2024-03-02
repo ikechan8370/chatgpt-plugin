@@ -56,7 +56,7 @@ export default class BingDrawClient {
       fetchOptions.agent = proxy(Config.proxy)
     }
     let success = false
-    let retry = 5
+    let retry = 1
     let response
     while (!success && retry >= 0) {
       response = await fetch(url, Object.assign(fetchOptions, { body, redirect: 'manual', method: 'POST', credentials: 'include' }))

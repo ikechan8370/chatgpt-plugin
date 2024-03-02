@@ -395,7 +395,7 @@ export default class XinghuoClient {
           logger.warn('星火设定序列化失败,本次对话不附带设定')
         }
       } else {
-        Prompt = Config.xhPrompt ? [{ role: 'system', content: Config.xhPrompt }] : []
+        Prompt = option.system ? [{ role: 'system', content: option.system }] : []
       }
       if (Config.xhPromptEval) {
         Prompt.forEach(obj => {
