@@ -27,6 +27,7 @@ const defaultConfig = {
   openAiBaseUrl: defaultOpenAIReverseProxy,
   OpenAiPlatformRefreshToken: '',
   openAiForceUseReverse: false,
+  apiStream: false,
   drawCD: 30,
   model: '',
   temperature: 0.8,
