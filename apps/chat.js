@@ -1404,7 +1404,7 @@ export class chatgpt extends plugin {
               prompt
             })
           }
-          await this.reply(finalResponse, e.isGroup)
+          this.reply(responseText, e.isGroup)
           if (quotemessage.length > 0) {
             this.reply(await makeForwardMsg(this.e, quotemessage.map(msg => `${msg.text} - ${msg.url}`)))
           }
