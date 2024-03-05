@@ -108,33 +108,86 @@ export class ChatGPTButtonHandler extends plugin {
 
   /**
    *
-   * @param {{data: {suggested: string?, use: string}}} options
+   * @param {{suggested: string?, use: string}?} options
    */
-  makeButtonChat (options) {
+  async makeButtonChat (options) {
+    let endCommand = '#摧毁对话'
+    switch (options?.use) {
+      case 'api': {
+        endCommand = '#api结束对话'
+        break
+      }
+      case 'api3': {
+        endCommand = '#api3结束对话'
+        break
+      }
+      case 'bing': {
+        endCommand = '#必应结束对话'
+        break
+      }
+      case 'claude2': {
+        endCommand = '#克劳德结束对话'
+        break
+      }
+      case 'gemini': {
+        endCommand = '#双子星结束对话'
+        break
+      }
+      case 'xh': {
+        endCommand = '#星火结束对话'
+        break
+      }
+      case 'qwen': {
+        endCommand = '#通义千问结束对话'
+        break
+      }
+      case 'chatglm4': {
+        endCommand = '#智谱结束对话'
+        break
+      }
+    }
     let rows = [
       {
         buttons: [
-          createButtonBase('结束对话', '#摧毁对话'),
-          createButtonBase('切换模式', '#chatgpt切换', false),
+          createButtonBase('结束对话', '#毁灭对话'),
+          createButtonBase('结束当前对话', endCommand),
           createButtonBase('at我对话', '', false)
-        ]
-      },
-      {
-        buttons: [
-          createButtonBase('OpenAPI', '#chat1', false),
-          createButtonBase('ChatGPT', '#chat3', false),
-          createButtonBase('Copilot', '#bing', false),
-          createButtonBase('Gemini', '#gemini', false)
-        ]
-      },
-      {
-        buttons: [
-          createButtonBase('讯飞星火', '#xh', false),
-          createButtonBase('通义千问', '#qwen', false),
-          createButtonBase('ChatGLM4', '#glm4', false)
         ]
       }
     ]
+    let buttons = [[], []]
+    if (Config.apiKey) {
+      buttons[0].push(createButtonBase('OpenAPI', '#chat1', false))
+    }
+    if (await redis.get('CHATGPT:TOKEN')) {
+      buttons[0].push(createButtonBase('ChatGPT', '#chat3', false))
+    }
+    if (await redis.get('CHATGPT:BING_TOKENS')) {
+      buttons[0].push(createButtonBase('Copilot', '#bing', false))
+    }
+    if (Config.geminiKey) {
+      buttons[0].push(createButtonBase('Gemini', '#gemini', false))
+    }
+    if (Config.xhAPIKey) {
+      buttons[buttons[0].length >= 4 ? 1 : 0].push(createButtonBase('讯飞星火', '#xh', false))
+    }
+    if (Config.qwenApiKey) {
+      buttons[buttons[0].length >= 4 ? 1 : 0].push(createButtonBase('通义千问', '#qwen', false))
+    }
+    if (Config.chatglmRefreshToken) {
+      buttons[buttons[0].length >= 4 ? 1 : 0].push(createButtonBase('ChatGLM4', '#glm4', false))
+    }
+    if (Config.claudeAISessionKey) {
+      buttons[buttons[0].length >= 4 ? 1 : 0].push(createButtonBase('Claude', '#claude.ai', false))
+    }
+    rows.push({
+      buttons: buttons[0]
+    })
+    if (buttons[1].length > 0) {
+      rows.push({
+        buttons: buttons[1]
+      })
+    }
     if (options?.suggested) {
       rows.unshift({
         buttons: options.suggested.split('\n').map(s => {
