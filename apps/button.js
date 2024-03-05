@@ -315,7 +315,7 @@ export class ChatGPTButtonHandler extends plugin {
           buttons: [
             createButtonBase('翻译', '#翻译', false),
             createButtonBase('OCR', '#ocr', false),
-            createButtonBase('截图', '#url', false)
+            createButtonBase('截图', '#url:', false)
           ]
         },
         {
