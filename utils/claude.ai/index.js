@@ -132,7 +132,8 @@ export class ClaudeAIClient {
     let body = {
       attachments,
       files: [],
-      model: 'claude-2.1',
+      // 官方更新后这里没有传值了
+      // model: 'claude-2.1',
       prompt: text,
       timezone: 'Asia/Hong_Kong'
     }

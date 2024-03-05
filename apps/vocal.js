@@ -20,15 +20,15 @@ export class Vocal extends plugin {
         }
       ]
     })
-    this.task = [
-      {
-        // 设置十分钟左右的浮动
-        cron: '0/1 * * * ?',
-        // cron: '*/2 * * * *',
-        name: '保持suno心跳',
-        fnc: this.heartbeat.bind(this)
-      }
-    ]
+    // this.task = [
+    //   {
+    //     // 设置十分钟左右的浮动
+    //     cron: '0/1 * * * ?',
+    //     // cron: '*/2 * * * *',
+    //     name: '保持suno心跳',
+    //     fnc: this.heartbeat.bind(this)
+    //   }
+    // ]
   }
 
   async heartbeat (e) {

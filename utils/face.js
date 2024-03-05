@@ -479,7 +479,7 @@ export async function convertFaces (msg, handleAt = false, e) {
         groupCardQQMap[groupMembers.get(key).card || groupMembers.get(key).nickname] = groupMembers.get(key).user_id
       }
     }
-}
+  }
   let tmpMsg = ''
   let tmpFace = ''
   let tmpAt = ''

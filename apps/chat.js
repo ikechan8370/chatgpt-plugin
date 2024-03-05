@@ -132,9 +132,8 @@ const newFetch = (url, options = {}) => {
   return fetch(url, mergedOptions)
 }
 export class chatgpt extends plugin {
-  constructor () {
+  constructor (e) {
     let toggleMode = Config.toggleMode
-    let apiStream = Config.apiStream
     super({
       /** 功能名称 */
       name: 'ChatGpt 对话',
@@ -174,7 +173,7 @@ export class chatgpt extends plugin {
         },
         {
           /** 命令正则匹配 */
-          reg: '^#claude2[sS]*',
+          reg: '^#claude(2|3|.ai)[sS]*',
           /** 执行方法 */
           fnc: 'claude2'
         },
@@ -292,7 +291,23 @@ export class chatgpt extends plugin {
       ]
     })
     this.toggleMode = toggleMode
-    this.apiStream = apiStream
+    this.reply = async (msg, quote, data) => {
+      if (!Config.enableMd) {
+        return e.reply(msg, quote, data)
+      }
+      let handler = e.runtime?.handler || {}
+      const btns = await handler.call('chatgpt.button.post', this.e, data)
+      const btnElement = {
+        type: 'button',
+        content: btns
+      }
+      if (Array.isArray(msg)) {
+        msg.push(btnElement)
+      } else {
+        msg = [msg, btnElement]
+      }
+      return e.reply(msg, quote, data)
+    }
   }
 
   /**
@@ -342,22 +357,22 @@ export class chatgpt extends plugin {
       // })
       // await client.endConversation()
       await redis.del(`CHATGPT:SLACK_CONVERSATION:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`)
-      await e.reply('claude对话已结束')
+      await this.reply('claude对话已结束')
       return
     }
     if (use === 'claude2') {
       await redis.del(`CHATGPT:CLAUDE2_CONVERSATION:${e.sender.user_id}`)
-      await e.reply('claude2对话已结束')
+      await this.reply('claude2对话已结束')
       return
     }
     if (use === 'xh') {
       await redis.del(`CHATGPT:CONVERSATIONS_XH:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`)
-      await e.reply('星火对话已结束')
+      await this.reply('星火对话已结束')
       return
     }
     if (use === 'bard') {
       await redis.del(`CHATGPT:CONVERSATIONS_BARD:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`)
-      await e.reply('Bard对话已结束')
+      await this.reply('Bard对话已结束')
       return
     }
     let ats = e.message.filter(m => m.type === 'at')
@@ -803,11 +818,11 @@ export class chatgpt extends plugin {
         break
       }
       default: {
-        await e.reply('请使用#chatgpt语音换源+数字进行换源。1为vits-uma-genshin-honkai，2为微软Azure，3为voicevox')
+        await this.reply('请使用#chatgpt语音换源+数字进行换源。1为vits-uma-genshin-honkai，2为微软Azure，3为voicevox')
         return
       }
     }
-    await e.reply('语音转换源已切换为' + Config.ttsMode)
+    await this.reply('语音转换源已切换为' + Config.ttsMode)
   }
 
   async setDefaultRole (e) {
@@ -895,7 +910,7 @@ export class chatgpt extends plugin {
    * #chatgpt
    */
   async chatgpt (e) {
-    let msg = (Version.isTrss || e.adapter === 'shamrock') ? e.msg : e.raw_message
+    let msg = e.msg
     let prompt
     if (this.toggleMode === 'at') {
       if (!msg || e.msg?.startsWith('#')) {
@@ -947,7 +962,7 @@ export class chatgpt extends plugin {
         }
         return false
       }
-      prompt = _.replace(e.raw_message.trimStart(), '#chat', '').trim()
+      prompt = _.replace(e.msg.trimStart(), '#chat', '').trim()
       if (prompt.length === 0) {
         return false
       }
@@ -1187,7 +1202,7 @@ export class chatgpt extends plugin {
         bingToken: previousConversation.bingToken
       }
     }
-
+    let handler = this.e.runtime?.handler || {}
     try {
       if (Config.debug) {
         logger.mark({ conversation })
@@ -1199,7 +1214,7 @@ export class chatgpt extends plugin {
       // 处理星火和bard图片
       if ((use === 'bard' || use === 'xh') && chatMessage?.images) {
         chatMessage.images.forEach(async element => {
-          await e.reply([element.tag, segment.image(element.url)])
+          await this.reply([element.tag, segment.image(element.url)])
         })
       }
       // chatglm4图片，调整至sendMessage中处理
@@ -1244,7 +1259,7 @@ export class chatgpt extends plugin {
       if (use === 'claude') response = response.replace(/:[a-zA-Z_]+:/g, '')
       let mood = 'blandness'
       if (!response) {
-        await e.reply('没有任何回复', true)
+        await this.reply('没有任何回复', true)
         return
       }
       let emotion, emotionDegree
@@ -1382,7 +1397,15 @@ export class chatgpt extends plugin {
           if (Config.ttsMode === 'vits-uma-genshin-honkai' && ttsResponse.length > parseInt(Config.ttsAutoFallbackThreshold)) {
             await this.reply('回复的内容过长，已转为文本模式')
           }
-          await this.reply(await convertFaces(response, Config.enableRobotAt, e), e.isGroup)
+          let responseText = await convertFaces(response, Config.enableRobotAt, e)
+          if (handler.has('chatgpt.markdown.convert')) {
+            responseText = await handler.call('chatgpt.markdown.convert', this.e, {
+              content: responseText,
+              use,
+              prompt
+            })
+          }
+          await this.reply(finalResponse, e.isGroup)
           if (quotemessage.length > 0) {
             this.reply(await makeForwardMsg(this.e, quotemessage.map(msg => `${msg.text} - ${msg.url}`)))
           }
@@ -1422,10 +1445,25 @@ export class chatgpt extends plugin {
           this.reply('今日对话已达上限')
           return false
         }
-        await this.reply(await convertFaces(response, Config.enableRobotAt, e), e.isGroup)
+        let responseText = await convertFaces(response, Config.enableRobotAt, e)
+        if (handler.has('chatgpt.markdown.convert')) {
+          responseText = await handler.call('chatgpt.markdown.convert', this.e, {
+            content: responseText,
+            use,
+            prompt
+          })
+        }
+        // await this.reply(responseText, e.isGroup)
         if (quotemessage.length > 0) {
           this.reply(await makeForwardMsg(this.e, quotemessage.map(msg => `${msg.text} - ${msg.url}`)))
         }
+
+        this.reply(responseText, e.isGroup, {
+          btnData: {
+            use,
+            suggested: chatMessage.suggestedResponses
+          }
+        })
         if (Config.enableSuggestedResponses && chatMessage.suggestedResponses) {
           this.reply(`建议的回复：\n${chatMessage.suggestedResponses}`)
         }
@@ -1471,7 +1509,7 @@ export class chatgpt extends plugin {
   }
 
   async claude2 (e) {
-    return await this.otherMode(e, 'claude2')
+    return await this.otherMode(e, 'claude2', /^#claude(2|3|.ai)/)
   }
 
   async claude (e) {
@@ -1537,7 +1575,7 @@ export class chatgpt extends plugin {
   async renderImage (e, use, content, prompt, quote = [], mood = '', suggest = '', imgUrls = []) {
     let cacheData = await this.cacheContent(e, use, content, prompt, quote, mood, suggest, imgUrls)
     const template = use !== 'bing' ? 'content/ChatGPT/index' : 'content/Bing/index'
-    if (cacheData.error || cacheData.status != 200) { await this.reply(`出现错误：${cacheData.error || 'server error ' + cacheData.status}`, true) } else { await e.reply(await renderUrl(e, (Config.viewHost ? `${Config.viewHost}/` : `http://127.0.0.1:${Config.serverPort || 3321}/`) + `page/${cacheData.file}?qr=${Config.showQRCode ? 'true' : 'false'}`, { retType: Config.quoteReply ? 'base64' : '', Viewport: { width: parseInt(Config.chatViewWidth), height: parseInt(parseInt(Config.chatViewWidth) * 0.56) }, func: (parseFloat(Config.live2d) && !Config.viewHost) ? 'window.Live2d == true' : '', deviceScaleFactor: parseFloat(Config.cloudDPR) }), e.isGroup && Config.quoteReply) }
+    if (cacheData.error || cacheData.status != 200) { await this.reply(`出现错误：${cacheData.error || 'server error ' + cacheData.status}`, true) } else { await this.reply(await renderUrl(e, (Config.viewHost ? `${Config.viewHost}/` : `http://127.0.0.1:${Config.serverPort || 3321}/`) + `page/${cacheData.file}?qr=${Config.showQRCode ? 'true' : 'false'}`, { retType: Config.quoteReply ? 'base64' : '', Viewport: { width: parseInt(Config.chatViewWidth), height: parseInt(parseInt(Config.chatViewWidth) * 0.56) }, func: (parseFloat(Config.live2d) && !Config.viewHost) ? 'window.Live2d == true' : '', deviceScaleFactor: parseFloat(Config.cloudDPR) }), e.isGroup && Config.quoteReply) }
   }
 
   async sendMessage (prompt, conversation = {}, use, e) {
@@ -1667,7 +1705,7 @@ export class chatgpt extends plugin {
                     client.getImages(prompt, e)
                   } catch (err) {
                     redis.del(`CHATGPT:DRAW:${e.sender.user_id}`)
-                    e.reply('绘图失败：' + err)
+                    this.reply('绘图失败：' + err)
                   }
                 })
               }
@@ -1715,20 +1753,20 @@ export class chatgpt extends plugin {
             if (bingToken) {
               if (maxConv >= 20 && Config.bingCaptchaOneShotUrl) {
                 // maxConv为30说明token有效，可以通过解验证码码服务过码
-                await e.reply('出现必应验证码，尝试解决中')
+                await this.reply('出现必应验证码，尝试解决中')
                 try {
                   let captchaResolveResult = await solveCaptchaOneShot(bingToken)
                   if (captchaResolveResult?.success) {
-                    await e.reply('验证码已解决')
+                    await this.reply('验证码已解决')
                   } else {
                     logger.error(captchaResolveResult)
                     errorMessage = message
-                    await e.reply('验证码解决失败: ' + captchaResolveResult.error)
+                    await this.reply('验证码解决失败: ' + captchaResolveResult.error)
                     retry = 0
                   }
                 } catch (err) {
                   logger.error(err)
-                  await e.reply('验证码解决失败: ' + err)
+                  await this.reply('验证码解决失败: ' + err)
                   retry = 0
                 }
               } else {
@@ -2192,7 +2230,7 @@ export class chatgpt extends plugin {
       })
       let resp = await client.sendMessage(prompt, conversation)
       if (resp.image) {
-        e.reply(segment.image(resp.image), true)
+        this.reply(segment.image(resp.image), true)
       }
       return resp
     } else {
@@ -2275,7 +2313,7 @@ export class chatgpt extends plugin {
       let option = {
         timeoutMs: 600000,
         completionParams,
-        stream: this.apiStream,
+        stream: Config.apiStream,
         onProgress: (data) => {
           if (Config.debug) {
             logger.info(data?.text || data.functionCall || data)
@@ -2416,7 +2454,7 @@ export class chatgpt extends plugin {
           logger.info(msg)
           while (msg.functionCall) {
             if (msg.text) {
-              await e.reply(msg.text.replace('\n\n\n', '\n'))
+              await this.reply(msg.text.replace('\n\n\n', '\n'))
             }
             let {
               name,
@@ -2449,7 +2487,7 @@ export class chatgpt extends plugin {
             logger.warn(err)
             await redis.del(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
             await redis.del(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`)
-            await e.reply('字数超限啦，将为您自动结束本次对话。')
+            await this.reply('字数超限啦，将为您自动结束本次对话。')
             return null
           } else {
             logger.error(err)
@@ -2466,7 +2504,7 @@ export class chatgpt extends plugin {
             logger.warn(err)
             await redis.del(`CHATGPT:CONVERSATIONS:${e.sender.user_id}`)
             await redis.del(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`)
-            await e.reply('字数超限啦，将为您自动结束本次对话。')
+            await this.reply('字数超限啦，将为您自动结束本次对话。')
             return null
           } else {
             logger.error(err)
@@ -2494,11 +2532,11 @@ export class chatgpt extends plugin {
         await redis.del(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`)
       }
       response = await client.sendMessage('', e)
-      await e.reply(response, true)
+      await this.reply(response, true)
     } else {
       let preset = getPromptByName(presetName)
       if (!preset) {
-        await e.reply('没有这个设定', true)
+        await this.reply('没有这个设定', true)
       } else {
         let conversationId = await redis.get(`CHATGPT:SLACK_CONVERSATION:${e.sender.user_id}`)
         if (conversationId) {
@@ -2510,7 +2548,7 @@ export class chatgpt extends plugin {
         logger.info('send preset: ' + preset.content)
         response = await client.sendMessage(preset.content, e) +
           await client.sendMessage(await AzureTTS.getEmotionPrompt(e), e)
-        await e.reply(response, true)
+        await this.reply(response, true)
       }
     }
     return true
@@ -2519,15 +2557,15 @@ export class chatgpt extends plugin {
   async newxhBotConversation (e) {
     let botId = e.msg.replace(/^#星火助手/, '').trim()
     if (Config.xhmode != 'web') {
-      await e.reply('星火助手仅支持体验版使用', true)
+      await this.reply('星火助手仅支持体验版使用', true)
       return true
     }
     if (!botId) {
-      await e.reply('无效助手id', true)
+      await this.reply('无效助手id', true)
     } else {
       const ssoSessionId = Config.xinghuoToken
       if (!ssoSessionId) {
-        await e.reply('未绑定星火token，请使用#chatgpt设置星火token命令绑定token', true)
+        await this.reply('未绑定星火token，请使用#chatgpt设置星火token命令绑定token', true)
         return true
       }
       let client = new XinghuoClient({
@@ -2564,15 +2602,15 @@ export class chatgpt extends plugin {
               }),
               Config.conversationPreserveTime > 0 ? { EX: Config.conversationPreserveTime } : {}
             )
-            await e.reply(`成功创建助手对话\n助手名称：${botInfo.data.bot_name}\n助手描述：${botInfo.data.bot_desc}`, true)
+            await this.reply(`成功创建助手对话\n助手名称：${botInfo.data.bot_name}\n助手描述：${botInfo.data.bot_desc}`, true)
           } else {
-            await e.reply(`创建助手对话失败,${botInfo.desc}`, true)
+            await this.reply(`创建助手对话失败,${botInfo.desc}`, true)
           }
         } else {
-          await e.reply('创建助手对话失败,服务器异常', true)
+          await this.reply('创建助手对话失败,服务器异常', true)
         }
       } catch (error) {
-        await e.reply(`创建助手对话失败 ${error}`, true)
+        await this.reply(`创建助手对话失败 ${error}`, true)
       }
     }
     return true
@@ -2582,7 +2620,7 @@ export class chatgpt extends plugin {
     let searchBot = e.msg.replace(/^#星火(搜索|查找)助手/, '').trim()
     const ssoSessionId = Config.xinghuoToken
     if (!ssoSessionId) {
-      await e.reply('未绑定星火token，请使用#chatgpt设置星火token命令绑定token', true)
+      await this.reply('未绑定星火token，请使用#chatgpt设置星火token命令绑定token', true)
       return true
     }
     const cacheresOption = {
@@ -2608,10 +2646,10 @@ export class chatgpt extends plugin {
       if (bots.data.pageList.length > 0) {
         this.reply(await makeForwardMsg(this.e, bots.data.pageList.map(msg => `${msg.e.bot.botId} - ${msg.e.bot.botName}`)))
       } else {
-        await e.reply('未查到相关助手', true)
+        await this.reply('未查到相关助手', true)
       }
     } else {
-      await e.reply('搜索助手失败', true)
+      await this.reply('搜索助手失败', true)
     }
   }
 
@@ -2763,6 +2801,13 @@ export class chatgpt extends plugin {
     return await this.chatGPTApi.sendMessage(prompt, sendMessageOption)
   }
 
+  /**
+   * 其他模式
+   * @param e
+   * @param mode
+   * @param {string|RegExp} pattern
+   * @returns {Promise<boolean>}
+   */
   async otherMode (e, mode, pattern = `#${mode}`) {
     if (!Config.allowOtherMode) {
       return false
@@ -2774,7 +2819,7 @@ export class chatgpt extends plugin {
       }
       return false
     }
-    let prompt = _.replace(e.raw_message.trimStart(), pattern, '').trim()
+    let prompt = _.replace(e.msg.trimStart(), pattern, '').trim()
     if (prompt.length === 0) {
       return false
     }
