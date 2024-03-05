@@ -28,10 +28,10 @@ export class ChatGPTMarkdownHandler extends plugin {
 function transUse (use) {
   let useMap = {
     api: Config.model,
-    bing: '必应(Copilot)',
+    bing: '必应(Copilot)' + Config.toneStyle,
     gemini: Config.geminiModel,
-    xh: '讯飞星火',
-    qwen: '同义千问',
+    xh: '讯飞星火 ' + Config.xhmode,
+    qwen: '通义千问 ' + Config.qwenModel,
     claude2: 'Claude 3 Sonnet',
     glm4: 'ChatGLM4',
     chat3: 'ChatGPT官网'
