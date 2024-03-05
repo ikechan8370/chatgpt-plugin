@@ -1,5 +1,6 @@
 import plugin from '../../../lib/plugins/plugin.js'
-import cfg from '../../../lib/config/config.js'
+import {Config} from '../utils/config.js'
+
 export class ChatGPTMarkdownHandler extends plugin {
   constructor () {
     super({
@@ -15,11 +16,25 @@ export class ChatGPTMarkdownHandler extends plugin {
 
   async mdHandler (e, options, reject) {
     const { content, prompt, use } = options
-    if (cfg.bot.global_md || e.adapter === 'shamrock') {
-      let md = `> ${prompt}\n\n---\n${content}\n\n---\n*当前模式：${use}*`
-      return md
+    if (Config.enableMd && (e.adapter === 'shamrock')) {
+      let mode = transUse(use)
+      return `> ${prompt}\n\n---\n${content}\n\n---\n*当前模式：${mode}*`
     } else {
       return content
     }
   }
+}
+
+function transUse (use) {
+  let useMap = {
+    api: Config.model,
+    bing: '必应(Copilot)',
+    gemini: Config.geminiModel,
+    xh: '讯飞星火',
+    qwen: '同义千问',
+    claude2: 'Claude 3 Sonnet',
+    glm4: 'ChatGLM4',
+    chat3: 'ChatGPT官网'
+  }
+  return useMap[use] || use
 }

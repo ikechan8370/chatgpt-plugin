@@ -1,4 +1,5 @@
 import plugin from '../../../lib/plugins/plugin.js'
+import {Config} from "../utils/config.js";
 
 const PLUGIN_CHAT = 'ChatGpt 对话'
 const PLUGIN_MANAGEMENT = 'ChatGPT-Plugin 管理'
@@ -52,8 +53,8 @@ export class ChatGPTButtonHandler extends plugin {
   }
 
   async btnHandler (e, options, reject) {
-    logger.mark('[chatgpt按钮处理器]')
-    if (e.adapter !== 'shamrock' && (!segment.button || segment.button(1)?.content !== 1)) {
+    // logger.mark('[chatgpt按钮处理器]')
+    if (!Config.enableMd || (e.adapter !== 'shamrock' && (!segment.button || segment.button(1)?.content !== 1))) {
       return null
     }
     const fnc = e.logFnc
@@ -192,8 +193,8 @@ export class ChatGPTButtonHandler extends plugin {
         {
           buttons: [
             createButtonBase('恢复本群回复', '#chatgpt本群张嘴', false),
-            createButtonBase('开启上下文', '#chatgpt打开上下文'),
-            createButtonBase('关闭上下文 ', '#chatgpt关闭上下文')
+            createButtonBase('开启上下文', '#打开群聊上下文'),
+            createButtonBase('关闭上下文 ', '#关闭群聊上下文')
 
           ]
         },
