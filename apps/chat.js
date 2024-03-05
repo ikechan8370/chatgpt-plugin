@@ -292,6 +292,9 @@ export class chatgpt extends plugin {
     })
     this.toggleMode = toggleMode
     this.reply = async (msg, quote, data) => {
+      if (!Config.enableMd) {
+        return e.reply(msg, quote, data)
+      }
       let handler = e.runtime?.handler || {}
       const btns = await handler.call('chatgpt.button.post', this.e, data)
       const btnElement = {
@@ -303,7 +306,7 @@ export class chatgpt extends plugin {
       } else {
         msg = [msg, btnElement]
       }
-      return e.reply(msg, data)
+      return e.reply(msg, quote, data)
     }
   }
 
