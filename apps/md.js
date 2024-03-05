@@ -16,7 +16,7 @@ export class ChatGPTMarkdownHandler extends plugin {
 
   async mdHandler (e, options, reject) {
     const { content, prompt, use } = options
-    if (Config.enableMd && (e.adapter === 'shamrock')) {
+    if (Config.enableMd) {
       let mode = transUse(use)
       return `> ${prompt}\n\n---\n${content}\n\n---\n*当前模式：${mode}*`
     } else {
