@@ -242,6 +242,12 @@ export function supportGuoba () {
           component: 'Switch'
         },
         {
+          field: 'enableMd',
+          label: 'QQ开启markdown',
+          bottomHelpMessage: 'qq的第三方md，非QQBot。需要适配器实现segment.markdown和segment.button方可使用，否则不建议开启，会造成各种错误。默认关闭',
+          component: 'Switch'
+        },
+        {
           field: 'translateSource',
           label: '翻译来源',
           bottomHelpMessage: '#gpt翻译使用的AI来源',
