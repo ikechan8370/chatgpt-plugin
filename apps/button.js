@@ -157,7 +157,7 @@ export class ChatGPTButtonHandler extends plugin {
     ]
     let buttons = [[], []]
     if (Config.apiKey) {
-      buttons[0].push(createButtonBase('OpenAPI', '#chat1', false))
+      buttons[0].push(createButtonBase('OpenAI', '#chat1', false))
     }
     if (await redis.get('CHATGPT:TOKEN')) {
       buttons[0].push(createButtonBase('ChatGPT', '#chat3', false))
