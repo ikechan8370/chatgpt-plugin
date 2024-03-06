@@ -54,7 +54,7 @@ export class ChatGPTButtonHandler extends plugin {
 
   async btnHandler (e, options, reject) {
     // logger.mark('[chatgpt按钮处理器]')
-    if (!Config.enableMd)) {
+    if (!Config.enableMd) {
       return null
     }
     const fnc = e.logFnc
