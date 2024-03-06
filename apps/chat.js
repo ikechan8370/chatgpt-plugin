@@ -1202,7 +1202,9 @@ export class chatgpt extends plugin {
         bingToken: previousConversation.bingToken
       }
     }
-    let handler = this.e.runtime?.handler || {}
+    let handler = this.e.runtime?.handler || {
+      has: (arg1) => false
+    }
     try {
       if (Config.debug) {
         logger.mark({ conversation })
