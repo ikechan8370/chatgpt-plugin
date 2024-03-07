@@ -343,7 +343,7 @@ ${translateLangLabels}
     logger.info('combine ' + e.msg)
     let resultFileLoc = `data/chatgpt/emoji/${left}_${right}.jpg`
     if (fs.existsSync(resultFileLoc)) {
-      let image = segment.image(fs.createReadStream(resultFileLoc))
+      let image = segment.image(resultFileLoc)
       image.asface = true
       await this.reply(image, true)
       return true
@@ -370,12 +370,12 @@ ${translateLangLabels}
       await this.reply('不支持合成', true)
       return false
     }
-    let response = await fetch(url)
-    const resultBlob = await response.blob()
-    const resultArrayBuffer = await resultBlob.arrayBuffer()
-    const resultBuffer = Buffer.from(resultArrayBuffer)
-    await fs.writeFileSync(resultFileLoc, resultBuffer)
-    let image = segment.image(fs.createReadStream(resultFileLoc))
+    // let response = await fetch(url)
+    // const resultBlob = await response.blob()
+    // const resultArrayBuffer = await resultBlob.arrayBuffer()
+    // const resultBuffer = Buffer.from(resultArrayBuffer)
+    // await fs.writeFileSync(resultFileLoc, resultBuffer)
+    let image = segment.image(url)
     image.asface = true
     await this.reply(image, true)
     return true
