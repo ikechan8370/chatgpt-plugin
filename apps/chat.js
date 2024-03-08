@@ -290,15 +290,18 @@ export class chatgpt extends plugin {
       }
       let handler = e.runtime?.handler || {}
       const btns = await handler.call('chatgpt.button.post', this.e, data)
-      const btnElement = {
-        type: 'button',
-        content: btns
+      if (btns) {
+        const btnElement = {
+          type: 'button',
+          content: btns
+        }
+        if (Array.isArray(msg)) {
+          msg.push(btnElement)
+        } else {
+          msg = [msg, btnElement]
+        }
       }
-      if (Array.isArray(msg)) {
-        msg.push(btnElement)
-      } else {
-        msg = [msg, btnElement]
-      }
+
       return e.reply(msg, quote, data)
     }
   }

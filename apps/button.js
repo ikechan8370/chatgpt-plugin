@@ -13,6 +13,7 @@ const FUNCTION_XH = 'xh'
 const FUNCTION_QWEN = 'qwen'
 const FUNCTION_GLM4 = 'glm4'
 const FUNCTION_CLAUDE2 = 'claude2'
+const FUNCTION_CLAUDE = 'claude'
 
 const FUNCTION_END = 'destroyConversations'
 const FUNCTION_END_ALL = 'endAllConversations'
@@ -66,6 +67,7 @@ export class ChatGPTButtonHandler extends plugin {
       case `[${PLUGIN_CHAT}][${FUNCTION_XH}]`:
       case `[${PLUGIN_CHAT}][${FUNCTION_QWEN}]`:
       case `[${PLUGIN_CHAT}][${FUNCTION_CLAUDE2}]`:
+      case `[${PLUGIN_CHAT}][${FUNCTION_CLAUDE}]`:
       case `[${PLUGIN_CHAT}][${FUNCTION_GLM4}]`:
       case `[${PLUGIN_CHAT}][${FUNCTION_CHAT}]`: {
         return this.makeButtonChat(options?.btnData)
