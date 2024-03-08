@@ -1,5 +1,5 @@
 import plugin from '../../../lib/plugins/plugin.js'
-import {Config} from '../utils/config.js'
+import { Config } from '../utils/config.js'
 
 export class ChatGPTMarkdownHandler extends plugin {
   constructor () {

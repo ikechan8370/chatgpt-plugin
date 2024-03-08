@@ -178,9 +178,17 @@ const defaultConfig = {
   chatglmRefreshToken: '',
   sunoSessToken: '',
   sunoClientToken: '',
+
+  claudeApiKey: '',
+  claudeApiBaseUrl: 'http://claude-api.ikechan8370.com',
+  claudeApiMaxToken: 1024,
+  claudeApiTemperature: 0.8,
+  claudeApiModel: '', // claude-3-opus-20240229 claude-3-sonnet-20240229
+  claudeSystemPrompt: '', // claude api 设定
   translateSource: 'openai',
   enableMd: false, // 第三方md，非QQBot。需要适配器实现segment.markdown和segment.button方可使用，否则不建议开启，会造成各种错误
-  version: 'v2.7.10'
+  enableToolbox: false, // 默认关闭工具箱节省占用和加速启动
+  version: 'v2.8.0'
 }
 const _path = process.cwd()
 let config = {}

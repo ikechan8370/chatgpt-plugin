@@ -66,21 +66,6 @@ export class help extends plugin {
           fnc: 'helpPrompt',
           permission: 'master'
         }
-        // {
-        //   reg: '^#(chatgpt|ChatGPT)(开启|关闭)洗脑$',
-        //   fnc: 'setSydneyBrainWash',
-        //   permission: 'master'
-        // },
-        // {
-        //   reg: '^#(chatgpt|ChatGPT)(设置)?洗脑强度',
-        //   fnc: 'setSydneyBrainWashStrength',
-        //   permission: 'master'
-        // },
-        // {
-        //   reg: '^#(chatgpt|ChatGPT)(设置)?洗脑名称',
-        //   fnc: 'setSydneyBrainWashName',
-        //   permission: 'master'
-        // }
       ]
     })
   }
@@ -152,7 +137,7 @@ export class help extends plugin {
     const keyMap = {
       api: 'promptPrefixOverride',
       bing: 'sydney',
-      claude: 'slackClaudeGlobalPreset',
+      claude: 'claudeSystemPrompt',
       qwen: 'promptPrefixOverride',
       gemini: 'geminiPrompt',
       xh: 'xhPrompt'

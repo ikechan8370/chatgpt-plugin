@@ -177,8 +177,11 @@ export class ChatGPTButtonHandler extends plugin {
     if (Config.chatglmRefreshToken) {
       buttons[buttons[0].length >= 4 ? 1 : 0].push(createButtonBase('ChatGLM4', '#glm4', false))
     }
-    if (Config.claudeAISessionKey) {
-      buttons[buttons[0].length >= 4 ? 1 : 0].push(createButtonBase('Claude', '#claude.ai', false))
+    // 两个claude只显示一个 优先API
+    if (Config.claudeApiKey) {
+      buttons[buttons[0].length >= 4 ? 1 : 0].push(createButtonBase('Claude', '#claude', false))
+    } else if (Config.claudeAISessionKey) {
+      buttons[buttons[0].length >= 4 ? 1 : 0].push(createButtonBase('Claude.ai', '#claude.ai', false))
     }
     rows.push({
       buttons: buttons[0]

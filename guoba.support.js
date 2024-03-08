@@ -58,6 +58,12 @@ export function supportGuoba () {
           component: 'Switch'
         },
         {
+          field: 'enableToolbox',
+          label: '开启工具箱',
+          bottomHelpMessage: '独立的后台管理面板（默认3321端口），与锅巴类似。工具箱会有额外占用，启动速度稍慢，酌情开启。修改后需重启生效！！！',
+          component: 'Switch'
+        },
+        {
           field: 'enableMd',
           label: 'QQ开启markdown',
           bottomHelpMessage: 'qq的第三方md，非QQBot。需要适配器实现segment.markdown和segment.button方可使用，否则不建议开启，会造成各种错误。默认关闭',
@@ -334,50 +340,44 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
-          label: '以下为Slack Claude方式的配置',
+          label: '以下为Claude API方式的配置',
           component: 'Divider'
         },
         {
-          field: 'slackUserToken',
-          label: 'Slack用户Token',
-          bottomHelpMessage: 'slackUserToken，在OAuth&Permissions页面获取。需要具有channels:history, chat:write, groups:history, im:history, mpim:history 这几个scope',
+          field: 'claudeApiKey',
+          label: 'claude API Key',
+          bottomHelpMessage: '前往 https://console.anthropic.com/settings/keys 注册和生成',
+          component: 'InputPassword'
+        },
+        {
+          field: 'claudeApiModel',
+          label: 'claude API 模型',
+          bottomHelpMessage: '如 claude-3-sonnet-20240229 或 claude-3-opus-20240229',
           component: 'Input'
         },
         {
-          field: 'slackBotUserToken',
-          label: 'Slack Bot Token',
-          bottomHelpMessage: 'slackBotUserToken，在OAuth&Permissions页面获取。需要channels:history，groups:history，im:history 这几个scope',
+          field: 'claudeApiBaseUrl',
+          label: 'claude API 反代',
           component: 'Input'
         },
         {
-          field: 'slackClaudeUserId',
-          label: 'Slack成员id',
-          bottomHelpMessage: '在Slack中点击Claude头像查看详情，其中的成员ID复制过来',
-          component: 'Input'
+          field: 'claudeApiMaxToken',
+          label: 'claude 最大回复token数',
+          component: 'InputNumber'
         },
         {
-          field: 'slackSigningSecret',
-          label: 'Slack签名密钥',
-          bottomHelpMessage: 'Signing Secret。在Basic Information页面获取',
-          component: 'Input'
+          field: 'claudeApiTemperature',
+          label: 'claude 温度',
+          component: 'InputNumber',
+          componentProps: {
+            min: 0,
+            max: 1
+          }
         },
         {
-          field: 'slackClaudeSpecifiedChannel',
-          label: 'Slack指定频道',
-          bottomHelpMessage: '为空时，将为每个qq号建立私有频道。若填写了，对话将发生在本频道。和其他人公用workspace时建议用这个',
-          component: 'Input'
-        },
-        {
-          field: 'slackClaudeEnableGlobalPreset',
-          label: 'Claude使用全局设定',
-          bottomHelpMessage: '开启后，所有人每次发起新对话时，会先发送设定过去再开始对话，达到类似Bing自设定的效果。',
-          component: 'Switch'
-        },
-        {
-          field: 'slackClaudeGlobalPreset',
-          label: 'Slack全局设定',
-          bottomHelpMessage: '若启用全局设定，每个人都会默认使用这里的设定。',
-          component: 'Input'
+          field: 'claudeSystemPrompt',
+          label: 'claude 设定',
+          component: 'InputTextArea'
         },
         {
           label: '以下为Claude2方式的配置',

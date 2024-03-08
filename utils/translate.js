@@ -5,9 +5,7 @@ import { ChatGPTAPI } from './openai/chatgpt-api.js'
 import { newFetch } from './proxy.js'
 import { CustomGoogleGeminiClient } from '../client/CustomGoogleGeminiClient.js'
 import XinghuoClient from './xinghuo/xinghuo.js'
-import {getImg, getMessageById, upsertMessage} from './common.js'
-import {QwenApi} from "./alibaba/qwen-api.js";
-import {v4 as uuid} from "uuid";
+import { QwenApi } from './alibaba/qwen-api.js'
 
 // 代码参考：https://github.com/yeyang52/yenai-plugin/blob/b50b11338adfa5a4ef93912eefd2f1f704e8b990/model/api/funApi.js#L25
 export const translateLangSupports = [
