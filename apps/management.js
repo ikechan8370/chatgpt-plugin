@@ -1285,7 +1285,7 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
       this.finish('saveClaudeKey')
       return
     }
-    Config.claudeKey = token
+    Config.claudeApiKey = token
     await this.reply('Claude API Key设置成功', true)
     this.finish('saveClaudeKey')
   }
