@@ -1,4 +1,3 @@
-
 export async function getChatHistoryGroup (e, num) {
   // if (e.adapter === 'shamrock') {
   //  return await e.group.getChatHistory(0, num, false)

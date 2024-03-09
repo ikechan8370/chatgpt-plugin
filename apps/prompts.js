@@ -1,10 +1,8 @@
 import plugin from '../../../lib/plugins/plugin.js'
-import fs from 'fs'
-import _ from 'lodash'
 import { Config } from '../utils/config.js'
 import { getMasterQQ, limitString, makeForwardMsg, maskQQ, getUin } from '../utils/common.js'
 import { deleteOnePrompt, getPromptByName, readPrompts, saveOnePrompt } from '../utils/prompts.js'
-import AzureTTS from "../utils/tts/microsoft-azure.js";
+import AzureTTS from '../utils/tts/microsoft-azure.js'
 export class help extends plugin {
   constructor (e) {
     super({

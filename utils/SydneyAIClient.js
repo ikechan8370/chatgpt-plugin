@@ -1,23 +1,23 @@
 import fetch, {
-  Headers,
-  Request,
-  Response,
+  // Headers,
+  // Request,
+  // Response,
   FormData
 } from 'node-fetch'
 import crypto from 'crypto'
 import WebSocket from 'ws'
-import { Config, pureSydneyInstruction } from './config.js'
+import { Config } from './config.js'
 import { formatDate, getMasterQQ, isCN, getUserData, limitString } from './common.js'
 import moment from 'moment'
 import { getProxy } from './proxy.js'
 import common from '../../../lib/common/common.js'
-
-if (!globalThis.fetch) {
-  globalThis.fetch = fetch
-  globalThis.Headers = Headers
-  globalThis.Request = Request
-  globalThis.Response = Response
-}
+//
+// if (!globalThis.fetch) {
+//   globalThis.fetch = fetch
+//   globalThis.Headers = Headers
+//   globalThis.Request = Request
+//   globalThis.Response = Response
+// }
 // workaround for ver 7.x and ver 5.x
 let proxy = getProxy()
 

@@ -1,7 +1,7 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import { SunoClient } from '../client/SunoClient.js'
 import { Config } from '../utils/config.js'
-import { downloadFile, maskEmail } from '../utils/common.js'
+import { maskEmail } from '../utils/common.js'
 import common from '../../../lib/common/common.js'
 import lodash from 'lodash'
 

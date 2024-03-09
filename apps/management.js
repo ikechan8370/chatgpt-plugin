@@ -99,13 +99,8 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
-          reg: '^#chatgpt切换(Poe|poe)$',
-          fnc: 'useClaudeBasedSolution',
-          permission: 'master'
-        },
-        {
-          reg: '^#chatgpt切换(Claude|claude|slack)$',
-          fnc: 'useSlackClaudeBasedSolution',
+          reg: '^#chatgpt切换(Claude|claude)$',
+          fnc: 'useClaudeAPIBasedSolution',
           permission: 'master'
         },
         {
@@ -923,23 +918,13 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
     }
   }
 
-  async useClaudeBasedSolution (e) {
-    let use = await redis.get('CHATGPT:USE')
-    if (use !== 'poe') {
-      await redis.set('CHATGPT:USE', 'poe')
-      await this.reply('已切换到基于Quora\'s POE的解决方案')
-    } else {
-      await this.reply('当前已经是POE模式了')
-    }
-  }
-
-  async useSlackClaudeBasedSolution () {
+  async useClaudeAPIBasedSolution () {
     let use = await redis.get('CHATGPT:USE')
     if (use !== 'claude') {
       await redis.set('CHATGPT:USE', 'claude')
-      await this.reply('已切换到基于slack claude机器人的解决方案')
+      await this.reply('已切换到基于ClaudeAPI的解决方案')
     } else {
-      await this.reply('当前已经是claude模式了')
+      await this.reply('当前已经是Claude模式了')
     }
   }
 
@@ -949,7 +934,7 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
       await redis.set('CHATGPT:USE', 'claude2')
       await this.reply('已切换到基于claude.ai的解决方案')
     } else {
-      await this.reply('当前已经是claude2模式了')
+      await this.reply('当前已经是claude.ai模式了')
     }
   }
 

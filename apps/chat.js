@@ -5,7 +5,6 @@ import { Config, defaultOpenAIAPI } from '../utils/config.js'
 import { v4 as uuid } from 'uuid'
 import { ChatGPTAPI } from '../utils/openai/chatgpt-api.js'
 import SydneyAIClient from '../utils/SydneyAIClient.js'
-import { PoeClient } from '../utils/poe/index.js'
 import AzureTTS from '../utils/tts/microsoft-azure.js'
 import VoiceVoxTTS from '../utils/tts/voicevox.js'
 import {
@@ -31,7 +30,6 @@ import {
   renderUrl
 } from '../utils/common.js'
 
-import { ChatGPTPuppeteer } from '../utils/browser.js'
 import { KeyvFile } from 'keyv-file'
 import { OfficialChatGPTClient } from '../utils/message.js'
 import fetch from 'node-fetch'
@@ -39,7 +37,7 @@ import { deleteConversation, getConversations, getLatestMessageIdByConversationI
 import { convertSpeaker, speakers } from '../utils/tts.js'
 import ChatGLMClient from '../utils/chatglm.js'
 import { convertFaces } from '../utils/face.js'
-import { originalValues, ConversationManager } from '../model/conversation.js'
+import { ConversationManager, originalValues } from '../model/conversation.js'
 import BingDrawClient from '../utils/BingDraw.js'
 import XinghuoClient from '../utils/xinghuo/xinghuo.js'
 import Bard from '../utils/bard.js'
@@ -795,10 +793,6 @@ export class chatgpt extends plugin {
           key = `CHATGPT:CONVERSATIONS_CHATGLM:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`
           break
         }
-        case 'browser': {
-          key = `CHATGPT:CONVERSATIONS_BROWSER:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`
-          break
-        }
         case 'claude2': {
           key = `CHATGPT:CLAUDE2_CONVERSATION:${e.sender.user_id}`
           break
@@ -877,7 +871,7 @@ export class chatgpt extends plugin {
         // 字数超限直接返回
         return false
       }
-      if (use !== 'api3' && use !== 'poe') {
+      if (use !== 'api3') {
         previousConversation.conversation = {
           conversationId: chatMessage.conversationId
         }
@@ -1534,49 +1528,9 @@ export class chatgpt extends plugin {
         user: e.sender.user_id,
         cache: cacheOptions
       })
-      let sendMessageResult = await this.chatGPTApi.sendMessage(prompt, conversation)
-      return sendMessageResult
-    } else if (use === 'poe') {
-      const cookie = await redis.get('CHATGPT:POE_TOKEN')
-      if (!cookie) {
-        throw new Error('未绑定Poe Cookie，请使用#chatgpt设置Poe token命令绑定cookie')
-      }
-      let client = new PoeClient({
-        quora_cookie: cookie,
-        proxy: Config.proxy
-      })
-      await client.setCredentials()
-      await client.getChatId()
-      let ai = 'a2' // todo
-      await client.sendMsg(ai, prompt)
-      const response = await client.getResponse(ai)
-      return {
-        text: response.data
-      }
+      return await this.chatGPTApi.sendMessage(prompt, conversation)
     } else if (use === 'claude') {
       // slack已经不可用，移除
-      // let client = new SlackClaudeClient({
-      //   slackUserToken: Config.slackUserToken,
-      //   slackChannelId: Config.slackChannelId
-      // })
-      // let conversationId = await redis.get(`CHATGPT:SLACK_CONVERSATION:${e.sender.user_id}`)
-      // if (!conversationId) {
-      //   // 如果是新对话
-      //   if (Config.slackClaudeEnableGlobalPreset && (useCast?.slack || Config.slackClaudeGlobalPreset)) {
-      //     // 先发送设定
-      //     let prompt = (useCast?.slack || Config.slackClaudeGlobalPreset)
-      //     let emotion = await AzureTTS.getEmotionPrompt(e)
-      //     if (emotion) {
-      //       prompt = prompt + '\n' + emotion
-      //     }
-      //     await client.sendMessage(prompt, e)
-      //     logger.info('claudeFirst:', prompt)
-      //   }
-      // }
-      // let text = await client.sendMessage(prompt, e)
-      // return {
-      //   text
-      // }
       const client = new ClaudeAPIClient({
         key: Config.claudeApiKey,
         model: Config.claudeApiModel || 'claude-3-sonnet-20240229',
@@ -2406,30 +2360,6 @@ export class chatgpt extends plugin {
     expiresAt = formatDate(new Date(expiresAt * 1000))
     let left = hardLimit - totalUsage / 100
     this.reply('总额度：$' + hardLimit + '\n已经使用额度：$' + totalUsage / 100 + '\n当前剩余额度：$' + left + '\n到期日期(UTC)：' + expiresAt)
-  }
-
-  /**
-   * #chatgpt
-   * @param prompt 问题
-   * @param conversation 对话
-   */
-  async chatgptBrowserBased (prompt, conversation) {
-    let option = { markdown: true }
-    if (Config['2captchaToken']) {
-      option.captchaToken = Config['2captchaToken']
-    }
-    // option.debug = true
-    option.email = Config.username
-    option.password = Config.password
-    this.chatGPTApi = new ChatGPTPuppeteer(option)
-    logger.info(`chatgpt prompt: ${prompt}`)
-    let sendMessageOption = {
-      timeoutMs: 120000
-    }
-    if (conversation) {
-      sendMessageOption = Object.assign(sendMessageOption, conversation)
-    }
-    return await this.chatGPTApi.sendMessage(prompt, sendMessageOption)
   }
 
   /**

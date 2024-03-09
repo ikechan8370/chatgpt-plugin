@@ -21,6 +21,7 @@ export class WebsiteTool extends AbstractTool {
 
   func = async function (opts) {
     let { url, mode, e } = opts
+    let browser
     try {
       // let res = await fetch(url, {
       //   headers: {
@@ -34,7 +35,7 @@ export class WebsiteTool extends AbstractTool {
         origin = true
       }
       let ppt = new ChatGPTPuppeteer()
-      let browser = await ppt.getBrowser()
+      browser = await ppt.getBrowser()
       let page = await browser.newPage()
       await page.goto(url, {
         waitUntil: 'networkidle2'
@@ -104,6 +105,12 @@ export class WebsiteTool extends AbstractTool {
       }
     } catch (err) {
       return `failed to visit the website, error: ${err.toString()}`
+    } finally {
+      if (browser) {
+        try {
+          await browser.close()
+        } catch (err) {}
+      }
     }
   }
 

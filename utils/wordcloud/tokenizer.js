@@ -1,15 +1,8 @@
 import { Config } from '../config.js'
 import fs from 'fs'
+import nodejieba from '@node-rs/jieba'
 
-let nodejieba
-try {
-  nodejieba = (await import('@node-rs/jieba')).default
-  nodejieba.load()
-} catch (err) {
-  logger.info('未安装@node-rs/jieba，娱乐功能-词云统计不可用')
-}
-
-export class Tokenizer {
+class Tokenizer {
   async getHistory (e, groupId, date = new Date(), duration = 0, userId) {
     if (!groupId) {
       throw new Error('no valid group id')
@@ -78,6 +71,10 @@ export class Tokenizer {
     if (!nodejieba) {
       throw new Error('未安装node-rs/jieba，娱乐功能-词云统计不可用')
     }
+    if (!this.loaded) {
+      nodejieba.load()
+      this.loaded = true
+    }
     // duration represents the number of hours to go back, should in range [0, 24]
     let chats = await this.getHistory(e, groupId, new Date(), duration, userId)
     let durationStr = duration > 0 ? `${duration}小时` : '今日'
@@ -139,7 +136,7 @@ export class Tokenizer {
   }
 }
 
-export class ShamrockTokenizer extends Tokenizer {
+class ShamrockTokenizer extends Tokenizer {
   async getHistory (e, groupId, date = new Date(), duration = 0, userId) {
     logger.mark('当前使用Shamrock适配器')
     if (!groupId) {
@@ -226,4 +223,9 @@ function isTimestampInDateRange (timestamp, startOfSpecifiedDate, endOfSpecified
 
   // Step 5: Compare the given timestamp with the start and end of the specified date
   return timestamp >= startOfSpecifiedDate && timestamp < endOfSpecifiedDate
+}
+
+export default {
+  default: new Tokenizer(),
+  shamrock: new ShamrockTokenizer()
 }
