@@ -1068,8 +1068,7 @@ export class chatgpt extends plugin {
         } else {
           await this.reply('合成语音发生错误~')
         }
-      } else if (userSetting.usePicture || (Config.autoUsePicture && response.length > Config.autoUsePictureThreshold)) {
-        // todo use next api of chatgpt to complete incomplete respoonse
+      } else if (userSetting.usePicture || (!Config.enableMd && Config.autoUsePicture && response.length > Config.autoUsePictureThreshold)) {
         try {
           await this.renderImage(e, use, response, prompt, quotemessage, mood, chatMessage.suggestedResponses, imgUrls)
         } catch (err) {
