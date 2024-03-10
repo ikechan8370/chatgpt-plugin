@@ -1,5 +1,6 @@
 {
   "name": "chatgpt-plugin",
+  "version": "2.8.1",
   "type": "module",
   "author": "ikechan8370",
   "dependencies": {
