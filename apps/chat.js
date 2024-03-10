@@ -77,7 +77,7 @@ import { solveCaptchaOneShot } from '../utils/bingCaptcha.js'
 import { ClaudeAIClient } from '../utils/claude.ai/index.js'
 import { getProxy } from '../utils/proxy.js'
 import { QwenApi } from '../utils/alibaba/qwen-api.js'
-import { getChatHistoryGroup } from '../utils/chat.js'
+import { generateSuggestedResponse, getChatHistoryGroup } from '../utils/chat.js'
 import { CustomGoogleGeminiClient } from '../client/CustomGoogleGeminiClient.js'
 import { resizeAndCropImage } from '../utils/dalle.js'
 import fs from 'fs'
@@ -1210,8 +1210,8 @@ export class chatgpt extends plugin {
       }
       // 处理星火和bard图片
       if ((use === 'bard' || use === 'xh') && chatMessage?.images) {
-        chatMessage.images.forEach(async element => {
-          await this.reply([element.tag, segment.image(element.url)])
+        chatMessage.images.forEach(element => {
+          this.reply([element.tag, segment.image(element.url)])
         })
       }
       // chatglm4图片，调整至sendMessage中处理
@@ -1454,7 +1454,13 @@ export class chatgpt extends plugin {
         if (quotemessage.length > 0) {
           this.reply(await makeForwardMsg(this.e, quotemessage.map(msg => `${msg.text} - ${msg.url}`)))
         }
-
+        if (chatMessage?.conversation && Config.enableSuggestedResponses && !chatMessage.suggestedResponses && Config.apiKey) {
+          try {
+            chatMessage.suggestedResponses = await generateSuggestedResponse(chatMessage.conversation)
+          } catch (err) {
+            logger.debug('生成建议回复失败', err)
+          }
+        }
         this.reply(responseText, e.isGroup, {
           btnData: {
             use,
@@ -1518,7 +1524,7 @@ export class chatgpt extends plugin {
   }
 
   async glm4 (e) {
-    return await this.otherMode(e, 'chatglm4')
+    return await this.otherMode(e, 'chatglm4', '#glm4')
   }
 
   async gemini (e) {
@@ -2401,7 +2407,7 @@ export class chatgpt extends plugin {
           tools.push(...[new EliMusicTool(), new EliMovieTool()])
         } catch (err) {
           tools.push(...[new SendMusicTool(), new SearchMusicTool()])
-          logger.mark(logger.green('【ChatGPT-Plugin】插件avocado-plugin未安装') + '，安装后可查看最近热映电影与体验可玩性更高的点歌工具。\n可前往 https://github.com/Qz-Sean/avocado-plugin 获取')
+          logger.debug(logger.green('【ChatGPT-Plugin】插件avocado-plugin未安装') + '，安装后可查看最近热映电影与体验可玩性更高的点歌工具。\n可前往 https://github.com/Qz-Sean/avocado-plugin 获取')
         }
         if (e.isGroup) {
           let botInfo = await e.bot.getGroupMemberInfo(e.group_id, getUin(e), true)
@@ -2809,7 +2815,7 @@ export class chatgpt extends plugin {
       }
       return false
     }
-    let prompt = _.replace(e.raw_message.trimStart(), pattern, '').trim()
+    let prompt = _.replace(e.msg.trimStart(), pattern, '').trim()
     if (prompt.length === 0) {
       return false
     }

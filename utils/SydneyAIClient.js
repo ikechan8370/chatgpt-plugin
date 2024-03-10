@@ -64,7 +64,7 @@ export default class SydneyAIClient {
       headers: {
         accept: 'application/json',
         'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
-        'content-type': 'application/json',
+        // 'content-type': 'application/json',
         // 'sec-ch-ua': '"Microsoft Edge";v="113", "Chromium";v="113", "Not-A.Brand";v="24"',
         // 'sec-ch-ua-arch': '"x86"',
         // 'sec-ch-ua-bitness': '"64"',
