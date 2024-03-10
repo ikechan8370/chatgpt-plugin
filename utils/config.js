@@ -179,6 +179,7 @@ const defaultConfig = {
   sunoSessToken: '',
   sunoClientToken: '',
   translateSource: 'openai',
+  enableMd: false, // 第三方md，非QQBot。需要适配器实现segment.markdown和segment.button方可使用，否则不建议开启，会造成各种错误
   version: 'v2.7.10'
 }
 const _path = process.cwd()

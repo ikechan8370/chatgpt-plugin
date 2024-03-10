@@ -83,6 +83,9 @@ export class Entertainment extends plugin {
       }
     ]
     this.reply = async (msg, quote, data) => {
+      if (!Config.enableMd) {
+        return e.reply(msg, quote, data)
+      }
       let handler = e.runtime?.handler || {}
       const btns = await handler.call('chatgpt.button.post', this.e)
       const btnElement = {
@@ -94,7 +97,7 @@ export class Entertainment extends plugin {
       } else {
         msg = [msg, btnElement]
       }
-      return e.reply(msg, data)
+      return e.reply(msg, quote, data)
     }
   }
 

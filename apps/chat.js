@@ -173,7 +173,7 @@ export class chatgpt extends plugin {
         },
         {
           /** 命令正则匹配 */
-          reg: '^#claude2[sS]*',
+          reg: '^#claude(2|3|.ai)[sS]*',
           /** 执行方法 */
           fnc: 'claude2'
         },
@@ -292,6 +292,9 @@ export class chatgpt extends plugin {
     })
     this.toggleMode = toggleMode
     this.reply = async (msg, quote, data) => {
+      if (!Config.enableMd) {
+        return e.reply(msg, quote, data)
+      }
       let handler = e.runtime?.handler || {}
       const btns = await handler.call('chatgpt.button.post', this.e, data)
       const btnElement = {
@@ -303,7 +306,7 @@ export class chatgpt extends plugin {
       } else {
         msg = [msg, btnElement]
       }
-      return e.reply(msg, data)
+      return e.reply(msg, quote, data)
     }
   }
 
@@ -907,7 +910,7 @@ export class chatgpt extends plugin {
    * #chatgpt
    */
   async chatgpt (e) {
-    let msg = (Version.isTrss || e.adapter === 'shamrock') ? e.msg : e.raw_message
+    let msg = e.msg
     let prompt
     if (this.toggleMode === 'at') {
       if (!msg || e.msg?.startsWith('#')) {
@@ -959,7 +962,7 @@ export class chatgpt extends plugin {
         }
         return false
       }
-      prompt = _.replace(e.raw_message.trimStart(), '#chat', '').trim()
+      prompt = _.replace(e.msg.trimStart(), '#chat', '').trim()
       if (prompt.length === 0) {
         return false
       }
@@ -1512,7 +1515,7 @@ export class chatgpt extends plugin {
   }
 
   async claude2 (e) {
-    return await this.otherMode(e, 'claude2')
+    return await this.otherMode(e, 'claude2', /^#claude(2|3|.ai)/)
   }
 
   async claude (e) {
@@ -2804,6 +2807,13 @@ export class chatgpt extends plugin {
     return await this.chatGPTApi.sendMessage(prompt, sendMessageOption)
   }
 
+  /**
+   * 其他模式
+   * @param e
+   * @param mode
+   * @param {string|RegExp} pattern
+   * @returns {Promise<boolean>}
+   */
   async otherMode (e, mode, pattern = `#${mode}`) {
     if (!Config.allowOtherMode) {
       return false
