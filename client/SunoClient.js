@@ -65,6 +65,10 @@ export class SunoClient {
             Authorization: `Bearer ${sess}`
           }
         })
+        if (queryRes.status === 401) {
+          sess = await this.getToken()
+          continue
+        }
         if (queryRes.status !== 200) {
           logger.error(await queryRes.text())
           console.error('Failed to query song')
