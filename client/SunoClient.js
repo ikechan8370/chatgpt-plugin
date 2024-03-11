@@ -75,8 +75,8 @@ export class SunoClient {
         }
         let queryData = await queryRes.json()
         logger.debug(queryData)
-        allDone = queryData.every(clip => clip.status === 'complete')
-        songs = queryData
+        allDone = queryData.every(clip => clip.status === 'complete' || clip.status === 'error')
+        songs = queryData.filter(clip => clip.status === 'complete')
       } catch (err) {
         console.error(err)
       }

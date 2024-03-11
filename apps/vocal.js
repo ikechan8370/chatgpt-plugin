@@ -86,6 +86,10 @@ export class Vocal extends plugin {
         }
 
         let songs = await client.createSong(description)
+        if (!songs || songs.length === 0) {
+          e.reply('生成失败，可能是提示词太长或者违规，请检查日志')
+          return
+        }
         let messages = ['提示词：' + description]
         for (let song of songs) {
           messages.push(`歌名：${song.title}\n风格: ${song.metadata.tags}\n长度: ${lodash.round(song.metadata.duration, 0)}秒\n歌词：\n${song.metadata.prompt}\n`)
