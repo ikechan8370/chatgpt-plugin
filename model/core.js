@@ -559,7 +559,6 @@ class Core {
         fetch: newFetch
       }
 
-
       let option = {
         timeoutMs: 600000,
         completionParams
@@ -583,7 +582,7 @@ class Core {
           option.completionParams = {}
         }
         promptAddition && (prompt += promptAddition)
-        option.systemMessage = await handleSystem(e, option.systemMessage)
+        option.systemMessage = await handleSystem(e, opts.systemMessage)
         systemAddition && (option.systemMessage += systemAddition)
         opts.completionParams.parameters.tools = Object.keys(funcMap)
           .map(k => funcMap[k].function)
@@ -1024,7 +1023,7 @@ async function collectTools (e) {
     tools.push(...[new SendMusicTool(), new SearchMusicTool()])
     logger.debug(logger.green('【ChatGPT-Plugin】插件avocado-plugin未安装') + '，安装后可查看最近热映电影与体验可玩性更高的点歌工具。\n可前往 https://github.com/Qz-Sean/avocado-plugin 获取')
   }
-  let systemAddition
+  let systemAddition = ''
   if (e.isGroup) {
     let botInfo = await e.bot.getGroupMemberInfo(e.group_id, getUin(e), true)
     if (botInfo.role !== 'member') {
