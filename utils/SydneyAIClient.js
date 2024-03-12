@@ -64,32 +64,36 @@ export default class SydneyAIClient {
       headers: {
         accept: 'application/json',
         'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
-        // 'content-type': 'application/json',
-        // 'sec-ch-ua': '"Microsoft Edge";v="113", "Chromium";v="113", "Not-A.Brand";v="24"',
-        // 'sec-ch-ua-arch': '"x86"',
-        // 'sec-ch-ua-bitness': '"64"',
-        // 'sec-ch-ua-full-version': '"112.0.1722.7"',
-        // 'sec-ch-ua-full-version-list': '"Chromium";v="112.0.5615.20", "Microsoft Edge";v="112.0.1722.7", "Not:A-Brand";v="99.0.0.0"',
-        // 'sec-ch-ua-mobile': '?0',
-        // 'sec-ch-ua-model': '',
-        // 'sec-ch-ua-platform': '"macOS"',
-        // 'sec-ch-ua-platform-version': '"15.0.0"',
-        // 'sec-fetch-dest': 'empty',
-        // 'sec-fetch-mode': 'cors',
-        // 'sec-fetch-site': 'same-origin',
-        // 'x-ms-client-request-id': crypto.randomUUID(),
-        // 'x-ms-useragent': 'azsdk-js-api-client-factory/1.0.0-beta.1 core-rest-pipeline/1.10.3 OS/macOS',
+        'content-type': 'application/json',
+        'sec-ch-ua': '"Microsoft Edge";v="113", "Chromium";v="113", "Not-A.Brand";v="24"',
+        'sec-ch-ua-arch': '"x86"',
+        'sec-ch-ua-bitness': '"64"',
+        'sec-ch-ua-full-version': '"112.0.1722.7"',
+        'sec-ch-ua-full-version-list': '"Chromium";v="112.0.5615.20", "Microsoft Edge";v="112.0.1722.7", "Not:A-Brand";v="99.0.0.0"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-model': '',
+        'sec-ch-ua-platform': '"macOS"',
+        'sec-ch-ua-platform-version': '"15.0.0"',
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'same-origin',
+        'x-ms-client-request-id': crypto.randomUUID(),
+        'x-ms-useragent': 'azsdk-js-api-client-factory/1.0.0-beta.1 core-rest-pipeline/1.10.3 OS/macOS',
         // cookie: this.opts.cookies || `_U=${this.opts.userToken}`,
-        Referer: 'https://edgeservices.bing.com/edgesvc/chat?udsframed=1&form=SHORUN&clientscopes=chat,noheader,channelstable,'
-        // 'Referrer-Policy': 'origin-when-cross-origin',
+        Referer: 'https://edgeservices.bing.com/edgesvc/chat?udsframed=1&form=SHORUN&clientscopes=chat,noheader,channelstable,',
+        'Referrer-Policy': 'origin-when-cross-origin',
         // Workaround for request being blocked due to geolocation
         // 'x-forwarded-for': '1.1.1.1'
       }
     }
     let initCk = 'SRCHD=AF=NOFORM; PPLState=1; SRCHHPGUSR=HV=' + new Date().getTime() + ';'
-    if (this.opts.userToken) {
+    if (this.opts.userToken || this.opts.cookies) {
       // 疑似无需token了
-      fetchOptions.headers.cookie = `${initCk} _U=${this.opts.userToken}`
+      if (!this.opts.cookies) {
+        fetchOptions.headers.cookie = `${initCk} _U=${this.opts.userToken}`
+      } else {
+        fetchOptions.headers.cookie = this.opts.cookies
+      }
       let proTag = await redis.get('CHATGPT:COPILOT_PRO_TAG:' + this.opts.userToken)
       if (!proTag) {
         let indexContentRes = await fetch('https://www.bing.com', {
@@ -123,12 +127,12 @@ export default class SydneyAIClient {
       this.opts.host = 'https://edgeservices.bing.com/edgesvc'
     }
     logger.mark('使用host：' + this.opts.host)
-    let response = await fetch(`${this.opts.host}/turing/conversation/create?bundleVersion=1.1381.12`, fetchOptions)
+    let response = await fetch(`${this.opts.host}/turing/conversation/create?bundleVersion=1.1626.12`, fetchOptions)
     let text = await response.text()
     let retry = 10
     while (retry >= 0 && response.status === 200 && !text) {
       await common.sleep(400)
-      response = await fetch(`${this.opts.host}/turing/conversation/create?bundleVersion=1.1381.12`, fetchOptions)
+      response = await fetch(`${this.opts.host}/turing/conversation/create?bundleVersion=1.1626.12`, fetchOptions)
       text = await response.text()
       retry--
     }
