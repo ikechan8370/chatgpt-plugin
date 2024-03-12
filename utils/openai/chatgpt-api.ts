@@ -176,7 +176,7 @@ export class ChatGPTAPI {
             completionParams
         )
         console.log(`maxTokens: ${maxTokens}, numTokens: ${numTokens}`)
-        const result: types.ChatMessage & { conversation: openai.ChatCompletionRequestMessage[] }= {
+        const result: types.ChatMessage & { conversation: openai.ChatCompletionRequestMessage[] } = {
             role: 'assistant',
             id: uuidv4(),
             conversationId,
