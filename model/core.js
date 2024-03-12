@@ -89,7 +89,7 @@ async function handleSystem (e, system) {
       const defaultBotName = 'ChatGPT'
       const groupContextTip = Config.groupContextTip
       system = system.replaceAll(namePlaceholder, opt.botName || defaultBotName) +
-        ((Config.enableGroupContext && opt.groupId) ? groupContextTip : '')
+        ((opt.groupId) ? groupContextTip : '')
       system += 'Attention, you are currently chatting in a qq group, then one who asks you now is' + `${opt.nickname}(${opt.qq})。`
       system += `the group name is ${opt.groupName}, group id is ${opt.groupId}。`
       if (opt.botName) {
@@ -558,7 +558,7 @@ class Core {
         assistantLabel: Config.assistantLabel,
         fetch: newFetch
       }
-      opts.systemMessage = await handleSystem(e, opts.systemMessage)
+
 
       let option = {
         timeoutMs: 600000,
@@ -583,6 +583,7 @@ class Core {
           option.completionParams = {}
         }
         promptAddition && (prompt += promptAddition)
+        option.systemMessage = await handleSystem(e, option.systemMessage)
         systemAddition && (option.systemMessage += systemAddition)
         opts.completionParams.parameters.tools = Object.keys(funcMap)
           .map(k => funcMap[k].function)
