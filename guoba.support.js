@@ -308,7 +308,7 @@ export function supportGuoba () {
           component: 'InputTextArea'
         },
         {
-          field: 'sydneyChatExampleBot1',
+          field: 'chatExampleBot1',
           label: '前置对话第一轮（AI）',
           bottomHelpMessage: '会强行插入该轮对话，能有效抑制抱歉',
           component: 'InputTextArea'
@@ -320,7 +320,7 @@ export function supportGuoba () {
           component: 'InputTextArea'
         },
         {
-          field: 'sydneyChatExampleBot2',
+          field: 'chatExampleBot2',
           label: '前置对话第二轮（AI）',
           bottomHelpMessage: '会强行插入该轮对话，能有效抑制抱歉',
           component: 'InputTextArea'
@@ -332,7 +332,7 @@ export function supportGuoba () {
           component: 'InputTextArea'
         },
         {
-          field: 'sydneyChatExampleBot3',
+          field: 'chatExampleBot3',
           label: '前置对话第三轮（AI）',
           bottomHelpMessage: '会强行插入该轮对话，能有效抑制抱歉',
           component: 'InputTextArea'
