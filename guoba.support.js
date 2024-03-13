@@ -302,6 +302,42 @@ export function supportGuoba () {
           component: 'Switch'
         },
         {
+          field: 'chatExampleUser1',
+          label: '前置对话第一轮（用户）',
+          bottomHelpMessage: '会强行插入该轮对话，能有效抑制抱歉',
+          component: 'InputTextArea'
+        },
+        {
+          field: 'sydneyChatExamplBot1',
+          label: '前置对话第一轮（AI）',
+          bottomHelpMessage: '会强行插入该轮对话，能有效抑制抱歉',
+          component: 'InputTextArea'
+        },
+        {
+          field: 'chatExampleUser2',
+          label: '前置对话第二轮（用户）',
+          bottomHelpMessage: '会强行插入该轮对话，能有效抑制抱歉',
+          component: 'InputTextArea'
+        },
+        {
+          field: 'sydneyChatExamplBot2',
+          label: '前置对话第二轮（AI）',
+          bottomHelpMessage: '会强行插入该轮对话，能有效抑制抱歉',
+          component: 'InputTextArea'
+        },
+        {
+          field: 'chatExampleUser3',
+          label: '前置对话第三轮（用户）',
+          bottomHelpMessage: '会强行插入该轮对话，能有效抑制抱歉',
+          component: 'InputTextArea'
+        },
+        {
+          field: 'sydneyChatExamplBot4',
+          label: '前置对话第三轮（AI）',
+          bottomHelpMessage: '会强行插入该轮对话，能有效抑制抱歉',
+          component: 'InputTextArea'
+        },
+        {
           label: '以下为API3方式的配置',
           component: 'Divider'
         },

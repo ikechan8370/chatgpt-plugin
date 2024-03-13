@@ -81,7 +81,7 @@ export default class SydneyAIClient {
         'x-ms-useragent': 'azsdk-js-api-client-factory/1.0.0-beta.1 core-rest-pipeline/1.10.3 OS/macOS',
         // cookie: this.opts.cookies || `_U=${this.opts.userToken}`,
         Referer: 'https://edgeservices.bing.com/edgesvc/chat?udsframed=1&form=SHORUN&clientscopes=chat,noheader,channelstable,',
-        'Referrer-Policy': 'origin-when-cross-origin',
+        'Referrer-Policy': 'origin-when-cross-origin'
         // Workaround for request being blocked due to geolocation
         // 'x-forwarded-for': '1.1.1.1'
       }
@@ -94,9 +94,11 @@ export default class SydneyAIClient {
       } else {
         fetchOptions.headers.cookie = this.opts.cookies
       }
-      let proTag = await redis.get('CHATGPT:COPILOT_PRO_TAG:' + this.opts.userToken)
+      // let hash = md5(this.opts.cookies || this.opts.userToken)
+      let hash = crypto.createHash('md5').update(this.opts.cookies || this.opts.userToken).digest('hex')
+      let proTag = await redis.get('CHATGPT:COPILOT_PRO_TAG:' + hash)
       if (!proTag) {
-        let indexContentRes = await fetch('https://www.bing.com', {
+        let indexContentRes = await fetch('https://www.bing.com/chat', {
           headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36 Edg/123.0.0.0',
             Cookie: `_U=${this.opts.userToken}`
@@ -108,7 +110,7 @@ export default class SydneyAIClient {
         } else {
           proTag = 'false'
         }
-        await redis.set('CHATGPT:COPILOT_PRO_TAG:' + this.opts.userToken, proTag, { EX: 7200 })
+        await redis.set('CHATGPT:COPILOT_PRO_TAG:' + hash, proTag, { EX: 7200 })
       }
       if (proTag === 'true') {
         logger.info('当前账户为copilot pro用户')
@@ -338,6 +340,21 @@ export default class SydneyAIClient {
     if (!text) {
       previousMessages = pm
     } else {
+      let example = []
+      for (let i = 1; i < 4; i++) {
+        if (Config[`chatExampleUser${i}`]) {
+          example.push(...[
+            {
+              text: Config[`chatExampleUser${i}`],
+              author: 'user'
+            },
+            {
+              text: Config[`chatExampleBot${i}`],
+              author: 'bot'
+            }
+          ])
+        }
+      }
       previousMessages = [
         {
           text,
@@ -347,6 +364,7 @@ export default class SydneyAIClient {
           text: '好的。',
           author: 'bot'
         },
+        ...example,
         ...pm
       ]
     }
