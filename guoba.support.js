@@ -382,7 +382,7 @@ export function supportGuoba () {
         {
           field: 'claudeApiKey',
           label: 'claude API Key',
-          bottomHelpMessage: '前往 https://console.anthropic.com/settings/keys 注册和生成',
+          bottomHelpMessage: '前往 https://console.anthropic.com/settings/keys 注册和生成。可以填写多个，用英文逗号隔开',
           component: 'InputPassword'
         },
         {
