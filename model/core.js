@@ -424,20 +424,52 @@ class Core {
       return await this.chatGPTApi.sendMessage(prompt, conversation)
     } else if (use === 'claude') {
       // slack已经不可用，移除
-      const client = new ClaudeAPIClient({
-        key: Config.claudeApiKey,
-        model: Config.claudeApiModel || 'claude-3-sonnet-20240229',
-        debug: true,
-        baseUrl: Config.claudeApiBaseUrl
-        // temperature: Config.claudeApiTemperature || 0.5
-      })
-      let rsp = await client.sendMessage(prompt, {
-        stream: false,
-        parentMessageId: conversation.parentMessageId,
-        conversationId: conversation.conversationId,
-        system: Config.claudeSystemPrompt
-      })
-      return rsp
+      let keys = Config.claudeApiKey?.split(/[,;]/).map(key => key.trim()).filter(key => key)
+      let choiceIndex = Math.floor(Math.random() * keys.length)
+      let key = keys[choiceIndex]
+      logger.info(`使用API Key：${key}`)
+      while (keys.length >= 0) {
+        let errorMessage = ''
+        const client = new ClaudeAPIClient({
+          key,
+          model: Config.claudeApiModel || 'claude-3-sonnet-20240229',
+          debug: true,
+          baseUrl: Config.claudeApiBaseUrl
+          // temperature: Config.claudeApiTemperature || 0.5
+        })
+        try {
+          let rsp = await client.sendMessage(prompt, {
+            stream: false,
+            parentMessageId: conversation.parentMessageId,
+            conversationId: conversation.conversationId,
+            system: Config.claudeSystemPrompt
+          })
+          return rsp
+        } catch (err) {
+          errorMessage = err.message
+          switch (err.message) {
+            case 'rate_limit_error': {
+              // api没钱了或者当月/日/时/分额度耗尽
+              // throw new Error('claude API额度耗尽或触发速率限制')
+              break
+            }
+            case 'authentication_error': {
+              // 无效的key
+              // throw new Error('claude API key无效')
+              break
+            }
+            default:
+          }
+          logger.warn(`claude api 错误：[${key}] ${errorMessage}`)
+        }
+        if (keys.length === 0) {
+          throw new Error(errorMessage)
+        }
+        keys.splice(choiceIndex, 1)
+        choiceIndex = Math.floor(Math.random() * keys.length)
+        key = keys[choiceIndex]
+        logger.info(`使用API Key：${key}`)
+      }
     } else if (use === 'claude2') {
       let { conversationId } = conversation
       let client = new ClaudeAIClient({

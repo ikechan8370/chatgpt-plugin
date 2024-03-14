@@ -11,9 +11,19 @@ export function readPrompts () {
       txtFiles.forEach(txtFile => {
         let name = _.trimEnd(txtFile, '.txt')
         const content = fs.readFileSync(`${_path}/plugins/chatgpt-plugin/prompts/${txtFile}`, 'utf8')
+        let example = []
+        try {
+          if (fs.existsSync(`${_path}/plugins/chatgpt-plugin/prompts/${name}_example.json`)) {
+            example = fs.readFileSync(`${_path}/plugins/chatgpt-plugin/prompts/${name}_example.json`, 'utf8')
+            example = JSON.parse(example)
+          }
+        } catch (err) {
+          logger.debug(err)
+        }
         prompts.push({
           name,
-          content
+          content,
+          example
         })
       })
     }
@@ -34,11 +44,15 @@ export function getPromptByName (name) {
   }
 }
 
-export function saveOnePrompt (name, content) {
+export function saveOnePrompt (name, content, examples) {
   const _path = process.cwd()
   mkdirs(`${_path}/plugins/chatgpt-plugin/prompts`)
   let filePath = `${_path}/plugins/chatgpt-plugin/prompts/${name}.txt`
   fs.writeFileSync(filePath, content)
+  if (examples) {
+    let examplePath = `${_path}/plugins/chatgpt-plugin/prompts/${name}_example.json`
+    fs.writeFileSync(examplePath, JSON.stringify(examples))
+  }
 }
 
 export function deleteOnePrompt (name) {
@@ -46,4 +60,8 @@ export function deleteOnePrompt (name) {
   mkdirs(`${_path}/plugins/chatgpt-plugin/prompts`)
   let filePath = `${_path}/plugins/chatgpt-plugin/prompts/${name}.txt`
   fs.unlinkSync(filePath)
+  try {
+    let examplePath = `${_path}/plugins/chatgpt-plugin/prompts/${name}_example.json`
+    fs.unlinkSync(examplePath)
+  } catch (err) {}
 }

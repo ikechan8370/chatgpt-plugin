@@ -46,7 +46,10 @@ const BASEURL = 'https://api.anthropic.com'
  *   input_tokens: number,
  *   output_tokens: number,
  * }>} usage
- *
+ * @property {{
+ *   type: string,
+ *   message: string,
+ * }} error
  * Claude响应的基本格式
  */
 
@@ -171,6 +174,10 @@ export class ClaudeAPIClient extends BaseClient {
     let response = await result.json()
     if (this.debug) {
       console.log(JSON.stringify(response))
+    }
+    if (response.type === 'error') {
+      logger.error(response.error.message)
+      throw new Error(response.error.type)
     }
     await this.upsertMessage(thisMessage)
     const respMessage = Object.assign(response, {

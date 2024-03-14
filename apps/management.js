@@ -1258,7 +1258,7 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
 
   async setClaudeKey (e) {
     this.setContext('saveClaudeKey')
-    await this.reply('请发送Claude API Key', true)
+    await this.reply('请发送Claude API Key。\n如果要设置多个key请用逗号隔开。\n此操作会覆盖当前配置，请谨慎操作', true)
     return false
   }
 
@@ -1697,7 +1697,7 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
 
   async setClaudeModel (e) {
     this.setContext('saveClaudeModel')
-    await this.reply('请发送Claude模型，官方推荐模型：\nclaude-3-opus-20240229\nclaude-3-sonnet-20240229', true)
+    await this.reply('请发送Claude模型，官方推荐模型：\nclaude-3-opus-20240229\nclaude-3-sonnet-20240229\nclaude-3-haiku-20240307', true)
     return false
   }
 
