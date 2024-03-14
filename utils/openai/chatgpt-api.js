@@ -172,7 +172,7 @@ var ChatGPTAPI = /** @class */ (function () {
                             id: uuidv4(),
                             conversationId: conversationId,
                             parentMessageId: messageId,
-                            text: undefined,
+                            text: '',
                             functionCall: undefined,
                             conversation: []
                         };

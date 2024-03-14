@@ -181,7 +181,7 @@ export class ChatGPTAPI {
             id: uuidv4(),
             conversationId,
             parentMessageId: messageId,
-            text: undefined,
+            text: '',
             functionCall: undefined,
             conversation: []
         }
