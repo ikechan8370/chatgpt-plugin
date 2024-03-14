@@ -1,5 +1,5 @@
 import plugin from '../../../lib/plugins/plugin.js'
-import {Config} from "../utils/config.js";
+import { Config } from '../utils/config.js'
 
 const PLUGIN_CHAT = 'ChatGpt 对话'
 const PLUGIN_MANAGEMENT = 'ChatGPT-Plugin 管理'
@@ -13,6 +13,7 @@ const FUNCTION_XH = 'xh'
 const FUNCTION_QWEN = 'qwen'
 const FUNCTION_GLM4 = 'glm4'
 const FUNCTION_CLAUDE2 = 'claude2'
+const FUNCTION_CLAUDE = 'claude'
 
 const FUNCTION_END = 'destroyConversations'
 const FUNCTION_END_ALL = 'endAllConversations'
@@ -66,6 +67,7 @@ export class ChatGPTButtonHandler extends plugin {
       case `[${PLUGIN_CHAT}][${FUNCTION_XH}]`:
       case `[${PLUGIN_CHAT}][${FUNCTION_QWEN}]`:
       case `[${PLUGIN_CHAT}][${FUNCTION_CLAUDE2}]`:
+      case `[${PLUGIN_CHAT}][${FUNCTION_CLAUDE}]`:
       case `[${PLUGIN_CHAT}][${FUNCTION_GLM4}]`:
       case `[${PLUGIN_CHAT}][${FUNCTION_CHAT}]`: {
         return this.makeButtonChat(options?.btnData)
@@ -177,8 +179,11 @@ export class ChatGPTButtonHandler extends plugin {
     if (Config.chatglmRefreshToken) {
       buttons[buttons[0].length >= 4 ? 1 : 0].push(createButtonBase('ChatGLM4', '#glm4', false))
     }
-    if (Config.claudeAISessionKey) {
-      buttons[buttons[0].length >= 4 ? 1 : 0].push(createButtonBase('Claude', '#claude.ai', false))
+    // 两个claude只显示一个 优先API
+    if (Config.claudeApiKey) {
+      buttons[buttons[0].length >= 4 ? 1 : 0].push(createButtonBase('Claude', '#claude', false))
+    } else if (Config.claudeAISessionKey) {
+      buttons[buttons[0].length >= 4 ? 1 : 0].push(createButtonBase('Claude.ai', '#claude.ai', false))
     }
     rows.push({
       buttons: buttons[0]

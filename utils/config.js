@@ -44,6 +44,12 @@ const defaultConfig = {
   sydneyGPTs: 'Copilot',
   sydneyImageRecognition: false,
   sydneyMoodTip: 'Your response should be divided into two parts, namely, the text and your mood. The mood available to you can only include: blandness, happy, shy, frustrated, disgusted, and frightened.All content should be replied in this format {"text": "", "mood": ""}.All content except mood should be placed in text, It is important to ensure that the content you reply to can be parsed by json.',
+  chatExampleUser1: '',
+  chatExampleUser2: '',
+  chatExampleUser3: '',
+  chatExampleBot1: '',
+  chatExampleBot2: '',
+  chatExampleBot3: '',
   enableSuggestedResponses: false,
   sydneyEnableSearch: false,
   api: defaultChatGPTAPI,
@@ -66,13 +72,8 @@ const defaultConfig = {
   xhRetReplace: '',
   promptPrefixOverride: 'Your answer shouldn\'t be too verbose. Prefer to answer in Chinese.',
   assistantLabel: 'ChatGPT',
-  // thinkingTips: true,
-  username: '',
-  password: '',
-  UA: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36',
   headless: false,
   chromePath: '',
-  '2captchaToken': '',
   proxy: '',
   debug: true,
   defaultTimeoutMs: 120000,
@@ -179,9 +180,17 @@ const defaultConfig = {
   chatglmRefreshToken: '',
   sunoSessToken: '',
   sunoClientToken: '',
+
+  claudeApiKey: '',
+  claudeApiBaseUrl: 'http://claude-api.ikechan8370.com',
+  claudeApiMaxToken: 1024,
+  claudeApiTemperature: 0.8,
+  claudeApiModel: '', // claude-3-opus-20240229 claude-3-sonnet-20240229
+  claudeSystemPrompt: '', // claude api 设定
   translateSource: 'openai',
   enableMd: false, // 第三方md，非QQBot。需要适配器实现segment.markdown和segment.button方可使用，否则不建议开启，会造成各种错误
-  version: 'v2.7.10'
+  enableToolbox: true, // 默认关闭工具箱节省占用和加速启动
+  version: 'v2.8.1'
 }
 const _path = process.cwd()
 let config = {}

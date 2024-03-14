@@ -1,10 +1,8 @@
 import plugin from '../../../lib/plugins/plugin.js'
-import fs from 'fs'
-import _ from 'lodash'
 import { Config } from '../utils/config.js'
 import { getMasterQQ, limitString, makeForwardMsg, maskQQ, getUin } from '../utils/common.js'
 import { deleteOnePrompt, getPromptByName, readPrompts, saveOnePrompt } from '../utils/prompts.js'
-import AzureTTS from "../utils/tts/microsoft-azure.js";
+import AzureTTS from '../utils/tts/microsoft-azure.js'
 export class help extends plugin {
   constructor (e) {
     super({
@@ -66,21 +64,6 @@ export class help extends plugin {
           fnc: 'helpPrompt',
           permission: 'master'
         }
-        // {
-        //   reg: '^#(chatgpt|ChatGPT)(开启|关闭)洗脑$',
-        //   fnc: 'setSydneyBrainWash',
-        //   permission: 'master'
-        // },
-        // {
-        //   reg: '^#(chatgpt|ChatGPT)(设置)?洗脑强度',
-        //   fnc: 'setSydneyBrainWashStrength',
-        //   permission: 'master'
-        // },
-        // {
-        //   reg: '^#(chatgpt|ChatGPT)(设置)?洗脑名称',
-        //   fnc: 'setSydneyBrainWashName',
-        //   permission: 'master'
-        // }
       ]
     })
   }
@@ -152,7 +135,7 @@ export class help extends plugin {
     const keyMap = {
       api: 'promptPrefixOverride',
       bing: 'sydney',
-      claude: 'slackClaudeGlobalPreset',
+      claude: 'claudeSystemPrompt',
       qwen: 'promptPrefixOverride',
       gemini: 'geminiPrompt',
       xh: 'xhPrompt'
@@ -167,6 +150,20 @@ export class help extends plugin {
       }
       if (use === 'xh') {
         Config.xhPromptSerialize = false
+      }
+      if (use === 'bing') {
+        /**
+         * @type {{user: string, bot: string}[]} examples
+         */
+        let examples = prompt.example
+        for (let i = 1; i <= 3; i++) {
+          Config[`chatExampleUser${i}`] = ''
+          Config[`chatExampleBot${i}`] = ''
+        }
+        for (let i = 1; i <= examples.length; i++) {
+          Config[`chatExampleUser${i}`] = examples[i - 1].user
+          Config[`chatExampleBot${i}`] = examples[i - 1].bot
+        }
       }
       await redis.set(`CHATGPT:PROMPT_USE_${use}`, promptName)
       await e.reply(`你当前正在使用${use}模式，已将该模式设定应用为"${promptName}"。更该设定后建议结束对话以使设定更好生效`, true)
@@ -347,13 +344,23 @@ export class help extends plugin {
     let extraData = JSON.parse(await redis.get('CHATGPT:UPLOAD_PROMPT'))
     const { currentUse, description } = extraData
     const { content } = getPromptByName(currentUse)
+    let examples = []
+    for (let i = 1; i < 4; i++) {
+      if (Config[`chatExampleUser${i}`]) {
+        examples.push({
+          user: Config[`chatExampleUser${i}`],
+          bot: Config[`chatExampleBot${i}`]
+        })
+      }
+    }
     let toUploadBody = {
       title: currentUse,
       prompt: content,
       qq: master || (getUin(this.e) + ''), // 上传者设定为主人qq或机器人qq
       use: extraData.use === 'bing' ? 'Bing' : 'ChatGPT',
       r18,
-      description
+      description,
+      examples
     }
     logger.info(toUploadBody)
     let response = await fetch('https://chatgpt.roki.best/prompt', {
@@ -448,8 +455,8 @@ export class help extends plugin {
           await e.reply('没有这个设定', true)
           return true
         }
-        const { prompt, title } = r.data
-        saveOnePrompt(title, prompt)
+        const { prompt, title, examples } = r.data
+        saveOnePrompt(title, prompt, examples)
         e.reply(`导入成功。您现在可以使用 #chatgpt使用设定${title} 来体验这个设定了。`)
       } else {
         await e.reply('导入失败：' + r.msg)

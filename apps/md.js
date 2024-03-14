@@ -1,5 +1,5 @@
 import plugin from '../../../lib/plugins/plugin.js'
-import {Config} from '../utils/config.js'
+import { Config } from '../utils/config.js'
 
 export class ChatGPTMarkdownHandler extends plugin {
   constructor () {
@@ -34,7 +34,8 @@ function transUse (use) {
     qwen: '通义千问 ' + Config.qwenModel,
     claude2: 'Claude 3 Sonnet',
     glm4: 'ChatGLM4',
-    chat3: 'ChatGPT官网'
+    chat3: 'ChatGPT官网',
+    claude: Config.claudeApiModel
   }
   return useMap[use] || use
 }

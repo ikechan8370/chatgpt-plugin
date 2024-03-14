@@ -65,14 +65,18 @@ export class SunoClient {
             Authorization: `Bearer ${sess}`
           }
         })
+        if (queryRes.status === 401) {
+          sess = await this.getToken()
+          continue
+        }
         if (queryRes.status !== 200) {
           logger.error(await queryRes.text())
           console.error('Failed to query song')
         }
         let queryData = await queryRes.json()
         logger.debug(queryData)
-        allDone = queryData.every(clip => clip.status === 'complete')
-        songs = queryData
+        allDone = queryData.every(clip => clip.status === 'complete' || clip.status === 'error')
+        songs = queryData.filter(clip => clip.status === 'complete')
       } catch (err) {
         console.error(err)
       }

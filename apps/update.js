@@ -3,20 +3,10 @@ import plugin from '../../../lib/plugins/plugin.js'
 import { createRequire } from 'module'
 import _ from 'lodash'
 import { Restart } from '../../other/restart.js'
-import fs from 'fs'
 import {} from '../utils/common.js'
 
-const _path = process.cwd()
 const require = createRequire(import.meta.url)
 const { exec, execSync } = require('child_process')
-
-const checkAuth = async function (e) {
-  if (!e.isMaster) {
-    e.reply('只有主人才能命令ChatGPT哦~(*/ω＼*)')
-    return false
-  }
-  return true
-}
 
 // 是否在更新中
 let uping = false

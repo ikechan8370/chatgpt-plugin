@@ -23,6 +23,7 @@ import VoiceVoxTTS, { supportConfigurations as voxRoleList } from '../utils/tts/
 import { supportConfigurations as azureRoleList } from '../utils/tts/microsoft-azure.js'
 import fetch from 'node-fetch'
 import { newFetch } from '../utils/proxy.js'
+import { createServer, runServer, stopServer } from '../server/index.js'
 
 export class ChatgptManagement extends plugin {
   constructor (e) {
@@ -98,13 +99,8 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
-          reg: '^#chatgpt切换(Poe|poe)$',
-          fnc: 'useClaudeBasedSolution',
-          permission: 'master'
-        },
-        {
-          reg: '^#chatgpt切换(Claude|claude|slack)$',
-          fnc: 'useSlackClaudeBasedSolution',
+          reg: '^#chatgpt切换(Claude|claude)$',
+          fnc: 'useClaudeAPIBasedSolution',
           permission: 'master'
         },
         {
@@ -179,6 +175,11 @@ export class ChatgptManagement extends plugin {
         {
           reg: '^#chatgpt设置(API|key)(Key|key)$',
           fnc: 'setAPIKey',
+          permission: 'master'
+        },
+        {
+          reg: '^#chatgpt设置(claude|Claude)(Key|key)$',
+          fnc: 'setClaudeKey',
           permission: 'master'
         },
         {
@@ -323,6 +324,11 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
+          reg: '^#chatgpt设置(claude|Claude)模型$',
+          fnc: 'setClaudeModel',
+          permission: 'master'
+        },
+        {
           reg: '^#chatgpt必应(禁用|禁止|关闭|启用|开启)搜索$',
           fnc: 'switchBingSearch',
           permission: 'master'
@@ -335,6 +341,11 @@ export class ChatgptManagement extends plugin {
         {
           reg: '^#chatgpt(开启|关闭)(api|API)流$',
           fnc: 'switchStream',
+          permission: 'master'
+        },
+        {
+          reg: '^#chatgpt(开启|关闭)(工具箱|后台服务)$',
+          fnc: 'switchToolbox',
           permission: 'master'
         }
       ]
@@ -920,23 +931,13 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
     }
   }
 
-  async useClaudeBasedSolution (e) {
-    let use = await redis.get('CHATGPT:USE')
-    if (use !== 'poe') {
-      await redis.set('CHATGPT:USE', 'poe')
-      await this.reply('已切换到基于Quora\'s POE的解决方案')
-    } else {
-      await this.reply('当前已经是POE模式了')
-    }
-  }
-
-  async useSlackClaudeBasedSolution () {
+  async useClaudeAPIBasedSolution () {
     let use = await redis.get('CHATGPT:USE')
     if (use !== 'claude') {
       await redis.set('CHATGPT:USE', 'claude')
-      await this.reply('已切换到基于slack claude机器人的解决方案')
+      await this.reply('已切换到基于ClaudeAPI的解决方案')
     } else {
-      await this.reply('当前已经是claude模式了')
+      await this.reply('当前已经是Claude模式了')
     }
   }
 
@@ -946,7 +947,7 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
       await redis.set('CHATGPT:USE', 'claude2')
       await this.reply('已切换到基于claude.ai的解决方案')
     } else {
-      await this.reply('当前已经是claude2模式了')
+      await this.reply('当前已经是claude.ai模式了')
     }
   }
 
@@ -1266,6 +1267,25 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
     Config.apiKey = token
     await this.reply('OpenAI API Key设置成功', true)
     this.finish('saveAPIKey')
+  }
+
+  async setClaudeKey (e) {
+    this.setContext('saveClaudeKey')
+    await this.reply('请发送Claude API Key。\n如果要设置多个key请用逗号隔开。\n此操作会覆盖当前配置，请谨慎操作', true)
+    return false
+  }
+
+  async saveClaudeKey () {
+    if (!this.e.msg) return
+    let token = this.e.msg
+    if (!token.startsWith('sk-ant')) {
+      await this.reply('Claude API Key格式错误。如果是格式特殊的非官方Key请前往锅巴或工具箱手动设置', true)
+      this.finish('saveClaudeKey')
+      return
+    }
+    Config.claudeApiKey = token
+    await this.reply('Claude API Key设置成功', true)
+    this.finish('saveClaudeKey')
   }
 
   async setGeminiKey (e) {
@@ -1688,6 +1708,20 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
     this.finish('saveAPIModel')
   }
 
+  async setClaudeModel (e) {
+    this.setContext('saveClaudeModel')
+    await this.reply('请发送Claude模型，官方推荐模型：\nclaude-3-opus-20240229\nclaude-3-sonnet-20240229\nclaude-3-haiku-20240307', true)
+    return false
+  }
+
+  async saveClaudeModel () {
+    if (!this.e.msg) return
+    let token = this.e.msg
+    Config.claudeApiModel = token
+    await this.reply('Claude模型设置成功', true)
+    this.finish('saveClaudeModel')
+  }
+
   async setOpenAiBaseUrl (e) {
     this.setContext('saveOpenAiBaseUrl')
     await this.reply('请发送API反代', true)
@@ -1786,6 +1820,27 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
       }
       Config.apiStream = false
       await this.reply('好的，已经关闭API流式输出')
+    }
+  }
+
+  async switchToolbox (e) {
+    if (e.msg.includes('开启')) {
+      if (Config.enableToolbox) {
+        await this.reply('已经开启了')
+        return
+      }
+      Config.enableToolbox = true
+      await this.reply('开启中', true)
+      await runServer()
+      await this.reply('好的，已经打开工具箱')
+    } else {
+      if (!Config.enableToolbox) {
+        await this.reply('已经是关闭的了')
+        return
+      }
+      Config.enableToolbox = false
+      await stopServer()
+      await this.reply('好的，已经关闭工具箱')
     }
   }
 }

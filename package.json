@@ -1,5 +1,6 @@
 {
   "name": "chatgpt-plugin",
+  "version": "2.8.1",
   "type": "module",
   "author": "ikechan8370",
   "dependencies": {
@@ -9,7 +10,6 @@
     "@fastify/static": "^6.9.0",
     "@fastify/websocket": "^8.2.0",
     "@google/generative-ai": "^0.1.1",
-    "@slack/bolt": "^3.13.2",
     "asn1.js": "^5.0.0",
     "diff": "^5.1.0",
     "emoji-strip": "^1.0.1",
@@ -40,9 +40,6 @@
     "node-silk": "^0.1.0",
     "nodejs-pptx": "^1.2.4",
     "pdfjs-dist": "^3.11.174",
-    "puppeteer-extra": "^3.3.6",
-    "puppeteer-extra-plugin-recaptcha": "^3.6.8",
-    "puppeteer-extra-plugin-stealth": "^2.11.2",
     "sharp": "^0.32.3",
     "xlsx": "^0.18.5"
   },

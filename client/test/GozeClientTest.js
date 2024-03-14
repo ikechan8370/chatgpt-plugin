@@ -1,6 +1,6 @@
 import { SlackCozeClient } from '../CozeSlackClient.js'
 import fs from 'fs'
-global.store = {}
+// global.store = {}
 
 // global.redis = {
 //   set: (key, val) => {
