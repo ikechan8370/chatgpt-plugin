@@ -383,6 +383,7 @@ export default class SydneyAIClient {
       // 'cricinfo',
       // 'cricinfov2',
       'dv3sugg',
+      'autosave',
       // 'gencontentv3',
       'iycapbing',
       'iyxapbing',
@@ -391,12 +392,21 @@ export default class SydneyAIClient {
       // 'revimgsrc1',
       // 'revimgur',
       // 'clgalileo',
-      'eredirecturl',
+      // 'eredirecturl',
       // copilot
       'uquopt',
-      'papynoapi',
-      'gndlogcf',
-      'sapsgrd'
+      // 'botthrottle',
+      // 'dlimitationnc',
+      // 'hourthrot',
+      // 'gndlogcf',
+      // 'ciorigimage',
+      // 'codeintfile',
+      'eredirecturl',
+      // 'ldsummary',
+      // 'ldqa',
+      // 'sdretrieval',
+      // "gencontentv3",
+      // 'gpt4tmncnp'
     ]
     if (!isCreative) {
       optionsSets.push('clgalileo')
@@ -457,28 +467,30 @@ export default class SydneyAIClient {
         'GeneratedCode'
       ],
       sliceIds: [
-        'sappbcbt',
-        'inlineadsv2ho-prod',
-        'bgstream',
-        'dlidlat',
-        'autotts',
-        'dlid',
-        'sydoroff',
-        'voicemap',
-        '72enasright',
-        'semseronomon',
-        'srchqryfix',
-        'cmcpupsalltf',
-        'proupsallcf',
-        '206mems0',
-        '0209bicv3',
-        '205dcl1bt15',
-        'etlog',
-        'fpallsticy',
-        '0208papynoa',
-        'sapsgrd',
-        '1pgptwdes',
-        'newzigpt'
+        // 'supllmnfe',
+        // 'nodescf',
+        // 'stcheckcf',
+        // 'invldrqcf',
+        // 'v6voice',
+        // 'vnextr100',
+        // 'sydvrate100',
+        // 'vnextvoice',
+        // 'scmcbasecf',
+        // 'cmcpupsalltf',
+        // 'sydtransjson',
+        // 'thdnsrchcf',
+        // '220dcl1bt15',
+        // '311dlicnc',
+        // '0215wcrwippsr',
+        // '0305hrthrot',
+        // '0130gpt4t',
+        // 'bingfccf',
+        // 'dissagrds0',
+        // '0228scs',
+        // 'scprompt1',
+        // '228pyfilenfb',
+        // 'ecipc',
+        // '3022tpvs0'
       ],
       requestId: crypto.randomUUID(),
       traceId: genRanHex(32),
@@ -536,11 +548,17 @@ export default class SydneyAIClient {
       spokenTextMode: 'None',
       conversationId,
       previousMessages,
-      plugins: [
-        // {
-        //   id: 'c310c353-b9f0-4d76-ab0d-1dd5e979cf68'
-        // }
-      ]
+      // plugins: [
+      //   {
+      //     id: 'c310c353-b9f0-4d76-ab0d-1dd5e979cf68',
+      //     category: 1
+      //   }
+      // ],
+      // extraExtensionParameters: {
+      //   'gpt-creator-persona': {
+      //     personaId: 'copilot'
+      //   }
+      // }
     }
 
     if (encryptedconversationsignature) {
