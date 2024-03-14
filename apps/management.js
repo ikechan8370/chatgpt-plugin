@@ -1697,7 +1697,7 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
 
   async setClaudeModel (e) {
     this.setContext('saveClaudeModel')
-    await this.reply('请发送Claude模型，官方推荐模型：\nclaude-3-opus-20240229\nclaude-3-sonnet-20240229', true)
+    await this.reply('请发送Claude模型，官方推荐模型：\nclaude-3-opus-20240229\nclaude-3-sonnet-20240229\nclaude-3-haiku-20240307', true)
     return false
   }
 
