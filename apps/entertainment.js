@@ -611,7 +611,7 @@ ${translateLangLabels}
     }
     let img = await getImg(e)
     if (!img?.[0]) {
-      await this.reply('请发送或引用一张图片', e.isGroup)
+      await e.reply('请发送或引用一张图片', e.isGroup)
       return false
     }
     let client = new CustomGoogleGeminiClient({
