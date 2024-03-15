@@ -12,6 +12,7 @@ import AzureTTS from '../utils/tts/microsoft-azure.js'
 import VoiceVoxTTS from '../utils/tts/voicevox.js'
 import { URL } from 'node:url'
 import { getBots } from '../utils/bot.js'
+import {CustomGoogleGeminiClient} from "../client/CustomGoogleGeminiClient.js";
 
 let useSilk = false
 try {
@@ -69,6 +70,10 @@ export class Entertainment extends plugin {
         {
           reg: '^#url(：|:)',
           fnc: 'screenshotUrl'
+        },
+        {
+          reg: '^#(识图|图片识别|VQA|vqa)',
+          fnc: 'vqa'
         }
       ]
     })
@@ -596,6 +601,34 @@ ${translateLangLabels}
     } catch (err) {
       this.reply('无效url:' + url)
     }
+    return true
+  }
+
+  async vqa (e) {
+    if (!Config.geminiKey) {
+      e.reply('需要配置Gemini密钥以使用识图')
+      return
+    }
+    let img = await getImg(e)
+    if (!img?.[0]) {
+      await this.reply('请发送或引用一张图片', e.isGroup)
+      return false
+    }
+    let client = new CustomGoogleGeminiClient({
+      e,
+      userId: e.sender.user_id,
+      key: Config.geminiKey,
+      model: 'gemini-pro-vision',
+      baseUrl: Config.geminiBaseUrl,
+      debug: Config.debug
+    })
+    const response = await fetch(img[0])
+    const base64Image = Buffer.from(await response.arrayBuffer())
+    let msg = e.msg.replace(/#(识图|图片识别|VQA|vqa)/, '') || 'describe this image in Simplified Chinese'
+    let res = await client.sendMessage(msg, {
+      image: base64Image.toString('base64')
+    })
+    await e.reply(res.text)
     return true
   }
 }
