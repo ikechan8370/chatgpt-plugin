@@ -218,6 +218,7 @@ var QwenApi = /** @class */ (function () {
                                         }
                                         result.detail = response;
                                         result.text = response.output.choices[0].message.content;
+                                        result.conversation = messages;
                                         return [2 /*return*/, resolve(result)];
                                     case 6:
                                         err_1 = _f.sent();

@@ -228,6 +228,7 @@ export class QwenApi {
                     }
                     result.detail = response
                     result.text = response.output.choices[0].message.content
+                    result.conversation = messages
                     return resolve(result)
                 } catch (err) {
                     return reject(err)

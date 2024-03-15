@@ -180,11 +180,12 @@ export function supportGuoba () {
         {
           field: 'toneStyle',
           label: 'Bing模式',
-          bottomHelpMessage: 'Copilot的应答风格。默认为创意，可切换为精准，均支持添加设定',
+          bottomHelpMessage: 'Copilot的应答风格。默认为创意，可切换为精准或均衡，均为GPT-turbo',
           component: 'Select',
           componentProps: {
             options: [
               { label: '创意', value: 'Creative' },
+              { label: '均衡', value: 'Balanced' },
               { label: '精准', value: 'Precise' }
             ]
           }
@@ -219,22 +220,11 @@ export function supportGuoba () {
           component: 'Switch'
         },
         {
-          field: 'sydneyGPT4Turbo',
-          label: '使用GPT4-turbo',
-          bottomHelpMessage: '目前仅Copilot Pro可开启。非pro用户开启会报错。',
-          component: 'Switch'
-        },
-        {
           field: 'enableGenerateContents',
           label: '允许生成图像等内容',
           bottomHelpMessage: '开启后类似网页版能够发图。但是此选项会占用大量token，自设定等模式下容易爆token',
           component: 'Switch'
         },
-        // {
-        //   field: 'cognitiveReinforcementTip',
-        //   label: '加强主人认知的后台prompt',
-        //   component: 'InputTextArea'
-        // },
         {
           field: 'groupContextLength',
           label: '允许机器人读取近期的最多群聊聊天记录条数。',
