@@ -437,13 +437,20 @@ class Core {
           baseUrl: Config.claudeApiBaseUrl
           // temperature: Config.claudeApiTemperature || 0.5
         })
+        let opt = {
+          stream: false,
+          parentMessageId: conversation.parentMessageId,
+          conversationId: conversation.conversationId,
+          system: Config.claudeSystemPrompt
+        }
+        let img = await getImg(e)
+        if (img && img.length > 0) {
+          const response = await fetch(img[0])
+          const base64Image = Buffer.from(await response.arrayBuffer()).toString('base64')
+          opt.image = base64Image
+        }
         try {
-          let rsp = await client.sendMessage(prompt, {
-            stream: false,
-            parentMessageId: conversation.parentMessageId,
-            conversationId: conversation.conversationId,
-            system: Config.claudeSystemPrompt
-          })
+          let rsp = await client.sendMessage(prompt, opt)
           return rsp
         } catch (err) {
           errorMessage = err.message
