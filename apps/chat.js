@@ -842,7 +842,7 @@ export class chatgpt extends plugin {
       let mood = 'blandness'
       if (!response) {
         await this.reply('没有任何回复', true)
-        return
+        return false
       }
       let emotion, emotionDegree
       if (Config.ttsMode === 'azure' && (use === 'claude' || use === 'bing') && await AzureTTS.getEmotionPrompt(e)) {
@@ -937,21 +937,9 @@ export class chatgpt extends plugin {
       for (let quote of quotemessage) {
         if (quote.imageLink) imgUrls.push(quote.imageLink)
       }
-      if (useTTS) {
+      if (useTTS && response.length <= Config.autoUsePictureThreshold) {
         // 缓存数据
         this.cacheContent(e, use, response, prompt, quotemessage, mood, chatMessage.suggestedResponses, imgUrls)
-        if (response === 'Sorry, I think we need to move on! Click “New topic” to chat about something else.') {
-          this.reply('当前对话超过上限，已重置对话', false, { at: true })
-          await redis.del(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
-          return false
-        } else if (response === 'Unexpected message author.') {
-          this.reply('无法回答当前话题，已重置对话', false, { at: true })
-          await redis.del(`CHATGPT:CONVERSATIONS_BING:${e.sender.user_id}`)
-          return false
-        } else if (response === 'Throttled: Request is throttled.') {
-          this.reply('今日对话已达上限')
-          return false
-        }
         // 处理tts输入文本
         let ttsResponse, ttsRegex
         const regex = /^\/(.*)\/([gimuy]*)$/
@@ -995,11 +983,13 @@ export class chatgpt extends plugin {
             this.reply(`建议的回复：\n${chatMessage.suggestedResponses}`)
           }
         }
-        const sendable = await generateAudio(this.e, ttsResponse, emotion, emotionDegree)
-        if (sendable) {
-          await this.reply(sendable)
-        } else {
-          await this.reply('合成语音发生错误~')
+        if(ttsResponse.length <= parseInt(Config.ttsAutoFallbackThreshold)) {
+            const sendable = await generateAudio(this.e, ttsResponse, emotion, emotionDegree)
+            if (sendable) {
+            await this.reply(sendable)
+            } else {
+            await this.reply('合成语音发生错误~')
+            }
         }
       } else if (userSetting.usePicture || (!Config.enableMd && Config.autoUsePicture && response.length > Config.autoUsePictureThreshold)) {
         try {

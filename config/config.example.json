@@ -102,6 +102,7 @@
   "azureTTSEmotion": false,
   "enhanceAzureTTSEmotion": false,
   "autoJapanese": false,
+  "ttsHD": false
   "enableGenerateContents": false,
   "amapKey": "",
   "azSerpKey": "",

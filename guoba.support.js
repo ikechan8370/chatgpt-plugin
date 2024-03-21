@@ -28,6 +28,190 @@ export function supportGuoba () {
       // 配置项 schemas
       schemas: [
         {
+          field: 'blockWords',
+          label: '输出黑名单',
+          bottomHelpMessage: '检查输出结果中是否有违禁词，如果存在黑名单中的违禁词则不输出。英文逗号隔开',
+          component: 'InputTextArea'
+        },
+        {
+          field: 'promptBlockWords',
+          label: '输入黑名单',
+          bottomHelpMessage: '检查输入结果中是否有违禁词，如果存在黑名单中的违禁词则不输出。英文逗号隔开',
+          component: 'InputTextArea'
+        },
+        {
+          field: 'whitelist',
+          label: '对话白名单',
+          bottomHelpMessage: '默认设置为添加群号。优先级高于黑名单。\n' +
+              '注意：需要添加QQ号时在前面添加^(例如：^123456)，此全局添加白名单，即除白名单以外的所有人都不能使用插件对话。\n' +
+              '如果需要在某个群里独享moment，即群聊中只有白名单上的qq号能用，则使用（群号^qq）的格式(例如：123456^123456)。\n' +
+              '白名单优先级：混合制 > qq > 群号。\n' +
+              '黑名单优先级: 群号 > qq > 混合制。',
+          component: 'Input'
+        },
+        {
+          field: 'blacklist',
+          label: '对话黑名单',
+          bottomHelpMessage: '参考白名单设置规则。',
+          component: 'Input'
+        },
+        {
+          field: 'imgOcr',
+          label: '图片识别',
+          bottomHelpMessage: '是否识别消息中图片的文字内容，需要同时包含图片和消息才生效',
+          component: 'Switch'
+        },
+        {
+          field: 'enablePrivateChat',
+          label: '是否允许私聊机器人',
+          component: 'Switch'
+        },
+        {
+          field: 'defaultUsePicture',
+          label: '全局图片模式',
+          bottomHelpMessage: '全局默认以图片形式回复',
+          component: 'Switch'
+        },
+        {
+          field: 'defaultUseTTS',
+          label: '全局语音模式',
+          bottomHelpMessage: '全局默认以语音形式回复，使用默认角色音色',
+          component: 'Switch'
+        },
+        {
+          field: 'ttsMode',
+          label: '语音模式源',
+          bottomHelpMessage: '语音模式下使用何种语音源进行文本->音频转换',
+          component: 'Select',
+          componentProps: {
+            options: [
+              {
+                label: 'vits-uma-genshin-honkai',
+                value: 'vits-uma-genshin-honkai'
+              },
+              {
+                label: '微软Azure',
+                value: 'azure'
+              },
+              {
+                label: 'VoiceVox',
+                value: 'voicevox'
+              }
+            ]
+          }
+        },
+        {
+          field: 'defaultTTSRole',
+          label: 'vits默认角色',
+          bottomHelpMessage: 'vits-uma-genshin-honkai语音模式下，未指定角色时使用的角色。若留空，将使用随机角色回复。若用户通过指令指定了角色，将忽略本设定',
+          component: 'Select',
+          componentProps: {
+            options: [{
+              label: '随机',
+              value: '随机'
+            }].concat(speakers.map(s => { return { label: s, value: s } }))
+          }
+        },
+        {
+          field: 'azureTTSSpeaker',
+          label: 'Azure默认角色',
+          bottomHelpMessage: '微软Azure语音模式下，未指定角色时使用的角色。若用户通过指令指定了角色，将忽略本设定',
+          component: 'Select',
+          componentProps: {
+            options: [{
+              label: '随机',
+              value: '随机'
+            },
+            ...azureRoleList.flatMap(item => [
+              item.roleInfo
+            ]).map(s => ({
+              label: s,
+              value: s
+            }))]
+          }
+        },
+        {
+          field: 'voicevoxTTSSpeaker',
+          label: 'VoiceVox默认角色',
+          bottomHelpMessage: 'VoiceVox语音模式下，未指定角色时使用的角色。若留空，将使用随机角色回复。若用户通过指令指定了角色，将忽略本设定',
+          component: 'Select',
+          componentProps: {
+            options: [{
+              label: '随机',
+              value: '随机'
+            },
+            ...voxRoleList.flatMap(item => [
+              ...item.styles.map(style => `${item.name}-${style.name}`),
+              item.name
+            ]).map(s => ({
+              label: s,
+              value: s
+            }))]
+          }
+        },
+        {
+          field: 'ttsRegex',
+          label: '语音过滤正则表达式',
+          bottomHelpMessage: '语音模式下，配置此项以过滤不想被读出来的内容。表达式测试地址：https://www.runoob.com/regexp/regexp-syntax.html',
+          component: 'Input'
+        },
+        {
+          field: 'ttsAutoFallbackThreshold',
+          label: '语音转文字阈值',
+          helpMessage: '语音模式下，字数超过这个阈值就降级为文字',
+          bottomHelpMessage: '语音转为文字的阈值',
+          component: 'InputNumber',
+          componentProps: {
+            min: 0,
+            max: 299
+          }
+        },
+        {
+          field: 'ttsHD',
+          label: '开启高清语音',
+          bottomHelpMessage: '开启高清语音后，电脑端将无法播放语音',
+          component: 'Switch'
+        },
+        {
+          field: 'alsoSendText',
+          label: '语音同时发送文字',
+          bottomHelpMessage: '语音模式下，同时发送文字版，避免音质较低听不懂',
+          component: 'Switch'
+        },
+        {
+          field: 'autoJapanese',
+          label: 'vits模式日语输出',
+          bottomHelpMessage: '使用vits语音时，将机器人的文字回复翻译成日文后获取语音。' +
+              '若想使用插件的翻译功能，发送"#chatgpt翻译帮助"查看使用方法，支持图片翻译，引用翻译...',
+          component: 'Switch'
+        },
+        {
+          field: 'autoUsePicture',
+          label: '长文本自动转图片',
+          bottomHelpMessage: '字数大于阈值会自动用图片发送，即使是文本模式',
+          component: 'Switch'
+        },
+        {
+          field: 'autoUsePictureThreshold',
+          label: '自动转图片阈值',
+          helpMessage: '长文本自动转图片开启后才生效',
+          bottomHelpMessage: '自动转图片的字数阈值',
+          component: 'InputNumber',
+          componentProps: {
+            min: 0
+          }
+        },
+        {
+          field: 'conversationPreserveTime',
+          label: '对话保留时长',
+          helpMessage: '单位：秒',
+          bottomHelpMessage: '每个人发起的对话保留时长。超过这个时长没有进行对话，再进行对话将开启新的对话。',
+          component: 'InputNumber',
+          componentProps: {
+            min: 0
+          }
+        },
+        {
           field: 'toggleMode',
           label: '触发方式',
           bottomHelpMessage: 'at模式下只有at机器人才会回复。#chat模式下不需要at，但需要添加前缀#chat',

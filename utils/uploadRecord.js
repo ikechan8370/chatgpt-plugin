@@ -27,7 +27,9 @@ if (module) {
   try {
     pcm2slk = (await import('node-silk')).pcm2slk
   } catch (e) {
-    if (Config.cloudTranscode) {
+    if (Config.ttsHD) {
+      logger.info('已开启高清语音，电脑端将无法播放语音')
+    } else if (Config.cloudTranscode) {
       logger.warn('未安装node-silk，将尝试使用云转码服务进行合成')
     } else {
       Config.debug && logger.error(e)
@@ -52,8 +54,10 @@ async function uploadRecord (recordUrl, ttsMode = 'vits-uma-genshin-honkai', ign
     return segment.record(recordUrl)
   }
   let result
-  if (pcm2slk) {
-    result = await getPttBuffer(recordUrl, Bot.config.ffmpeg_path)
+  if (Config.ttsHD) {
+    result = await getPttBuffer(recordUrl, Bot.config.ffmpeg_path, false)
+  } else if (pcm2slk) {
+    result = await getPttBuffer(recordUrl, Bot.config.ffmpeg_path, true)
   } else if (Config.cloudTranscode) {
     logger.mark('使用云转码silk进行高清语音生成:"')
     try {
@@ -135,6 +139,7 @@ async function uploadRecord (recordUrl, ttsMode = 'vits-uma-genshin-honkai', ign
     return false
   }
   let buf = Buffer.from(result.buffer)
+  let seconds = result.time ? result.time.seconds : 0
   const hash = md5(buf)
   const codec = String(buf.slice(0, 7)).includes('SILK') ? 1 : 0
   const body = core.pb.encode({
@@ -190,9 +195,10 @@ async function uploadRecord (recordUrl, ttsMode = 'vits-uma-genshin-honkai', ign
     3: fid,
     4: hash,
     5: hash.toString('hex') + '.amr',
-    6: buf.length,
+    6: seconds,
     11: 1,
     18: fid,
+    19: seconds,
     30: Buffer.from([8, 0, 40, 0, 56, 0])
   })
   if (tmpFile) {
@@ -209,21 +215,30 @@ async function uploadRecord (recordUrl, ttsMode = 'vits-uma-genshin-honkai', ign
 
 export default uploadRecord
 
-async function getPttBuffer (file, ffmpeg = 'ffmpeg') {
+async function getPttBuffer (file, ffmpeg = 'ffmpeg', transcoding = true) {
   let buffer
   let time
   if (file instanceof Buffer || file.startsWith('base64://')) {
     // Buffer或base64
     const buf = file instanceof Buffer ? file : Buffer.from(file.slice(9), 'base64')
     const head = buf.slice(0, 7).toString()
-    if (head.includes('SILK') || head.includes('AMR')) {
-      return buf
-    } else {
-      const tmpfile = TMP_DIR + '/' + (0, uuid)()
+    if (head.includes('SILK') || head.includes('AMR') || !transcoding) {
+      const tmpfile = path.join(TMP_DIR, (0, uuid)())
       await fs.promises.writeFile(tmpfile, buf)
-      return audioTrans(tmpfile, ffmpeg)
+      let result = await getAudioTime(tmpfile, ffmpeg)
+      if (result.code == 1) time = result.data
+      fs.unlink(tmpfile, NOOP)
+      buffer = buf
+    } else {
+      const tmpfile = path.join(TMP_DIR, (0, uuid)())
+      let result = await getAudioTime(tmpfile, ffmpeg)
+      if (result.code == 1) time = result.data
+      await fs.promises.writeFile(tmpfile, buf)
+      buffer = await audioTrans(tmpfile, ffmpeg)
     }
   } else if (file.startsWith('http://') || file.startsWith('https://')) {
+    // 网络文件
+    // const readable = (await axios.get(file, { responseType: "stream" })).data;
     try {
       const headers = {
         'User-Agent': 'Dalvik/2.1.0 (Linux; U; Android 12; MI 9 Build/SKQ1.211230.001)'
@@ -233,11 +248,14 @@ async function getPttBuffer (file, ffmpeg = 'ffmpeg') {
         headers
       })
       const buf = Buffer.from(await response.arrayBuffer())
-      const tmpfile = TMP_DIR + '/' + (0, uuid)()
+      const tmpfile = path.join(TMP_DIR, (0, uuid)())
       await fs.promises.writeFile(tmpfile, buf)
       // await (0, pipeline)(readable.pipe(new DownloadTransform), fs.createWriteStream(tmpfile));
       const head = await read7Bytes(tmpfile)
-      if (head.includes('SILK') || head.includes('AMR')) {
+      let result = await getAudioTime(tmpfile, ffmpeg)
+      if (result.code == 1) time = result.data
+      if (head.includes('SILK') || head.includes('AMR') || !transcoding) {
+        // const buf = await fs.promises.readFile(tmpfile);
         fs.unlink(tmpfile, NOOP)
         buffer = buf
       } else {
@@ -249,13 +267,43 @@ async function getPttBuffer (file, ffmpeg = 'ffmpeg') {
     file = String(file).replace(/^file:\/{2}/, '')
     IS_WIN && file.startsWith('/') && (file = file.slice(1))
     const head = await read7Bytes(file)
-    if (head.includes('SILK') || head.includes('AMR')) {
+    let result = await getAudioTime(file, ffmpeg)
+    if (result.code == 1) time = result.data
+    if (head.includes('SILK') || head.includes('AMR') || !transcoding) {
       buffer = await fs.promises.readFile(file)
     } else {
       buffer = await audioTrans(file, ffmpeg)
     }
   }
   return { buffer, time }
+}
+
+async function getAudioTime (file, ffmpeg = 'ffmpeg') {
+  return new Promise((resolve, _reject) => {
+    (0, child_process.exec)(`${ffmpeg} -i "${file}"`, async (_error, _stdout, stderr) => {
+      try {
+        let time = stderr.split('Duration:')[1]?.split(',')[0].trim()
+        let arr = time?.split(':')
+        arr.reverse()
+        let n = 1
+        let s = 0
+        for (let val of arr) {
+          if (parseInt(val) > 0) s += parseInt(val) * n
+          n *= 60
+        }
+        resolve({
+          code: 1,
+          data: {
+            time,
+            seconds: s,
+            exec_text: stderr
+          }
+        })
+      } catch {
+        resolve({ code: -1 })
+      }
+    })
+  })
 }
 
 async function audioTrans (file, ffmpeg = 'ffmpeg') {
