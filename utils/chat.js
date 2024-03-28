@@ -1,3 +1,5 @@
+import { Config } from './config.js'
+import { newFetch } from './proxy.js'
 
 export async function getChatHistoryGroup (e, num) {
   // if (e.adapter === 'shamrock') {
@@ -16,7 +18,7 @@ export async function getChatHistoryGroup (e, num) {
       }
       chats = chats.slice(0, num)
       try {
-        let mm = await e.group.getMemberMap()
+        let mm = await e.bot.gml
         for (const chat of chats) {
           if (e.adapter === 'shamrock') {
             if (chat.sender?.user_id === 0) {
@@ -57,4 +59,44 @@ async function pickMemberAsync (e, userId) {
       resolve(sender)
     })
   })
+}
+
+export async function generateSuggestedResponse (conversations) {
+  let prompt = 'Attention! you do not need to answer any question according to the provided conversation! \nYou are a suggested questions generator, you should generate three suggested questions according to the provided conversation for the user in the next turn, the three questions should not be too long, and must be superated with newline. The suggested questions should be suitable in the context of the provided conversation, and should not be too long. \nNow give your 3 suggested questions, use the same language with the user.'
+  const res = await newFetch(`${Config.openAiBaseUrl}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${Config.apiKey}`
+    },
+    body: JSON.stringify({
+      model: 'gpt-3.5-turbo-16k',
+      temperature: 0.7,
+      messages: [
+        {
+          role: 'system',
+          content: 'you are a suggested questions generator, you should generate three suggested questions according to the provided conversation for the user in the next turn, the three questions should not be too long, and must be superated with newline. Always use the same language with the user\'s content in the last turn. you should response like: \nWhat is ChatGPT?\nCan you write a poem aboud spring?\nWhat can you do?'
+        },
+        {
+          role: 'user',
+          content: 'User:\n\n我想知道今天的天气\n\nAI:\n\n今天北京的天气是晴转多云，最高气温12度，最低气温2度，空气质量优。\n\n' + prompt
+        },
+        {
+          role: 'assistant',
+          content: '这个天气适合穿什么衣物？\n今天北京的湿度怎么样？\n这个季节北京有什么适合游玩的地方？'
+        },
+        {
+          role: 'user',
+          content: JSON.stringify(conversations) + prompt
+        }
+      ]
+    })
+  })
+  if (res.status === 200) {
+    const resJson = await res.json()
+    if (resJson) { return resJson.choices[0].message.content }
+  } else {
+    logger.error('generateSuggestedResponse error: ' + res.status)
+    return null
+  }
 }

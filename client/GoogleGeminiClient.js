@@ -1,6 +1,6 @@
 import { BaseClient } from './BaseClient.js'
 
-import { getMessageById, upsertMessage } from '../utils/common.js'
+import { getMessageById, upsertMessage } from '../utils/history.js'
 import crypto from 'crypto'
 let GoogleGenerativeAI, HarmBlockThreshold, HarmCategory
 try {

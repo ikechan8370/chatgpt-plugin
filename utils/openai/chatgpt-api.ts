@@ -7,7 +7,7 @@ import * as tokenizer from './tokenizer'
 import * as types from './types'
 import globalFetch from 'node-fetch'
 import { fetchSSE } from './fetch-sse'
-import {openai, Role} from "./types";
+import {ChatCompletionRequestMessage, openai, Role} from "./types";
 
 const CHATGPT_MODEL = 'gpt-3.5-turbo-0613'
 
@@ -176,16 +176,17 @@ export class ChatGPTAPI {
             completionParams
         )
         console.log(`maxTokens: ${maxTokens}, numTokens: ${numTokens}`)
-        const result: types.ChatMessage = {
+        const result: types.ChatMessage & { conversation: openai.ChatCompletionRequestMessage[] } = {
             role: 'assistant',
             id: uuidv4(),
             conversationId,
             parentMessageId: messageId,
-            text: undefined,
-            functionCall: undefined
+            text: '',
+            functionCall: undefined,
+            conversation: []
         }
 
-        const responseP = new Promise<types.ChatMessage>(
+        const responseP = new Promise<types.ChatMessage & { conversation: openai.ChatCompletionRequestMessage[] }>(
             async (resolve, reject) => {
                 const url = `${this._apiBaseUrl}/chat/completions`
                 const headers = {
@@ -223,6 +224,7 @@ export class ChatGPTAPI {
                             onMessage: (data: string) => {
                                 if (data === '[DONE]') {
                                     result.text = result.text.trim()
+                                    result.conversation = messages
                                     return resolve(result)
                                 }
 
@@ -318,7 +320,7 @@ export class ChatGPTAPI {
                         }
 
                         result.detail = response
-
+                        result.conversation = messages
                         return resolve(result)
                     } catch (err) {
                         return reject(err)

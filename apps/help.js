@@ -148,7 +148,7 @@ let helpData = [
       },
       {
         icon: 'confirm',
-        title: '#chatgpt必应切换(精准|均衡|创意|悉尼|自设定)',
+        title: '#chatgpt必应切换(精准|创意)',
         desc: '切换Bing风格。'
       },
       {
@@ -337,6 +337,6 @@ export class help extends plugin {
   }
 
   async help (e) {
-    await render(e, 'chatgpt-plugin', 'help/index', { helpData, version }) 
+    await render(e, 'chatgpt-plugin', 'help/index', { helpData, version })
   }
 }

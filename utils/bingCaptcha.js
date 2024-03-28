@@ -1,7 +1,7 @@
 import fetch from 'node-fetch'
 
 // this file is deprecated
-import {Config} from './config.js'
+import { Config } from './config.js'
 import HttpsProxyAgent from 'https-proxy-agent'
 
 const newFetch = (url, options = {}) => {

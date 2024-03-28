@@ -173,7 +173,8 @@ var ChatGPTAPI = /** @class */ (function () {
                             conversationId: conversationId,
                             parentMessageId: messageId,
                             text: '',
-                            functionCall: null
+                            functionCall: undefined,
+                            conversation: []
                         };
                         responseP = new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
                             var url, headers, body, res, reason, msg, error, response, message_1, res_1, err_1;
@@ -208,6 +209,7 @@ var ChatGPTAPI = /** @class */ (function () {
                                                 var _a;
                                                 if (data === '[DONE]') {
                                                     result.text = result.text.trim();
+                                                    result.conversation = messages;
                                                     return resolve(result);
                                                 }
                                                 try {
@@ -293,6 +295,7 @@ var ChatGPTAPI = /** @class */ (function () {
                                             return [2 /*return*/, reject(new Error("OpenAI error: ".concat(((_b = res_1 === null || res_1 === void 0 ? void 0 : res_1.detail) === null || _b === void 0 ? void 0 : _b.message) || (res_1 === null || res_1 === void 0 ? void 0 : res_1.detail) || 'unknown')))];
                                         }
                                         result.detail = response;
+                                        result.conversation = messages;
                                         return [2 /*return*/, resolve(result)];
                                     case 6:
                                         err_1 = _c.sent();

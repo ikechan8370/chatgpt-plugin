@@ -130,19 +130,15 @@ export class ClaudeAIClient {
 
   async sendMessage (text, conversationId, attachments = []) {
     let body = {
-      conversation_uuid: conversationId,
-      organization_uuid: this.organizationId,
-      text,
       attachments,
-      completion: {
-        incremental: true,
-        model: 'claude-2.1',
-        prompt: text,
-        timezone: 'Asia/Hong_Kong'
-      }
+      files: [],
+      // 官方更新后这里没有传值了
+      // model: 'claude-2.1',
+      prompt: text,
+      timezone: 'Asia/Hong_Kong'
     }
     let host = Config.claudeAIReverseProxy || 'https://claude.ai'
-    let url = host + '/api/append_message'
+    let url = host + `/api/organizations/${this.organizationId}/chat_conversations/${conversationId}/completion`
     const cycleTLS = await initCycleTLS()
     let streamDataRes = await cycleTLS(url, {
       ja3: this.JA3,
@@ -160,7 +156,7 @@ export class ClaudeAIClient {
       let streamData = streamDataRes.body
       // console.log(streamData)
       let responseText = ''
-      let streams = streamData.split('\n\n')
+      let streams = streamData.split('\n').filter(s => s?.includes('data: '))
       for (let s of streams) {
         let jsonStr = s.replace('data: ', '').trim()
         try {

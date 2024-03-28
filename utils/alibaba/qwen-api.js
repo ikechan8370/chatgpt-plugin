@@ -63,7 +63,7 @@ import * as types from './types.js';
 import globalFetch from 'node-fetch';
 var CHATGPT_MODEL = 'qwen-turbo'; // qwen-plus
 var USER_LABEL_DEFAULT = 'User';
-var ASSISTANT_LABEL_DEFAULT = '同义千问';
+var ASSISTANT_LABEL_DEFAULT = '通义千问';
 var QwenApi = /** @class */ (function () {
     /**
      * Creates a new client wrapper around Qwen's chat completion API, mimicing the official ChatGPT webapp's functionality as closely as possible.
@@ -76,11 +76,11 @@ var QwenApi = /** @class */ (function () {
         this._apiBaseUrl = apiBaseUrl;
         this._debug = !!debug;
         this._fetch = fetch;
-        this._completionParams = __assign({ model: CHATGPT_MODEL, parameters: __assign({ top_p: 0.5, top_k: 50, temperature: 1.0, seed: 114514, enable_search: true, result_format: "text", incremental_output: false }, parameters) }, completionParams);
+        this._completionParams = __assign({ model: CHATGPT_MODEL, parameters: __assign({ top_p: 0.5, top_k: 50, temperature: 1.0, seed: 114514, enable_search: true, result_format: "message", incremental_output: false }, parameters) }, completionParams);
         this._systemMessage = systemMessage;
         if (this._systemMessage === undefined) {
             var currentDate = new Date().toISOString().split('T')[0];
-            this._systemMessage = "You are ChatGPT, a large language model trained by Qwen. Answer as concisely as possible.\nKnowledge cutoff: 2021-09-01\nCurrent date: ".concat(currentDate);
+            this._systemMessage = "You are Qwen, a large language model trained by Alibaba Cloud. Answer as concisely as possible.\nCurrent date: ".concat(currentDate);
         }
         this._getMessageById = getMessageById !== null && getMessageById !== void 0 ? getMessageById : this._defaultGetMessageById;
         this._upsertMessage = upsertMessage !== null && upsertMessage !== void 0 ? upsertMessage : this._defaultUpsertMessage;
@@ -120,7 +120,7 @@ var QwenApi = /** @class */ (function () {
      * @param opts.timeoutMs - Optional timeout in milliseconds (defaults to no timeout)
      * @param opts.onProgress - Optional callback which will be invoked every time the partial response is updated
      * @param opts.abortSignal - Optional callback used to abort the underlying `fetch` call using an [AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)
-     * @param completionParams - Optional overrides to send to the [Qwen chat completion API](https://platform.openai.com/docs/api-reference/chat/create). Options like `temperature` and `presence_penalty` can be tweaked to change the personality of the assistant.
+     * @param opts.completionParams - Optional overrides to send to the [Qwen chat completion API](https://platform.openai.com/docs/api-reference/chat/create). Options like `temperature` and `presence_penalty` can be tweaked to change the personality of the assistant.
      *
      * @returns The response from ChatGPT
      */
@@ -128,7 +128,7 @@ var QwenApi = /** @class */ (function () {
         if (opts === void 0) { opts = {}; }
         if (role === void 0) { role = 'user'; }
         return __awaiter(this, void 0, void 0, function () {
-            var parentMessageId, _a, messageId, timeoutMs, completionParams, conversationId, abortSignal, abortController, message, latestQuestion, _b, messages, maxTokens, numTokens, result, responseP;
+            var parentMessageId, _a, messageId, timeoutMs, completionParams, conversationId, abortSignal, abortController, message, latestQuestion, parameters, _b, messages, maxTokens, numTokens, result, responseP;
             var _this = this;
             return __generator(this, function (_c) {
                 switch (_c.label) {
@@ -148,6 +148,9 @@ var QwenApi = /** @class */ (function () {
                             text: text,
                         };
                         latestQuestion = message;
+                        parameters = Object.assign(this._completionParams.parameters, completionParams.parameters);
+                        completionParams = Object.assign(this._completionParams, completionParams);
+                        completionParams.parameters = parameters;
                         return [4 /*yield*/, this._buildMessages(text, role, opts, completionParams)];
                     case 1:
                         _b = _c.sent(), messages = _b.messages, maxTokens = _b.maxTokens, numTokens = _b.numTokens;
@@ -158,28 +161,31 @@ var QwenApi = /** @class */ (function () {
                             conversationId: conversationId,
                             parentMessageId: messageId,
                             text: undefined,
+                            functionCall: undefined,
+                            conversation: []
                         };
-                        this._completionParams.input = { messages: messages };
+                        completionParams.input = { messages: messages };
                         responseP = new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
                             var url, headers, body, res, reason, msg, error, response, err_1;
-                            return __generator(this, function (_a) {
-                                switch (_a.label) {
+                            var _a, _b, _c, _d, _e;
+                            return __generator(this, function (_f) {
+                                switch (_f.label) {
                                     case 0:
                                         url = "".concat(this._apiBaseUrl, "/services/aigc/text-generation/generation");
                                         headers = {
                                             'Content-Type': 'application/json',
                                             Authorization: "Bearer ".concat(this._apiKey)
                                         };
-                                        body = __assign(__assign({}, this._completionParams), completionParams);
+                                        body = completionParams;
                                         if (this._debug) {
                                             console.log(JSON.stringify(body));
                                         }
                                         if (this._debug) {
                                             console.log("sendMessage (".concat(numTokens, " tokens)"), body);
                                         }
-                                        _a.label = 1;
+                                        _f.label = 1;
                                     case 1:
-                                        _a.trys.push([1, 6, , 7]);
+                                        _f.trys.push([1, 6, , 7]);
                                         return [4 /*yield*/, this._fetch(url, {
                                                 method: 'POST',
                                                 headers: headers,
@@ -187,11 +193,11 @@ var QwenApi = /** @class */ (function () {
                                                 signal: abortSignal
                                             })];
                                     case 2:
-                                        res = _a.sent();
+                                        res = _f.sent();
                                         if (!!res.ok) return [3 /*break*/, 4];
                                         return [4 /*yield*/, res.text()];
                                     case 3:
-                                        reason = _a.sent();
+                                        reason = _f.sent();
                                         msg = "Qwen error ".concat(res.status || res.statusText, ": ").concat(reason);
                                         error = new types.ChatGPTError(msg, { cause: res });
                                         error.statusCode = res.status;
@@ -199,18 +205,23 @@ var QwenApi = /** @class */ (function () {
                                         return [2 /*return*/, reject(error)];
                                     case 4: return [4 /*yield*/, res.json()];
                                     case 5:
-                                        response = _a.sent();
+                                        response = _f.sent();
                                         if (this._debug) {
                                             console.log(response);
+                                        }
+                                        if (((_e = (_d = (_c = (_b = (_a = response.output) === null || _a === void 0 ? void 0 : _a.choices) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c.message) === null || _d === void 0 ? void 0 : _d.tool_calls) === null || _e === void 0 ? void 0 : _e.length) > 0) {
+                                            // function call result
+                                            result.functionCall = response.output.choices[0].message.tool_calls[0].function;
                                         }
                                         if (response === null || response === void 0 ? void 0 : response.request_id) {
                                             result.id = response.request_id;
                                         }
                                         result.detail = response;
-                                        result.text = response.output.text;
+                                        result.text = response.output.choices[0].message.content;
+                                        result.conversation = messages;
                                         return [2 /*return*/, resolve(result)];
                                     case 6:
-                                        err_1 = _a.sent();
+                                        err_1 = _f.sent();
                                         return [2 /*return*/, reject(err_1)];
                                     case 7: return [2 /*return*/];
                                 }
@@ -278,7 +289,8 @@ var QwenApi = /** @class */ (function () {
                             ? messages.concat([
                                 {
                                     role: role,
-                                    content: text
+                                    content: text,
+                                    name: role === 'tool' ? opts.name : undefined
                                 }
                             ])
                             : messages;
@@ -337,7 +349,8 @@ var QwenApi = /** @class */ (function () {
                         nextMessages = nextMessages.slice(0, systemMessageOffset).concat(__spreadArray([
                             {
                                 role: parentMessageRole,
-                                content: parentMessage.text
+                                content: parentMessage.functionCall ? parentMessage.functionCall.arguments : parentMessage.text,
+                                name: parentMessage.functionCall ? parentMessage.functionCall.name : undefined
                             }
                         ], nextMessages.slice(systemMessageOffset), true));
                         parentMessageId = parentMessage.parentMessageId;

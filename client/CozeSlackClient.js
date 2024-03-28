@@ -1,30 +1,36 @@
-import { Config } from '../config.js'
+import { BaseClient } from './BaseClient.js'
 import slack from '@slack/bolt'
-import { limitString } from '../common.js'
-import common from '../../../../lib/common/common.js'
-let proxy
-if (Config.proxy) {
-  try {
-    proxy = (await import('https-proxy-agent')).default
-  } catch (e) {
-    console.warn('未安装https-proxy-agent，请在插件目录下执行pnpm add https-proxy-agent')
+// import { limitString } from '../utils/common.js'
+// import common from '../../../lib/common/common.js'
+import { getProxy } from '../utils/proxy.js'
+const proxy = getProxy()
+const common = {
+  sleep: function (ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms))
   }
 }
-export class SlackClaudeClient {
+
+/**
+ * 失败品
+ */
+export class SlackCozeClient {
   constructor (props) {
     this.config = props
-    if (Config.slackSigningSecret && Config.slackBotUserToken && Config.slackUserToken) {
+    const {
+      slackSigningSecret, slackBotUserToken, slackUserToken, proxy: proxyAddr, debug
+    } = props
+    if (slackSigningSecret && slackBotUserToken && slackUserToken) {
       let option = {
-        signingSecret: Config.slackSigningSecret,
-        token: Config.slackBotUserToken,
+        signingSecret: slackSigningSecret,
+        token: slackBotUserToken,
         // socketMode: true,
-        appToken: Config.slackUserToken
+        appToken: slackUserToken
         // port: 45912
       }
-      if (Config.proxy) {
-        option.agent = proxy(Config.proxy)
+      if (proxyAddr) {
+        option.agent = proxy(proxyAddr)
       }
-      option.logLevel = Config.debug ? 'debug' : 'info'
+      option.logLevel = debug ? 'debug' : 'info'
       this.app = new slack.App(option)
     } else {
       throw new Error('未配置Slack信息')
@@ -37,68 +43,74 @@ export class SlackClaudeClient {
     }
     if (prompt.length > 3990) {
       logger.warn('消息长度大于slack限制，长度剪切至3990')
+      function limitString (str, maxLength, addDots = true) {
+        if (str.length <= maxLength) {
+          return str
+        } else {
+          if (addDots) {
+            return str.slice(0, maxLength) + '...'
+          } else {
+            return str.slice(0, maxLength)
+          }
+        }
+      }
       prompt = limitString(prompt, 3990, false)
     }
     let channel
     let qq = e.sender.user_id
-    if (Config.slackClaudeSpecifiedChannel) {
-      channel = { id: Config.slackClaudeSpecifiedChannel }
+    if (this.config.slackCozeSpecifiedChannel) {
+      channel = { id: this.config.slackCozeSpecifiedChannel }
     } else {
       let channels = await this.app.client.conversations.list({
         token: this.config.slackUserToken,
         types: 'public_channel,private_channel'
       })
-      channel = channels.channels.filter(c => c.name === '' + qq)
+      channel = channels.channels.filter(c => c.name === 'coze' + qq)
       if (!channel || channel.length === 0) {
         let createChannelResponse = await this.app.client.conversations.create({
           token: this.config.slackUserToken,
-          name: qq + '',
+          name: 'coze' + qq,
           is_private: true
         })
         channel = createChannelResponse.channel
         await this.app.client.conversations.invite({
           token: this.config.slackUserToken,
           channel: channel.id,
-          users: Config.slackClaudeUserId
+          users: this.config.slackCozeUserId
         })
         await common.sleep(1000)
       } else {
         channel = channel[0]
       }
     }
-    let conversationId = await redis.get(`CHATGPT:SLACK_CONVERSATION:${qq}`)
+    let conversationId = await redis.get(`CHATGPT:SLACK_COZE_CONVERSATION:${qq}`)
+    let toSend = `<@${this.config.slackCozeUserId}> ${prompt}`
     if (!conversationId) {
       let sendResponse = await this.app.client.chat.postMessage({
         as_user: true,
-        text: `<@${Config.slackClaudeUserId}> ${prompt}`,
+        text: toSend,
         token: this.config.slackUserToken,
         channel: channel.id
       })
       let ts = sendResponse.ts
-      let response = '_Typing…_'
+      let response = toSend
       let tryTimes = 0
       // 发完先等3喵
       await common.sleep(3000)
-      while (response.trim().endsWith('_Typing…_')) {
+      while (response === toSend) {
         let replies = await this.app.client.conversations.replies({
           token: this.config.slackUserToken,
           channel: channel.id,
           limit: 1000,
           ts
         })
-        await await redis.set(`CHATGPT:SLACK_CONVERSATION:${qq}`, `${ts}`)
+        await await redis.set(`CHATGPT:SLACK_COZE_CONVERSATION:${qq}`, `${ts}`)
         if (replies.messages.length > 0) {
           let formalMessages = replies.messages
-            .filter(m => m.metadata?.event_type !== 'claude_moderation')
-            .filter(m => !m.text.startsWith('_'))
-          if (!formalMessages[formalMessages.length - 1].bot_profile) {
-            // 问题的下一句不是bot回复的，这属于意料之外的问题，可能是多人同时问问题导致 再问一次吧
-            return await this.sendMessage(prompt, e, t + 1)
-          }
           let reply = formalMessages[formalMessages.length - 1]
-          if (!reply.text.startsWith(`<@${Config.slackClaudeUserId}>`)) {
+          if (!reply.text.startsWith(`<@${this.config.slackCozeUserId}>`)) {
             response = reply.text
-            if (Config.debug) {
+            if (this.config.debug) {
               let text = response.replace('_Typing…_', '')
               if (text) {
                 logger.info(response.replace('_Typing…_', ''))
@@ -108,27 +120,28 @@ export class SlackClaudeClient {
         }
         await common.sleep(2000)
         tryTimes++
-        if (tryTimes > 3 && response === '_Typing…_') {
-          // 过了6秒还没任何回复，就重新发一下试试
+        if (tryTimes > 30 && response === toSend) {
+          // 过了60秒还没任何回复，就重新发一下试试
           logger.warn('claude没有响应，重试中')
           return await this.sendMessage(prompt, e, t + 1)
         }
       }
       return response
     } else {
+      let toSend = `<@${this.config.slackCozeUserId}> ${prompt}`
       let postResponse = await this.app.client.chat.postMessage({
         as_user: true,
-        text: `<@${Config.slackClaudeUserId}> ${prompt}`,
+        text: toSend,
         token: this.config.slackUserToken,
         channel: channel.id,
         thread_ts: conversationId
       })
       let postTs = postResponse.ts
-      let response = '_Typing…_'
+      let response = toSend
       let tryTimes = 0
       // 发完先等3喵
       await common.sleep(3000)
-      while (response.trim().endsWith('_Typing…_')) {
+      while (response === toSend) {
         let replies = await this.app.client.conversations.replies({
           token: this.config.slackUserToken,
           channel: channel.id,
@@ -139,16 +152,10 @@ export class SlackClaudeClient {
 
         if (replies.messages.length > 0) {
           let formalMessages = replies.messages
-            .filter(m => m.metadata?.event_type !== 'claude_moderation')
-            .filter(m => !m.text.startsWith('_'))
-          if (!formalMessages[formalMessages.length - 1].bot_profile) {
-            // 问题的下一句不是bot回复的，这属于意料之外的问题，可能是多人同时问问题导致 再问一次吧
-            return await this.sendMessage(prompt, e, t + 1)
-          }
           let reply = formalMessages[formalMessages.length - 1]
-          if (!reply.text.startsWith(`<@${Config.slackClaudeUserId}>`)) {
+          if (!reply.text.startsWith(`<@${this.config.slackCozeUserId}>`)) {
             response = reply.text
-            if (Config.debug) {
+            if (this.config.debug) {
               let text = response.replace('_Typing…_', '')
               if (text) {
                 logger.info(response.replace('_Typing…_', ''))
@@ -158,13 +165,32 @@ export class SlackClaudeClient {
         }
         await common.sleep(2000)
         tryTimes++
-        if (tryTimes > 3 && response === '_Typing…_') {
-          // 过了6秒还没任何回复，就重新发一下试试
+        if (tryTimes > 30 && response === '_Typing…_') {
+          // 过了60秒还没任何回复，就重新发一下试试
           logger.warn('claude没有响应，重试中')
           return await this.sendMessage(prompt, e, t + 1)
         }
       }
       return response
     }
+  }
+}
+
+export class CozeSlackClient extends BaseClient {
+  constructor (props) {
+    super(props)
+    this.supportFunction = false
+    this.debug = props.debug
+    this.slackCient = new SlackCozeClient()
+  }
+
+  /**
+   *
+   * @param text
+   * @param {{conversationId: string?, stream: boolean?, onProgress: function?, image: string?}} opt
+   * @returns {Promise<{conversationId: string?, parentMessageId: string?, text: string, id: string, image: string?}>}
+   */
+  async sendMessage (text, opt = {}) {
+
   }
 }

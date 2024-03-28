@@ -7,11 +7,12 @@ import * as tokenizer from './tokenizer'
 import * as types from './types'
 import globalFetch from 'node-fetch'
 import {qwen, Role} from "./types";
+import {openai} from "../openai/types";
 
 const CHATGPT_MODEL = 'qwen-turbo' // qwen-plus
 
 const USER_LABEL_DEFAULT = 'User'
-const ASSISTANT_LABEL_DEFAULT = '同义千问'
+const ASSISTANT_LABEL_DEFAULT = '通义千问'
 
 export class QwenApi {
     protected _apiKey: string
@@ -64,7 +65,7 @@ export class QwenApi {
                 temperature: 1.0,
                 seed: 114514,
                 enable_search: true,
-                result_format: "text",
+                result_format: "message",
                 incremental_output: false,
                 ...parameters
             },
@@ -75,7 +76,7 @@ export class QwenApi {
 
         if (this._systemMessage === undefined) {
             const currentDate = new Date().toISOString().split('T')[0]
-            this._systemMessage = `You are ChatGPT, a large language model trained by Qwen. Answer as concisely as possible.\nKnowledge cutoff: 2021-09-01\nCurrent date: ${currentDate}`
+            this._systemMessage = `You are Qwen, a large language model trained by Alibaba Cloud. Answer as concisely as possible.\nCurrent date: ${currentDate}`
         }
 
         this._getMessageById = getMessageById ?? this._defaultGetMessageById
@@ -120,7 +121,7 @@ export class QwenApi {
      * @param opts.timeoutMs - Optional timeout in milliseconds (defaults to no timeout)
      * @param opts.onProgress - Optional callback which will be invoked every time the partial response is updated
      * @param opts.abortSignal - Optional callback used to abort the underlying `fetch` call using an [AbortController](https://developer.mozilla.org/en-US/docs/Web/API/AbortController)
-     * @param completionParams - Optional overrides to send to the [Qwen chat completion API](https://platform.openai.com/docs/api-reference/chat/create). Options like `temperature` and `presence_penalty` can be tweaked to change the personality of the assistant.
+     * @param opts.completionParams - Optional overrides to send to the [Qwen chat completion API](https://platform.openai.com/docs/api-reference/chat/create). Options like `temperature` and `presence_penalty` can be tweaked to change the personality of the assistant.
      *
      * @returns The response from ChatGPT
      */
@@ -129,7 +130,7 @@ export class QwenApi {
         opts: types.SendMessageOptions = {},
         role: Role = 'user',
     ): Promise<types.ChatMessage> {
-        const {
+        let {
             parentMessageId,
             messageId = uuidv4(),
             timeoutMs,
@@ -155,21 +156,30 @@ export class QwenApi {
 
         const latestQuestion = message
 
+        let parameters = Object.assign(
+            this._completionParams.parameters,
+            completionParams.parameters
+        )
+        completionParams = Object.assign(this._completionParams, completionParams)
+        completionParams.parameters = parameters
         const { messages, maxTokens, numTokens } = await this._buildMessages(
             text,
             role,
             opts,
             completionParams
         )
+
         console.log(`maxTokens: ${maxTokens}, numTokens: ${numTokens}`)
-        const result: types.ChatMessage = {
+        const result: types.ChatMessage & { conversation: qwen.ChatCompletionRequestMessage[] } = {
             role: 'assistant',
             id: uuidv4(),
             conversationId,
             parentMessageId: messageId,
             text: undefined,
+            functionCall: undefined,
+            conversation: []
         }
-        this._completionParams.input = { messages }
+        completionParams.input = { messages }
         const responseP = new Promise<types.ChatMessage>(
             async (resolve, reject) => {
                 const url = `${this._apiBaseUrl}/services/aigc/text-generation/generation`
@@ -177,10 +187,7 @@ export class QwenApi {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${this._apiKey}`
                 }
-                const body = {
-                    ...this._completionParams,
-                    ...completionParams
-                }
+                const body = completionParams
                 if (this._debug) {
                     console.log(JSON.stringify(body))
                 }
@@ -212,12 +219,16 @@ export class QwenApi {
                     if (this._debug) {
                         console.log(response)
                     }
-
+                    if (response.output?.choices?.[0]?.message?.tool_calls?.length > 0) {
+                        // function call result
+                        result.functionCall = response.output.choices[0].message.tool_calls[0].function
+                    }
                     if (response?.request_id) {
                         result.id = response.request_id
                     }
                     result.detail = response
-                    result.text = response.output.text
+                    result.text = response.output.choices[0].message.content
+                    result.conversation = messages
                     return resolve(result)
                 } catch (err) {
                     return reject(err)
@@ -283,7 +294,8 @@ export class QwenApi {
             ? messages.concat([
                 {
                     role,
-                    content: text
+                    content: text,
+                    name: role === 'tool' ? opts.name : undefined
                 }
             ])
             : messages
@@ -338,7 +350,8 @@ export class QwenApi {
             nextMessages = nextMessages.slice(0, systemMessageOffset).concat([
                 {
                     role: parentMessageRole,
-                    content: parentMessage.text
+                    content: parentMessage.functionCall ? parentMessage.functionCall.arguments : parentMessage.text,
+                    name: parentMessage.functionCall ? parentMessage.functionCall.name : undefined
                 },
                 ...nextMessages.slice(systemMessageOffset)
             ])

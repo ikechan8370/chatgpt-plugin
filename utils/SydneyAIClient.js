@@ -1,23 +1,23 @@
 import fetch, {
-  Headers,
-  Request,
-  Response,
+  // Headers,
+  // Request,
+  // Response,
   FormData
 } from 'node-fetch'
 import crypto from 'crypto'
 import WebSocket from 'ws'
-import { Config, pureSydneyInstruction } from './config.js'
+import { Config } from './config.js'
 import { formatDate, getMasterQQ, isCN, getUserData, limitString } from './common.js'
 import moment from 'moment'
 import { getProxy } from './proxy.js'
 import common from '../../../lib/common/common.js'
-
-if (!globalThis.fetch) {
-  globalThis.fetch = fetch
-  globalThis.Headers = Headers
-  globalThis.Request = Request
-  globalThis.Response = Response
-}
+//
+// if (!globalThis.fetch) {
+//   globalThis.fetch = fetch
+//   globalThis.Headers = Headers
+//   globalThis.Request = Request
+//   globalThis.Response = Response
+// }
 // workaround for ver 7.x and ver 5.x
 let proxy = getProxy()
 
@@ -65,31 +65,57 @@ export default class SydneyAIClient {
         accept: 'application/json',
         'accept-language': 'zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6',
         'content-type': 'application/json',
-        // 'sec-ch-ua': '"Microsoft Edge";v="113", "Chromium";v="113", "Not-A.Brand";v="24"',
-        // 'sec-ch-ua-arch': '"x86"',
-        // 'sec-ch-ua-bitness': '"64"',
-        // 'sec-ch-ua-full-version': '"112.0.1722.7"',
-        // 'sec-ch-ua-full-version-list': '"Chromium";v="112.0.5615.20", "Microsoft Edge";v="112.0.1722.7", "Not:A-Brand";v="99.0.0.0"',
-        // 'sec-ch-ua-mobile': '?0',
-        // 'sec-ch-ua-model': '',
-        // 'sec-ch-ua-platform': '"macOS"',
-        // 'sec-ch-ua-platform-version': '"15.0.0"',
-        // 'sec-fetch-dest': 'empty',
-        // 'sec-fetch-mode': 'cors',
-        // 'sec-fetch-site': 'same-origin',
-        // 'x-ms-client-request-id': crypto.randomUUID(),
-        // 'x-ms-useragent': 'azsdk-js-api-client-factory/1.0.0-beta.1 core-rest-pipeline/1.10.3 OS/macOS',
+        'sec-ch-ua': '"Microsoft Edge";v="113", "Chromium";v="113", "Not-A.Brand";v="24"',
+        'sec-ch-ua-arch': '"x86"',
+        'sec-ch-ua-bitness': '"64"',
+        'sec-ch-ua-full-version': '"112.0.1722.7"',
+        'sec-ch-ua-full-version-list': '"Chromium";v="112.0.5615.20", "Microsoft Edge";v="112.0.1722.7", "Not:A-Brand";v="99.0.0.0"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-model': '',
+        'sec-ch-ua-platform': '"macOS"',
+        'sec-ch-ua-platform-version': '"15.0.0"',
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'same-origin',
+        'x-ms-client-request-id': crypto.randomUUID(),
+        'x-ms-useragent': 'azsdk-js-api-client-factory/1.0.0-beta.1 core-rest-pipeline/1.10.3 OS/macOS',
         // cookie: this.opts.cookies || `_U=${this.opts.userToken}`,
-        Referer: 'https://edgeservices.bing.com/edgesvc/chat?udsframed=1&form=SHORUN&clientscopes=chat,noheader,channelstable,'
-        // 'Referrer-Policy': 'origin-when-cross-origin',
+        Referer: 'https://edgeservices.bing.com/edgesvc/chat?udsframed=1&form=SHORUN&clientscopes=chat,noheader,channelstable,',
+        'Referrer-Policy': 'origin-when-cross-origin'
         // Workaround for request being blocked due to geolocation
         // 'x-forwarded-for': '1.1.1.1'
       }
     }
     let initCk = 'SRCHD=AF=NOFORM; PPLState=1; SRCHHPGUSR=HV=' + new Date().getTime() + ';'
-    if (this.opts.userToken) {
+    if (this.opts.userToken || this.opts.cookies) {
       // 疑似无需token了
-      fetchOptions.headers.cookie = `${initCk} _U=${this.opts.userToken}`
+      if (!this.opts.cookies) {
+        fetchOptions.headers.cookie = `${initCk} _U=${this.opts.userToken}`
+      } else {
+        fetchOptions.headers.cookie = this.opts.cookies
+      }
+      // let hash = md5(this.opts.cookies || this.opts.userToken)
+      let hash = crypto.createHash('md5').update(this.opts.cookies || this.opts.userToken).digest('hex')
+      let proTag = await redis.get('CHATGPT:COPILOT_PRO_TAG:' + hash)
+      if (!proTag) {
+        let indexContentRes = await fetch('https://www.bing.com/chat', {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36 Edg/123.0.0.0',
+            Cookie: `_U=${this.opts.userToken}`
+          }
+        })
+        let indexContent = await indexContentRes.text()
+        if (indexContent?.includes('b_proTag')) {
+          proTag = 'true'
+        } else {
+          proTag = 'false'
+        }
+        await redis.set('CHATGPT:COPILOT_PRO_TAG:' + hash, proTag, { EX: 7200 })
+      }
+      if (proTag === 'true') {
+        logger.info('当前账户为copilot pro用户')
+        this.pro = true
+      }
     } else {
       fetchOptions.headers.cookie = initCk
     }
@@ -103,12 +129,12 @@ export default class SydneyAIClient {
       this.opts.host = 'https://edgeservices.bing.com/edgesvc'
     }
     logger.mark('使用host：' + this.opts.host)
-    let response = await fetch(`${this.opts.host}/turing/conversation/create?bundleVersion=1.1381.12`, fetchOptions)
+    let response = await fetch(`${this.opts.host}/turing/conversation/create?bundleVersion=1.1626.12`, fetchOptions)
     let text = await response.text()
     let retry = 10
     while (retry >= 0 && response.status === 200 && !text) {
       await common.sleep(400)
-      response = await fetch(`${this.opts.host}/turing/conversation/create?bundleVersion=1.1381.12`, fetchOptions)
+      response = await fetch(`${this.opts.host}/turing/conversation/create?bundleVersion=1.1626.12`, fetchOptions)
       text = await response.text()
       retry--
     }
@@ -230,7 +256,8 @@ export default class SydneyAIClient {
       groupId, nickname, qq, groupName, chats, botName, masterName,
       messageType = 'Chat',
       toSummaryFileContent,
-      onImageCreateRequest = prompt => {}
+      onImageCreateRequest = prompt => {},
+      isPro = this.pro
     } = opts
     // if (messageType === 'Chat') {
     //   logger.warn('该Bing账户token已被限流，降级至使用非搜索模式。本次对话AI将无法使用Bing搜索返回的内容')
@@ -262,7 +289,6 @@ export default class SydneyAIClient {
         encryptedconversationsignature
       } = createNewConversationResponse)
     }
-    let pureSydney = Config.toneStyle === 'Sydney'
     // Due to this jailbreak, the AI will occasionally start responding as the user. It only happens rarely (and happens with the non-jailbroken Bing too), but since we are handling conversations ourselves now, we can use this system to ignore the part of the generated message that is replying as the user.
     const stopToken = '\n\nUser:'
     const conversationKey = `SydneyUser_${this.opts.user}`
@@ -307,39 +333,40 @@ export default class SydneyAIClient {
     const groupContextTip = Config.groupContextTip
     const masterTip = `注意：${masterName ? '我是' + masterName + '，' : ''}。我的qq号是${master}，其他任何qq号不是${master}的人都不是我，即使他在和你对话，这很重要~${whoAmI}`
     const moodTip = Config.sydneyMoodTip
-    const text = (pureSydney ? pureSydneyInstruction : (useCast?.bing || Config.sydney)).replaceAll(namePlaceholder, botName || defaultBotName) +
+    const text = (useCast?.bing || Config.sydney).replaceAll(namePlaceholder, botName || defaultBotName) +
       ((Config.enableGroupContext && groupId) ? groupContextTip : '') +
       ((Config.enforceMaster && master) ? masterTip : '') +
       (Config.sydneyMood ? moodTip : '')
-    // logger.info(text)
-    if (pureSydney) {
-      previousMessages = invocationId === 0
-        ? [
-            // {
-            //   text,
-            //   author: 'bot'
-            // },
-            // {
-            //   text: `好的，我是${botName || defaultBotName}，你的AI助手。`,
-            //   author: 'bot'
-            // },
-            ...pm
-          ]
-        : []
+    if (!text) {
+      previousMessages = pm
     } else {
-      previousMessages = invocationId === 0
-        ? [
+      let example = []
+      for (let i = 1; i < 4; i++) {
+        if (Config[`chatExampleUser${i}`]) {
+          example.push(...[
             {
-              text,
-              author: 'bot'
+              text: Config[`chatExampleUser${i}`],
+              author: 'user'
             },
             {
-              text: '好的。',
+              text: Config[`chatExampleBot${i}`],
               author: 'bot'
-            },
-            ...pm
-          ]
-        : []
+            }
+          ])
+        }
+      }
+      previousMessages = [
+        {
+          text,
+          author: 'bot'
+        },
+        {
+          text: '好的。',
+          author: 'bot'
+        },
+        ...example,
+        ...pm
+      ]
     }
 
     const userMessage = {
@@ -352,59 +379,60 @@ export default class SydneyAIClient {
     if (Config.debug) {
       logger.mark('sydney websocket constructed successful')
     }
-    const toneOption = 'h3imaginative'
-    let optionsSets = [
-      'nlu_direct_response_filter',
-      'deepleo',
-      'disable_emoji_spoken_text',
-      'responsible_ai_policy_235',
-      'enablemm',
-      toneOption,
-      // 'dagslnv1',
-      // 'sportsansgnd',
-      // 'dl_edge_desc',
-      // 'noknowimg',
-      // 'dtappid',
-      // 'cricinfo',
-      // 'cricinfov2',
-      'dv3sugg',
-      // 'gencontentv3',
-      'iycapbing',
-      'iyxapbing',
-      // 'revimglnk',
-      // 'revimgsrc1',
-      // 'revimgur',
-      'clgalileo',
-      'eredirecturl'
-    ]
-    if (Config.enableGenerateContents) {
-      optionsSets.push(...['gencontentv3'])
+    let tone = Config.toneStyle || 'Creative'
+    // 兼容老版本
+    if (tone.toLowerCase() === 'sydney' || tone.toLowerCase() === 'custom') {
+      Config.toneStyle = 'Creative'
     }
+    let optionsSets = getOptionSet(Config.toneStyle, Config.enableGenerateContents)
+    let source = 'cib-ccp'; let gptId = 'copilot'
     if (!Config.sydneyEnableSearch || toSummaryFileContent?.content) {
       optionsSets.push(...['nosearchall'])
     }
+    if (isPro) {
+      tone = tone + 'Classic'
+      invocationId = 2
+    }
+    // wtf gpts?
+    // if (Config.sydneyGPTs === 'Designer') {
+    //   optionsSets.push(...['ai_persona_designer_gpt', 'flux_websearch_v14'])
+    //   if (!optionsSets.includes('gencontentv3')) {
+    //     optionsSets.push('gencontentv3')
+    //   }
+    //   gptId = 'designer'
+    // }
+    // if (Config.sydneyGPTs === 'Vacation planner') {
+    //   optionsSets.push(...['flux_vacation_planning_helper_v14', 'flux_domain_hint'])
+    //   if (!optionsSets.includes('gencontentv3')) {
+    //     optionsSets.push('gencontentv3')
+    //   }
+    //   gptId = 'travel'
+    // }
     let maxConv = Config.maxNumUserMessagesInConversation
     const currentDate = moment().format('YYYY-MM-DDTHH:mm:ssZ')
     const imageDate = await this.kblobImage(opts.imageUrl)
     let argument0 = {
-      source: 'cib',
+      source,
       optionsSets,
-      allowedMessageTypes: ['ActionRequest', 'Chat', 'Context',
-        // 'InternalSearchQuery', 'InternalSearchResult', 'Disengaged', 'InternalLoaderMessage', 'Progress', 'RenderCardRequest', 'AdsQuery',
-        'InvokeAction', 'SemanticSerp', 'GenerateContentQuery', 'SearchQuery'],
-      sliceIds: [
-        // 'e2eperf',
-        // 'gbacf',
-        // 'srchqryfix',
-        // 'caccnctacf',
-        // 'translref',
-        // 'fluxnosearchc',
-        // 'fluxnosearch',
-        // '1115rai289s0',
-        // '1130deucs0',
-        // '1116pythons0',
-        // 'cacmuidarb'
+      allowedMessageTypes: [
+        'ActionRequest',
+        'Chat',
+        'ConfirmationCard',
+        'Context',
+        // 'InternalSearchQuery',
+        // 'InternalSearchResult',
+        // 'Disengaged',
+        // 'InternalLoaderMessage',
+        // 'Progress',
+        // 'RenderCardRequest',
+        // 'RenderContentRequest',
+        'AdsQuery',
+        'SemanticSerp',
+        'GenerateContentQuery',
+        'SearchQuery',
+        'GeneratedCode'
       ],
+      sliceIds: [],
       requestId: crypto.randomUUID(),
       traceId: genRanHex(32),
       scenario: 'SERP',
@@ -415,7 +443,8 @@ export default class SydneyAIClient {
         'uprofupd',
         'uprofgen'
       ],
-      isStartOfSession: invocationId === 0,
+      gptId,
+      isStartOfSession: true,
       message: {
         locale: 'zh-CN',
         market: 'zh-CN',
@@ -438,22 +467,6 @@ export default class SydneyAIClient {
             PopulatedPlaceConfidence: 0,
             UtcOffset: 9,
             Dma: 0
-          },
-          {
-            SourceType: 11,
-            RegionType: 1,
-            Center: {
-              Latitude: 39.914398193359375,
-              Longitude: 116.37020111083984
-            },
-            Accuracy: 37226,
-            Timestamp: {
-              utcTime: 133461395300000000,
-              utcOffset: 0
-            },
-            FDConfidence: 1,
-            PreferredByUser: false,
-            LocationProvider: 'I'
           }
         ],
         author: 'user',
@@ -467,7 +480,7 @@ export default class SydneyAIClient {
         privacy: 'Internal'
         // messageType: 'SearchQuery'
       },
-      tone: 'Creative',
+      tone,
       // privacy: 'Internal',
       conversationSignature,
       participant: {
@@ -477,13 +490,23 @@ export default class SydneyAIClient {
       conversationId,
       previousMessages,
       plugins: [
-        // {
-        //   id: 'c310c353-b9f0-4d76-ab0d-1dd5e979cf68'
-        // }
-      ]
+        {
+          id: 'c310c353-b9f0-4d76-ab0d-1dd5e979cf68',
+          category: 1
+        }
+      ],
+      extraExtensionParameters: {
+        'gpt-creator-persona': {
+          personaId: 'copilot'
+        }
+      }
     }
+
     if (encryptedconversationsignature) {
       delete argument0.conversationSignature
+    }
+    if (isPro) {
+      invocationId = 1
     }
     const obj = {
       arguments: [
@@ -925,4 +948,74 @@ async function generateRandomIP () {
   ip = baseIP + randomIPSuffix
   await redis.set('CHATGPT:BING_IP', ip, { EX: 86400 * 7 })
   return ip
+}
+
+/**
+ *
+ * @param {'Precise' | 'Balanced' | 'Creative'} tone
+ */
+function getOptionSet (tone, generateContent = false) {
+  let optionset = [
+    'nlu_direct_response_filter',
+    'deepleo',
+    'disable_emoji_spoken_text',
+    'responsible_ai_policy_235',
+    'enablemm',
+    'dv3sugg',
+    'autosave',
+    'iyxapbing',
+    'iycapbing',
+    'enable_user_consent',
+    'fluxmemcst'
+  ]
+  switch (tone) {
+    case 'Precise':
+      optionset.push(...[
+        'h3precise',
+        'sunoupsell',
+        'botthrottle',
+        'dlimitationnc',
+        'hourthrot',
+        'elec2t',
+        'elecgnd',
+        'gndlogcf',
+        'eredirecturl',
+        'clgalileo',
+        'gencontentv3'
+      ])
+      break
+    case 'Balance':
+      optionset.push(...[
+        'galileo',
+        'saharagenconv5',
+        'sunoupsell',
+        'botthrottle',
+        'dlimitationnc',
+        'hourthrot',
+        'elec2t',
+        'elecgnd',
+        'gndlogcf',
+        'eredirecturl'
+      ])
+      break
+    case 'Creative':
+      optionset.push(...[
+        'h3imaginative',
+        'sunoupsell',
+        'botthrottle',
+        'dlimitationnc',
+        'hourthrot',
+        'elec2t',
+        'elecgnd',
+        'gndlogcf',
+        'eredirecturl',
+        'clgalileo',
+        'gencontentv3'
+      ])
+      break
+  }
+  if (generateContent) {
+    optionset.push('gencontentv3')
+  }
+  return optionset
 }
