@@ -358,8 +358,9 @@ export async function renderUrl (e, url, renderCfg = {}) {
       width: 1280,
       height: 720
     })
-    /** 等待markdown-body加载完毕 */
-    await page.waitForSelector(".vuepress-markdown-body")
+    const sleep = ms => new Promise(res => setTimeout(res, ms));
+    /** 等待1秒 */
+    await sleep(1000);
     let buff = base64 = await page.screenshot({ fullPage: true })
     base64 = segment.image(buff)
     await page.close().catch((err) => logger.error(err))
