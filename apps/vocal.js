@@ -1,9 +1,10 @@
 import plugin from '../../../lib/plugins/plugin.js'
 import { SunoClient } from '../client/SunoClient.js'
 import { Config } from '../utils/config.js'
-import { maskEmail } from '../utils/common.js'
+import { downloadFile, maskEmail } from '../utils/common.js'
 import common from '../../../lib/common/common.js'
 import lodash from 'lodash'
+import fs from 'fs'
 
 export class Vocal extends plugin {
   constructor (e) {
@@ -95,12 +96,30 @@ export class Vocal extends plugin {
           messages.push(`歌名：${song.title}\n风格: ${song.metadata.tags}\n长度: ${lodash.round(song.metadata.duration, 0)}秒\n歌词：\n${song.metadata.prompt}\n`)
           messages.push(`音频链接：${song.audio_url}\n视频链接：${song.video_url}\n封面链接：${song.image_url}\n`)
           messages.push(segment.image(song.image_url))
-          // let videoPath = await downloadFile(song.video_url, `suno/${song.title}.mp4`, false, false, {
-          //   'User-Agent': ''
-          // })
-          messages.push(segment.video(song.video_url))
+          let retry = 3
+          let videoPath
+          while (!videoPath && retry >= 0) {
+            try {
+              videoPath = await downloadFile(song.video_url, `suno/${song.title}.mp4`, false, false, {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
+              })
+            } catch (err) {
+              retry--
+              await common.sleep(1000)
+            }
+          }
+          if (videoPath) {
+            const data = fs.readFileSync(videoPath)
+            messages.push(segment.video(`base64://${data.toString('base64')}`))
+            // 60秒后删除文件避免占用体积
+            setTimeout(() => {
+              fs.unlinkSync(videoPath)
+            }, 60000)
+          } else {
+            logger.warn(`${song.title}下载视频失败，仅发送视频链接`)
+          }
         }
-        await e.reply(common.makeForwardMsg(e, messages, '音乐合成结果'))
+        await e.reply(await common.makeForwardMsg(e, messages, '音乐合成结果'))
         return true
       }
       await e.reply('所有账户余额不足')
