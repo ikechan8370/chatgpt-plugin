@@ -10,7 +10,7 @@ import os from 'os'
 import websocketclient from 'ws'
 
 import { Config } from '../utils/config.js'
-import { UserInfo, GetUser, AddUser } from './modules/user_data.js'
+import { UserInfo, GetUser, AddUser, ReplaceUsers } from './modules/user_data.js'
 import { getPublicIP, getUserData, getMasterQQ, randomString, getUin } from '../utils/common.js'
 
 import webRoute from './modules/web_route.js'
@@ -78,12 +78,12 @@ async function mediaLink () {
               if (data.qq && data.passwd) {
                 const token = randomString(32)
                 if (data.qq == getUin() && await redis.get('CHATGPT:ADMIN_PASSWD') == data.passwd) {
-                  AddUser({ user: data.qq, token, autho: 'admin' })
+                  await AddUser({ user: data.qq, token, autho: 'admin' })
                   ws.send(JSON.stringify({ command: data.command, state: true, autho: 'admin', token, region: getUin(), type: 'server' }))
                 } else {
                   const user = await getUserData(data.qq)
                   if (user.passwd != '' && user.passwd === data.passwd) {
-                    AddUser({ user: data.qq, token, autho: 'user' })
+                    await AddUser({ user: data.qq, token, autho: 'user' })
                     ws.send(JSON.stringify({ command: data.command, state: true, autho: 'user', token, region: getUin(), type: 'server' }))
                   } else {
                     ws.send(JSON.stringify({ command: data.command, state: false, error: `用户名密码错误,如果忘记密码请私聊机器人输入 ${data.qq == getUin() ? '#修改管理密码' : '#修改用户密码'} 进行修改`, region: getUin(), type: 'server' }))
@@ -593,6 +593,7 @@ export async function runServer () {
       server.log.info(`server listening on ${server.server.address().port}`)
     }
   })
+  await ReplaceUsers()
 }
 
 export async function stopServer () {

@@ -25,7 +25,7 @@ export function GetUser(user) {
     return users.user.find(user => user === user)
 }
 // 添加用户token
-export function AddUser(data) {
+export async function AddUser(data) {
     const userIndex = users.user.findIndex(user => user === data.user)
     if (userIndex >= 0) {
         users.user[userIndex].token.push(data.token)
@@ -38,4 +38,8 @@ export function AddUser(data) {
             tiem: new Date()
         })
     }
+    await redis.set('CHATGPT:SERVER_USER', JSON.stringify(users))
+}
+export async function ReplaceUsers() {
+    users = JSON.parse(await redis.get('CHATGPT:SERVER_USER') || '{"user": []}')
 }

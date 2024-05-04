@@ -488,7 +488,7 @@
                 "type": "select",
                 "label": "Bing模式",
                 "data": "toneStyle",
-                "items": [ {   "label": "创意",   "value": "Creative" }, {   "label": "精确",   "value": "Precise" } ]
+                "items": [ {   "label": "创意",   "value": "Creative" }, {   "label": "均衡",   "value": "Balanced" }, {   "label": "精确",   "value": "Precise" } ]
               },
               {
                 "type": "check",
