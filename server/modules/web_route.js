@@ -50,6 +50,21 @@ async function routes(fastify, options) {
         reply.type('text/html').send(stream)
         return reply
     })
+    fastify.get('/prompt/*', async (request, reply) => {
+        const { raw } = request
+        const newPath = raw.url.replace(/^\/prompt/, '')
+        const response = await fetch(`https://chatgpt.roki.best${newPath}`,
+        {
+          method: 'GET',
+          headers: {
+            'FROM-CHATGPT': 'ikechan8370'
+          }
+        })
+        if (response.ok) {
+          const data = await response.json()
+          reply.send(data)
+        } else reply.code(500).send(new Error('Api Server Error'))
+    })
     fastify.setNotFoundHandler((request, reply) => {
         if (request.method == 'GET') {
             const stream = fs.createReadStream('plugins/chatgpt-plugin/server/static/index.html')

@@ -6,7 +6,6 @@ import websocket from '@fastify/websocket'
 
 import fs from 'fs'
 import path from 'path'
-import os from 'os'
 import websocketclient from 'ws'
 
 import { Config } from '../utils/config.js'
@@ -20,6 +19,7 @@ import Guoba from './modules/guoba.js'
 import SettingView from './modules/setting_view.js'
 
 const __dirname = path.resolve()
+const isTrss = Array.isArray(Bot.uin)
 
 // 无法访问端口的情况下创建与media的通讯
 async function mediaLink () {
@@ -291,7 +291,6 @@ export async function createServer () {
       connection.socket.send(JSON.stringify(response))
     })
     connection.socket.on('message', async (message) => {
-      const isTrss = Array.isArray(Bot.uin)
       try {
         const data = JSON.parse(message)
         const user = UserInfo(data.token)
@@ -304,7 +303,12 @@ export async function createServer () {
             if (data.id && data.message) {
               if (data.group) {
                 if (isTrss) {
-                  Bot[user.user].pickGroup(parseInt(data.id)).sendMsg(data.message)
+                  let msg = []
+                  if (data.quotable) {
+                    msg.push(segment.at(data.quotable.user_id, data.quotable.user_name))
+                    msg.push(data.message)
+                  }
+                  Bot[user.user].pickGroup(parseInt(data.id)).sendMsg(msg)
                 } else {
                   Bot.sendGroupMsg(parseInt(data.id), data.message, data.quotable)
                 }
@@ -351,30 +355,65 @@ export async function createServer () {
             }
             const groupList = await _Bot.getGroupList()
             groupList.forEach(async (item) => {
-              const group = _Bot.pickGroup(item.group_id)
+              const group = _Bot.pickGroup(isTrss ? item : item.group_id)
               const groupMessages = await group.getChatHistory()
-              groupMessages.forEach(async (e) => {
+              if (groupMessages) {
+                groupMessages.forEach(async (e) => {
+                  const messageData = {
+                    notice: 'clientMessage',
+                    message: e.message,
+                    sender: e.sender,
+                    group: {
+                      isGroup: true,
+                      group_id: e.group_id,
+                      group_name: e.group_name || group.group_name
+                    },
+                    quotable: {
+                      user_id: e.user_id,
+                      time: e.time,
+                      seq: e.seq,
+                      rand: e.rand,
+                      message: e.message,
+                      user_name: e.sender.nickname
+                    },
+                    read: true
+                  }
+                  await connection.socket.send(JSON.stringify(messageData))
+                })
+              } else {
                 const messageData = {
-                  notice: 'clientMessage',
-                  message: e.message,
-                  sender: e.sender,
+                  notice: 'clientList',
+                  user_id: _Bot.uin,
+                  nickname: _Bot.nickname,
                   group: {
                     isGroup: true,
-                    group_id: e.group_id,
-                    group_name: e.group_name || item.group_name
+                    group_id: group.group_id,
+                    group_name: group.group_name
                   },
                   quotable: {
-                    user_id: e.user_id,
-                    time: e.time,
-                    seq: e.seq,
-                    rand: e.rand,
-                    message: e.message,
-                    user_name: e.sender.nickname
+                    user_id: _Bot.uin,
+                    user_name: _Bot.nickname
                   },
-                  read: true
                 }
                 await connection.socket.send(JSON.stringify(messageData))
-              })
+              }
+            })
+            const friendList = await _Bot.getFriendList()
+            friendList.forEach(async (item) => {
+              const friend = _Bot.pickFriend(item)
+              const messageData = {
+                notice: 'clientList',
+                user_id: item,
+                nickname: friend.nickname,
+                group: {
+                  isGroup: false,
+                },
+                quotable: {
+                  user_id: _Bot.uin,
+                  user_name: _Bot.nickname
+                },
+              }
+              await connection.socket.send(JSON.stringify(messageData))
             })
 
             break
@@ -395,6 +434,12 @@ export async function createServer () {
     return request
   }
   Bot.on('message', e => {
+    e.message = e.message.map(item => {
+      if (item.type === 'at') {
+        return { ...item, text: e.group.pickMember(item.qq).nickname }
+      }
+      return item
+    })
     const messageData = {
       notice: 'clientMessage',
       message: e.message,
@@ -402,7 +447,7 @@ export async function createServer () {
       group: {
         isGroup: e.isGroup || e.group_id != undefined,
         group_id: e.group_id,
-        group_name: e.group_name
+        group_name: e.group_name || e.bot.gl?.get(e.group_id)?.group_name || e.group_id
       },
       quotable: {
         user_id: e.user_id,
@@ -410,7 +455,7 @@ export async function createServer () {
         seq: e.seq,
         rand: e.rand,
         message: e.message,
-        user_name: e.sender.nickname
+        user_name: e.sender.card || e.sender.nickname
       }
     }
     if (clients) {
