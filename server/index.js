@@ -306,8 +306,8 @@ export async function createServer () {
                   let msg = []
                   if (data.quotable) {
                     msg.push(segment.at(data.quotable.user_id, data.quotable.user_name))
-                    msg.push(data.message)
                   }
+                  msg.push(data.message)
                   Bot[user.user].pickGroup(parseInt(data.id)).sendMsg(msg)
                 } else {
                   Bot.sendGroupMsg(parseInt(data.id), data.message, data.quotable)
@@ -359,6 +359,12 @@ export async function createServer () {
               const groupMessages = await group.getChatHistory()
               if (groupMessages) {
                 groupMessages.forEach(async (e) => {
+                  e.message = e.message.map(item => {
+                    if (item.type === 'at') {
+                      return { ...item, text: group.pickMember(parseInt(item.qq)).card || group.pickMember(parseInt(item.qq)).nickname }
+                    }
+                    return item
+                  })
                   const messageData = {
                     notice: 'clientMessage',
                     message: e.message,
@@ -417,6 +423,9 @@ export async function createServer () {
             })
 
             break
+          case 'ping': // 心跳
+            await connection.socket.send(JSON.stringify({ command: 'ping', time: new Date(), state: true }))
+            break
           default:
             await connection.socket.send(JSON.stringify({ data }))
             break
@@ -436,7 +445,7 @@ export async function createServer () {
   Bot.on('message', e => {
     e.message = e.message.map(item => {
       if (item.type === 'at') {
-        return { ...item, text: e.group.pickMember(item.qq).nickname }
+        return { ...item, text: e.group.pickMember(parseInt(item.qq)).card || e.group.pickMember(parseInt(item.qq)).nickname }
       }
       return item
     })
