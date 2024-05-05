@@ -25,13 +25,13 @@ async function User (fastify, options) {
       const token = randomString(32)
       if (body.qq == getUin() && await redis.get('CHATGPT:ADMIN_PASSWD') == body.passwd) {
         const guobaToken = await guobaLoginService.signToken(body.qq)
-        AddUser({ user: body.qq, token, autho: 'admin' })
+        await AddUser({ user: body.qq, token, autho: 'admin' })
         reply.setCookie('token', token, { path: '/' })
         reply.send({ login: true, autho: 'admin', token, guobaToken, guoba: guobaAPI })
       } else {
         const user = await getUserData(body.qq)
         if (user.passwd != '' && user.passwd === body.passwd) {
-          AddUser({ user: body.qq, token, autho: 'user' })
+          await AddUser({ user: body.qq, token, autho: 'user' })
           reply.setCookie('token', token, { path: '/' })
           reply.send({ login: true, autho: 'user', token })
         } else {
@@ -43,7 +43,7 @@ async function User (fastify, options) {
       const opt = await redis.get('CHATGPT:SERVER_QUICK')
       if (opt && body.otp == opt) {
         const guobaToken = await guobaLoginService.signToken(getUin())
-        AddUser({ user: getUin(), token, autho: 'admin' })
+        await AddUser({ user: getUin(), token, autho: 'admin' })
         reply.setCookie('token', token, { path: '/' })
         reply.send({ login: true, autho: 'admin', token, user: getUin(), guobaToken, guoba: guobaAPI })
       } else {
