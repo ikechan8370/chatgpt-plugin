@@ -386,7 +386,7 @@ export default class SydneyAIClient {
     }
     let optionsSets = getOptionSet(Config.toneStyle, Config.enableGenerateContents)
     let source = 'cib-ccp'; let gptId = 'copilot'
-    if (!Config.sydneyEnableSearch || toSummaryFileContent?.content) {
+    if ((!Config.sydneyEnableSearch && !Config.enableGenerateContents) || toSummaryFileContent?.content) {
       optionsSets.push(...['nosearchall'])
     }
     if (isPro) {
@@ -430,7 +430,9 @@ export default class SydneyAIClient {
         'SemanticSerp',
         'GenerateContentQuery',
         'SearchQuery',
-        'GeneratedCode'
+        'GeneratedCode',
+        // 'InternalTasksMessage',
+        // 'Disclaimer'
       ],
       sliceIds: [],
       requestId: crypto.randomUUID(),
@@ -1024,9 +1026,6 @@ function getOptionSet (tone, generateContent = false) {
         'gencontentv3'
       ])
       break
-  }
-  if (generateContent) {
-    optionset.push('gencontentv3')
   }
   return optionset
 }

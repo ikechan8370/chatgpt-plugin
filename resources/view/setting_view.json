@@ -501,6 +501,11 @@
                 "data": "enableGroupContext"
               },
               {
+                "type": "check",
+                "label": "是否允许必应进行搜索",
+                "data": "sydneyEnableSearch"
+              },
+              {
                 "type": "number",
                 "label": "允许机器人读取近期的最多群聊聊天记录条数",
                 "placeholder": "允许机器人读取近期的最多群聊聊天记录条数。太多可能会超。",
@@ -581,6 +586,42 @@
                 "label": "第三方绘图",
                 "placeholder": "使用AP插件代替Bing进行绘图",
                 "data": "bingAPDraw"
+              },
+              {
+                "type": "textarea",
+                "label": "前置对话第一轮（用户）",
+                "placeholder": "会强行插入该轮对话，能有效抑制抱歉",
+                "data": "chatExampleUser1"
+              },
+              {
+                "type": "textarea",
+                "label": "前置对话第一轮（AI）",
+                "placeholder": "会强行插入该轮对话，能有效抑制抱歉",
+                "data": "chatExampleBot1"
+              },
+              {
+                "type": "textarea",
+                "label": "前置对话第二轮（用户）",
+                "placeholder": "会强行插入该轮对话，能有效抑制抱歉",
+                "data": "chatExampleUser2"
+              },
+              {
+                "type": "textarea",
+                "label": "前置对话第二轮（AI）",
+                "placeholder": "会强行插入该轮对话，能有效抑制抱歉",
+                "data": "chatExampleBot2"
+              },
+              {
+                "type": "textarea",
+                "label": "前置对话第三轮（用户）",
+                "placeholder": "会强行插入该轮对话，能有效抑制抱歉",
+                "data": "chatExampleUser3"
+              },
+              {
+                "type": "textarea",
+                "label": "前置对话第三轮（AI）",
+                "placeholder": "会强行插入该轮对话，能有效抑制抱歉",
+                "data": "chatExampleBot3"
               }
             ]
           },
@@ -1029,6 +1070,12 @@
             "value": "prefix"
           }
         ]
+      },
+      {
+        "type": "text",
+        "label": "主动发起聊天群聊的群号",
+        "placeholder": "在这些群聊里会不定时主动说一些随机的打招呼的话，用英文逗号隔开。必须配置了OpenAI Key",
+        "data": "initiativeChatGroups"
       }
     ]
   },

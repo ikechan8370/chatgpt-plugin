@@ -2,6 +2,7 @@ import fetch, { FormData } from 'node-fetch'
 import { makeForwardMsg } from './common.js'
 import { Config } from './config.js'
 import { getProxy } from './proxy.js'
+import crypto from 'crypto'
 
 let proxy = getProxy()
 export default class BingDrawClient {
@@ -47,7 +48,7 @@ export default class BingDrawClient {
     }
     // headers['x-forwarded-for'] = '141.11.138.30'
     let body = new FormData()
-    body.append('q', prompt)
+    body.append('q', urlEncodedPrompt)
     body.append('qs', 'ds')
     let fetchOptions = {
       headers
@@ -65,6 +66,9 @@ export default class BingDrawClient {
         throw new Error('Your prompt has been blocked by Bing. Try to change any bad words and try again.')
       }
       if (response.status !== 302) {
+        if (this.debug) {
+          console.debug(`第一次重试绘图:${prompt}`)
+        }
         url = `${this.opts.baseUrl}/images/create?q=${urlEncodedPrompt}&rt=3&FORM=GENCRE`
         response = await fetch(url, Object.assign(fetchOptions, { body, redirect: 'manual', method: 'POST', credentials: 'include' }))
       }
