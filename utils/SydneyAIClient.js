@@ -386,7 +386,7 @@ export default class SydneyAIClient {
     }
     let optionsSets = getOptionSet(Config.toneStyle, Config.enableGenerateContents)
     let source = 'cib-ccp'; let gptId = 'copilot'
-    if (!Config.sydneyEnableSearch || toSummaryFileContent?.content) {
+    if ((!Config.sydneyEnableSearch && !Config.enableGenerateContents) || toSummaryFileContent?.content) {
       optionsSets.push(...['nosearchall'])
     }
     if (isPro) {
@@ -410,7 +410,7 @@ export default class SydneyAIClient {
     // }
     let maxConv = Config.maxNumUserMessagesInConversation
     const currentDate = moment().format('YYYY-MM-DDTHH:mm:ssZ')
-    const imageDate = await this.kblobImage(opts.imageUrl)
+    const imageDate = await this.kblobImage(opts.imageUrl, conversationId)
     let argument0 = {
       source,
       optionsSets,
@@ -430,7 +430,9 @@ export default class SydneyAIClient {
         'SemanticSerp',
         'GenerateContentQuery',
         'SearchQuery',
-        'GeneratedCode'
+        'GeneratedCode',
+        // 'InternalTasksMessage',
+        // 'Disclaimer'
       ],
       sliceIds: [],
       requestId: crypto.randomUUID(),
@@ -880,20 +882,31 @@ export default class SydneyAIClient {
     }
   }
 
-  async kblobImage (url) {
+  async kblobImage (url, conversationId) {
     if (!url) return false
+    if (!conversationId) return false
+    // 获取并转换图片为base64
+    let imgBase64
+    try {
+      const response = await fetch(url)
+      const arrayBuffer = await response.arrayBuffer()
+      const buffer = Buffer.from(arrayBuffer)
+      imgBase64 = buffer.toString('base64')
+    } catch (error) {
+      console.error(error)
+      return false
+    }
     const formData = new FormData()
     formData.append('knowledgeRequest', JSON.stringify({
-      imageInfo: {
-        url
-      },
+      imageInfo: {},
       knowledgeRequest: {
         invokedSkills: ['ImageById'],
         subscriptionId: 'Bing.Chat.Multimodal',
         invokedSkillsRequestData: { enableFaceBlur: true },
-        convoData: { convoid: '', convotone: 'Creative' }
+        convoData: { convoid: conversationId, convotone: 'Creative' }
       }
     }))
+    formData.append('imageBase64', imgBase64)
     const fetchOptions = {
       headers: {
         Referer: 'https://www.bing.com/search?q=Bing+AI&showconv=1&FORM=hpcodx'
@@ -1013,9 +1026,6 @@ function getOptionSet (tone, generateContent = false) {
         'gencontentv3'
       ])
       break
-  }
-  if (generateContent) {
-    optionset.push('gencontentv3')
   }
   return optionset
 }
