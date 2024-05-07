@@ -15,6 +15,7 @@ import _ from 'lodash'
 import { getChatHistoryGroup } from '../utils/chat.js'
 import { APTool } from '../utils/tools/APTool.js'
 import BingDrawClient from '../utils/BingDraw.js'
+import BingSunoClient from '../utils/BingSuno.js'
 import { solveCaptchaOneShot } from '../utils/bingCaptcha.js'
 import { OfficialChatGPTClient } from '../utils/message.js'
 import ChatGLMClient from '../utils/chatglm.js'
@@ -250,6 +251,20 @@ class Core {
                   }
                 })
               }
+            }
+            opt.onSunoCreateRequest = prompt => {
+              logger.mark(`开始生成内容：Suno ${prompt.songtId}`)
+              let client = new BingSunoClient({
+                cookies: cookies
+              })
+              redis.set(`CHATGPT:SUNO:${e.sender.user_id}`, 'c', { EX: 30 }).then(() => {
+                try {
+                  client.getSuno(prompt, e)
+                } catch (err) {
+                  redis.del(`CHATGPT:SUNO:${e.sender.user_id}`)
+                  this.reply('歌曲生成失败：' + err)
+                }
+              })
             }
           }
           response = await bingAIClient.sendMessage(prompt, opt, (token) => {
