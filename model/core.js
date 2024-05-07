@@ -253,16 +253,20 @@ class Core {
               }
             }
             opt.onSunoCreateRequest = prompt => {
-              logger.mark(`开始生成内容：Suno ${prompt.songtId}`)
+              logger.mark(`开始生成内容：Suno ${prompt.songtId || ''}`)
               let client = new BingSunoClient({
                 cookies: cookies
               })
               redis.set(`CHATGPT:SUNO:${e.sender.user_id}`, 'c', { EX: 30 }).then(() => {
                 try {
-                  if (Config.bingLocalSuno) {
+                  if (Config.bingSuno == 'local') {
                     // 调用本地Suno配置进行歌曲生成
                     client.getLocalSuno(prompt, e)
+                  } else if (Config.bingSuno == 'api' && Config.bingSunoApi) {
+                    // 调用第三方Suno配置进行歌曲生成
+                    client.getApiSuno(prompt, e)
                   } else {
+                    // 调用Bing Suno进行歌曲生成
                     client.getSuno(prompt, e)
                   }
                 } catch (err) {

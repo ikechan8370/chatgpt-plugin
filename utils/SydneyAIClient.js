@@ -7,7 +7,7 @@ import fetch, {
 import crypto from 'crypto'
 import WebSocket from 'ws'
 import { Config } from './config.js'
-import { formatDate, getMasterQQ, isCN, getUserData, limitString } from './common.js'
+import { formatDate, getMasterQQ, isCN, getUserData, limitString, extractMarkdownJson } from './common.js'
 import moment from 'moment'
 import { getProxy } from './proxy.js'
 import common from '../../../lib/common/common.js'
@@ -337,7 +337,8 @@ export default class SydneyAIClient {
     const text = (useCast?.bing || Config.sydney).replaceAll(namePlaceholder, botName || defaultBotName) +
       ((Config.enableGroupContext && groupId) ? groupContextTip : '') +
       ((Config.enforceMaster && master) ? masterTip : '') +
-      (Config.sydneyMood ? moodTip : '')
+      (Config.sydneyMood ? moodTip : '') +
+      ((!Config.enableGenerateSuno && Config.bingSuno != 'bing' && Config.enableGenerateSunoForger) ? 'If I ask you to generate music or write songs, you need to reply with information suitable for Suno to generate music. The returned message is in JSON format, with a structure of {"option": "Suno", "tags": "style", "title": "title of the song", "lyrics": "lyrics"}.' : '')
     if (!text) {
       previousMessages = pm
     } else {
@@ -387,7 +388,7 @@ export default class SydneyAIClient {
     }
     let optionsSets = getOptionSet(Config.toneStyle, Config.enableGenerateContents)
     let source = 'cib-ccp'; let gptId = 'copilot'
-    if ((!Config.sydneyEnableSearch && !Config.enableGenerateContents) || toSummaryFileContent?.content) {
+    if ((!Config.sydneyEnableSearch && !Config.enableGenerateContents && !Config.enableGenerateSuno) || toSummaryFileContent?.content) {
       optionsSets.push(...['nosearchall'])
     }
     if (isPro) {
@@ -504,7 +505,7 @@ export default class SydneyAIClient {
         }
       }
     }
-    if (Config.enableGenerateContents){
+    if (Config.enableGenerateSuno){
       argument0.plugins.push({
         "id": "22b7f79d-8ea4-437e-b5fd-3e21f09f7bc1",
         "category": 1
@@ -714,7 +715,6 @@ export default class SydneyAIClient {
               suggestedResponsesSoFar = message.suggestedResponses
             }
             if (messages[0].contentType === 'SUNO') {
-              console.log()
               onSunoCreateRequest({
                 songtId: messages[0]?.hiddenText.split('=')[1],
                 songPrompt: messages[0]?.text,
@@ -834,6 +834,16 @@ export default class SydneyAIClient {
               // message.adaptiveCards[0].body[0].text = replySoFar
               message.adaptiveCards = adaptiveCardsSoFar
               message.text = replySoFar.join('')
+            }
+            // 伪造歌曲生成
+            if (Config.enableGenerateSunoForger) {
+              const sunoList = extractMarkdownJson(message.text)
+              for (let suno of sunoList) {
+                if (suno.option == 'Suno') {
+                  logger.info(`开始生成歌曲${suno.tags}`)
+                  onSunoCreateRequest(suno)
+                }
+              }
             }
             resolve({
               message,
@@ -1046,7 +1056,7 @@ function getOptionSet (tone, generateContent = false) {
       ])
       break
   }
-  if (Config.enableGenerateContents){
+  if (Config.enableGenerateSuno){
     optionset.push(...[
       '014CB21D',
       'B3FF9F21'
