@@ -16,7 +16,7 @@ export default class BingSunoClient {
         messages.push(`歌名：${song.title}\n风格: ${song.musicalStyle}\n歌词：\n${song.prompt}\n`)
         messages.push(`音频链接：${song.audioURL}\n视频链接：${song.videoURL}\n封面链接：${song.imageURL}\n`)
         messages.push(segment.image(song.imageURL))
-        let retry = 3
+        let retry = 10
         let videoPath
         while (!videoPath && retry >= 0) {
             try {
@@ -25,12 +25,12 @@ export default class BingSunoClient {
                 })
             } catch (err) {
                 retry--
-                await common.sleep(1000)
+                await common.sleep(3000)
             }
         }
         if (videoPath) {
             const data = fs.readFileSync(videoPath)
-            messages.push(segment.video(`base64://${data.toString('base64')}`))
+            await e.reply(segment.video(`base64://${data.toString('base64')}`))
             // 60秒后删除文件避免占用体积
             setTimeout(() => {
                 fs.unlinkSync(videoPath)
