@@ -81,6 +81,7 @@ const defaultConfig = {
   defaultTimeoutMs: 120000,
   chromeTimeoutMS: 120000,
   sydneyFirstMessageTimeout: 40000,
+  sunoApiTimeout: 60,
   ttsSpace: '',
   // https://114514.201666.xyz
   huggingFaceReverseProxy: '',

@@ -20,7 +20,7 @@ export default class BingSunoClient {
         let videoPath
         while (!videoPath && retry >= 0) {
             try {
-                videoPath = await downloadFile(song.video_url, `suno/${song.title}.mp4`, false, false, {
+                videoPath = await downloadFile(song.videoURL, `suno/${song.title}.mp4`, false, false, {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
                 })
             } catch (err) {
@@ -170,7 +170,8 @@ export default class BingSunoClient {
         })
         const sunoId = await responseId.json()
         if (sunoId[0]?.id) {
-            let timeoutTimes = 30
+            await e.reply('Bing Suno 生成中，请稍后')
+            let timeoutTimes = Config.sunoApiTimeout
             let timer = setInterval(async () => {
                 const response = await fetch(`${Config.bingSunoApi}/api/get?ids=${sunoId[0]?.id}`, {
                     method: 'GET',
@@ -205,7 +206,6 @@ export default class BingSunoClient {
                         sunoURL,
                         prompt
                     }
-                    await e.reply('Bing Suno 生成中，请稍后')
                     this.replyMsg(sunoDisplayResult, e)
                     clearInterval(timer)
                 } else if (timeoutTimes === 0) {
