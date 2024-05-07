@@ -1,8 +1,11 @@
 import { downloadFile } from '../utils/common.js'
+import { SunoClient } from '../client/SunoClient.js'
+import { Config } from '../utils/config.js'
 import common from '../../../lib/common/common.js'
 import fs from 'fs'
 import crypto from 'crypto'
 import fetch from 'node-fetch'
+import lodash from 'lodash'
 
 export default class BingSunoClient {
     constructor(opts) {
@@ -74,6 +77,73 @@ export default class BingSunoClient {
             await e.reply('Bing Suno 数据获取失败')
             redis.del(`CHATGPT:SUNO:${e.sender.user_id}`)
         }
+    }
+
+    async getLocalSuno(prompt, e) {
+        if (!Config.sunoClientToken || !Config.sunoSessToken) {
+            await e.reply('未配置Suno Token')
+            return true
+          }
+          let description = prompt.songPrompt
+          await e.reply('正在生成，请稍后')
+          try {
+            let sessTokens = Config.sunoSessToken.split(',')
+            let clientTokens = Config.sunoClientToken.split(',')
+            let tried = 0
+            while (tried < sessTokens.length) {
+              let index = tried
+              let sess = sessTokens[index]
+              let clientToken = clientTokens[index]
+              let client = new SunoClient({ sessToken: sess, clientToken })
+              let { credit, email } = await client.queryCredit()
+              logger.info({ credit, email })
+              if (credit < 10) {
+                tried++
+                logger.info(`账户${email}余额不足，尝试下一个账户`)
+                continue
+              }
+      
+              let songs = await client.createSong(description)
+              if (!songs || songs.length === 0) {
+                e.reply('生成失败，可能是提示词太长或者违规，请检查日志')
+                return
+              }
+              let messages = ['提示词：' + description]
+              for (let song of songs) {
+                messages.push(`歌名：${song.title}\n风格: ${song.metadata.tags}\n长度: ${lodash.round(song.metadata.duration, 0)}秒\n歌词：\n${song.metadata.prompt}\n`)
+                messages.push(`音频链接：${song.audio_url}\n视频链接：${song.video_url}\n封面链接：${song.image_url}\n`)
+                messages.push(segment.image(song.image_url))
+                let retry = 3
+                let videoPath
+                while (!videoPath && retry >= 0) {
+                  try {
+                    videoPath = await downloadFile(song.video_url, `suno/${song.title}.mp4`, false, false, {
+                      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
+                    })
+                  } catch (err) {
+                    retry--
+                    await common.sleep(1000)
+                  }
+                }
+                if (videoPath) {
+                  const data = fs.readFileSync(videoPath)
+                  messages.push(segment.video(`base64://${data.toString('base64')}`))
+                  // 60秒后删除文件避免占用体积
+                  setTimeout(() => {
+                    fs.unlinkSync(videoPath)
+                  }, 60000)
+                } else {
+                  logger.warn(`${song.title}下载视频失败，仅发送视频链接`)
+                }
+              }
+              await e.reply(await common.makeForwardMsg(e, messages, '音乐合成结果'))
+              return true
+            }
+            await e.reply('所有账户余额不足')
+          } catch (err) {
+            console.error(err)
+            await e.reply('生成失败,请查看日志')
+          }
     }
 
     async getSunoResult(requestId) {

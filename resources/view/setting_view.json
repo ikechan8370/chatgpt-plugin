@@ -588,6 +588,12 @@
                 "data": "bingAPDraw"
               },
               {
+                "type": "check",
+                "label": "第三方歌曲生成",
+                "placeholder": "使用AP插件代替Bing进行绘图",
+                "data": "bingLocalSuno"
+              },
+              {
                 "type": "textarea",
                 "label": "前置对话第一轮（用户）",
                 "placeholder": "会强行插入该轮对话，能有效抑制抱歉",
