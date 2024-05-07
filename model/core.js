@@ -259,7 +259,12 @@ class Core {
               })
               redis.set(`CHATGPT:SUNO:${e.sender.user_id}`, 'c', { EX: 30 }).then(() => {
                 try {
-                  client.getSuno(prompt, e)
+                  if (Config.bingLocalSuno) {
+                    // 调用本地Suno配置进行歌曲生成
+                    client.getLocalSuno(prompt, e)
+                  } else {
+                    client.getSuno(prompt, e)
+                  }
                 } catch (err) {
                   redis.del(`CHATGPT:SUNO:${e.sender.user_id}`)
                   this.reply('歌曲生成失败：' + err)

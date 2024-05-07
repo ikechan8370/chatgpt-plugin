@@ -104,6 +104,7 @@ const defaultConfig = {
   sydneyApologyIgnored: true,
   enforceMaster: false,
   bingAPDraw: false,
+  bingLocalSuno: false,
   serverPort: 3321,
   serverHost: '',
   viewHost: '',

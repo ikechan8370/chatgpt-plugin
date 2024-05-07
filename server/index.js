@@ -445,7 +445,13 @@ export async function createServer () {
   Bot.on('message', e => {
     e.message = e.message.map(item => {
       if (item.type === 'at') {
-        return { ...item, text: e.group.pickMember(parseInt(item.qq)).card || e.group.pickMember(parseInt(item.qq)).nickname }
+        let user
+        try {
+          user = e.group.pickMember(parseInt(item.qq)).card || e.group.pickMember(parseInt(item.qq)).nickname
+        } catch (error) {
+          user = item.qq
+        }
+        return { ...item, text: user }
       }
       return item
     })
