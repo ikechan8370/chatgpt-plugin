@@ -576,6 +576,16 @@
                 "data": "enableGenerateContents"
               },
               {
+                "type": "check",
+                "label": "允许生成歌曲等内容",
+                "data": "enableGenerateSuno"
+              },
+              {
+                "type": "check",
+                "label": "伪造歌曲生成",
+                "data": "enableGenerateSunoForger"
+              },
+              {
                 "type": "url",
                 "label": "必应验证码pass服务",
                 "placeholder": "必应出验证码会自动用该服务绕过",
@@ -588,10 +598,16 @@
                 "data": "bingAPDraw"
               },
               {
-                "type": "check",
-                "label": "第三方歌曲生成",
-                "placeholder": "使用AP插件代替Bing进行绘图",
-                "data": "bingLocalSuno"
+                "type": "select",
+                "label": "歌曲生成模式",
+                "data": "bingSuno",
+                "items": [ {   "label": "Bing",   "value": "bing" }, {   "label": "本地",   "value": "local" }, {   "label": "第三方",   "value": "api" } ]
+              },
+              {
+                "type": "url",
+                "label": "第三方歌曲生成API地址",
+                "placeholder": "https://github.com/gcui-art/suno-api的api地址",
+                "data": "bingSunoApi"
               },
               {
                 "type": "textarea",
@@ -1118,7 +1134,14 @@
         "label": "Sydney模式接受首条信息超时时间",
         "placeholder": "超过该时间阈值未收到Bing的任何消息，则断开本次连接并重试",
         "data": "sydneyFirstMessageTimeout"
+      },
+      {
+        "type": "number",
+        "label": "SunoApi获取超时时间",
+        "placeholder": "使用sunoApi获取数据时超时时间，单位秒",
+        "data": "sunoApiTimeout"
       }
+
     ]
   },
   {

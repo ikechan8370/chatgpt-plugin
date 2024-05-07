@@ -5,7 +5,6 @@ import common from '../../../lib/common/common.js'
 import fs from 'fs'
 import crypto from 'crypto'
 import fetch from 'node-fetch'
-import lodash from 'lodash'
 
 export default class BingSunoClient {
     constructor(opts) {
@@ -14,14 +13,14 @@ export default class BingSunoClient {
 
     async replyMsg(song, e) {
         let messages = []
-        messages.push(`歌名：${song.title}\n风格: ${song.musicalStyle}\n长度: ${song.duration}秒\n歌词：\n${song.prompt}\n`)
+        messages.push(`歌名：${song.title}\n风格: ${song.musicalStyle}\n歌词：\n${song.prompt}\n`)
         messages.push(`音频链接：${song.audioURL}\n视频链接：${song.videoURL}\n封面链接：${song.imageURL}\n`)
         messages.push(segment.image(song.imageURL))
         let retry = 3
         let videoPath
         while (!videoPath && retry >= 0) {
             try {
-                videoPath = await downloadFile(song.video_url, `suno/${song.title}.mp4`, false, false, {
+                videoPath = await downloadFile(song.videoURL, `suno/${song.title}.mp4`, false, false, {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
                 })
             } catch (err) {
@@ -47,7 +46,6 @@ export default class BingSunoClient {
         if (prompt.cookie) {
             this.opts.cookies = prompt.cookie
         }
-
         const sunoResult = await this.getSunoResult(prompt.songtId)
         if (sunoResult) {
             const {
@@ -72,78 +70,154 @@ export default class BingSunoClient {
                 prompt: prompt.songPrompt
             }
             await e.reply('Bing Suno 生成中，请稍后')
-            replyMsg(sunoDisplayResult, e)
+            this.replyMsg(sunoDisplayResult, e)
         } else {
             await e.reply('Bing Suno 数据获取失败')
             redis.del(`CHATGPT:SUNO:${e.sender.user_id}`)
         }
+        redis.del(`CHATGPT:SUNO:${e.sender.user_id}`)
     }
 
     async getLocalSuno(prompt, e) {
         if (!Config.sunoClientToken || !Config.sunoSessToken) {
             await e.reply('未配置Suno Token')
+            redis.del(`CHATGPT:SUNO:${e.sender.user_id}`)
             return true
-          }
-          let description = prompt.songPrompt
-          await e.reply('正在生成，请稍后')
-          try {
+        }
+        let description = prompt.songPrompt
+        await e.reply('正在生成，请稍后')
+        try {
             let sessTokens = Config.sunoSessToken.split(',')
             let clientTokens = Config.sunoClientToken.split(',')
             let tried = 0
             while (tried < sessTokens.length) {
-              let index = tried
-              let sess = sessTokens[index]
-              let clientToken = clientTokens[index]
-              let client = new SunoClient({ sessToken: sess, clientToken })
-              let { credit, email } = await client.queryCredit()
-              logger.info({ credit, email })
-              if (credit < 10) {
-                tried++
-                logger.info(`账户${email}余额不足，尝试下一个账户`)
-                continue
-              }
-      
-              let songs = await client.createSong(description)
-              if (!songs || songs.length === 0) {
-                e.reply('生成失败，可能是提示词太长或者违规，请检查日志')
-                return
-              }
-              let messages = ['提示词：' + description]
-              for (let song of songs) {
-                messages.push(`歌名：${song.title}\n风格: ${song.metadata.tags}\n长度: ${lodash.round(song.metadata.duration, 0)}秒\n歌词：\n${song.metadata.prompt}\n`)
-                messages.push(`音频链接：${song.audio_url}\n视频链接：${song.video_url}\n封面链接：${song.image_url}\n`)
-                messages.push(segment.image(song.image_url))
-                let retry = 3
-                let videoPath
-                while (!videoPath && retry >= 0) {
-                  try {
-                    videoPath = await downloadFile(song.video_url, `suno/${song.title}.mp4`, false, false, {
-                      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
-                    })
-                  } catch (err) {
-                    retry--
-                    await common.sleep(1000)
-                  }
+                let index = tried
+                let sess = sessTokens[index]
+                let clientToken = clientTokens[index]
+                let client = new SunoClient({ sessToken: sess, clientToken })
+                let { credit, email } = await client.queryCredit()
+                logger.info({ credit, email })
+                if (credit < 10) {
+                    tried++
+                    logger.info(`账户${email}余额不足，尝试下一个账户`)
+                    continue
                 }
-                if (videoPath) {
-                  const data = fs.readFileSync(videoPath)
-                  messages.push(segment.video(`base64://${data.toString('base64')}`))
-                  // 60秒后删除文件避免占用体积
-                  setTimeout(() => {
-                    fs.unlinkSync(videoPath)
-                  }, 60000)
-                } else {
-                  logger.warn(`${song.title}下载视频失败，仅发送视频链接`)
+
+                let songs = await client.createSong(description)
+                if (!songs || songs.length === 0) {
+                    e.reply('生成失败，可能是提示词太长或者违规，请检查日志')
+                    redis.del(`CHATGPT:SUNO:${e.sender.user_id}`)
+                    return
                 }
-              }
-              await e.reply(await common.makeForwardMsg(e, messages, '音乐合成结果'))
-              return true
+                let messages = ['提示词：' + description]
+                for (let song of songs) {
+                    messages.push(`歌名：${song.title}\n风格: ${song.metadata.tags}\n歌词：\n${song.metadata.prompt}\n`)
+                    messages.push(`音频链接：${song.audio_url}\n视频链接：${song.video_url}\n封面链接：${song.image_url}\n`)
+                    messages.push(segment.image(song.image_url))
+                    let retry = 3
+                    let videoPath
+                    while (!videoPath && retry >= 0) {
+                        try {
+                            videoPath = await downloadFile(song.video_url, `suno/${song.title}.mp4`, false, false, {
+                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36'
+                            })
+                        } catch (err) {
+                            retry--
+                            await common.sleep(1000)
+                        }
+                    }
+                    if (videoPath) {
+                        const data = fs.readFileSync(videoPath)
+                        messages.push(segment.video(`base64://${data.toString('base64')}`))
+                        // 60秒后删除文件避免占用体积
+                        setTimeout(() => {
+                            fs.unlinkSync(videoPath)
+                        }, 60000)
+                    } else {
+                        logger.warn(`${song.title}下载视频失败，仅发送视频链接`)
+                    }
+                }
+                await e.reply(await common.makeForwardMsg(e, messages, '音乐合成结果'))
+                redis.del(`CHATGPT:SUNO:${e.sender.user_id}`)
+                return true
             }
             await e.reply('所有账户余额不足')
-          } catch (err) {
+            redis.del(`CHATGPT:SUNO:${e.sender.user_id}`)
+        } catch (err) {
             console.error(err)
             await e.reply('生成失败,请查看日志')
-          }
+            redis.del(`CHATGPT:SUNO:${e.sender.user_id}`)
+        }
+    }
+
+    async getApiSuno(prompt, e) {
+        if (!Config.bingSunoApi) {
+            await e.reply('未配置 Suno API')
+            return
+        }
+        const responseId = await fetch(`${Config.bingSunoApi}/api/custom_generate`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                "prompt": prompt.songPrompt || prompt.lyrics,
+                "tags": prompt.tags || "pop",
+                "title": prompt.title || e.sender.card || e.sender.nickname,
+                "make_instrumental": false,
+                "wait_audio": false
+            })
+        })
+        const sunoId = await responseId.json()
+        if (sunoId[0]?.id) {
+            await e.reply('Bing Suno 生成中，请稍后')
+            let timeoutTimes = Config.sunoApiTimeout
+            let timer = setInterval(async () => {
+                const response = await fetch(`${Config.bingSunoApi}/api/get?ids=${sunoId[0]?.id}`, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                })
+                if (!response.ok) {
+                    await e.reply('Bing Suno 数据获取失败')
+                    logger.error(response.error.message)
+                    redis.del(`CHATGPT:SUNO:${e.sender.user_id}`)
+                    clearInterval(timer)
+                    timer = null
+                    throw new Error(`HTTP error! status: ${response.status}`)
+                }
+                const result = await response.json()
+                if (result[0].status == 'complete') {
+                    const sunoResult = result[0]
+                    const title = sunoResult.title
+                    const audioURL = sunoResult.audio_url
+                    const imageURL = sunoResult.image_url
+                    const videoURL = sunoResult.video_url
+                    const musicalStyle = sunoResult.tags
+                    const prompt = sunoResult.lyric
+                    const sunoURL = `https://cdn1.suno.ai/${sunoResult.id}.mp4`
+                    const sunoDisplayResult = {
+                        title,
+                        musicalStyle,
+                        audioURL,
+                        imageURL,
+                        videoURL,
+                        sunoURL,
+                        prompt
+                    }
+                    this.replyMsg(sunoDisplayResult, e)
+                    clearInterval(timer)
+                } else if (timeoutTimes === 0) {
+                    await e.reply('❌Suno 生成超时', true)
+                    clearInterval(timer)
+                    timer = null
+                } else {
+                    logger.info('等待Suno生成中: ' + timeoutTimes)
+                    timeoutTimes--
+                }
+            }, 3000)
+        }
     }
 
     async getSunoResult(requestId) {
@@ -210,7 +284,6 @@ export default class BingSunoClient {
                     sfx: sfx.toString(),
                 })
                 fetchURL.search = searchParams.toString()
-
                 const response = await fetch(fetchURL, {
                     headers: {
                         accept: '*/*',
