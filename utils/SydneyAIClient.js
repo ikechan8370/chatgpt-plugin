@@ -257,6 +257,7 @@ export default class SydneyAIClient {
       messageType = 'Chat',
       toSummaryFileContent,
       onImageCreateRequest = prompt => {},
+      onSunoCreateRequest = prompt => {},
       isPro = this.pro
     } = opts
     // if (messageType === 'Chat') {
@@ -503,7 +504,12 @@ export default class SydneyAIClient {
         }
       }
     }
-
+    if (Config.enableGenerateContents){
+      argument0.plugins.push({
+        "id": "22b7f79d-8ea4-437e-b5fd-3e21f09f7bc1",
+        "category": 1
+      })
+    }
     if (encryptedconversationsignature) {
       delete argument0.conversationSignature
     }
@@ -707,6 +713,14 @@ export default class SydneyAIClient {
               adaptiveCardsSoFar = message.adaptiveCards
               suggestedResponsesSoFar = message.suggestedResponses
             }
+            if (messages[0].contentType === 'SUNO') {
+              console.log()
+              onSunoCreateRequest({
+                songtId: messages[0]?.hiddenText.split('=')[1],
+                songPrompt: messages[0]?.text,
+                cookie: this.opts.cookies
+              })
+            }
             const updatedText = messages[0].text
             if (!updatedText || updatedText === replySoFar[cursor]) {
               return
@@ -889,6 +903,9 @@ export default class SydneyAIClient {
     let imgBase64
     try {
       const response = await fetch(url)
+      if (!response.ok) {
+        throw new Error(`图片${url}获取失败：${response.status}`)
+      }
       const arrayBuffer = await response.arrayBuffer()
       const buffer = Buffer.from(arrayBuffer)
       imgBase64 = buffer.toString('base64')
@@ -975,6 +992,11 @@ function getOptionSet (tone, generateContent = false) {
     'responsible_ai_policy_235',
     'enablemm',
     'dv3sugg',
+    'uquopt',
+    'bicfluxv2',
+    'langdtwb',
+    'fluxprod',
+    'eredirecturl',
     'autosave',
     'iyxapbing',
     'iycapbing',
@@ -992,7 +1014,6 @@ function getOptionSet (tone, generateContent = false) {
         'elec2t',
         'elecgnd',
         'gndlogcf',
-        'eredirecturl',
         'clgalileo',
         'gencontentv3'
       ])
@@ -1008,7 +1029,6 @@ function getOptionSet (tone, generateContent = false) {
         'elec2t',
         'elecgnd',
         'gndlogcf',
-        'eredirecturl'
       ])
       break
     case 'Creative':
@@ -1021,11 +1041,16 @@ function getOptionSet (tone, generateContent = false) {
         'elec2t',
         'elecgnd',
         'gndlogcf',
-        'eredirecturl',
         'clgalileo',
         'gencontentv3'
       ])
       break
+  }
+  if (Config.enableGenerateContents){
+    optionset.push(...[
+      '014CB21D',
+      'B3FF9F21'
+    ])
   }
   return optionset
 }
