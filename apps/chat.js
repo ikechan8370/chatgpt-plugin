@@ -832,7 +832,7 @@ export class chatgpt extends plugin {
         }
       }
       // 处理suno生成
-      if ((use === 'bing' || use === 'xh') && Config.enableChatSuno) {
+      if ((use === 'bing' || use === 'xh' || use === 'gemini') && Config.enableChatSuno) {
         const sunoList = extractMarkdownJson(chatMessage.text)
         for (let suno of sunoList) {
           if (suno.json.option == 'Suno') {

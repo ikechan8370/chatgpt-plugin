@@ -70,12 +70,28 @@
             "value": "xh"
           },
           {
-            "label": "Slack Claude",
-            "value": "claude"
+            "label": "通义千问",
+            "value": "qwen"
           },
           {
             "label": "Gemini",
             "value": "gemini"
+          },
+          {
+            "label": "Slack Claude",
+            "value": "claude"
+          },
+          {
+            "label": "Claude2",
+            "value": "claude2"
+          },
+          {
+            "label": "ChatGLM4",
+            "value": "chatglm4"
+          },
+          {
+            "label": "ChatGLM",
+            "value": "chatglm"
           },
           {
             "label": "Azure OpenAI",
@@ -84,10 +100,6 @@
           {
             "label": "ChatGPT API3",
             "value": "api3"
-          },
-          {
-            "label": "ChatGLM",
-            "value": "chatglm"
           },
           {
             "label": "浏览器",
