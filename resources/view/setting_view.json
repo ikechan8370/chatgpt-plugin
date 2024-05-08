@@ -82,10 +82,6 @@
             "value": "azure"
           },
           {
-            "label": "Bard",
-            "value": "bard"
-          },
-          {
             "label": "ChatGPT API3",
             "value": "api3"
           },
@@ -816,27 +812,6 @@
                 "label": "Gemini反代",
                 "placeholder": "对https://generativelanguage.googleapis.com的反代",
                 "data": "geminiBaseUrl"
-              }
-            ]
-          },
-          {
-            "title": "Bard",
-            "tab": "bard",
-            "view": [
-              {
-                "type": "password",
-                "label": "BardCookie",
-                "data": "bardPsid"
-              },
-              {
-                "type": "url",
-                "label": "Bard反代地址",
-                "data": "bardReverseProxy"
-              },
-              {
-                "type": "check",
-                "label": "使用Bard反代",
-                "data": "bardForceUseReverse"
               }
             ]
           },

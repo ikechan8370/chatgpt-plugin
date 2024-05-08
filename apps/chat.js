@@ -735,10 +735,6 @@ export class chatgpt extends plugin {
           key = `CHATGPT:CONVERSATIONS_XH:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`
           break
         }
-        case 'bard': {
-          key = `CHATGPT:CONVERSATIONS_BARD:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`
-          break
-        }
         case 'azure': {
           key = `CHATGPT:CONVERSATIONS_AZURE:${e.sender.user_id}`
           break
@@ -797,8 +793,8 @@ export class chatgpt extends plugin {
       if (chatMessage?.noMsg) {
         return false
       }
-      // 处理星火和bard图片
-      if ((use === 'bard' || use === 'xh') && chatMessage?.images) {
+      // 处理星火图片
+      if (use === 'xh' && chatMessage?.images) {
         chatMessage.images.forEach(element => {
           this.reply([element.tag, segment.image(element.url)])
         })
@@ -825,11 +821,6 @@ export class chatgpt extends plugin {
             previousConversation.messages.shift()
           }
           previousConversation.messages.push(chatMessage.message)
-        }
-        if (use === 'bard' && !chatMessage.error) {
-          previousConversation.parentMessageId = chatMessage.responseID
-          previousConversation.clientId = chatMessage.choiceID
-          previousConversation.invocationId = chatMessage._reqID
         }
         if (Config.debug) {
           logger.info(chatMessage)

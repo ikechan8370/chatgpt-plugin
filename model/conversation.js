@@ -3,8 +3,8 @@ import { Config } from '../utils/config.js'
 import { KeyvFile } from 'keyv-file'
 import _ from 'lodash'
 
-export const originalValues = ['星火', '通义千问', '克劳德', '克劳德2', '必应', 'api', 'API', 'api3', 'API3', 'glm', '巴德', '双子星', '双子座', '智谱']
-export const correspondingValues = ['xh', 'qwen', 'claude', 'claude2', 'bing', 'api', 'api', 'api3', 'api3', 'chatglm', 'bard', 'gemini', 'gemini', 'chatglm4']
+export const originalValues = ['星火', '通义千问', '克劳德', '克劳德2', '必应', 'api', 'API', 'api3', 'API3', 'glm', '双子星', '双子座', '智谱']
+export const correspondingValues = ['xh', 'qwen', 'claude', 'claude2', 'bing', 'api', 'api', 'api3', 'api3', 'chatglm', 'gemini', 'gemini', 'chatglm4']
 
 export class ConversationManager {
   async endConversation (e) {
@@ -33,11 +33,6 @@ export class ConversationManager {
     if (use === 'xh') {
       await redis.del(`CHATGPT:CONVERSATIONS_XH:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`)
       await this.reply('星火对话已结束')
-      return
-    }
-    if (use === 'bard') {
-      await redis.del(`CHATGPT:CONVERSATIONS_BARD:${(e.isGroup && Config.groupMerge) ? e.group_id.toString() : e.sender.user_id}`)
-      await this.reply('Bard对话已结束')
       return
     }
     let ats = e.message.filter(m => m.type === 'at')
@@ -254,17 +249,6 @@ export class ConversationManager {
           await redis.del(cs[i])
           if (Config.debug) {
             logger.info('delete xh conversation of qq: ' + cs[i])
-          }
-          deleted++
-        }
-        break
-      }
-      case 'bard': {
-        let cs = await redis.keys('CHATGPT:CONVERSATIONS_BARD:*')
-        for (let i = 0; i < cs.length; i++) {
-          await redis.del(cs[i])
-          if (Config.debug) {
-            logger.info('delete bard conversation of qq: ' + cs[i])
           }
           deleted++
         }
