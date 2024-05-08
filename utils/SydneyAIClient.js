@@ -338,7 +338,7 @@ export default class SydneyAIClient {
       ((Config.enableGroupContext && groupId) ? groupContextTip : '') +
       ((Config.enforceMaster && master) ? masterTip : '') +
       (Config.sydneyMood ? moodTip : '') +
-      ((!Config.enableGenerateSuno && Config.bingSuno != 'bing' && Config.enableGenerateSunoForger) ? 'If I ask you to generate music or write songs, you need to reply with information suitable for Suno to generate music. The returned message is in JSON format, with a structure of {"option": "Suno", "tags": "style", "title": "title of the song", "lyrics": "lyrics"}.' : '')
+      ((!Config.enableGenerateSuno && Config.bingSuno != 'bing' && Config.enableGenerateSunoForger) ? 'If I ask you to generate music or write songs, you need to reply with information suitable for Suno to generate music. Please use keywords such as Verse, Chorus, Bridge, Outro, and End to segment the lyrics, such as [Verse], The returned message is in JSON format, with a structure of {"option": "Suno", "tags": "style", "title": "title of the song", "lyrics": "lyrics"}.' : '')
     if (!text) {
       previousMessages = pm
     } else {
@@ -839,9 +839,10 @@ export default class SydneyAIClient {
             if (Config.enableGenerateSunoForger) {
               const sunoList = extractMarkdownJson(message.text)
               for (let suno of sunoList) {
-                if (suno.option == 'Suno') {
-                  logger.info(`开始生成歌曲${suno.tags}`)
-                  onSunoCreateRequest(suno)
+                if (suno.json.option == 'Suno') {
+                  message.text = message.text.replace(suno.markdown, `歌曲 《${suno.json.title}》`)
+                  logger.info(`开始生成歌曲${suno.json.tags}`)
+                  onSunoCreateRequest(suno.json)
                 }
               }
             }

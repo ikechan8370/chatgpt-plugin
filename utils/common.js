@@ -1250,28 +1250,50 @@ function maskString (str) {
  */
 export function extractMarkdownJson(text) {
   const lines = text.split('\n')
-  const mdJson = []
-  let currentObj = null
+  const mdJsonPairs = []
+  let currentJson = ''
+  let currentMd = ''
 
   lines.forEach(line => {
-    if (line.startsWith('```json') && !currentObj) {
-      // 开始一个新的JSON对象
-      currentObj = { json: '' }
-    } else if (line.startsWith('```') && currentObj) {
-      // 结束当前的JSON对象
+    if (line.startsWith('```json')) {
+      // 如果已经在一个 JSON 中，先结束当前的 JSON
+      if (currentJson) {
+        try {
+          const parsedJson = JSON.parse(currentJson)
+          mdJsonPairs.push({ json: parsedJson, markdown: currentMd + '```' })
+        } catch (e) {
+          console.error('JSON解析错误:', e)
+        }
+      }
+      // 开始新的 JSON 和 markdown
+      currentJson = ''
+      currentMd = line + '\n'
+    } else if (line.startsWith('```') && currentJson) {
+      // 结束当前的 JSON
       try {
-        // 尝试将JSON字符串转换为对象
-        currentObj.json = JSON.parse(currentObj.json)
-        mdJson.push(currentObj)
-        currentObj = null
+        const parsedJson = JSON.parse(currentJson)
+        mdJsonPairs.push({ json: parsedJson, markdown: currentMd + line })
       } catch (e) {
         console.error('JSON解析错误:', e)
       }
-    } else if (currentObj) {
-      // 将行添加到当前的JSON对象
-      currentObj.json += line
+      currentJson = ''
+      currentMd = ''
+    } else {
+      // 如果在 JSON 中，继续添加行
+      currentJson += line + (line ? '\n' : '')
+      currentMd += line + '\n'
     }
   })
 
-  return mdJson.map(obj => obj.json)
+  // 检查是否有未结束的 JSON
+  if (currentJson) {
+    try {
+      const parsedJson = JSON.parse(currentJson)
+      mdJsonPairs.push({ json: parsedJson, markdown: currentMd + '```' })
+    } catch (e) {
+      console.error('JSON解析错误:', e)
+    }
+  }
+
+  return mdJsonPairs
 }
