@@ -397,6 +397,11 @@ export default class XinghuoClient {
       } else {
         Prompt = option.system ? [{ role: 'system', content: option.system }] : []
       }
+      if (Config.enableChatSuno) {
+        Prompt.unshift(
+          { role: 'system', content: '如果我要求你生成音乐或写歌，你需要回复适合Suno生成音乐的信息。请使用Verse、Chorus、Bridge、Outro和End等关键字对歌词进行分段，如[Verse]。返回的消息需要使用markdown包裹的JSON格式，结构为```json{"option": "Suno", "tags": "style", "title": "title of the song", "lyrics": "lyrics"}```。' }
+        )
+      }
       if (Config.xhPromptEval) {
         Prompt.forEach(obj => {
           try {

@@ -70,28 +70,36 @@
             "value": "xh"
           },
           {
-            "label": "Slack Claude",
-            "value": "claude"
+            "label": "通义千问",
+            "value": "qwen"
           },
           {
             "label": "Gemini",
             "value": "gemini"
           },
           {
-            "label": "Azure OpenAI",
-            "value": "azure"
+            "label": "Slack Claude",
+            "value": "claude"
           },
           {
-            "label": "Bard",
-            "value": "bard"
+            "label": "Claude2",
+            "value": "claude2"
           },
           {
-            "label": "ChatGPT API3",
-            "value": "api3"
+            "label": "ChatGLM4",
+            "value": "chatglm4"
           },
           {
             "label": "ChatGLM",
             "value": "chatglm"
+          },
+          {
+            "label": "Azure OpenAI",
+            "value": "azure"
+          },
+          {
+            "label": "ChatGPT API3",
+            "value": "api3"
           },
           {
             "label": "浏览器",
@@ -581,11 +589,6 @@
                 "data": "enableGenerateSuno"
               },
               {
-                "type": "check",
-                "label": "伪造歌曲生成",
-                "data": "enableGenerateSunoForger"
-              },
-              {
                 "type": "url",
                 "label": "必应验证码pass服务",
                 "placeholder": "必应出验证码会自动用该服务绕过",
@@ -602,12 +605,6 @@
                 "label": "歌曲生成模式",
                 "data": "bingSuno",
                 "items": [ {   "label": "Bing",   "value": "bing" }, {   "label": "本地",   "value": "local" }, {   "label": "第三方",   "value": "api" } ]
-              },
-              {
-                "type": "url",
-                "label": "第三方歌曲生成API地址",
-                "placeholder": "https://github.com/gcui-art/suno-api的api地址",
-                "data": "bingSunoApi"
               },
               {
                 "type": "textarea",
@@ -843,27 +840,6 @@
             ]
           },
           {
-            "title": "Bard",
-            "tab": "bard",
-            "view": [
-              {
-                "type": "password",
-                "label": "BardCookie",
-                "data": "bardPsid"
-              },
-              {
-                "type": "url",
-                "label": "Bard反代地址",
-                "data": "bardReverseProxy"
-              },
-              {
-                "type": "check",
-                "label": "使用Bard反代",
-                "data": "bardForceUseReverse"
-              }
-            ]
-          },
-          {
             "title": "通义千问",
             "tab": "qwen",
             "view": [
@@ -1066,6 +1042,23 @@
         "label": "client token",
         "placeholder": "suno的__client token，需要与sunoSessToken一一对应数量相同，多个用逗号隔开",
         "data": "sunoClientToken"
+      },
+      {
+        "type": "check",
+        "label": "允许聊天指令声音音乐",
+        "data": "enableChatSuno"
+      },
+      {
+        "type": "select",
+        "label": "调用模式",
+        "data": "SunoModel",
+        "items": [ {   "label": "本地",   "value": "local" }, {   "label": "第三方",   "value": "api" } ]
+      },
+      {
+        "type": "url",
+        "label": "第三方歌曲生成API地址",
+        "placeholder": "https://github.com/gcui-art/suno-api的api地址",
+        "data": "bingSunoApi"
       }
     ]
   },

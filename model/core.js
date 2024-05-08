@@ -25,7 +25,6 @@ import XinghuoClient from '../utils/xinghuo/xinghuo.js'
 import { getMessageById, upsertMessage } from '../utils/history.js'
 import { v4 as uuid } from 'uuid'
 import fetch from 'node-fetch'
-import Bard from '../utils/bard.js'
 import { CustomGoogleGeminiClient } from '../client/CustomGoogleGeminiClient.js'
 import { resizeAndCropImage } from '../utils/dalle.js'
 import fs from 'fs'
@@ -646,6 +645,11 @@ class Core {
         }
         promptAddition && (prompt += promptAddition)
         option.systemMessage = await handleSystem(e, opts.systemMessage)
+        /*
+        if (Config.enableChatSuno) {
+          option.systemMessage += '如果我要求你生成音乐或写歌，你需要回复适合Suno生成音乐的信息。请使用Verse、Chorus、Bridge、Outro和End等关键字对歌词进行分段，如[Verse]。返回的消息需要使用markdown包裹的JSON格式，结构为```json{"option": "Suno", "tags": "style", "title": "title of the song", "lyrics": "lyrics"}```。'
+        }
+        */
         systemAddition && (option.systemMessage += systemAddition)
         opts.completionParams.parameters.tools = Object.keys(funcMap)
           .map(k => funcMap[k].function)
@@ -705,55 +709,6 @@ class Core {
           throw new Error(err)
         }
         return msg
-      }
-    } else if (use === 'bard') {
-      // 处理cookie
-      const matchesPSID = /__Secure-1PSID=([^;]+)/.exec(Config.bardPsid)
-      const matchesPSIDTS = /__Secure-1PSIDTS=([^;]+)/.exec(Config.bardPsid)
-      const cookie = {
-        '__Secure-1PSID': matchesPSID[1],
-        '__Secure-1PSIDTS': matchesPSIDTS[1]
-      }
-      if (!matchesPSID[1] || !matchesPSIDTS[1]) {
-        throw new Error('未绑定bard')
-      }
-      // 处理图片
-      const image = await getImg(e)
-      let imageBuff
-      if (image) {
-        try {
-          let imgResponse = await fetch(image[0])
-          if (imgResponse.ok) {
-            imageBuff = await imgResponse.arrayBuffer()
-          }
-        } catch (error) {
-          logger.warn(`错误的图片链接${image[0]}`)
-        }
-      }
-      // 发送数据
-      let bot = new Bard(cookie, {
-        fetch,
-        bardURL: Config.bardForceUseReverse ? Config.bardReverseProxy : 'https://bard.google.com'
-      })
-      let chat = await bot.createChat(conversation?.conversationId
-        ? {
-            conversationID: conversation.conversationId,
-            responseID: conversation.parentMessageId,
-            choiceID: conversation.clientId,
-            _reqID: conversation.invocationId
-          }
-        : {})
-      let response = await chat.ask(prompt, {
-        image: imageBuff,
-        format: Bard.JSON
-      })
-      return {
-        conversationId: response.ids.conversationID,
-        responseID: response.ids.responseID,
-        choiceID: response.ids.choiceID,
-        _reqID: response.ids._reqID,
-        text: response.content,
-        images: response.images
       }
     } else if (use === 'gemini') {
       let client = new CustomGoogleGeminiClient({
@@ -861,6 +816,9 @@ class Core {
             .join('\n')
         }
       }
+      if (Config.enableChatSuno) {
+        system += 'If I ask you to generate music or write songs, you need to reply with information suitable for Suno to generate music. Please use keywords such as Verse, Chorus, Bridge, Outro, and End to segment the lyrics, such as [Verse], The returned message is in JSON format, with a structure of ```json{"option": "Suno", "tags": "style", "title": "title of the song", "lyrics": "lyrics"}```.'
+      }
       option.system = system
       return await client.sendMessage(prompt, option)
     } else if (use === 'chatglm4') {
@@ -884,6 +842,11 @@ class Core {
       let maxModelTokens = getMaxModelTokens(completionParams.model)
       // let system = promptPrefix
       let system = await handleSystem(e, promptPrefix, maxModelTokens)
+      /*
+      if (Config.enableChatSuno) {
+        system += 'If I ask you to generate music or write songs, you need to reply with information suitable for Suno to generate music. Please use keywords such as Verse, Chorus, Bridge, Outro, and End to segment the lyrics, such as [Verse], The returned message is in JSON format, with a structure of ```json{"option": "Suno", "tags": "style", "title": "title of the song", "lyrics": "lyrics"}```.'
+      }
+      */
       logger.debug(system)
       let opts = {
         apiBaseUrl: Config.openAiBaseUrl,
