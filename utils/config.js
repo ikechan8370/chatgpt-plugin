@@ -154,7 +154,6 @@ const defaultConfig = {
   autoJapanese: false,
   enableGenerateContents: false,
   enableGenerateSuno: false,
-  enableGenerateSunoForger: false,
   amapKey: '',
   azSerpKey: '',
   serpSource: 'ikechan8370',
@@ -186,6 +185,8 @@ const defaultConfig = {
   chatglmRefreshToken: '',
   sunoSessToken: '',
   sunoClientToken: '',
+  enableChatSuno: false,
+  SunoModel: 'local',
 
   claudeApiKey: '',
   claudeApiBaseUrl: 'http://claude-api.ikechan8370.com',

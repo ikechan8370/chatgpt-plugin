@@ -69,10 +69,10 @@ export default class BingSunoClient {
                 sunoURL,
                 prompt: prompt.songPrompt
             }
-            await e.reply('Bing Suno 生成中，请稍后')
+            await e.reply('Suno 生成中，请稍后')
             this.replyMsg(sunoDisplayResult, e)
         } else {
-            await e.reply('Bing Suno 数据获取失败')
+            await e.reply('Suno 数据获取失败')
             redis.del(`CHATGPT:SUNO:${e.sender.user_id}`)
         }
         redis.del(`CHATGPT:SUNO:${e.sender.user_id}`)
@@ -84,7 +84,7 @@ export default class BingSunoClient {
             redis.del(`CHATGPT:SUNO:${e.sender.user_id}`)
             return true
         }
-        let description = prompt.songPrompt
+        let description = prompt.songPrompt || prompt.lyrics
         await e.reply('正在生成，请稍后')
         try {
             let sessTokens = Config.sunoSessToken.split(',')

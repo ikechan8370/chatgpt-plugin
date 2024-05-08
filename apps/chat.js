@@ -5,6 +5,7 @@ import { Config } from '../utils/config.js'
 import { v4 as uuid } from 'uuid'
 import AzureTTS from '../utils/tts/microsoft-azure.js'
 import VoiceVoxTTS from '../utils/tts/voicevox.js'
+import BingSunoClient from '../utils/BingSuno.js'
 import {
   completeJSON,
   formatDate,
@@ -20,7 +21,8 @@ import {
   makeForwardMsg,
   randomString,
   render,
-  renderUrl
+  renderUrl,
+  extractMarkdownJson
 } from '../utils/common.js'
 
 import fetch from 'node-fetch'
@@ -836,6 +838,31 @@ export class chatgpt extends plugin {
           // 没错误的时候再更新，不然易出错就对话没了
           previousConversation.num = previousConversation.num + 1
           await redis.set(key, JSON.stringify(previousConversation), Config.conversationPreserveTime > 0 ? { EX: Config.conversationPreserveTime } : {})
+        }
+      }
+      // 处理suno生成
+      if ((use === 'bing' || use === 'xh') && Config.enableChatSuno) {
+        const sunoList = extractMarkdownJson(chatMessage.text)
+        for (let suno of sunoList) {
+          if (suno.json.option == 'Suno') {
+            chatMessage.text = chatMessage.text.replace(suno.markdown, `歌曲 《${suno.json.title}》`)
+            logger.info(`开始生成歌曲${suno.json.tags}`)
+            let client = new BingSunoClient() // 此处使用了bing的suno客户端，后续和本地suno合并
+            redis.set(`CHATGPT:SUNO:${e.sender.user_id}`, 'c', { EX: 30 }).then(() => {
+              try {
+                if (Config.SunoModel == 'local') {
+                  // 调用本地Suno配置进行歌曲生成
+                  client.getLocalSuno(suno.json, e)
+                } else if (Config.SunoModel == 'api') {
+                  // 调用第三方Suno配置进行歌曲生成
+                  client.getApiSuno(suno.json, e)
+                }
+              } catch (err) {
+                redis.del(`CHATGPT:SUNO:${e.sender.user_id}`)
+                this.reply('歌曲生成失败：' + err)
+              }
+            })
+          }
         }
       }
       let response = chatMessage?.text?.replace('\n\n\n', '\n')
