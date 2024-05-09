@@ -316,7 +316,8 @@ export default class BingSunoClient {
                 fs.unlinkSync(videoPath)
             }, 60000)
         } else {
-            logger.warn(`${song.title}下载视频失败，仅发送视频链接`)
+            logger.warn(`${song.title}下载视频失败`)
+            await this.reply(`${song.title}下载视频失败`)
         }
     }
 
@@ -621,22 +622,22 @@ export default class BingSunoClient {
         const lines = text.split('\n')
 
         lines.forEach(line => {
-            // 检查每一行是否包含分段关键词
-            const sectionFound = sectionKeywords.some(keyword => {
-                const regex = new RegExp(`\\[${keyword} \\d+\\]|\\(${keyword} \\d+\\)`, 'i')
-                return regex.test(line)
-            })
-            // 如果找到第一个分段关键词，开始提取歌词
-            if (sectionFound && !startExtracting) {
-                startExtracting = true
-            }
-            // 如果已经开始提取歌词，则添加到lyrics变量中
-            if (startExtracting) {
-                lyrics += line + '\n'
-            }
+          // 检查每一行是否包含分段关键词
+          const sectionFound = sectionKeywords.some(keyword => {
+            const regex = new RegExp(`\\[${keyword} \\d+\\]|\\(${keyword} \\d+\\)|\\*\\*${keyword} \\d+\\*\\*`, 'i')
+            return regex.test(line)
+          })
+          // 如果找到第一个分段关键词，开始提取歌词
+          if (sectionFound && !startExtracting) {
+            startExtracting = true
+          }
+          // 如果已经开始提取歌词，则添加到lyrics变量中
+          if (startExtracting) {
+            lyrics += line + '\n'
+          }
         })
         return lyrics.trim() // 返回处理过的歌词
-    }
+      }
 
     getRandomElements(arr, count) {
         const shuffled = arr.sort(() => 0.5 - Math.random())
