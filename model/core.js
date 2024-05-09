@@ -645,11 +645,9 @@ class Core {
         }
         promptAddition && (prompt += promptAddition)
         option.systemMessage = await handleSystem(e, opts.systemMessage)
-        /*
         if (Config.enableChatSuno) {
-          option.systemMessage += '如果我要求你生成音乐或写歌，你需要回复适合Suno生成音乐的信息。请使用Verse、Chorus、Bridge、Outro和End等关键字对歌词进行分段，如[Verse]。返回的消息需要使用markdown包裹的JSON格式，结构为```json{"option": "Suno", "tags": "style", "title": "title of the song", "lyrics": "lyrics"}```。'
+          option.systemMessage += '如果我要求你生成音乐或写歌，你需要回复适合Suno生成音乐的信息。请使用Verse、Chorus、Bridge、Outro和End等关键字对歌词进行分段，如[Verse 1]。音乐信息需要使用markdown包裹的JSON格式回复给我，结构为```json{"option": "Suno", "tags": "style", "title": "title of the song", "lyrics": "lyrics"}```。'
         }
-        */
         systemAddition && (option.systemMessage += systemAddition)
         opts.completionParams.parameters.tools = Object.keys(funcMap)
           .map(k => funcMap[k].function)
@@ -817,7 +815,7 @@ class Core {
         }
       }
       if (Config.enableChatSuno) {
-        system += 'If I ask you to generate music or write songs, you need to reply with information suitable for Suno to generate music. Please use keywords such as Verse, Chorus, Bridge, Outro, and End to segment the lyrics, such as [Verse], The returned message is in JSON format, with a structure of ```json{"option": "Suno", "tags": "style", "title": "title of the song", "lyrics": "lyrics"}```.'
+        system += 'If I ask you to generate music or write songs, you need to reply with information suitable for Suno to generate music. Please use keywords such as Verse, Chorus, Bridge, Outro, and End to segment the lyrics, such as [Verse 1], The returned message is in JSON format, with a structure of ```json{"option": "Suno", "tags": "style", "title": "title of the song", "lyrics": "lyrics"}```.'
       }
       option.system = system
       return await client.sendMessage(prompt, option)
@@ -842,11 +840,9 @@ class Core {
       let maxModelTokens = getMaxModelTokens(completionParams.model)
       // let system = promptPrefix
       let system = await handleSystem(e, promptPrefix, maxModelTokens)
-      /*
       if (Config.enableChatSuno) {
-        system += 'If I ask you to generate music or write songs, you need to reply with information suitable for Suno to generate music. Please use keywords such as Verse, Chorus, Bridge, Outro, and End to segment the lyrics, such as [Verse], The returned message is in JSON format, with a structure of ```json{"option": "Suno", "tags": "style", "title": "title of the song", "lyrics": "lyrics"}```.'
+        system += 'If I ask you to generate music or write songs, you need to reply with information suitable for Suno to generate music. Please use keywords such as Verse, Chorus, Bridge, Outro, and End to segment the lyrics, such as [Verse 1], The returned song information needs to be wrapped in JSON format and sent to me in Markdown format. The message structure is ` ` JSON {"option": "Suno", "tags": "style", "title": "title of The Song", "lyrics": "lyrics"} `.'
       }
-      */
       logger.debug(system)
       let opts = {
         apiBaseUrl: Config.openAiBaseUrl,
