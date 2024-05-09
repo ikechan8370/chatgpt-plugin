@@ -7,7 +7,7 @@ import fetch, {
 import crypto from 'crypto'
 import WebSocket from 'ws'
 import { Config } from './config.js'
-import { formatDate, getMasterQQ, isCN, getUserData, limitString, extractMarkdownJson } from './common.js'
+import { formatDate, getMasterQQ, isCN, getUserData, limitString } from './common.js'
 import moment from 'moment'
 import { getProxy } from './proxy.js'
 import common from '../../../lib/common/common.js'
@@ -338,7 +338,7 @@ export default class SydneyAIClient {
       ((Config.enableGroupContext && groupId) ? groupContextTip : '') +
       ((Config.enforceMaster && master) ? masterTip : '') +
       (Config.sydneyMood ? moodTip : '') +
-      ((!Config.enableGenerateSuno && Config.enableChatSuno) ? 'If I ask you to generate music or write songs, you need to reply with information suitable for Suno to generate music. Please use keywords such as Verse, Chorus, Bridge, Outro, and End to segment the lyrics, such as [Verse], The returned message is in JSON format, with a structure of {"option": "Suno", "tags": "style", "title": "title of the song", "lyrics": "lyrics"}.' : '')
+      ((!Config.enableGenerateSuno && Config.enableChatSuno) ? 'If I ask you to generate music or write songs, you need to reply with information suitable for Suno to generate music. Please use keywords such as Verse, Chorus, Bridge, Outro, and End to segment the lyrics, such as [Verse 1], The returned message is in JSON format, with a structure of {"option": "Suno", "tags": "style", "title": "title of the song", "lyrics": "lyrics"}.' : '')
     if (!text) {
       previousMessages = pm
     } else {

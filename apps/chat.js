@@ -832,13 +832,25 @@ export class chatgpt extends plugin {
         }
       }
       // 处理suno生成
-      if ((use === 'bing' || use === 'xh' || use === 'gemini') && Config.enableChatSuno) {
+      if (Config.enableChatSuno) {
+        let client = new BingSunoClient() // 此处使用了bing的suno客户端，后续和本地suno合并
         const sunoList = extractMarkdownJson(chatMessage.text)
+        if (sunoList.length == 0) {
+          const lyrics = client.extractLyrics(chatMessage.text)
+          if (lyrics !== '') {
+            sunoList.push(
+              {
+                json: { option: 'Suno', tags: client.generateRandomStyle(), title: `${e.sender.nickname}之歌`, lyrics: lyrics },
+                markdown: null,
+                origin: lyrics
+              }
+            )
+          }
+        }
         for (let suno of sunoList) {
           if (suno.json.option == 'Suno') {
-            chatMessage.text = chatMessage.text.replace(suno.markdown, `歌曲 《${suno.json.title}》`)
+            chatMessage.text = chatMessage.text.replace(suno.origin, `歌曲 《${suno.json.title}》`)
             logger.info(`开始生成歌曲${suno.json.tags}`)
-            let client = new BingSunoClient() // 此处使用了bing的suno客户端，后续和本地suno合并
             redis.set(`CHATGPT:SUNO:${e.sender.user_id}`, 'c', { EX: 30 }).then(() => {
               try {
                 if (Config.SunoModel == 'local') {

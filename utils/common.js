@@ -1281,45 +1281,76 @@ export function extractMarkdownJson(text) {
   const mdJsonPairs = []
   let currentJson = ''
   let currentMd = ''
+  let originalMd = ''
+  let jsonStarted = false
+  let isJsonBlock = false
 
   lines.forEach(line => {
     if (line.startsWith('```json')) {
-      // 如果已经在一个 JSON 中，先结束当前的 JSON
-      if (currentJson) {
-        try {
-          const parsedJson = JSON.parse(fixNewlinesInJsonString(currentJson))
-          mdJsonPairs.push({ json: parsedJson, markdown: currentMd + '```' })
-        } catch (e) {
-          console.error('JSON解析错误:', e)
-        }
-      }
-      // 开始新的 JSON 和 markdown
+      jsonStarted = true
+      isJsonBlock = true
       currentJson = ''
       currentMd = line + '\n'
+      originalMd = line + '\n'
+    } else if (line.startsWith('```') && !isJsonBlock) {
+      // 处理没有json标签的代码块
+      if (currentMd) {
+        mdJsonPairs.push({
+          markdown: currentMd + line,
+          origin: originalMd + currentMd + line
+        })
+      }
+      currentMd = line + '\n'
+      originalMd = line + '\n'
     } else if (line.startsWith('```') && currentJson) {
-      // 结束当前的 JSON
+      jsonStarted = false
+      isJsonBlock = false
       try {
         const parsedJson = JSON.parse(fixNewlinesInJsonString(currentJson))
-        mdJsonPairs.push({ json: parsedJson, markdown: currentMd + line })
+        mdJsonPairs.push({
+          json: parsedJson,
+          markdown: currentMd + line,
+          origin: originalMd + currentJson + '\n' + line
+        })
       } catch (e) {
         console.error('JSON解析错误:', e)
+        // 尝试修复并关闭JSON和Markdown
+        const fixedJson = fixNewlinesInJsonString(currentJson + '"}')
+        try {
+          const parsedJson = JSON.parse(fixedJson)
+          mdJsonPairs.push({
+            json: parsedJson,
+            markdown: currentMd + fixedJson + '\n```',
+            origin: originalMd + currentJson + '\n```'
+          })
+        } catch (e) {
+          console.error('修复后的JSON解析错误:', e)
+        }
       }
       currentJson = ''
       currentMd = ''
+      originalMd = ''
     } else {
-      // 如果在 JSON 中，继续添加行
-      currentJson += line + (line ? '\n' : '')
+      if (jsonStarted) {
+        currentJson += line + (line ? '\n' : '')
+      }
       currentMd += line + '\n'
+      originalMd += line + (line ? '\n' : '')
     }
-  })
+  });
 
-  // 检查是否有未结束的 JSON
-  if (currentJson) {
+  // 检查是否有未结束的JSON
+  if (jsonStarted) {
+    const fixedJson = fixNewlinesInJsonString(currentJson + '"}')
     try {
-      const parsedJson = JSON.parse(currentJson)
-      mdJsonPairs.push({ json: parsedJson, markdown: currentMd + '```' })
+      const parsedJson = JSON.parse(fixedJson)
+      mdJsonPairs.push({
+        json: parsedJson,
+        markdown: currentMd + fixedJson + '\n```',
+        origin: originalMd + currentJson + '\n```'
+      });
     } catch (e) {
-      console.error('JSON解析错误:', e)
+      console.error('未结束的JSON解析错误:', e)
     }
   }
 
