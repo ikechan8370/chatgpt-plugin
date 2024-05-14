@@ -40,7 +40,7 @@ export class OfficialChatGPTClient {
           metadata: {}
         }
       ],
-      model: Config.useGPT4 ? 'gpt-4' : 'text-davinci-002-render-sha',
+      model: 'auto',
       parent_message_id: parentMessageId,
       timezone_offset_min: -480,
       history_and_training_disabled: false
