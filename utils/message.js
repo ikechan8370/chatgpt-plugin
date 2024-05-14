@@ -56,7 +56,7 @@ export class OfficialChatGPTClient {
         headers: {
           accept: 'text/event-stream',
           'x-openai-assistant-app-id': '',
-          authorization: `Bearer ${this._accessToken}`,
+          authorization: this._accessToken ? `Bearer ${this._accessToken}` : '',
           'content-type': 'application/json',
           referer: 'https://chat.openai.com/chat',
           library: 'chatgpt-plugin'
