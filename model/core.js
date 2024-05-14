@@ -415,9 +415,9 @@ class Core {
     } else if (use === 'api3') {
       // official without cloudflare
       let accessToken = await redis.get('CHATGPT:TOKEN')
-      if (!accessToken) {
-        throw new Error('未绑定ChatGPT AccessToken，请使用#chatgpt设置token命令绑定token')
-      }
+      // if (!accessToken) {
+      //   throw new Error('未绑定ChatGPT AccessToken，请使用#chatgpt设置token命令绑定token')
+      // }
       this.chatGPTApi = new OfficialChatGPTClient({
         accessToken,
         apiReverseUrl: Config.api,
