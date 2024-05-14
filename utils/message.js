@@ -15,7 +15,10 @@ export class OfficialChatGPTClient {
     this._apiReverseUrl = apiReverseUrl
   }
 
-  async sendMessage (prompt, opts = {}) {
+  async sendMessage (prompt, opts = {}, retry = 3) {
+    if (retry < 0) {
+      throw new Error('retry limit exceeded')
+    }
     let {
       conversationId,
       parentMessageId = uuidv4(),
@@ -143,17 +146,22 @@ export class OfficialChatGPTClient {
       req.write(JSON.stringify(body))
       req.end()
     })
-    const response = await requestP
-    if (statusCode === 200) {
-      return {
-        text: response.response,
-        conversationId: response.conversationId,
-        id: response.messageId,
-        parentMessageId
+    try {
+      const response = await requestP
+      if (statusCode === 200) {
+        return {
+          text: response.response,
+          conversationId: response.conversationId,
+          id: response.messageId,
+          parentMessageId
+        }
+      } else {
+        console.log(response)
+        throw new Error(response)
       }
-    } else {
-      console.log(response)
-      throw new Error(response)
+    } catch (err) {
+      logger.warn(err)
+      return await this.sendMessage(prompt, opts, retry - 1)
     }
   }
 }
