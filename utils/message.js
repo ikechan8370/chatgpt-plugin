@@ -15,21 +15,23 @@ export class OfficialChatGPTClient {
     this._apiReverseUrl = apiReverseUrl
   }
 
-  async sendMessage (prompt, opts = {}, retry = 3) {
+  async sendMessage (prompt, opts = {}, retry = 3, errorMsg) {
     if (retry < 0) {
-      throw new Error('retry limit exceeded')
+      throw new Error(errorMsg || 'retry limit exceeded')
     }
     let {
       conversationId,
       parentMessageId = uuidv4(),
       messageId = uuidv4(),
-      action = 'next'
+      action = 'next',
+      model = ''
     } = opts
     let url = this._apiReverseUrl || officialChatGPTAPI
     if (this._apiReverseUrl && Config.proxy && !Config.apiForceUseReverse) {
       // 如果配了proxy，而且有反代，但是没开启强制反代
       url = officialChatGPTAPI
     }
+
     const body = {
       action,
       messages: [
@@ -43,7 +45,7 @@ export class OfficialChatGPTClient {
           metadata: {}
         }
       ],
-      model: 'auto',
+      model: model || (Config.useGPT4 ? 'gpt-4o' : 'auto'),
       parent_message_id: parentMessageId,
       timezone_offset_min: -480,
       history_and_training_disabled: false
@@ -157,11 +159,15 @@ export class OfficialChatGPTClient {
         }
       } else {
         console.log(response)
-        throw new Error(response)
+        throw new Error(JSON.stringify(response))
       }
     } catch (err) {
       logger.warn(err)
-      return await this.sendMessage(prompt, opts, retry - 1)
+      if (err.message?.includes('You have sent too many messages to the model. Please try again later.')) {
+        logger.warn('账户的gpt-o额度不足，将降级为auto重试')
+        opts.model = 'auto'
+      }
+      return await this.sendMessage(prompt, opts, retry - 1, err.message)
     }
   }
 
