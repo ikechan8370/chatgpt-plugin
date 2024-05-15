@@ -66,7 +66,8 @@ export class OfficialChatGPTClient {
           referer: 'https://chat.openai.com/chat',
           library: 'chatgpt-plugin'
         },
-        referrer: 'https://chat.openai.com/chat'
+        referrer: 'https://chat.openai.com/chat',
+        timeout: 10000
       }
       logger.info('using api3 reverse proxy: ' + url)
       let requestLib = url.startsWith('https') ? https : http
