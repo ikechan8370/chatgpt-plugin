@@ -175,7 +175,7 @@ export class OfficialChatGPTClient {
     const { id, conversationId } = opts
     let url = this._apiReverseUrl.replace('/conversation', '/synthesize')
     let randomVoice = this.voices[Math.floor(Math.random() * this.voices.length)]
-    url = `${url}?message_id=${id}&conversation_id=${conversationId}?voice=${randomVoice}`
+    url = `${url}?message_id=${id}&conversation_id=${conversationId}&voice=${randomVoice}&format=mp3`
     let res = await fetch(url, {
       method: 'GET',
       headers: {
