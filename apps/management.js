@@ -49,6 +49,11 @@ export class ChatgptManagement extends plugin {
           permission: 'master'
         },
         {
+          reg: '^#chatgpt(删除|解绑)(token|Token)?',
+          fnc: 'delAccessToken',
+          permission: 'master'
+        },
+        {
           reg: '^#chatgpt(设置|绑定)(Poe|POE)(token|Token)',
           fnc: 'setPoeCookie',
           permission: 'master'
@@ -703,6 +708,11 @@ azure语音：Azure 语音是微软 Azure 平台提供的一项语音服务，�
     this.setContext('saveToken')
     await this.reply('请发送ChatGPT AccessToken', true)
     return false
+  }
+
+  async delAccessToken () {
+    await redis.del('CHATGPT:TOKEN')
+    await this.reply('删除成功', true)
   }
 
   async setPoeCookie () {
