@@ -434,6 +434,14 @@ class Core {
         await redis.set(`CHATGPT:CONVERSATION_CREATER_ID:${sendMessageResult.conversationId}`, e.sender.user_id)
         await redis.set(`CHATGPT:CONVERSATION_CREATER_NICK_NAME:${sendMessageResult.conversationId}`, e.sender.card)
       }
+      (async () => {
+        let audio = await this.chatGPTApi.synthesis(sendMessageResult)
+        if (audio) {
+          await e.reply(segment.record(audio))
+        }
+      })().catch(err => {
+        logger.warn('发送语音失败', err)
+      })
       return sendMessageResult
     } else if (use === 'chatglm') {
       const cacheOptions = {

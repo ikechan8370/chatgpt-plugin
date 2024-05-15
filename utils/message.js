@@ -164,4 +164,35 @@ export class OfficialChatGPTClient {
       return await this.sendMessage(prompt, opts, retry - 1)
     }
   }
+
+  voices = ['ember', 'cove',
+    'juniper', 'sky', 'breeze'
+    // '__internal_only_shimmer',
+    // '__internal_only_santa'
+  ]
+
+  async synthesis (opts = {}) {
+    const { messageId, conversationId } = opts
+    let url = this._apiReverseUrl.replace('/conversation', '/synthesize')
+    let randomVoice = this.voices[Math.floor(Math.random() * this.voices.length)]
+    url = `${url}?message_id=${messageId}&conversation_id=${conversationId}?voice=${randomVoice}`
+    let res = await fetch(url, {
+      method: 'GET',
+      headers: {
+        accept: 'audio/mpeg',
+        'x-openai-assistant-app-id': '',
+        authorization: this._accessToken ? `Bearer ${this._accessToken}` : '',
+        referer: 'https://chat.openai.com/chat',
+        library: 'chatgpt-plugin'
+      }
+    })
+    if (res.status !== 200) {
+      throw new Error(await res.text())
+    }
+    if (res.headers.get('content-type') !== 'audio/mpeg') {
+      throw new Error('invalid content type')
+    }
+    let buffer = await res.arrayBuffer()
+    return Buffer.from(buffer)
+  }
 }
