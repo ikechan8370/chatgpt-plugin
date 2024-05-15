@@ -186,16 +186,6 @@ export class chatgpt extends plugin {
           fnc: 'setDefaultRole'
         },
         {
-          reg: '^#(chatgpt)?清空(chat)?队列$',
-          fnc: 'emptyQueue',
-          permission: 'master'
-        },
-        {
-          reg: '^#(chatgpt)?移出(chat)?队列首位$',
-          fnc: 'removeQueueFirst',
-          permission: 'master'
-        },
-        {
           reg: '#(OpenAI|openai)(剩余)?(余额|额度)',
           fnc: 'totalAvailable',
           permission: 'master'
@@ -624,50 +614,10 @@ export class chatgpt extends plugin {
       await this.reply('主人不让我回答你这种问题，真是抱歉了呢', true)
       return false
     }
-    if (use === 'api3') {
-      let randomId = uuid()
-      // 队列队尾插入，开始排队
-      await redis.rPush('CHATGPT:CHAT_QUEUE', [randomId])
-      let confirm = await redis.get('CHATGPT:CONFIRM')
-      let confirmOn = (!confirm || confirm === 'on') // confirm默认开启
-      if (await redis.lIndex('CHATGPT:CHAT_QUEUE', 0) === randomId) {
-        // 添加超时设置
-        await redis.pSetEx('CHATGPT:CHAT_QUEUE_TIMEOUT', Config.defaultTimeoutMs, randomId)
-        if (confirmOn) {
-          await this.reply('我正在思考如何回复你，请稍等', true, { recallMsg: 8 })
-        }
-      } else {
-        let length = await redis.lLen('CHATGPT:CHAT_QUEUE') - 1
-        if (confirmOn) {
-          await this.reply(`我正在思考如何回复你，请稍等，当前队列前方还有${length}个问题`, true, { recallMsg: 8 })
-        }
-        logger.info(`chatgpt队列前方还有${length}个问题。管理员可通过#清空队列来强制清除所有等待的问题。`)
-        // 开始排队
-        while (true) {
-          if (await redis.lIndex('CHATGPT:CHAT_QUEUE', 0) === randomId) {
-            await redis.pSetEx('CHATGPT:CHAT_QUEUE_TIMEOUT', Config.defaultTimeoutMs, randomId)
-            break
-          } else {
-            // 超时检查
-            if (await redis.exists('CHATGPT:CHAT_QUEUE_TIMEOUT') === 0) {
-              await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
-              await redis.pSetEx('CHATGPT:CHAT_QUEUE_TIMEOUT', Config.defaultTimeoutMs, await redis.lIndex('CHATGPT:CHAT_QUEUE', 0))
-              if (confirmOn) {
-                let length = await redis.lLen('CHATGPT:CHAT_QUEUE') - 1
-                await this.reply(`问题想不明白放弃了，开始思考下一个问题，当前队列前方还有${length}个问题`, true, { recallMsg: 8 })
-                logger.info(`问题超时已弹出，chatgpt队列前方还有${length}个问题。管理员可通过#清空队列来强制清除所有等待的问题。`)
-              }
-            }
-            await common.sleep(1500)
-          }
-        }
-      }
-    } else {
-      let confirm = await redis.get('CHATGPT:CONFIRM')
-      let confirmOn = (!confirm || confirm === 'on') // confirm默认开启
-      if (confirmOn) {
-        await this.reply('我正在思考如何回复你，请稍等', true, { recallMsg: 8 })
-      }
+    let confirm = await redis.get('CHATGPT:CONFIRM')
+    let confirmOn = (!confirm || confirm === 'on') // confirm默认开启
+    if (confirmOn) {
+      await this.reply('我正在思考如何回复你，请稍等', true, { recallMsg: 8 })
     }
     const emotionFlag = await redis.get(`CHATGPT:WRONG_EMOTION:${e.sender.user_id}`)
     let userReplySetting = await getUserReplySetting(this.e)
@@ -1081,10 +1031,6 @@ export class chatgpt extends plugin {
           this.reply(`建议的回复：\n${chatMessage.suggestedResponses}`)
         }
       }
-      if (use === 'api3') {
-        // 移除队列首位，释放锁
-        await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
-      }
     } catch (err) {
       logger.error(err)
       if (use === 'api3') {
@@ -1305,20 +1251,6 @@ export class chatgpt extends plugin {
       }
     } else {
       await this.reply('搜索助手失败', true)
-    }
-  }
-
-  async emptyQueue (e) {
-    await redis.lTrim('CHATGPT:CHAT_QUEUE', 1, 0)
-    await this.reply('已清空当前等待队列')
-  }
-
-  async removeQueueFirst (e) {
-    let uid = await redis.lPop('CHATGPT:CHAT_QUEUE', 0)
-    if (!uid) {
-      await this.reply('当前等待队列为空')
-    } else {
-      await this.reply('已移出等待队列首位: ' + uid)
     }
   }
 
