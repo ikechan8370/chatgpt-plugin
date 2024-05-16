@@ -164,9 +164,11 @@ export class OfficialChatGPTClient {
       }
     } catch (err) {
       logger.warn(err)
-      if (err.message?.includes('You have sent too many messages to the model. Please try again later.')) {
-        logger.warn('账户的gpt-o额度不足，将降级为auto重试')
-        opts.model = 'auto'
+      if (typeof err === 'string') {
+        if (err.includes('You have sent too many messages to the model. Please try again later.')) {
+          logger.warn('账户的gpt-o额度不足，将降级为auto重试')
+          opts.model = 'auto'
+        }
       }
       return await this.sendMessage(prompt, opts, retry - 1, err.message)
     }
