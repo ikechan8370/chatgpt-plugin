@@ -11,9 +11,10 @@ export async function makeWordcloud (e, groupId, duration = 0, userId) {
 }
 
 function getTokenizer (e) {
-  if (e.adapter === 'shamrock') {
-    return Tokenizer.shamrock
-  } else {
-    return Tokenizer.default
-  }
+  // if (e.adapter === 'shamrock') {
+  //   return Tokenizer.shamrock
+  // } else {
+  //   return Tokenizer.default
+  // }
+  return Tokenizer.default
 }
