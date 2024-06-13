@@ -715,9 +715,9 @@ export async function getImg (e) {
   if (e.source) {
     let reply
     let seq = e.isGroup ? e.source.seq : e.source.time
-    if (e.adapter === 'shamrock') {
-      seq = e.source.message_id
-    }
+    // if (e.adapter === 'shamrock') {
+    //   seq = e.source.message_id
+    // }
     if (e.isGroup) {
       reply = (await e.group.getChatHistory(seq, 1)).pop()?.message
     } else {
