@@ -186,6 +186,8 @@ export default class XinghuoClient {
       domain = 'generalv3'
     } else if (Config.xhmode == 'apiv3.5') {
       domain = 'generalv3.5'
+    } else if (Config.xhmode == 'apiv4.0') {
+      domain = '4.0Ultra'
     }
     // 编写消息内容
     const wsSendData = {
