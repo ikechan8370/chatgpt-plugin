@@ -461,6 +461,7 @@ export function supportGuoba () {
               { label: '讯飞星火认知大模型V2.0', value: 'apiv2' },
               { label: '讯飞星火认知大模型V3.0', value: 'apiv3' },
               { label: '讯飞星火认知大模型V3.5', value: 'apiv3.5' },
+              { label: '讯飞星火认知大模型V4.0', value: 'apiv4.0' },
               { label: '讯飞星火助手', value: 'assistants' }
             ]
           }
