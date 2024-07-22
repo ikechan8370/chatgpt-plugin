@@ -618,7 +618,7 @@ ${translateLangLabels}
       e,
       userId: e.sender.user_id,
       key: Config.geminiKey,
-      model: 'gemini-pro-vision',
+      model: 'gemini-1.5-flash-latest',
       baseUrl: Config.geminiBaseUrl,
       debug: Config.debug
     })
