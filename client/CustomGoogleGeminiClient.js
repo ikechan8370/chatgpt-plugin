@@ -79,7 +79,8 @@ export class CustomGoogleGeminiClient extends GoogleGeminiClient {
    *     maxOutputTokens: number?,
    *     temperature: number?,
    *     topP: number?,
-   *     tokK: number?
+   *     tokK: number?,
+   *     replyPureTextCallback: Function
    * }} opt
    * @returns {Promise<{conversationId: string?, parentMessageId: string, text: string, id: string}>}
    */
@@ -200,9 +201,14 @@ export class CustomGoogleGeminiClient extends GoogleGeminiClient {
       console.log(JSON.stringify(response))
     }
     responseContent = response.candidates[0].content
-    if (responseContent.parts[0].functionCall) {
+    if (responseContent.parts.find(i => i.functionCall)) {
       // functionCall
-      const functionCall = responseContent.parts[0].functionCall
+      const functionCall = responseContent.parts.find(i => i.functionCall).functionCall
+      const text = responseContent.parts.find(i => i.text).text
+      if (text) {
+        // send reply first
+        opt.replyPureTextCallback && await opt.replyPureTextCallback(text)
+      }
       // Gemini有时候只回复一个空的functionCall,无语死了
       if (functionCall.name) {
         logger.info(JSON.stringify(functionCall))
