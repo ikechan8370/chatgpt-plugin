@@ -14,7 +14,7 @@ export class SendMusicTool extends AbstractTool {
         description: 'Fill in the target user_id or groupId when you need to send music to specific group or user, otherwise leave blank'
       }
     },
-    required: ['keyword']
+    required: ['id']
   }
 
   func = async function (opts, e) {

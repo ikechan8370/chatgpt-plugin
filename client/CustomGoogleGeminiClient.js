@@ -66,11 +66,23 @@ export class CustomGoogleGeminiClient extends GoogleGeminiClient {
   }
 
   /**
-     *
-     * @param text
-     * @param {{conversationId: string?, parentMessageId: string?, stream: boolean?, onProgress: function?, functionResponse: FunctionResponse?, system: string?, image: string?}} opt
-     * @returns {Promise<{conversationId: string?, parentMessageId: string, text: string, id: string}>}
-     */
+   *
+   * @param text
+   * @param {{
+   *     conversationId: string?,
+   *     parentMessageId: string?,
+   *     stream: boolean?,
+   *     onProgress: function?,
+   *     functionResponse: FunctionResponse?,
+   *     system: string?,
+   *     image: string?,
+   *     maxOutputTokens: number?,
+   *     temperature: number?,
+   *     topP: number?,
+   *     tokK: number?
+   * }} opt
+   * @returns {Promise<{conversationId: string?, parentMessageId: string, text: string, id: string}>}
+   */
   async sendMessage (text, opt = {}) {
     let history = await this.getHistory(opt.parentMessageId)
     let systemMessage = opt.system
@@ -98,7 +110,7 @@ export class CustomGoogleGeminiClient extends GoogleGeminiClient {
     const idModel = crypto.randomUUID()
     const thisMessage = opt.functionResponse
       ? {
-          role: 'function',
+          role: 'user',
           parts: [{
             functionResponse: opt.functionResponse
           }],
@@ -120,7 +132,7 @@ export class CustomGoogleGeminiClient extends GoogleGeminiClient {
       })
     }
     history.push(_.cloneDeep(thisMessage))
-    let url = `${this.baseUrl}/v1beta/models/${this.model}:generateContent?key=${this._key}`
+    let url = `${this.baseUrl}/v1beta/models/${this.model}:generateContent`
     let body = {
       // 不去兼容官方的简单格式了，直接用，免得function还要转换
       /**
@@ -146,14 +158,15 @@ export class CustomGoogleGeminiClient extends GoogleGeminiClient {
         }
       ],
       generationConfig: {
-        maxOutputTokens: 1000,
-        temperature: 0.9,
-        topP: 0.95,
-        topK: 16
+        maxOutputTokens: opt.maxOutputTokens || 1000,
+        temperature: opt.temperature || 0.9,
+        topP: opt.topP || 0.95,
+        topK: opt.tokK || 16
       },
       tools: [
         {
           functionDeclarations: this.tools.map(tool => tool.function())
+          // codeExecution: {}
         }
       ]
     }
@@ -167,7 +180,10 @@ export class CustomGoogleGeminiClient extends GoogleGeminiClient {
     })
     let result = await newFetch(url, {
       method: 'POST',
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
+      headers: {
+        'x-goog-api-key': this._key
+      }
     })
     if (result.status !== 200) {
       throw new Error(await result.text())
@@ -177,8 +193,8 @@ export class CustomGoogleGeminiClient extends GoogleGeminiClient {
      */
     let responseContent
     /**
-       * @type {{candidates: Array<{content: Content}>}}
-       */
+     * @type {{candidates: Array<{content: Content}>}}
+     */
     let response = await result.json()
     if (this.debug) {
       console.log(JSON.stringify(response))
@@ -193,8 +209,8 @@ export class CustomGoogleGeminiClient extends GoogleGeminiClient {
         const funcName = functionCall.name
         let chosenTool = this.tools.find(t => t.name === funcName)
         /**
-           * @type {FunctionResponse}
-           */
+         * @type {FunctionResponse}
+         */
         let functionResponse = {
           name: funcName,
           response: {
@@ -259,7 +275,7 @@ export class CustomGoogleGeminiClient extends GoogleGeminiClient {
       await this.upsertMessage(respMessage)
     }
     return {
-      text: responseContent.parts[0].text,
+      text: responseContent.parts[0].text.trim(),
       conversationId: '',
       parentMessageId: idThis,
       id: idModel

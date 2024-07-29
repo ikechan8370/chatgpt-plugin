@@ -15,7 +15,7 @@ export class SendMessageToSpecificGroupOrUserTool extends AbstractTool {
         description: 'target qq or group number'
       }
     },
-    required: ['msg', 'target']
+    required: ['msg', 'targetGroupIdOrQQNumber']
   }
 
   func = async function (opt, e) {
