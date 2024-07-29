@@ -204,7 +204,7 @@ export class CustomGoogleGeminiClient extends GoogleGeminiClient {
     if (responseContent.parts.find(i => i.functionCall)) {
       // functionCall
       const functionCall = responseContent.parts.find(i => i.functionCall).functionCall
-      const text = responseContent.parts.find(i => i.text).text
+      const text = responseContent.parts.find(i => i.text)?.text
       if (text) {
         // send reply first
         opt.replyPureTextCallback && await opt.replyPureTextCallback(text)
