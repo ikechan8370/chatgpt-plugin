@@ -232,9 +232,11 @@ export class CustomGoogleGeminiClient extends GoogleGeminiClient {
         } else {
           // execute function
           try {
+            let isAdmin = ['admin', 'owner'].includes(this.e.sender.role)
+            let isOwner = ['owner'].includes(this.e.sender.role)
             let args = Object.assign(functionCall.args, {
-              isAdmin: this.e.group?.is_admin,
-              isOwner: this.e.group?.is_owner,
+              isAdmin,
+              isOwner,
               sender: this.e.sender,
               mode: 'gemini'
             })
