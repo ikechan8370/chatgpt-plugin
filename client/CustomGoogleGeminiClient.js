@@ -232,8 +232,8 @@ export class CustomGoogleGeminiClient extends GoogleGeminiClient {
         } else {
           // execute function
           try {
-            let isAdmin = ['admin', 'owner'].includes(this.e.sender.role)
-            let isOwner = ['owner'].includes(this.e.sender.role)
+            let isAdmin = ['admin', 'owner'].includes(this.e.sender.role) || (this.e.group?.is_admin && this.e.isMaster)
+            let isOwner = ['owner'].includes(this.e.sender.role) || (this.e.group?.is_owner && this.e.isMaster)
             let args = Object.assign(functionCall.args, {
               isAdmin,
               isOwner,
