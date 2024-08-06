@@ -24,7 +24,7 @@
     "lodash": "^4.17.21",
     "microsoft-cognitiveservices-speech-sdk": "1.32.0",
     "node-fetch": "^3.3.1",
-    "openai": "^3.2.1",
+    "openai": "3.2.1",
     "p-timeout": "^6.1.2",
     "quick-lru": "6.1.1",
     "random": "^4.1.0",
