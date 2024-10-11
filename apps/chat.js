@@ -823,6 +823,15 @@ export class chatgpt extends plugin {
         }
       }
       let response = chatMessage?.text?.replace('\n\n\n', '\n')
+      if (handler.has('chatgpt.response.post')) {
+        handler.call('chatgpt.response.post', this.e, {
+          content: response,
+          use,
+          prompt
+        }, true).catch(err => {
+          logger.error('后处理器出错', err)
+        })
+      }
       let mood = 'blandness'
       if (!response) {
         await this.reply('没有任何回复', true)
