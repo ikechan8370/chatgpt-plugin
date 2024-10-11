@@ -1,5 +1,5 @@
-import plugin from '../../../../lib/plugins/plugin.js'
-import { Config } from '../../utils/config.js'
+import plugin from '../../../lib/plugins/plugin.js'
+import { Config } from '../utils/config.js'
 
 const PLUGIN_CHAT = 'ChatGpt 对话'
 const PLUGIN_MANAGEMENT = 'ChatGPT-Plugin 管理'

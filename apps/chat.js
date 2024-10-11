@@ -823,7 +823,9 @@ export class chatgpt extends plugin {
         }
       }
       let response = chatMessage?.text?.replace('\n\n\n', '\n')
+      
       if (handler.has('chatgpt.response.post')) {
+        logger.debug('调用后处理器: chatgpt.response.post')
         handler.call('chatgpt.response.post', this.e, {
           content: response,
           use,
