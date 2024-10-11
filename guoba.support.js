@@ -63,12 +63,12 @@ export function supportGuoba () {
           bottomHelpMessage: '独立的后台管理面板（默认3321端口），与锅巴类似。工具箱会有额外占用，启动速度稍慢，酌情开启。修改后需重启生效！！！',
           component: 'Switch'
         },
-        {
-          field: 'enableMd',
-          label: 'QQ开启markdown',
-          bottomHelpMessage: 'qq的第三方md，非QQBot。需要适配器实现segment.markdown和segment.button方可使用，否则不建议开启，会造成各种错误。默认关闭',
-          component: 'Switch'
-        },
+        // {
+        //   field: 'enableMd',
+        //   label: 'QQ开启markdown',
+        //   bottomHelpMessage: 'qq的第三方md，非QQBot。需要适配器实现segment.markdown和segment.button方可使用，否则不建议开启，会造成各种错误。默认关闭',
+        //   component: 'Switch'
+        // },
         {
           field: 'translateSource',
           label: '翻译来源',

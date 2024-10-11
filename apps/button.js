@@ -53,6 +53,14 @@ export class ChatGPTButtonHandler extends plugin {
     })
   }
 
+  /**
+   * 按钮处理器
+   * @param e
+   * @param options
+   * @param reject
+   * @deprecated
+   * @return {Promise<{appid: number, rows: [{buttons: {render_data: {style: number, label, visited_label}, action: {data, permission: {type: number}, unsupport_tips: string, enter: boolean, type: number}, id: string}[]}]}|{appid: number, rows: [{buttons: [{render_data: {style: number, label: *, visited_label: *}, action: {data: *, permission: {type: number}, unsupport_tips: string, enter: boolean, type: number}, id: string},{render_data: {style: number, label: *, visited_label: *}, action: {data: *, permission: {type: number}, unsupport_tips: string, enter: boolean, type: number}, id: string},{render_data: {style: number, label: *, visited_label: *}, action: {data: *, permission: {type: number}, unsupport_tips: string, enter: boolean, type: number}, id: string}]}]}|{appid: number, rows: [{buttons: {render_data: {style: number, label, visited_label}, action: {data, permission: {type: number}, unsupport_tips: string, enter: boolean, type: number}, id: string}[]},{buttons: {render_data: {style: number, label, visited_label}, action: {data, permission: {type: number}, unsupport_tips: string, enter: boolean, type: number}, id: string}[]},{buttons: {render_data: {style: number, label, visited_label}, action: {data, permission: {type: number}, unsupport_tips: string, enter: boolean, type: number}, id: string}[]},{buttons: {render_data: {style: number, label, visited_label}, action: {data, permission: {type: number}, unsupport_tips: string, enter: boolean, type: number}, id: string}[]}]}|{appid: number, rows: [{buttons: {render_data: {style: number, label, visited_label}, action: {data, permission: {type: number}, unsupport_tips: string, enter: boolean, type: number}, id: string}[]},{buttons: {render_data: {style: number, label, visited_label}, action: {data, permission: {type: number}, unsupport_tips: string, enter: boolean, type: number}, id: string}[]},{buttons: {render_data: {style: number, label, visited_label}, action: {data, permission: {type: number}, unsupport_tips: string, enter: boolean, type: number}, id: string}[]}]}|null>}
+   */
   async btnHandler (e, options, reject) {
     // logger.mark('[chatgpt按钮处理器]')
     if (!Config.enableMd) {
