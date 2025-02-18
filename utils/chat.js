@@ -10,19 +10,14 @@ export async function getChatHistoryGroup (e, num) {
     let latestChat = latestChats[0]
     if (latestChat) {
       let seq = latestChat.seq || latestChat.message_id
-      let chats = []
-      while (chats.length < num) {
-        let chatHistory = await e.group.getChatHistory(seq, 20)
-        if (!chatHistory || chatHistory.length === 0) {
-          break
-        }
-        chats.push(...chatHistory.reverse())
-        if (seq === chatHistory[chatHistory.length - 1].seq || seq === chatHistory[chatHistory.length - 1].message_id) {
-          break
-        }
-        seq = chatHistory[chatHistory.length - 1].seq || chatHistory[chatHistory.length - 1].message_id
-      }
-      chats = chats.slice(0, num).reverse()
+      let chats = [e]
+	  while(chats.length < num){
+		  let chatHistory = await e.group.getChatHistory(seq, 20)
+		  if(seq === (chatHistory[0].seq || chatHistory[0].message_id)) break
+		  seq = chatHistory[0].seq || chatHistory[0].message_id
+		  chats.unshift(...chatHistory.filter(chat => chat.sender?.user_id).slice(0, -1))
+	  }
+      chats = chats.slice(chats.length - num)
       try {
         let mm = await e.bot.gml
         for (const chat of chats) {
@@ -45,7 +40,6 @@ export async function getChatHistoryGroup (e, num) {
       } catch (err) {
         logger.warn(err)
       }
-      // console.log(chats)
       return chats
     }
   }
