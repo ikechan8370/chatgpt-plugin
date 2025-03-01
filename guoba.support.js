@@ -985,6 +985,18 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
+          field: 'bymContinue',
+          label: '伪人模式连续对话',
+          component: 'Switch',
+          bottomHelpMessage: '开启后会在延时时长内监听触发者的消息来与 bot 连续对话',
+        },
+        {
+          field: 'bymContinueDelay',
+          label: '伪人模式连续对话延时',
+          component: 'InputNumber',
+          bottomHelpMessage: '伪人模式连续对话延时时长，单位：秒',
+        },
+        {
           field: 'bymFuckPrompt',
           label: '伪人模式骂人反击的设定词',
           component: 'Input'

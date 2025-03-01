@@ -38,14 +38,10 @@ export class bym extends plugin {
     let sender = e.sender.user_id
     let card = e.sender.card || e.sender.nickname
     let group = e.group_id
-    let prop = Math.floor(Math.random() * 100)
+    let prop = this._genProp()
     if (Config.assistantLabel && e.msg?.includes(Config.assistantLabel)) {
       prop = -1
     }
-    // 去掉吧 频率有点逆天
-    // if (e.msg?.endsWith('？')) {
-    //   prop = prop / 10
-    // }
 
     let fuck = false
     let candidate = Config.bymPreset
@@ -60,59 +56,74 @@ export class bym extends plugin {
         candidate +
         `\n你的回复应该尽可能简练，像人类一样随意，不要附加任何奇怪的东西，如聊天记录的格式（比如${Config.assistantLabel}：），禁止重复聊天记录。`
 
-      let rsp = await core.sendMessage(e.msg, {}, Config.bymMode, e, {
-        enableSmart: Config.smartMode,
-        system: {
-          api: system,
-          qwen: system,
-          bing: system,
-          claude: system,
-          claude2: system,
-          gemini: system,
-          xh: system
-        },
-        settings: {
-          replyPureTextCallback: msg => {
-            msg = filterResponseChunk(msg)
-            msg && e.reply(msg)
+
+      const handleReply = async (e) => {
+        let rsp = await core.sendMessage(e.msg, {}, Config.bymMode, e, {
+          enableSmart: Config.smartMode,
+          system: {
+            api: system,
+            qwen: system,
+            bing: system,
+            claude: system,
+            claude2: system,
+            gemini: system,
+            xh: system
           },
-          // 强制打开上下文，不然伪人笨死了
-          enableGroupContext: true
-        }
-      })
-      // let rsp = await client.sendMessage(e.msg, opt)
-      let text = rsp.text
-      let texts = customSplitRegex(text, /(?<!\?)[。？\n](?!\?)/, 3)
-      // let texts = text.split(/(?<!\?)[。？\n](?!\?)/, 3)
-      for (let t of texts) {
-        if (!t) {
-          continue
-        }
-        t = t.trim()
-        if (text[text.indexOf(t) + t.length] === '？') {
-          t += '？'
-        }
-        let finalMsg = await convertFaces(t, true, e)
-        logger.info(JSON.stringify(finalMsg))
-        finalMsg = finalMsg.map(filterResponseChunk).filter(i => !!i)
-        if (finalMsg && finalMsg.length > 0) {
-          if (Math.floor(Math.random() * 100) < 10) {
-            await this.reply(finalMsg, true, {
-              recallMsg: fuck ? 10 : 0
+          settings: {
+            replyPureTextCallback: msg => {
+              msg = filterResponseChunk(msg)
+              msg && e.reply(msg)
+            },
+            // 强制打开上下文，不然伪人笨死了
+            enableGroupContext: true
+          }
+        })
+        // let rsp = await client.sendMessage(e.msg, opt)
+        let text = rsp.text
+        let texts = customSplitRegex(text, /(?<!\?)[。？\n](?!\?)/, 3)
+        // let texts = text.split(/(?<!\?)[。？\n](?!\?)/, 3)
+        for (let [index, t] of texts.entries()) {
+          if (!t) {
+            continue
+          }
+          t = t.trim()
+          if (text[text.indexOf(t) + t.length] === '？') {
+            t += '？'
+          }
+          let finalMsg = await convertFaces(t, true, e)
+          logger.info(JSON.stringify(finalMsg))
+          finalMsg = finalMsg.map(filterResponseChunk).filter(i => !!i)
+          if (finalMsg && finalMsg.length > 0) {
+            if(index !== 0) await new Promise((resolve) => {
+              setTimeout(() => {
+                resolve()
+              }, Math.min(t.length * 200, 3000))
             })
-          } else {
-            await this.reply(finalMsg, false, {
+            await this.reply(finalMsg, (this._genProp() < 10) , {
               recallMsg: fuck ? 10 : 0
             })
           }
-          await new Promise((resolve, reject) => {
-            setTimeout(() => {
-              resolve()
-            }, Math.min(t.length * 200, 3000))
-          })
+        }
+
+        if(Config.bymContinue){
+          const delay = Config.bymContinueDelay || 10
+          const continueEvent = await this.awaitContext(e.isGroup, delay, "");
+          if(continueEvent){
+            logger.info("bym继续对话")
+            await handleReply(continueEvent)
+          }else {
+            logger.mark("bym连续对话结束")
+          }
         }
       }
+
+      await handleReply(e)
+
     }
     return false
+  }
+
+  _genProp() {
+    return Math.floor(Math.random() * 100)
   }
 }

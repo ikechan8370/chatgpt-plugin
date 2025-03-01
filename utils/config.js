@@ -215,6 +215,8 @@ const defaultConfig = {
   // 伪人额外设定
   bymPreset: '',
   bymMode: 'gemini',
+  bymContinue: false,
+  bymContinueDelay: 10,
   // 思考过程转发
   forwardReasoning: true,
   geminiEnableGoogleSearch: false,
