@@ -988,13 +988,13 @@ export function supportGuoba () {
           field: 'bymContinue',
           label: '伪人模式连续对话',
           component: 'Switch',
-          bottomHelpMessage: '开启后会在延时时长内监听触发者的消息来与 bot 连续对话',
+          bottomHelpMessage: '开启后会在超时时长内监听触发者的消息来与 bot 连续对话',
         },
         {
           field: 'bymContinueDelay',
-          label: '伪人模式连续对话延时',
+          label: '伪人模式连续对话超时时长',
           component: 'InputNumber',
-          bottomHelpMessage: '伪人模式连续对话延时时长，单位：秒',
+          bottomHelpMessage: '伪人模式连续对话超时时长限制，单位：秒',
         },
         {
           field: 'bymFuckPrompt',
