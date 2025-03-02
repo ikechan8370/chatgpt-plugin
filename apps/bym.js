@@ -53,7 +53,7 @@ export class bym extends plugin {
 
     if(Config.bymContinue){
       const delay = Config.bymContinueDelay || 10
-      this.setContext("_handleContinue", e.isGroup, delay, "")
+      this.setContext("_handleContinue", false, delay, "")
     }
 
     let sender = e.sender.user_id
