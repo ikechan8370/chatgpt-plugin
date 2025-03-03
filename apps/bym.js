@@ -6,7 +6,7 @@ import core, { roleMap } from '../model/core.js'
 import { formatDate } from '../utils/common.js'
 
 export class bym extends plugin {
-  constructor () {
+  constructor() {
     super({
       name: 'ChatGPT-Plugin 伪人bym',
       dsc: 'bym',
@@ -25,7 +25,7 @@ export class bym extends plugin {
   }
 
   /** 复读 */
-  async bym (e) {
+  async bym(e) {
     if (!Config.enableBYM) {
       return false
     }
@@ -51,25 +51,21 @@ export class bym extends plugin {
 
   async _handleReply(e) {
 
-    if(Config.bymContinue){
-      const delay = Config.bymContinueDelay || 10
-      this.setContext("_handleContinue", false, delay, "")
-    }
-
     let sender = e.sender.user_id
     let card = e.sender.card || e.sender.nickname
     let group = e.group_id
 
     let fuck = false
     let candidate = Config.bymPreset
+    let delay = Config.bymContinueDelay || 10
     if (Config.bymFuckList?.find(i => e.msg?.includes(i))) {
       fuck = true
       candidate = candidate + Config.bymFuckPrompt
     }
 
     let system = `你的名字是“${Config.assistantLabel}”，你在一个qq群里，群号是${group},当前和你说话的人群名片是${card}, qq号是${sender}, 请你结合用户的发言和聊天记录作出回应，要求表现得随性一点，最好参与讨论，混入其中。不要过分插科打诨，不知道说什么可以复读群友的话。要求你做搜索、发图、发视频和音乐等操作时要使用工具。不可以直接发[图片]这样蒙混过关。要求优先使用中文进行对话。如果此时不需要自己说话，可以只回复<EMPTY>` +
-    candidate +
-    `\n你的回复应该尽可能简练，像人类一样随意，不要附加任何奇怪的东西，如聊天记录的格式（比如${Config.assistantLabel}：），禁止重复聊天记录。`
+      candidate +
+      `\n你的回复应该尽可能简练，像人类一样随意，不要附加任何奇怪的东西，如聊天记录的格式（比如${Config.assistantLabel}：），禁止重复聊天记录。`
 
     let rsp = await core.sendMessage(e.msg, {}, Config.bymMode, e, {
       enableSmart: Config.smartMode,
@@ -107,14 +103,19 @@ export class bym extends plugin {
       logger.info(JSON.stringify(finalMsg))
       finalMsg = finalMsg.map(filterResponseChunk).filter(i => !!i)
       if (finalMsg && finalMsg.length > 0) {
-        if(index !== 0) await new Promise((resolve) => {
+        if (index !== 0) await new Promise((resolve) => {
           setTimeout(() => {
             resolve()
           }, Math.min(t.length * 200, 3000))
         })
-        await this.reply(finalMsg, (this._genProp() < 10) , {
+        await this.reply(finalMsg, (this._genProp() < 10), {
           recallMsg: fuck ? 10 : 0
         })
+
+        if (Config.bymContinue) {
+          this.finish("_handleContinue", false)
+          this.setContext("_handleContinue", false, delay, "")
+        }
       }
     }
 
@@ -126,8 +127,8 @@ export class bym extends plugin {
   }
 
   async _handleContinue(e) {
-    logger.mark("bym继续对话")
-    this.finish("_handleContinue", e.isGroup)
+    logger.mark("bym continue")
+    this.finish("_handleContinue", false)
     await this._handleReply(e)
   }
 }
