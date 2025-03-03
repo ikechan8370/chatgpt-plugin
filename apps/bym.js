@@ -42,15 +42,12 @@ export class bym extends plugin {
 
     if (prop < Config.bymRate) {
       logger.info('random chat hit')
-
       await this._handleReply(e)
-
     }
     return false
   }
 
   async _handleReply(e) {
-
     let sender = e.sender.user_id
     let card = e.sender.card || e.sender.nickname
     let group = e.group_id
@@ -65,7 +62,7 @@ export class bym extends plugin {
 
     let system = `你的名字是“${Config.assistantLabel}”，你在一个qq群里，群号是${group},当前和你说话的人群名片是${card}, qq号是${sender}, 请你结合用户的发言和聊天记录作出回应，要求表现得随性一点，最好参与讨论，混入其中。不要过分插科打诨，不知道说什么可以复读群友的话。要求你做搜索、发图、发视频和音乐等操作时要使用工具。不可以直接发[图片]这样蒙混过关。要求优先使用中文进行对话。如果此时不需要自己说话，可以只回复<EMPTY>` +
       candidate +
-      `\n你的回复应该尽可能简练，像人类一样随意，不要附加任何奇怪的东西，如聊天记录的格式（比如${Config.assistantLabel}：），禁止重复聊天记录。`
+      `\\n你的回复应该尽可能简练，像人类一样随意，不要附加任何奇怪的东西，如聊天记录的格式（比如${Config.assistantLabel}：），禁止重复聊天记录。`
 
     let rsp = await core.sendMessage(e.msg, {}, Config.bymMode, e, {
       enableSmart: Config.smartMode,
@@ -87,10 +84,8 @@ export class bym extends plugin {
         enableGroupContext: true
       }
     })
-    // let rsp = await client.sendMessage(e.msg, opt)
     let text = rsp.text
-    let texts = customSplitRegex(text, /(?<!\?)[。？\n](?!\?)/, 3)
-    // let texts = text.split(/(?<!\?)[。？\n](?!\?)/, 3)
+    let texts = customSplitRegex(text, /(?<!\\?)[。？\\n](?!\\?)/, 3)
     for (let [index, t] of texts.entries()) {
       if (!t) {
         continue
@@ -113,13 +108,11 @@ export class bym extends plugin {
         })
 
         if (Config.bymContinue) {
-          this.finish("_handleContinue", false)
+          this.finish("_handleContinue")
           this.setContext("_handleContinue", false, delay, "")
         }
       }
     }
-
-
   }
 
   _genProp() {
@@ -128,7 +121,7 @@ export class bym extends plugin {
 
   async _handleContinue(e) {
     logger.mark("bym continue")
-    this.finish("_handleContinue", false)
-    await this._handleReply(e)
+    this.finish("_handleContinue")
+    await this._handleReply(this.e)
   }
 }
