@@ -12,6 +12,7 @@ export class ChatGLM4Client extends BaseClient {
     this.supportFunction = false
     this.debug = props.debug
     this._refreshToken = props.refreshToken
+    this.if_plus_model = props.if_plus_model || false
   }
 
   async getAccessToken (refreshToken = this._refreshToken) {
@@ -61,6 +62,7 @@ export class ChatGLM4Client extends BaseClient {
       meta_data: {
         is_test: false,
         input_question_type: 'xxxx',
+        if_plus_model: this.if_plus_model,
         channel: ''
       },
       messages: [

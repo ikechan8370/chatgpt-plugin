@@ -595,7 +595,8 @@ class Core {
       return await client.sendMessage(prompt, option)
     } else if (use === 'chatglm4') {
       const client = new ChatGLM4Client({
-        refreshToken: Config.chatglmRefreshToken
+        refreshToken: Config.chatglmRefreshToken,
+        if_plus_model: Config.if_plus_model
       })
       let resp = await client.sendMessage(prompt, conversation)
       if (resp.image) {

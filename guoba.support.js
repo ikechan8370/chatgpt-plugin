@@ -317,6 +317,12 @@ export function supportGuoba () {
           component: 'Input'
         },
         {
+          field: 'if_plus_model',
+          label: 'PLUS模式',
+          bottomHelpMessage: '更聪明，更全面',
+          component: 'Switch'
+        },
+        {
           label: '以下为Claude API方式的配置',
           component: 'Divider'
         },
