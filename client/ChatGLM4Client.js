@@ -88,7 +88,11 @@ export class ChatGLM4Client extends BaseClient {
           authorization: `Bearer ${this._accessToken}`,
           'content-type': 'application/json',
           referer: 'https://www.chatglm.cn/main/alltoolsdetail',
-          origin: 'https://www.chatglm.cn'
+          origin: 'https://www.chatglm.cn',
+          'X-App-Platform': 'pc',
+          'X-App-Version': '0.0.1',
+          'App-Name': 'chatglm',
+          Host: 'chatglm.cn'
         },
         referrer: 'https://www.chatglm.cn/main/alltoolsdetail',
         timeout: 60000
