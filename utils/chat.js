@@ -2,54 +2,54 @@ import { Config } from './config.js'
 import { newFetch } from './proxy.js'
 
 export async function getChatHistoryGroup (e, num) {
-  // if (e.adapter === 'shamrock') {
-  //  return await e.group.getChatHistory(0, num, false)
-  // } else {
-  let latestChats = await e.group.getChatHistory(e.seq || e.message_id, 1)
-  if (latestChats.length > 0) {
-    let latestChat = latestChats[0]
-    if (latestChat) {
-      let seq = latestChat.seq || latestChat.message_id
-      let chats = []
-      while (chats.length < num) {
-        let chatHistory = await e.group.getChatHistory(seq, 20)
-        if (!chatHistory || chatHistory.length === 0) {
-          break
+  if (e.adapter_name && e.adapter_name === 'OneBotv11') {
+   return await e.group.getChatHistory(0, num, false)
+  } else {
+    let latestChats = await e.group.getChatHistory(e.seq || e.message_id, 1)
+    if (latestChats.length > 0) {
+      let latestChat = latestChats[0]
+      if (latestChat) {
+        let seq = latestChat.seq || latestChat.message_id
+        let chats = []
+        while (chats.length < num) {
+          let chatHistory = await e.group.getChatHistory(seq, 20)
+          if (!chatHistory || chatHistory.length === 0) {
+            break
+          }
+          chats.push(...chatHistory.reverse())
+          if (seq === chatHistory[chatHistory.length - 1].seq || seq === chatHistory[chatHistory.length - 1].message_id) {
+            break
+          }
+          seq = chatHistory[chatHistory.length - 1].seq || chatHistory[chatHistory.length - 1].message_id
         }
-        chats.push(...chatHistory.reverse())
-        if (seq === chatHistory[chatHistory.length - 1].seq || seq === chatHistory[chatHistory.length - 1].message_id) {
-          break
-        }
-        seq = chatHistory[chatHistory.length - 1].seq || chatHistory[chatHistory.length - 1].message_id
-      }
-      chats = chats.slice(0, num).reverse()
-      try {
-        let mm = await e.bot.gml
-        for (const chat of chats) {
-          if (e.adapter === 'shamrock') {
-            if (chat.sender?.user_id === 0) {
-              // 奇怪格式的历史消息，过滤掉
-              continue
-            }
-            let sender = await pickMemberAsync(e, chat.sender.user_id)
-            if (sender) {
-              chat.sender = sender
-            }
-          } else {
-            let sender = mm.get(chat.sender.user_id)
-            if (sender) {
-              chat.sender = sender
+        chats = chats.slice(0, num).reverse()
+        try {
+          let mm = await e.bot.gml
+          for (const chat of chats) {
+            if (e.adapter === 'shamrock') {
+              if (chat.sender?.user_id === 0) {
+                // 奇怪格式的历史消息，过滤掉
+                continue
+              }
+              let sender = await pickMemberAsync(e, chat.sender.user_id)
+              if (sender) {
+                chat.sender = sender
+              }
+            } else {
+              let sender = mm.get(chat.sender.user_id)
+              if (sender) {
+                chat.sender = sender
+              }
             }
           }
+        } catch (err) {
+          logger.warn(err)
         }
-      } catch (err) {
-        logger.warn(err)
+        // console.log(chats)
+        return chats
       }
-      // console.log(chats)
-      return chats
     }
   }
-  // }
   return []
 }
 
