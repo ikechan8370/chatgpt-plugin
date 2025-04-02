@@ -34,7 +34,8 @@ export class SendAvatarTool extends AbstractTool {
       groupList = e.bot.gl
     }
     console.log('sendAvatar', target, pictures)
-    if (groupList.get(target)) {
+    if ((typeof groupList.get === 'function' && groupList.get(target)) ||
+          (Array.isArray(groupList) && groupList.includes(target))) {
       let group = await e.bot.pickGroup(target)
       await group.sendMsg(pictures)
     }
