@@ -465,6 +465,17 @@ export const faceMapReverse = {
 }
 
 export async function convertFaces (msg, handleAt = false, e) {
+  if (!msg) return []
+  
+  // 处理HTML实体编码和多余右括号
+  if (typeof msg === 'string') {
+    msg = msg.replace(/&#91;/g, '[')
+             .replace(/&#93;/g, ']')
+             .replace(/&amp;/g, '&')
+             .replace(/\\/g, '')  // 移除多余的反斜杠
+             .replace(/\]+/g, ']')  // 将多个连续的右括号替换为单个右括号
+  }
+  
   handleAt = e?.isGroup && handleAt
   let groupMembers
   let groupCardQQMap = {}
@@ -486,6 +497,7 @@ export async function convertFaces (msg, handleAt = false, e) {
       }
     }
   }
+  
   let tmpMsg = ''
   let tmpFace = ''
   let tmpAt = ''
@@ -493,13 +505,20 @@ export async function convertFaces (msg, handleAt = false, e) {
   let foundAt = false
   let msgs = []
   for (let i = 0; i < msg.length; i++) {
-    // console.log(msg[i])
-    if (msg[i] === '[') {
+    const char = msg[i]
+    const nextChar = msg[i + 1]
+    
+    if (char === '[') {
       foundFace = true
+      if (tmpMsg) {
+        msgs.push(tmpMsg)
+        tmpMsg = ''
+      }
       continue
     }
+    
     if (!foundFace) {
-      if (handleAt && msg[i] === '@') {
+      if (handleAt && char === '@') {
         foundAt = true
         if (tmpMsg) {
           msgs.push(tmpMsg)
@@ -508,7 +527,7 @@ export async function convertFaces (msg, handleAt = false, e) {
         continue
       }
       if (handleAt && foundAt) {
-        tmpAt += msg[i]
+        tmpAt += char
         if (groupCardQQMap[tmpAt]) {
           foundAt = false
           msgs.push(segment.at(groupCardQQMap[tmpAt], groupMembers.get(groupCardQQMap[tmpAt]).card, false))
@@ -516,36 +535,53 @@ export async function convertFaces (msg, handleAt = false, e) {
           continue
         }
       } else {
-        tmpMsg += msg[i]
+        tmpMsg += char
       }
     } else {
-      if (msg[i] !== ']') {
-        tmpFace += msg[i]
+      if (char !== ']') {
+        tmpFace += char
       } else {
         foundFace = false
-        if (faceMapReverse[tmpFace] || faceMapReverse['/' + tmpFace] || faceMapReverse[_.trimStart(tmpFace, '/')]) {
-          if (tmpMsg) {
-            msgs.push(tmpMsg)
-          }
-          msgs.push(segment.face(parseInt(faceMapReverse[tmpFace] || faceMapReverse['/' + tmpFace] || faceMapReverse[_.trimStart(tmpFace, '/')])))
-          tmpMsg = ''
-        } else {
-          tmpMsg += `[${tmpFace}]`
+        // 处理CQ码格式
+        if (tmpFace.startsWith('CQ:face,id=')) {
+          const faceId = parseInt(tmpFace.split('=')[1].split(',')[0])
+          msgs.push(segment.face(faceId))
+          tmpFace = ''
         }
-        tmpFace = ''
+        // 处理表情名称格式
+        else if (faceMapReverse[tmpFace] || faceMapReverse['/' + tmpFace] || faceMapReverse[_.trimStart(tmpFace, '/')]) {
+          msgs.push(segment.face(parseInt(faceMapReverse[tmpFace] || faceMapReverse['/' + tmpFace] || faceMapReverse[_.trimStart(tmpFace, '/')])))
+          tmpFace = ''
+        } else {
+          // 如果找不到对应的表情，将整个内容作为普通文本处理
+          tmpMsg += `[${tmpFace}]`
+          tmpFace = ''
+        }
       }
     }
   }
+  
+  // 处理剩余内容
   if (tmpMsg) {
     msgs.push(tmpMsg)
+    tmpMsg = ''  // 清空临时消息
   }
+  
+  // 处理未闭合的表情标记
   if (tmpFace) {
-    msgs.push(`[${tmpFace}`)
+    if (tmpFace.endsWith(']')) {
+      msgs.push(`[${tmpFace.slice(0, -1)}]`)  // 如果有多余的右括号，去掉它
+    } else {
+      msgs.push(`[${tmpFace}]`)  // 正常添加右括号
+    }
   }
+  
   if (handleAt && tmpAt) {
     msgs.push(`@${tmpAt}`)
   }
-  return msgs
+  
+  // 确保返回数组
+  return Array.isArray(msgs) ? msgs : [msgs].filter(Boolean)
 }
 
 export function testConvertFaces () {
