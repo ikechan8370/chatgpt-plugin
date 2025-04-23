@@ -62,7 +62,51 @@ export class SendPictureTool extends AbstractTool {
           // 处理消息数组
           const messages = []
           for (const msg of msgArray) {
-            if (typeof msg === 'object' && msg.type === 'text' && msg.data?.text) {
+            if (typeof msg === 'string' && msg.startsWith('"') && msg.endsWith('"')) {
+              // 处理字符串格式的CQ码
+              const cqCode = msg.replace(/^"|"$/g, '')
+              if (cqCode.includes('file=') && !cqCode.startsWith('[CQ:image')) {
+                // 提取文件信息
+                const fileMatch = cqCode.match(/file=([^,]+)/)
+                const urlMatch = cqCode.match(/url=([^,]+)/)
+                const summaryMatch = cqCode.match(/summary=([^,]+)/)
+                
+                if (fileMatch || urlMatch) {
+                  const file = fileMatch?.[1] || urlMatch?.[1]
+                  // 检查文件大小和格式
+                  try {
+                    const response = await fetch(file)
+                    const contentType = response.headers.get('content-type')
+                    const contentLength = response.headers.get('content-length')
+                    
+                    // 检查文件大小（最大10MB）
+                    if (contentLength && parseInt(contentLength) > 10 * 1024 * 1024) {
+                      logger.warn(`图片文件过大: ${Math.floor(parseInt(contentLength)/1024/1024)}MB`)
+                      continue
+                    }
+                    
+                    // 检查文件格式
+                    if (!contentType?.startsWith('image/')) {
+                      logger.warn(`不支持的图片格式: ${contentType}`)
+                      continue
+                    }
+                    
+                    messages.push({
+                      type: 'image',
+                      data: {
+                        file: file,
+                        summary: summaryMatch?.[1]
+                      }
+                    })
+                  } catch (err) {
+                    logger.error(`检查图片文件失败: ${err.message}`)
+                    continue
+                  }
+                }
+              } else {
+                messages.push(msg)
+              }
+            } else if (typeof msg === 'object' && msg.type === 'text' && msg.data?.text) {
               if (msg.data.text.includes('[CQ:image')) {
                 // 提取 CQ 码中的参数
                 const cqMatch = msg.data.text.match(/\[CQ:image,([^\]]+)\]/)
@@ -82,8 +126,8 @@ export class SendPictureTool extends AbstractTool {
                   messages.push({
                     type: 'image',
                     data: {
-                      file: params.url || params.file,
-                      ...params
+                      file: params.file || params.url,
+                      summary: params.summary
                     }
                   })
                 }
@@ -95,13 +139,8 @@ export class SendPictureTool extends AbstractTool {
               messages.push(msg)
             }
           }
-          // 只保留图片消息
-          const imageMsg = messages.find(msg => msg.type === 'image')
-          if (imageMsg) {
-            urlOfPicture = imageMsg.data.file
-          } else {
-            return 'No valid image found in the message'
-          }
+          // 返回处理后的消息数组
+          return messages
         }
       } catch (err) {
         // 如果不是JSON格式，尝试解析 CQ 码
@@ -119,7 +158,13 @@ export class SendPictureTool extends AbstractTool {
                   .replace(/&quot;/g, '"')
               }
             })
-            urlOfPicture = params.url || params.file
+            return [{
+              type: 'image',
+              data: {
+                file: params.file || params.url,
+                summary: params.summary
+              }
+            }]
           }
         }
       }
@@ -148,8 +193,8 @@ export class SendPictureTool extends AbstractTool {
                 messages.push({
                   type: 'image',
                   data: {
-                    file: params.url || params.file,
-                    ...params
+                    file: params.file || params.url,
+                    summary: params.summary
                   }
                 })
               }
@@ -161,15 +206,7 @@ export class SendPictureTool extends AbstractTool {
             messages.push(msg)
           }
         }
-        // 只保留图片消息
-        const imageMsg = messages.find(msg => msg.type === 'image')
-        if (imageMsg) {
-          urlOfPicture = imageMsg.data.file
-        } else {
-          return 'No valid image found in the message'
-        }
-      } else {
-        urlOfPicture = urlOfPicture.join(' ')
+        return messages
       }
     }
 

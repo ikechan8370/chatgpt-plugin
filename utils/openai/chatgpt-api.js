@@ -88,7 +88,7 @@ var ChatGPTAPI = /** @class */ (function () {
         this._apiBaseUrl = apiBaseUrl;
         this._debug = !!debug;
         this._fetch = fetch;
-        this._completionParams = __assign({ model: CHATGPT_MODEL, temperature: 0.8, top_p: 1.0, presence_penalty: 1.0 }, completionParams);
+        this._completionParams = __assign({ model: CHATGPT_MODEL, temperature: 1, top_p: 1.0 }, completionParams);
         this._systemMessage = systemMessage;
         if (this._systemMessage === undefined) {
             var currentDate = new Date().toISOString().split('T')[0];
@@ -189,7 +189,7 @@ var ChatGPTAPI = /** @class */ (function () {
                                             'Content-Type': 'application/json',
                                             Authorization: "Bearer ".concat(this._apiKey)
                                         };
-                                        body = __assign(__assign(__assign({ max_tokens: maxTokens }, this._completionParams), completionParams), { messages: messages, stream: stream });
+                                        body = __assign(__assign(__assign({ max_completion_tokens: maxTokens }, this._completionParams), completionParams), { messages: messages, stream: stream });
                                         if (this._debug) {
                                             console.log(JSON.stringify(body));
                                         }
