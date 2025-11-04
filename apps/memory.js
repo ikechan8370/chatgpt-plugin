@@ -1,0 +1,183 @@
+import Config from '../config/config.js'
+import { GroupMessageCollector } from '../models/memory/collector.js'
+import { memoryService } from '../models/memory/service.js'
+
+const collector = new GroupMessageCollector()
+
+function formatUserMemoryList (memories) {
+  if (!memories.length) {
+    return '暂无记录~'
+  }
+  return memories.map(item => `${item.id}. ${item.value}（重要度 ${item.importance.toFixed(2)}）`).join('\n')
+}
+
+function formatGroupFactList (facts) {
+  if (!facts.length) {
+    return '暂无群记忆。'
+  }
+  return facts.map(item => {
+    const topic = item.topic ? `【${item.topic}】` : ''
+    return `${item.id}. ${topic}${item.fact}`
+  }).join('\n')
+}
+
+function isGroupManager (e) {
+  if (e.isMaster) {
+    return true
+  }
+  if (!e.member) {
+    return false
+  }
+  if (typeof e.member.is_admin !== 'undefined') {
+    return e.member.is_admin || e.member.is_owner
+  }
+  if (typeof e.member.role !== 'undefined') {
+    return ['admin', 'owner'].includes(e.member.role)
+  }
+  return false
+}
+
+export class MemoryManager extends plugin {
+  constructor () {
+    const cmdPrefix = Config.basic.commandPrefix || '#chatgpt'
+    super({
+      name: 'ChatGPT-Plugin记忆系统',
+      dsc: '处理记忆系统相关的采集与管理',
+      event: 'message',
+      priority: 550,
+      task: [
+
+      ],
+      rule: [
+        // {
+        //   reg: '[\\s\\S]+',
+        //   fnc: 'collect',
+        //   log: false
+        // },
+        {
+          reg: '^#?(我的)?记忆$',
+          fnc: 'showUserMemory'
+        },
+        {
+          reg: '^#?(删除|清除)(我的)?记忆\\s*(\\d+)$',
+          fnc: 'deleteUserMemory'
+        },
+        {
+          reg: '^#?(本群|群)记忆$',
+          fnc: 'showGroupMemory'
+        },
+        {
+          reg: '^#?(删除|移除)群记忆\\s*(\\d+)$',
+          fnc: 'deleteGroupMemory'
+        },
+        {
+          reg: `^${cmdPrefix}记忆列表$`,
+          fnc: 'adminMemoryOverview',
+          permission: 'master'
+        }
+      ]
+    })
+
+    collector.tickHistoryPolling(true).catch(err => logger.error('Failed to trigger initial group history poll:', err))
+    this.task.push({
+      name: 'ChatGPT-群记忆轮询',
+      cron: '*/1 * * * *',
+      fnc: this.pollHistoryTask.bind(this),
+      log: false
+    })
+  }
+
+  async collect (e) {
+    collector.push(e)
+    return false
+  }
+
+  async showUserMemory (e) {
+    if (!memoryService.isUserMemoryEnabled(e.sender.user_id)) {
+      await e.reply('私人记忆未开启或您未被授权。')
+      return false
+    }
+    const memories = memoryService.listUserMemories(e.sender.user_id, e.isGroup ? e.group_id : null, 10)
+    const content = formatUserMemoryList(memories)
+    await e.reply(`🧠 您的记忆：\n${content}`)
+    return true
+  }
+
+  async deleteUserMemory (e) {
+    const match = e.msg.match(/(\d+)$/)
+    if (!match) {
+      return false
+    }
+    const memoryId = Number(match[1])
+    if (!memoryId) {
+      return false
+    }
+    if (!memoryService.isUserMemoryEnabled(e.sender.user_id)) {
+      await e.reply('私人记忆未开启或您未被授权。')
+      return false
+    }
+    const success = memoryService.deleteUserMemory(memoryId, e.sender.user_id)
+    await e.reply(success ? '已删除指定记忆。' : '未找到对应的记忆条目。')
+    return success
+  }
+
+  async showGroupMemory (e) {
+    if (!e.isGroup) {
+      await e.reply('该指令仅可在群聊中使用。')
+      return false
+    }
+    if (!memoryService.isGroupMemoryEnabled(e.group_id)) {
+      await e.reply('本群尚未开启记忆功能。')
+      return false
+    }
+    await collector.flush(e.group_id)
+    const facts = memoryService.listGroupFacts(e.group_id, 10)
+    const content = formatGroupFactList(facts)
+    await e.reply(`📚 本群记忆：\n${content}`)
+    return true
+  }
+
+  async deleteGroupMemory (e) {
+    if (!e.isGroup) {
+      await e.reply('该指令仅可在群聊中使用。')
+      return false
+    }
+    if (!memoryService.isGroupMemoryEnabled(e.group_id)) {
+      await e.reply('本群尚未开启记忆功能。')
+      return false
+    }
+    if (!isGroupManager(e)) {
+      await e.reply('仅限主人或群管理员管理群记忆。')
+      return false
+    }
+    await collector.flush(e.group_id)
+    const match = e.msg.match(/(\d+)$/)
+    if (!match) {
+      return false
+    }
+    const factId = Number(match[1])
+    if (!factId) {
+      return false
+    }
+    const success = memoryService.deleteGroupFact(e.group_id, factId)
+    await e.reply(success ? '已删除群记忆。' : '未找到对应的群记忆。')
+    return success
+  }
+
+  async adminMemoryOverview (e) {
+    const enabledGroups = (Config.memory?.group?.enabledGroups || []).map(String)
+    const groupLines = enabledGroups.length ? enabledGroups.join(', ') : '暂无'
+    const userStatus = Config.memory?.user?.enable ? '已启用' : '未启用'
+    await e.reply(`记忆系统概览：\n- 群记忆开关：${Config.memory?.group?.enable ? '已启用' : '未启用'}\n- 已启用群：${groupLines}\n- 私人记忆：${userStatus}`)
+    return true
+  }
+
+  async pollHistoryTask () {
+    try {
+      await collector.tickHistoryPolling()
+    } catch (err) {
+      logger.error('[Memory] scheduled history poll failed:', err)
+    }
+    return false
+  }
+}

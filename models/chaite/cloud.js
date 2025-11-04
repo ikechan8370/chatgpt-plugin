@@ -3,8 +3,6 @@ import {
   ChannelsManager,
   ChatPresetManager,
   DefaultChannelLoadBalancer,
-  GeminiClient,
-  OpenAIClient,
   ProcessorsManager,
   RAGManager,
   ToolManager,
@@ -34,6 +32,8 @@ import { checkMigrate } from './storage/sqlite/migrate.js'
 import { SQLiteHistoryManager } from './storage/sqlite/history_manager.js'
 import SQLiteTriggerStorage from './storage/sqlite/trigger_storage.js'
 import LowDBTriggerStorage from './storage/lowdb/trigger_storage,.js'
+import { createChaiteVectorizer } from './vectorizer.js'
+import { MemoryRouter, authenticateMemoryRequest } from '../memory/router.js'
 
 /**
  * 认证，以便共享上传
@@ -50,76 +50,12 @@ export async function authCloud (apiKey = ChatGPTConfig.chaite.cloudApiKey) {
 }
 
 /**
- *
- * @param {import('chaite').Channel} channel
- * @returns {Promise<import('chaite').IClient>}
- */
-async function getIClientByChannel (channel) {
-  await channel.ready()
-  switch (channel.adapterType) {
-    case 'openai': {
-      return new OpenAIClient(channel.options)
-    }
-    case 'gemini': {
-      return new GeminiClient(channel.options)
-    }
-    case 'claude': {
-      throw new Error('claude doesn\'t support embedding')
-    }
-  }
-}
-
-/**
  * 初始化RAG管理器
  * @param {string} model
  * @param {number} dimensions
  */
 export async function initRagManager (model, dimensions) {
-  const vectorizer = new class {
-    async textToVector (text) {
-      const channels = await Chaite.getInstance().getChannelsManager().getChannelByModel(model)
-      if (channels.length === 0) {
-        throw new Error('No channel found for model: ' + model)
-      }
-      const channel = channels[0]
-      const client = await getIClientByChannel(channel)
-      const result = await client.getEmbedding(text, {
-        model,
-        dimensions
-      })
-      return result.embeddings[0]
-    }
-
-    /**
-     *
-     * @param {string[]} texts
-     * @returns {Promise<Array<number>[]>}
-     */
-    async batchTextToVector (texts) {
-      const availableChannels = (await Chaite.getInstance().getChannelsManager().getAllChannels()).filter(c => c.models.includes(model))
-      if (availableChannels.length === 0) {
-        throw new Error('No channel found for model: ' + model)
-      }
-      const channels = await Chaite.getInstance().getChannelsManager().getChannelsByModel(model, texts.length)
-      /**
-       * @type {import('chaite').IClient[]}
-       */
-      const clients = await Promise.all(channels.map(({ channel }) => getIClientByChannel(channel)))
-      const results = []
-      let startIndex = 0
-      for (let i = 0; i < channels.length; i++) {
-        const { quantity } = channels[i]
-        const textsSlice = texts.slice(startIndex, startIndex + quantity)
-        const embeddings = await clients[i].getEmbedding(textsSlice, {
-          model,
-          dimensions
-        })
-        results.push(...embeddings.embeddings)
-        startIndex += quantity
-      }
-      return results
-    }
-  }()
+  const vectorizer = createChaiteVectorizer(model, dimensions)
   const vectorDBPath = path.resolve('./plugins/chatgpt-plugin', ChatGPTConfig.chaite.dataDir, 'vector_index')
   if (!fs.existsSync(vectorDBPath)) {
     fs.mkdirSync(vectorDBPath, { recursive: true })
@@ -246,7 +182,9 @@ export async function initChaite () {
   chaite.getGlobalConfig().setPort(ChatGPTConfig.chaite.port)
   chaite.getGlobalConfig().setDebug(ChatGPTConfig.basic.debug)
   logger.info('Chaite.RAGManager 初始化完成')
-  chaite.runApiServer()
+  chaite.runApiServer(app => {
+    app.use('/api/memory', authenticateMemoryRequest, MemoryRouter)
+  })
 }
 
 function deepMerge (target, source) {

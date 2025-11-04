@@ -75,6 +75,9 @@ export class TRSSGroupContextCollector extends GroupContextCollector {
    * @returns {Promise<Array<*>>}
    */
   async collect (bot = Bot, groupId, start = 0, length = 20) {
+    if (!bot) {
+      return []
+    }
     const group = bot.pickGroup(groupId)
     let chats = await group.getChatHistory(start, length)
     try {

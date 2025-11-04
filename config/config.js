@@ -184,6 +184,98 @@ class ChatGPTConfig {
     storage: 'sqlite'
   }
 
+  /**
+   * 记忆系统配置
+   * @type {{
+   *   database: string,
+   *   vectorDimensions: number,
+   *   group: {
+   *     enable: boolean,
+   *     enabledGroups: string[],
+   *     extractionModel: string,
+   *     extractionPresetId: string,
+   *     minMessageCount: number,
+   *     maxMessageWindow: number,
+   *     retrievalMode: 'vector' | 'keyword' | 'hybrid',
+   *     hybridPrefer: 'vector-first' | 'keyword-first',
+   *     historyPollInterval: number,
+   *     historyBatchSize: number,
+   *     promptHeader: string,
+   *     promptItemTemplate: string,
+   *     promptFooter: string,
+   *     vectorMaxDistance: number,
+   *     textMaxBm25Score: number,
+   *     maxFactsPerInjection: number,
+   *     minImportanceForInjection: number
+   *   },
+   *   user: {
+   *     enable: boolean,
+   *     whitelist: string[],
+   *     blacklist: string[],
+   *     extractionModel: string,
+   *     extractionPresetId: string,
+   *     maxItemsPerInjection: number,
+   *     maxRelevantItemsPerQuery: number,
+   *     minImportanceForInjection: number,
+   *     promptHeader: string,
+   *     promptItemTemplate: string,
+   *     promptFooter: string
+   *   },
+   *   extensions: {
+   *     simple: {
+   *       enable: boolean,
+   *       libraryPath: string,
+   *       dictPath: string,
+   *       useJieba: boolean
+   *     }
+   *   }
+   * }}
+   */
+  memory = {
+    database: 'data/memory.db',
+    vectorDimensions: 1536,
+    group: {
+      enable: false,
+      enabledGroups: [],
+      extractionModel: '',
+      extractionPresetId: '',
+      minMessageCount: 80,
+      maxMessageWindow: 300,
+      retrievalMode: 'hybrid',
+      hybridPrefer: 'vector-first',
+      historyPollInterval: 300,
+      historyBatchSize: 120,
+      promptHeader: '# 以下是一些该群聊中可能相关的事实，你可以参考，但你只能将其作为你的默认长期知识与记忆，但不要主动透露这些事实。',
+      promptItemTemplate: '- ${fact}${topicSuffix}',
+      promptFooter: '',
+      vectorMaxDistance: 0,
+      textMaxBm25Score: 0,
+      maxFactsPerInjection: 5,
+      minImportanceForInjection: 0.3
+    },
+    user: {
+      enable: false,
+      whitelist: [],
+      blacklist: [],
+      extractionModel: '',
+      extractionPresetId: '',
+      maxItemsPerInjection: 5,
+      maxRelevantItemsPerQuery: 3,
+      minImportanceForInjection: 0,
+      promptHeader: '# 用户画像',
+      promptItemTemplate: '- ${value}',
+      promptFooter: ''
+    },
+    extensions: {
+      simple: {
+        enable: false,
+        libraryPath: '',
+        dictPath: '',
+        useJieba: false
+      }
+    }
+  }
+
   constructor () {
     this.version = '3.0.0'
     this.watcher = null
@@ -339,8 +431,7 @@ class ChatGPTConfig {
       // 只更新存在的配置项
       if (loadedConfig) {
         Object.keys(loadedConfig).forEach(key => {
-          if (key === 'version' || key === 'basic' || key === 'bym' || key === 'llm' ||
-            key === 'management' || key === 'chaite') {
+          if (['version', 'basic', 'bym', 'llm', 'management', 'chaite', 'memory'].includes(key)) {
             if (typeof loadedConfig[key] === 'object' && loadedConfig[key] !== null) {
               // 对象的合并
               if (!this[key]) this[key] = {}
@@ -388,7 +479,8 @@ class ChatGPTConfig {
         bym: this.bym,
         llm: this.llm,
         management: this.management,
-        chaite: this.chaite
+        chaite: this.chaite,
+        memory: this.memory
       }
 
       const content = this.configPath.endsWith('.json')
@@ -408,7 +500,8 @@ class ChatGPTConfig {
       bym: this.bym,
       llm: this.llm,
       management: this.management,
-      chaite: this.chaite
+      chaite: this.chaite,
+      memory: this.memory
     }
   }
 }

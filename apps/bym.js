@@ -3,7 +3,8 @@ import { Chaite } from 'chaite'
 import { intoUserMessage, toYunzai } from '../utils/message.js'
 import common from '../../../lib/common/common.js'
 import { getGroupContextPrompt } from '../utils/group.js'
-import {formatTimeToBeiJing} from '../utils/common.js'
+import { formatTimeToBeiJing } from '../utils/common.js'
+import { extractTextFromUserMessage, processUserMemory } from '../models/memory/userMemoryManager.js'
 
 export class bym extends plugin {
   constructor () {
@@ -83,6 +84,7 @@ export class bym extends plugin {
       toggleMode: ChatGPTConfig.basic.toggleMode,
       togglePrefix: ChatGPTConfig.basic.togglePrefix
     })
+    const userText = extractTextFromUserMessage(userMessage) || e.msg || ''
     // 伪人不记录历史
     // sendMessageOption.disableHistoryRead = true
     // sendMessageOption.disableHistorySave = true
@@ -120,5 +122,13 @@ export class bym extends plugin {
         await e.reply(forwardElement, false, { recallMsg: recall ? 10 : 0 })
       }
     }
+    await processUserMemory({
+      event: e,
+      userMessage,
+      userText,
+      conversationId: sendMessageOption.conversationId,
+      assistantContents: response.contents,
+      assistantMessageId: response.id
+    })
   }
 }
