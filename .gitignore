@@ -3,3 +3,6 @@ data/
 utils/processors
 utils/tools
 utils/triggers
+memory.md
+resources/simple
+memory.db
