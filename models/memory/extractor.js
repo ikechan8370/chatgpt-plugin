@@ -17,8 +17,11 @@ function parseJSON (text) {
   if (!text) {
     return null
   }
+  const trimmed = text.trim()
+  const codeBlockMatch = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i)
+  const payload = codeBlockMatch ? codeBlockMatch[1] : trimmed
   try {
-    return JSON.parse(text)
+    return JSON.parse(payload)
   } catch (err) {
     logger.warn('Failed to parse JSON from memory extractor response:', text)
     return null
@@ -77,7 +80,7 @@ function buildExistingMemorySection (existingMemories = []) {
 function buildUserSystemPrompt (existingMemories = []) {
   return `You are an assistant that extracts long-term personal preferences or persona details about a user.
 Given a conversation snippet between the user and the bot, identify durable information such as preferences, nicknames, roles, speaking style, habits, or other facts that remain valid over time.
-Return a JSON array of **strings**, and nothing else. Each string must be a short sentence (in the same language as the conversation) describing one piece of long-term memory. Do not include keys, JSON objects, or additional metadata. Ignore temporary topics or uncertain information.
+Return a JSON array of **strings**, and nothing else. The full response must be a json array!!! Each string must be a short sentence (in the same language as the conversation) describing one piece of long-term memory. Do not include embedded JSON objects, or additional metadata. Ignore temporary topics or uncertain information.
 
 ${buildExistingMemorySection(existingMemories)}`
 }
@@ -104,7 +107,7 @@ async function callModel ({ prompt, systemPrompt, model, maxToken = 4096, temper
     ]
   }, SendMessageOption.create({
     model,
-    temperature,
+    // temperature,
     maxToken,
     systemOverride: systemPrompt,
     disableHistoryRead: true,

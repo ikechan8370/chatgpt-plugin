@@ -45,9 +45,6 @@ export class MemoryManager extends plugin {
       dsc: '处理记忆系统相关的采集与管理',
       event: 'message',
       priority: 550,
-      task: [
-
-      ],
       rule: [
         // {
         //   reg: '[\\s\\S]+',
@@ -78,13 +75,15 @@ export class MemoryManager extends plugin {
       ]
     })
 
-    collector.tickHistoryPolling(true).catch(err => logger.error('Failed to trigger initial group history poll:', err))
-    this.task.push({
+    // 兼容miao和trss，气死了
+    let task = {
       name: 'ChatGPT-群记忆轮询',
       cron: '*/1 * * * *',
       fnc: this.pollHistoryTask.bind(this),
       log: false
-    })
+    }
+    this.task = [task]
+
   }
 
   async collect (e) {
