@@ -1,4 +1,4 @@
-import { SendMessageOption } from 'chaite'
+import { SendMessageOption, Chaite } from 'chaite'
 import ChatGPTConfig from '../../config/config.js'
 import { getClientForModel } from '../chaite/vectorizer.js'
 
@@ -43,9 +43,40 @@ function formatEntry (entry) {
   return str.length > limit ? str.slice(0, limit) + '…' : str
 }
 
-function resolveGroupExtractionPrompts () {
+async function resolvePresetSendMessageOption (presetId, scope) {
+  if (!presetId) {
+    return null
+  }
+  try {
+    const chaite = Chaite.getInstance?.()
+    if (!chaite) {
+      logger.warn(`[Memory] ${scope} extraction preset ${presetId} configured but Chaite is not initialized`)
+      return null
+    }
+    const presetManager = chaite.getChatPresetManager?.()
+    if (!presetManager) {
+      logger.warn(`[Memory] ${scope} extraction preset ${presetId} configured but preset manager unavailable`)
+      return null
+    }
+    const preset = await presetManager.getInstance(presetId)
+    if (!preset) {
+      logger.warn(`[Memory] ${scope} extraction preset ${presetId} not found`)
+      return null
+    }
+    logger.debug(`[Memory] using ${scope} extraction preset ${presetId}`)
+    return {
+      preset,
+      sendMessageOption: JSON.parse(JSON.stringify(preset.sendMessageOption || {}))
+    }
+  } catch (err) {
+    logger.error(`[Memory] failed to load ${scope} extraction preset ${presetId}:`, err)
+    return null
+  }
+}
+
+function resolveGroupExtractionPrompts (presetSendMessageOption) {
   const config = ChatGPTConfig.memory?.group || {}
-  const system = config.extractionSystemPrompt || `You are a knowledge extraction assistant that specialises in summarising long-term facts from group chat transcripts.
+  const system = config.extractionSystemPrompt || presetSendMessageOption?.systemOverride || `You are a knowledge extraction assistant that specialises in summarising long-term facts from group chat transcripts.
 Read the provided conversation and identify statements that should be stored as long-term knowledge for the group.
 Return a JSON array. Each element must contain:
 {
@@ -79,9 +110,9 @@ function buildExistingMemorySection (existingMemories = []) {
   return `以下是关于用户的已知长期记忆，请在提取新记忆时参考，避免重复已有事实，并在信息变更时更新描述：\n${lines.join('\n')}`
 }
 
-function resolveUserExtractionPrompts (existingMemories = []) {
+function resolveUserExtractionPrompts (existingMemories = [], presetSendMessageOption) {
   const config = ChatGPTConfig.memory?.user || {}
-  const systemTemplate = config.extractionSystemPrompt || `You are an assistant that extracts long-term personal preferences or persona details about a user.
+  const systemTemplate = config.extractionSystemPrompt || presetSendMessageOption?.systemOverride || `You are an assistant that extracts long-term personal preferences or persona details about a user.
 Given a conversation snippet between the user and the bot, identify durable information such as preferences, nicknames, roles, speaking style, habits, or other facts that remain valid over time.
 Return a JSON array of **strings**, and nothing else, without any other characters including \`\`\` or \`\`\`json. Each string must be a short sentence (in the same language as the conversation) describing one piece of long-term memory. Do not include keys, JSON objects, or additional metadata. Ignore temporary topics or uncertain information.`
   const userTemplate = config.extractionUserPrompt || `下面是用户与机器人的对话，请根据系统提示提取可长期记忆的个人信息。
@@ -103,8 +134,16 @@ function buildUserPrompt (messages, template) {
   return template.replace('${messages}', body)
 }
 
-async function callModel ({ prompt, systemPrompt, model, maxToken = 4096, temperature = 0.2 }) {
-  const { client } = await getClientForModel(model)
+async function callModel ({ prompt, systemPrompt, model, maxToken = 4096, temperature = 0.2, sendMessageOption }) {
+  const options = sendMessageOption
+    ? JSON.parse(JSON.stringify(sendMessageOption))
+    : {}
+  options.model = model || options.model
+  if (!options.model) {
+    throw new Error('No model available for memory extraction call')
+  }
+  const resolvedModel = options.model
+  const { client } = await getClientForModel(resolvedModel)
   const response = await client.sendMessage({
     role: 'user',
     content: [
@@ -114,10 +153,11 @@ async function callModel ({ prompt, systemPrompt, model, maxToken = 4096, temper
       }
     ]
   }, SendMessageOption.create({
-    model,
-    // temperature,
-    maxToken,
-    systemOverride: systemPrompt,
+    ...options,
+    model: options.model,
+    temperature: options.temperature ?? temperature,
+    maxToken: options.maxToken ?? maxToken,
+    systemOverride: systemPrompt ?? options.systemOverride,
     disableHistoryRead: true,
     disableHistorySave: true,
     stream: false
@@ -125,44 +165,54 @@ async function callModel ({ prompt, systemPrompt, model, maxToken = 4096, temper
   return collectTextFromResponse(response)
 }
 
-function resolveGroupExtractionModel () {
+function resolveGroupExtractionModel (presetSendMessageOption) {
   const config = ChatGPTConfig.memory?.group
   if (config?.extractionModel) {
     return config.extractionModel
   }
+  if (presetSendMessageOption?.model) {
+    return presetSendMessageOption.model
+  }
   if (ChatGPTConfig.llm?.defaultModel) {
     return ChatGPTConfig.llm.defaultModel
   }
-  return ChatGPTConfig.llm?.embeddingModel || ''
+  return ''
 }
 
-function resolveUserExtractionModel () {
+function resolveUserExtractionModel (presetSendMessageOption) {
   const config = ChatGPTConfig.memory?.user
   if (config?.extractionModel) {
     return config.extractionModel
   }
+  if (presetSendMessageOption?.model) {
+    return presetSendMessageOption.model
+  }
   if (ChatGPTConfig.llm?.defaultModel) {
     return ChatGPTConfig.llm.defaultModel
   }
-  return ChatGPTConfig.llm?.embeddingModel || ''
+  return ''
 }
 
 export async function extractGroupFacts (messages) {
   if (!messages || messages.length === 0) {
     return []
   }
-  const model = resolveGroupExtractionModel()
+  const groupConfig = ChatGPTConfig.memory?.group || {}
+  const presetInfo = await resolvePresetSendMessageOption(groupConfig.extractionPresetId, 'group')
+  const presetOptions = presetInfo?.sendMessageOption
+  const model = resolveGroupExtractionModel(presetOptions)
   if (!model) {
     logger.warn('No model configured for group memory extraction')
     return []
   }
   try {
-    const prompts = resolveGroupExtractionPrompts()
-    logger.debug(`[Memory] start group fact extraction, messages=${messages.length}, model=${model}`)
+    const prompts = resolveGroupExtractionPrompts(presetOptions)
+    logger.debug(`[Memory] start group fact extraction, messages=${messages.length}, model=${model}${presetInfo?.preset ? `, preset=${presetInfo.preset.id}` : ''}`)
     const text = await callModel({
       prompt: buildGroupUserPrompt(messages, prompts.userTemplate),
       systemPrompt: prompts.system,
-      model
+      model,
+      sendMessageOption: presetOptions
     })
     const parsed = parseJSON(text)
     if (Array.isArray(parsed)) {
@@ -184,18 +234,22 @@ export async function extractUserMemories (messages, existingMemories = []) {
   if (!messages || messages.length === 0) {
     return []
   }
-  const model = resolveUserExtractionModel()
+  const userConfig = ChatGPTConfig.memory?.user || {}
+  const presetInfo = await resolvePresetSendMessageOption(userConfig.extractionPresetId, 'user')
+  const presetOptions = presetInfo?.sendMessageOption
+  const model = resolveUserExtractionModel(presetOptions)
   if (!model) {
     logger.warn('No model configured for user memory extraction')
     return []
   }
   try {
-    const prompts = resolveUserExtractionPrompts(existingMemories)
-    logger.debug(`[Memory] start user memory extraction, snippets=${messages.length}, existing=${existingMemories.length}, model=${model}`)
+    const prompts = resolveUserExtractionPrompts(existingMemories, presetOptions)
+    logger.debug(`[Memory] start user memory extraction, snippets=${messages.length}, existing=${existingMemories.length}, model=${model}${presetInfo?.preset ? `, preset=${presetInfo.preset.id}` : ''}`)
     const text = await callModel({
       prompt: buildUserPrompt(messages, prompts.userTemplate),
       systemPrompt: prompts.system,
-      model
+      model,
+      sendMessageOption: presetOptions
     })
     const parsed = parseJSON(text)
     if (Array.isArray(parsed)) {

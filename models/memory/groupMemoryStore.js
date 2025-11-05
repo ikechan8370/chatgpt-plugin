@@ -1,4 +1,4 @@
-import { getMemoryDatabase, getVectorDimension, getGroupMemoryFtsConfig, resetVectorTableDimension } from './database.js'
+import { getMemoryDatabase, getVectorDimension, getGroupMemoryFtsConfig, resetVectorTableDimension, sanitiseFtsQueryInput } from './database.js'
 import ChatGPTConfig from '../../config/config.js'
 import { embedTexts } from '../chaite/vectorizer.js'
 
@@ -342,37 +342,42 @@ export class GroupMemoryStore {
     if (!queryText || !queryText.trim()) {
       return []
     }
-    const trimmedQuery = queryText.trim()
+    const originalQuery = queryText.trim()
     const ftsConfig = getGroupMemoryFtsConfig()
-    const matchExpression = ftsConfig.matchQuery ? `${ftsConfig.matchQuery}(?)` : '?'
+    const matchQueryParam = sanitiseFtsQueryInput(originalQuery, ftsConfig)
     const results = []
     const seen = new Set()
-    try {
-      const rows = this.db.prepare(`
-        SELECT gf.*, bm25(group_facts_fts) AS bm25_score
-        FROM group_facts_fts
-        JOIN group_facts gf ON gf.id = group_facts_fts.rowid
-        WHERE gf.group_id = ?
-          AND group_facts_fts MATCH ${matchExpression}
-        ORDER BY bm25_score ASC
-        LIMIT ?
-      `).all(groupId, trimmedQuery, limit)
-      for (const row of rows) {
-        const bm25Threshold = this.bm25Threshold
-        if (bm25Threshold) {
-          const score = Number(row?.bm25_score)
-          if (!Number.isFinite(score) || score > bm25Threshold) {
-            continue
+    if (matchQueryParam) {
+      const matchExpression = ftsConfig.matchQuery ? `${ftsConfig.matchQuery}(?)` : '?'
+      try {
+        const rows = this.db.prepare(`
+          SELECT gf.*, bm25(group_facts_fts) AS bm25_score
+          FROM group_facts_fts
+          JOIN group_facts gf ON gf.id = group_facts_fts.rowid
+          WHERE gf.group_id = ?
+            AND group_facts_fts MATCH ${matchExpression}
+          ORDER BY bm25_score ASC
+          LIMIT ?
+        `).all(groupId, matchQueryParam, limit)
+        for (const row of rows) {
+          const bm25Threshold = this.bm25Threshold
+          if (bm25Threshold) {
+            const score = Number(row?.bm25_score)
+            if (!Number.isFinite(score) || score > bm25Threshold) {
+              continue
+            }
+            row.bm25_score = score
           }
-          row.bm25_score = score
+          if (row && !seen.has(row.id)) {
+            results.push(row)
+            seen.add(row.id)
+          }
         }
-        if (row && !seen.has(row.id)) {
-          results.push(row)
-          seen.add(row.id)
-        }
+      } catch (err) {
+        logger.warn('Text search failed for group memory:', err)
       }
-    } catch (err) {
-      logger.warn('Text search failed for group memory:', err)
+    } else {
+      logger.debug('[Memory] group memory text search skipped MATCH due to empty query after sanitisation')
     }
 
     if (results.length < limit) {
@@ -384,7 +389,7 @@ export class GroupMemoryStore {
             AND instr(fact, ?) > 0
           ORDER BY importance DESC, created_at DESC
           LIMIT ?
-        `).all(groupId, trimmedQuery, Math.max(limit * 2, limit))
+        `).all(groupId, originalQuery, Math.max(limit * 2, limit))
         for (const row of likeRows) {
           if (row && !seen.has(row.id)) {
             results.push(row)

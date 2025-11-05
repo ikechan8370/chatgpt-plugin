@@ -114,6 +114,22 @@ function resetSimpleState (overrides = {}) {
   }
 }
 
+function sanitiseRawFtsInput (input) {
+  if (!input) {
+    return ''
+  }
+  const trimmed = String(input).trim()
+  if (!trimmed) {
+    return ''
+  }
+  const replaced = trimmed
+    .replace(/["'`]+/g, ' ')
+    .replace(/\u3000/g, ' ')
+    .replace(/[^\p{L}\p{N}\u4E00-\u9FFF\u3040-\u30FF\uAC00-\uD7AF\u1100-\u11FF\s]+/gu, ' ')
+  const collapsed = replaced.replace(/\s+/g, ' ').trim()
+  return collapsed || trimmed
+}
+
 function isSimpleLibraryFile (filename) {
   return /(^libsimple.*\.(so|dylib|dll)$)|(^simple\.(so|dylib|dll)$)/i.test(filename)
 }
@@ -642,6 +658,16 @@ export function getGroupMemoryFtsConfig () {
 
 export function getSimpleExtensionState () {
   return { ...simpleExtensionState }
+}
+
+export function sanitiseFtsQueryInput (query, ftsConfig) {
+  if (!query) {
+    return ''
+  }
+  if (ftsConfig?.matchQuery) {
+    return String(query).trim()
+  }
+  return sanitiseRawFtsInput(query)
 }
 
 export function getMemoryDatabase () {

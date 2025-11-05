@@ -1,4 +1,4 @@
-import { getMemoryDatabase, getUserMemoryFtsConfig } from './database.js'
+import { getMemoryDatabase, getUserMemoryFtsConfig, sanitiseFtsQueryInput } from './database.js'
 import { md5 } from '../../utils/common.js'
 
 function normaliseId (value) {
@@ -213,42 +213,46 @@ export class UserMemoryStore {
     const normUserId = normaliseId(userId)
     const normGroupId = normaliseId(groupId)
     const filteredExclude = (excludeIds || []).filter(Boolean)
-    const trimmedQuery = queryText.trim()
+    const originalQuery = queryText.trim()
     const ftsConfig = getUserMemoryFtsConfig()
-    const matchExpression = ftsConfig.matchQuery ? `${ftsConfig.matchQuery}(?)` : '?'
-    const params = [normUserId]
-    let query = `
-      SELECT um.*, bm25(user_memory_fts) AS bm25_score
-      FROM user_memory_fts
-      JOIN user_memory um ON um.id = user_memory_fts.rowid
-      WHERE um.user_id = ?
-        AND user_memory_fts MATCH ${matchExpression}
-    `
-    params.push(trimmedQuery)
-    if (normGroupId) {
-      query += ' AND (um.group_id = ? OR um.group_id IS NULL)'
-      params.push(normGroupId)
-    }
-    if (filteredExclude.length) {
-      query += ` AND um.id NOT IN (${filteredExclude.map(() => '?').join(',')})`
-      params.push(...filteredExclude)
-    }
-    query += `
-      ORDER BY bm25_score ASC, um.updated_at DESC
-      LIMIT ?
-    `
-    params.push(limit)
+    const matchQueryParam = sanitiseFtsQueryInput(originalQuery, ftsConfig)
     const results = []
     const seen = new Set(filteredExclude)
-    try {
-      const ftsRows = this.db.prepare(query).all(...params)
-      appendRows(results, ftsRows, seen)
-    } catch (err) {
-      logger?.warn?.('User memory text search failed:', err)
+    if (matchQueryParam) {
+      const matchExpression = ftsConfig.matchQuery ? `${ftsConfig.matchQuery}(?)` : '?'
+      const params = [normUserId, matchQueryParam]
+      let query = `
+        SELECT um.*, bm25(user_memory_fts) AS bm25_score
+        FROM user_memory_fts
+        JOIN user_memory um ON um.id = user_memory_fts.rowid
+        WHERE um.user_id = ?
+          AND user_memory_fts MATCH ${matchExpression}
+      `
+      if (normGroupId) {
+        query += ' AND (um.group_id = ? OR um.group_id IS NULL)'
+        params.push(normGroupId)
+      }
+      if (filteredExclude.length) {
+        query += ` AND um.id NOT IN (${filteredExclude.map(() => '?').join(',')})`
+        params.push(...filteredExclude)
+      }
+      query += `
+        ORDER BY bm25_score ASC, um.updated_at DESC
+        LIMIT ?
+      `
+      params.push(limit)
+      try {
+        const ftsRows = this.db.prepare(query).all(...params)
+        appendRows(results, ftsRows, seen)
+      } catch (err) {
+        logger?.warn?.('User memory text search failed:', err)
+      }
+    } else {
+      logger?.debug?.('[Memory] user memory text search skipped MATCH due to empty query after sanitisation')
     }
 
     if (results.length < limit) {
-      const likeParams = [normUserId, trimmedQuery]
+      const likeParams = [normUserId, originalQuery]
       let likeQuery = `
         SELECT um.*
         FROM user_memory um
