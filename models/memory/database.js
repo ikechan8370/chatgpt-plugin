@@ -587,39 +587,65 @@ function createVectorTable (db, dimension) {
 
 function ensureVectorTable (db) {
   ensureMetaTable(db)
-  if (cachedVectorDimension) {
+  if (cachedVectorDimension !== null) {
     return cachedVectorDimension
   }
+  const preferredDimension = resolvePreferredDimension()
   const stored = getMetaValue(db, META_VECTOR_DIM_KEY)
   const storedModel = getMetaValue(db, META_VECTOR_MODEL_KEY)
   const currentModel = ChatGPTConfig.llm?.embeddingModel || ''
+  const tableExists = Boolean(db.prepare(`
+    SELECT name FROM sqlite_master
+    WHERE type = 'table' AND name = 'vec_group_facts'
+  `).get())
+
+  const parseDimension = value => {
+    if (!value && value !== 0) return 0
+    const parsed = parseInt(String(value), 10)
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : 0
+  }
+
+  let dimension = parseDimension(stored)
+  let needsTableReset = false
+
+  if (dimension <= 0 && tableExists) {
+    needsTableReset = true
+  }
+
   if (!storedModel || storedModel !== currentModel) {
+    needsTableReset = true
+    dimension = parseDimension(preferredDimension)
+  }
+
+  if (dimension <= 0 && preferredDimension > 0) {
+    dimension = preferredDimension
+  }
+
+  if (needsTableReset && tableExists) {
     try {
       db.exec('DROP TABLE IF EXISTS vec_group_facts')
     } catch (err) {
       logger?.warn?.('[Memory] failed to drop vec_group_facts during model change:', err)
     }
-    setMetaValue(db, META_VECTOR_MODEL_KEY, currentModel)
-    setMetaValue(db, META_VECTOR_DIM_KEY, '0')
-    cachedVectorDimension = 0
-    cachedVectorModel = currentModel
-    return cachedVectorDimension
   }
-  let dimension = stored ? parseInt(stored, 10) : null
-  if (!dimension || Number.isNaN(dimension) || dimension <= 0) {
-    cachedVectorDimension = 0
-    return cachedVectorDimension
+
+  let tablePresent = !needsTableReset && tableExists
+  if (dimension > 0 && !tablePresent) {
+    try {
+      createVectorTable(db, dimension)
+      tablePresent = true
+    } catch (err) {
+      logger?.error?.('[Memory] failed to (re)create vec_group_facts table:', err)
+      dimension = 0
+    }
   }
-  const exists = db.prepare(`
-    SELECT name FROM sqlite_master
-    WHERE type = 'table' AND name = 'vec_group_facts'
-  `).get()
-  if (!exists) {
-    createVectorTable(db, dimension)
-  }
-  cachedVectorDimension = dimension
+
+  setMetaValue(db, META_VECTOR_MODEL_KEY, currentModel)
+  setMetaValue(db, META_VECTOR_DIM_KEY, dimension > 0 ? String(dimension) : '0')
+
+  cachedVectorDimension = dimension > 0 ? dimension : 0
   cachedVectorModel = currentModel
-  return dimension
+  return cachedVectorDimension
 }
 
 export function resetVectorTableDimension (dimension) {
@@ -699,6 +725,7 @@ export function getVectorDimension () {
 
 export function resetCachedDimension () {
   cachedVectorDimension = null
+  cachedVectorModel = null
 }
 
 export function resetMemoryDatabaseInstance () {
@@ -711,4 +738,5 @@ export function resetMemoryDatabaseInstance () {
   }
   dbInstance = null
   cachedVectorDimension = null
+  cachedVectorModel = null
 }
