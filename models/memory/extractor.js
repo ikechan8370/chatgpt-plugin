@@ -43,6 +43,32 @@ function formatEntry (entry) {
   return str.length > limit ? str.slice(0, limit) + '…' : str
 }
 
+function injectMessagesIntoTemplate (template, body) {
+  if (!template || typeof template !== 'string') {
+    return body
+  }
+  const placeholders = ['${messages}', '{messages}', '{{messages}}']
+  let result = template
+  let replaced = false
+  for (const placeholder of placeholders) {
+    if (result.includes(placeholder)) {
+      result = result.split(placeholder).join(body)
+      replaced = true
+    }
+  }
+  if (!replaced) {
+    const trimmed = result.trim()
+    if (!trimmed) {
+      return body
+    }
+    if (/\n\s*$/.test(result)) {
+      return `${result}${body}`
+    }
+    return `${result}\n${body}`
+  }
+  return result
+}
+
 async function resolvePresetSendMessageOption (presetId, scope) {
   if (!presetId) {
     return null
@@ -90,7 +116,7 @@ Return a JSON array. Each element must contain:
 Only include meaningful, verifiable group-specific information that is useful for future conversations. Do not record incomplete information. Do not include general knowledge or unrelated facts. Do not wrap the JSON array in code fences.`
   const userTemplate = config.extractionUserPrompt || `以下是群聊中的一些消息，请根据系统说明提取值得长期记忆的事实，以JSON数组形式返回，不要输出额外说明。
 
-${'{messages}'}`
+\${messages}`
   return { system, userTemplate }
 }
 
@@ -99,7 +125,7 @@ function buildGroupUserPrompt (messages, template) {
     const sender = msg.nickname || msg.user_id || '未知用户'
     return `${sender}: ${msg.text}`
   }).join('\n')
-  return template.replace('${messages}', joined)
+  return injectMessagesIntoTemplate(template, joined)
 }
 
 function buildExistingMemorySection (existingMemories = []) {
@@ -117,7 +143,7 @@ Given a conversation snippet between the user and the bot, identify durable info
 Return a JSON array of **strings**, and nothing else, without any other characters including \`\`\` or \`\`\`json. Each string must be a short sentence (in the same language as the conversation) describing one piece of long-term memory. Do not include keys, JSON objects, or additional metadata. Ignore temporary topics or uncertain information.`
   const userTemplate = config.extractionUserPrompt || `下面是用户与机器人的对话，请根据系统提示提取可长期记忆的个人信息。
 
-${'{messages}'}`
+\${messages}`
   return {
     system: `${systemTemplate}
 
@@ -131,7 +157,7 @@ function buildUserPrompt (messages, template) {
     const prefix = msg.role === 'assistant' ? '机器人' : (msg.nickname || msg.user_id || '用户')
     return `${prefix}: ${msg.text}`
   }).join('\n')
-  return template.replace('${messages}', body)
+  return injectMessagesIntoTemplate(template, body)
 }
 
 async function callModel ({ prompt, systemPrompt, model, maxToken = 4096, temperature = 0.2, sendMessageOption }) {
