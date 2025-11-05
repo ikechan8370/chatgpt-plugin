@@ -24,6 +24,8 @@ function formatUserMemories (memories, config) {
     segments.push(header)
   }
   memories.forEach((item, index) => {
+    const timestamp = item.updated_at || item.created_at || ''
+    const timeSuffix = timestamp ? `（记录时间：${timestamp}）` : ''
     const context = {
       index,
       order: index + 1,
@@ -33,7 +35,10 @@ function formatUserMemories (memories, config) {
       sourceId: item.source_message_id || '',
       groupId: item.group_id || '',
       createdAt: item.created_at || '',
-      updatedAt: item.updated_at || ''
+      updatedAt: item.updated_at || '',
+      timestamp,
+      time: timestamp,
+      timeSuffix
     }
     const line = renderTemplate(itemTemplate, context)
     if (line) {
@@ -61,6 +66,8 @@ function formatGroupFacts (facts, config) {
   }
   facts.forEach((item, index) => {
     const topicSuffix = item.topic ? `（${item.topic}）` : ''
+    const timestamp = item.updated_at || item.created_at || ''
+    const timeSuffix = timestamp ? `（记录时间：${timestamp}）` : ''
     const context = {
       index,
       order: index + 1,
@@ -70,6 +77,9 @@ function formatGroupFacts (facts, config) {
       importance: item.importance ?? '',
       createdAt: item.created_at || '',
       updatedAt: item.updated_at || '',
+      timestamp,
+      time: timestamp,
+      timeSuffix,
       distance: item.distance ?? '',
       bm25: item.bm25_score ?? '',
       sourceMessages: item.source_messages || '',

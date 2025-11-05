@@ -250,7 +250,7 @@ class ChatGPTConfig {
       historyPollInterval: 300,
       historyBatchSize: 120,
       promptHeader: '# 以下是一些该群聊中可能相关的事实，你可以参考，但不要主动透露这些事实。',
-      promptItemTemplate: '- ${fact}${topicSuffix}',
+      promptItemTemplate: '- ${fact}${topicSuffix}${timeSuffix}',
       promptFooter: '',
       extractionSystemPrompt: `You are a knowledge extraction assistant that specialises in summarising long-term facts from group chat transcripts.
 Read the provided conversation and identify statements that should be stored as long-term knowledge for the group.
@@ -282,7 +282,7 @@ Only include meaningful, verifiable group-specific information that is useful fo
       maxRelevantItemsPerQuery: 3,
       minImportanceForInjection: 0,
       promptHeader: '# 用户画像',
-      promptItemTemplate: '- ${value}',
+      promptItemTemplate: '- ${value}${timeSuffix}',
       promptFooter: '',
       extractionSystemPrompt: `You are an assistant that extracts long-term personal preferences or persona details about a user.
 Given a conversation snippet between the user and the bot, identify durable information such as preferences, nicknames, roles, speaking style, habits, or other facts that remain valid over time.
@@ -453,26 +453,81 @@ Return a JSON array of **strings**, and nothing else, without any other characte
         ? JSON.parse(content)
         : yaml.load(content)
 
-      // 只更新存在的配置项
+      // 处理加载的配置并和默认值合并
       if (loadedConfig) {
-        Object.keys(loadedConfig).forEach(key => {
-          if (['version', 'basic', 'bym', 'llm', 'management', 'chaite', 'memory'].includes(key)) {
-            if (typeof loadedConfig[key] === 'object' && loadedConfig[key] !== null) {
-              // 对象的合并
-              if (!this[key]) this[key] = {}
-              Object.assign(this[key], loadedConfig[key])
-            } else {
-              // 基本类型直接赋值
-              this[key] = loadedConfig[key]
-            }
-          }
-        })
+        const mergeResult = this._mergeConfig(loadedConfig)
+        if (mergeResult.changed) {
+          logger?.debug?.('[Config] merged new defaults into persisted config; scheduling save')
+          this._triggerSave('code')
+        }
       }
 
       logger.debug('Config loaded successfully')
     } catch (error) {
       logger.error('Failed to load config:', error)
     }
+  }
+
+  _mergeConfig (loadedConfig) {
+    let changed = false
+
+    const mergeInto = (target, source) => {
+      if (!source || typeof source !== 'object') {
+        return target
+      }
+      if (!target || typeof target !== 'object') {
+        target = Array.isArray(source) ? [] : {}
+      }
+      const result = Array.isArray(source) ? [] : { ...target }
+
+      if (Array.isArray(source)) {
+        return source.slice()
+      }
+
+      const targetKeys = target && typeof target === 'object'
+        ? Object.keys(target)
+        : []
+      for (const key of targetKeys) {
+        if (!Object.prototype.hasOwnProperty.call(source, key)) {
+          changed = true
+        }
+      }
+
+      for (const key of Object.keys(source)) {
+        const sourceValue = source[key]
+        const targetValue = target[key]
+        if (sourceValue && typeof sourceValue === 'object' && !Array.isArray(sourceValue)) {
+          result[key] = mergeInto(targetValue, sourceValue)
+        } else {
+          if (targetValue === undefined || targetValue !== sourceValue) {
+            changed = true
+          }
+          result[key] = sourceValue
+        }
+      }
+      return result
+    }
+
+    const sections = ['version', 'basic', 'bym', 'llm', 'management', 'chaite', 'memory']
+    for (const key of sections) {
+      const loadedValue = loadedConfig[key]
+      if (loadedValue === undefined) {
+        continue
+      }
+      if (typeof loadedValue === 'object' && loadedValue !== null) {
+        const merged = mergeInto(this[key], loadedValue)
+        if (merged !== this[key]) {
+          this[key] = merged
+        }
+      } else {
+        if (this[key] !== loadedValue) {
+          changed = true
+        }
+        this[key] = loadedValue
+      }
+    }
+
+    return { changed }
   }
 
   // 合并触发保存，防抖处理
@@ -482,20 +537,18 @@ Return a JSON array of **strings**, and nothing else, without any other characte
       clearTimeout(this._saveTimer)
     }
 
-    // 记录保存来源
-    this._saveOrigin = origin || 'code'
-
-    // 设置定时器延迟保存
+    const originLabel = origin || 'code'
+    this._saveOrigin = originLabel
     this._saveTimer = setTimeout(() => {
-      this.saveToFile()
-      // 保存完成后延迟一下再清除来源标记
-      setTimeout(() => {
-        this._saveOrigin = null
-      }, 100)
+      this.saveToFile(originLabel)
+      this._saveOrigin = null
     }, 200)
   }
 
-  saveToFile () {
+  saveToFile (origin = 'code') {
+    if (origin !== 'code') {
+      this._saveOrigin = 'external'
+    }
     logger.debug('Saving config to file...')
     try {
       const config = {
