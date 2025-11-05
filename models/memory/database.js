@@ -605,49 +605,53 @@ function ensureVectorTable (db) {
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 0
   }
 
-  let dimension = parseDimension(stored)
+  const storedDimension = parseDimension(stored)
+  let dimension = storedDimension
+  let tablePresent = tableExists
+
   let needsTableReset = false
-
-  if (dimension <= 0 && tableExists) {
+  if (storedModel && storedModel !== currentModel) {
     needsTableReset = true
+  } else if (!storedModel && tableExists) {
+    // Unknown model metadata but table exists; keep it as-is.
+    dimension = storedDimension
   }
 
-  if (!storedModel || storedModel !== currentModel) {
+  if (tableExists && storedDimension <= 0) {
+    logger?.warn?.('[Memory] vec_group_facts exists but stored dimension is invalid, rebuilding table')
     needsTableReset = true
-    dimension = parseDimension(preferredDimension)
-  }
-
-  if (!needsTableReset && preferredDimension > 0 && dimension > 0 && dimension !== preferredDimension) {
-    logger?.info?.('[Memory] vector dimension change detected (stored=%s, preferred=%s), rebuilding vec_group_facts', dimension, preferredDimension)
-    needsTableReset = true
-    dimension = preferredDimension
-  }
-
-  if (dimension <= 0 && preferredDimension > 0) {
-    dimension = preferredDimension
   }
 
   if (needsTableReset && tableExists) {
     try {
       db.exec('DROP TABLE IF EXISTS vec_group_facts')
+      tablePresent = false
+      dimension = 0
     } catch (err) {
       logger?.warn?.('[Memory] failed to drop vec_group_facts during model change:', err)
     }
   }
 
-  let tablePresent = !needsTableReset && tableExists
-  if (dimension > 0 && !tablePresent) {
-    try {
-      createVectorTable(db, dimension)
-      tablePresent = true
-    } catch (err) {
-      logger?.error?.('[Memory] failed to (re)create vec_group_facts table:', err)
-      dimension = 0
+  if (!tablePresent) {
+    if (dimension <= 0) {
+      dimension = parseDimension(preferredDimension)
     }
+    if (dimension > 0) {
+      try {
+        createVectorTable(db, dimension)
+        tablePresent = true
+      } catch (err) {
+        logger?.error?.('[Memory] failed to (re)create vec_group_facts table:', err)
+        dimension = 0
+      }
+    }
+  } else if (dimension > 0 && preferredDimension > 0 && dimension !== preferredDimension) {
+    logger?.debug?.('[Memory] vector table dimension (%s) differs from preferred (%s); keeping existing table', dimension, preferredDimension)
   }
 
+  const metaDimensionValue = dimension > 0 ? String(dimension) : '0'
   setMetaValue(db, META_VECTOR_MODEL_KEY, currentModel)
-  setMetaValue(db, META_VECTOR_DIM_KEY, dimension > 0 ? String(dimension) : '0')
+  setMetaValue(db, META_VECTOR_DIM_KEY, metaDimensionValue)
 
   cachedVectorDimension = dimension > 0 ? dimension : 0
   cachedVectorModel = currentModel

@@ -18,7 +18,8 @@ import {
   resetMemoryDatabaseInstance,
   getSimpleExtensionState,
   resolvePluginPath,
-  toPluginRelativePath
+  toPluginRelativePath,
+  resetVectorTableDimension
 } from './database.js'
 
 const streamPipeline = promisify(pipeline)
@@ -440,6 +441,14 @@ function updateMemoryConfig (payload = {}) {
 
   if (nextConfig.vectorDimensions !== previousDimension) {
     resetCachedDimension()
+    const targetDimension = Number(nextConfig.vectorDimensions)
+    if (Number.isFinite(targetDimension) && targetDimension > 0) {
+      try {
+        resetVectorTableDimension(targetDimension)
+      } catch (err) {
+        logger?.error?.('[Memory] failed to apply vector dimension change:', err)
+      }
+    }
   }
   const currentSimpleConfig = JSON.stringify(ChatGPTConfig.memory.extensions?.simple || {})
 
