@@ -307,16 +307,43 @@ export class GroupMemoryStore {
       return []
     }
     try {
-      const dimension = getVectorDimension()
-      if (!dimension || dimension <= 0) {
-        logger.debug('[Memory] vector search skipped: vector dimension unavailable')
-        return []
+      let tableDimension = getVectorDimension() || 0
+      if (!tableDimension || tableDimension <= 0) {
+        logger.debug('[Memory] vector table dimension unavailable, attempting to infer from embedding')
       }
-      const [embedding] = await embedTexts([queryText], this.embeddingModel, dimension)
+      const requestedDimension = tableDimension > 0 ? tableDimension : undefined
+      const [embedding] = await embedTexts([queryText], this.embeddingModel, requestedDimension)
       if (!embedding) {
         return []
       }
       const embeddingVector = ArrayBuffer.isView(embedding) ? embedding : Float32Array.from(embedding)
+      const actualDimension = embeddingVector.length
+      if (!actualDimension) {
+        logger.debug('[Memory] vector search skipped: empty embedding returned')
+        return []
+      }
+      if (tableDimension > 0 && actualDimension !== tableDimension) {
+        logger.warn(`[Memory] vector dimension mismatch detected during search, table=${tableDimension}, embedding=${actualDimension}. Rebuilding vector table.`)
+        try {
+          resetVectorTableDimension(actualDimension)
+          this.prepareVectorStatements()
+          tableDimension = actualDimension
+        } catch (resetErr) {
+          logger.error('Failed to reset vector table dimension during search:', resetErr)
+          return []
+        }
+        logger.info('[Memory] vector table rebuilt; old vectors must be regenerated before vector search can return results')
+        return []
+      } else if (tableDimension <= 0 && actualDimension > 0) {
+        try {
+          resetVectorTableDimension(actualDimension)
+          this.prepareVectorStatements()
+          tableDimension = actualDimension
+        } catch (resetErr) {
+          logger.error('Failed to initialise vector table dimension during search:', resetErr)
+          return []
+        }
+      }
       const rows = this.db.prepare(`
         SELECT gf.*, vec_group_facts.distance AS distance
         FROM vec_group_facts

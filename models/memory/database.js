@@ -617,6 +617,12 @@ function ensureVectorTable (db) {
     dimension = parseDimension(preferredDimension)
   }
 
+  if (!needsTableReset && preferredDimension > 0 && dimension > 0 && dimension !== preferredDimension) {
+    logger?.info?.('[Memory] vector dimension change detected (stored=%s, preferred=%s), rebuilding vec_group_facts', dimension, preferredDimension)
+    needsTableReset = true
+    dimension = preferredDimension
+  }
+
   if (dimension <= 0 && preferredDimension > 0) {
     dimension = preferredDimension
   }

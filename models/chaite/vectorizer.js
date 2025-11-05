@@ -45,10 +45,11 @@ export function createChaiteVectorizer (model, dimensions) {
   return {
     async textToVector (text) {
       const { client } = await getClientForModel(model)
-      const result = await client.getEmbedding(text, {
-        model,
-        dimensions
-      })
+      const options = { model }
+      if (Number.isFinite(dimensions) && dimensions > 0) {
+        options.dimensions = dimensions
+      }
+      const result = await client.getEmbedding(text, options)
       return result.embeddings[0]
     },
     async batchTextToVector (texts) {
@@ -63,10 +64,11 @@ export function createChaiteVectorizer (model, dimensions) {
       for (let i = 0; i < channels.length; i++) {
         const { quantity } = channels[i]
         const slice = texts.slice(startIndex, startIndex + quantity)
-        const embeddings = await clients[i].getEmbedding(slice, {
-          model,
-          dimensions
-        })
+        const options = { model }
+        if (Number.isFinite(dimensions) && dimensions > 0) {
+          options.dimensions = dimensions
+        }
+        const embeddings = await clients[i].getEmbedding(slice, options)
         results.push(...embeddings.embeddings)
         startIndex += quantity
       }
