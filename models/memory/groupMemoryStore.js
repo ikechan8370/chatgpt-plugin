@@ -77,9 +77,19 @@ export class GroupMemoryStore {
           ELSE group_facts.created_at
         END
     `)
-    this.deleteVecStmt = this.db.prepare('DELETE FROM vec_group_facts WHERE rowid = ?')
-    this.insertVecStmt = this.db.prepare('INSERT INTO vec_group_facts(rowid, embedding) VALUES (?, ?)')
+    this.prepareVectorStatements()
     this.loadFactByIdStmt = this.db.prepare('SELECT * FROM group_facts WHERE id = ?')
+  }
+
+  prepareVectorStatements () {
+    try {
+      this.deleteVecStmt = this.db.prepare('DELETE FROM vec_group_facts WHERE rowid = ?')
+      this.insertVecStmt = this.db.prepare('INSERT INTO vec_group_facts(rowid, embedding) VALUES (?, ?)')
+    } catch (err) {
+      this.deleteVecStmt = null
+      this.insertVecStmt = null
+      logger?.debug?.('[Memory] vector table not ready, postpone statement preparation')
+    }
   }
 
   ensureDb () {
@@ -158,11 +168,14 @@ export class GroupMemoryStore {
     }
 
     let vectors = []
-    let dimension = null
+    let tableDimension = getVectorDimension() || 0
+    const configuredDimension = Number(ChatGPTConfig.llm?.dimensions || 0)
     if (this.isVectorEnabled()) {
       try {
-        dimension = getVectorDimension()
-        vectors = await embedTexts(filteredFacts.map(f => f.fact), this.embeddingModel, dimension)
+        const preferredDimension = configuredDimension > 0
+          ? configuredDimension
+          : (tableDimension > 0 ? tableDimension : undefined)
+        vectors = await embedTexts(filteredFacts.map(f => f.fact), this.embeddingModel, preferredDimension)
         vectors = vectors.map(normaliseEmbeddingVector)
         const mismatchVector = vectors.find(vec => {
           if (!vec) return false
@@ -173,16 +186,24 @@ export class GroupMemoryStore {
           return false
         })
         const actualDimension = mismatchVector ? mismatchVector.length : 0
-        if (actualDimension && actualDimension !== dimension) {
-          const expectedDimension = dimension ?? 'unknown'
+        if (actualDimension && actualDimension !== tableDimension) {
+          const expectedDimension = tableDimension || preferredDimension || configuredDimension || 'unknown'
           logger.warn(`[Memory] embedding dimension mismatch, expected=${expectedDimension}, actual=${actualDimension}. Recreating vector table.`)
           try {
             resetVectorTableDimension(actualDimension)
-            this.deleteVecStmt = this.db.prepare('DELETE FROM vec_group_facts WHERE rowid = ?')
-            this.insertVecStmt = this.db.prepare('INSERT INTO vec_group_facts(rowid, embedding) VALUES (?, ?)')
-            dimension = actualDimension
+            this.prepareVectorStatements()
+            tableDimension = actualDimension
           } catch (resetErr) {
             logger.error('Failed to reset vector table dimension:', resetErr)
+            vectors = []
+          }
+        } else if (actualDimension && tableDimension <= 0) {
+          try {
+            resetVectorTableDimension(actualDimension)
+            this.prepareVectorStatements()
+            tableDimension = actualDimension
+          } catch (resetErr) {
+            logger.error('Failed to initialise vector table dimension:', resetErr)
             vectors = []
           }
         }
@@ -214,6 +235,13 @@ export class GroupMemoryStore {
           continue
         }
         if (Array.isArray(vectorList) && vectorList[i]) {
+          if (!this.deleteVecStmt || !this.insertVecStmt) {
+            this.prepareVectorStatements()
+          }
+          if (!this.deleteVecStmt || !this.insertVecStmt) {
+            logger.warn('[Memory] vector table unavailable, skip vector upsert')
+            continue
+          }
           try {
             const vector = normaliseEmbeddingVector(vectorList[i])
             if (!vector) {
@@ -280,6 +308,10 @@ export class GroupMemoryStore {
     }
     try {
       const dimension = getVectorDimension()
+      if (!dimension || dimension <= 0) {
+        logger.debug('[Memory] vector search skipped: vector dimension unavailable')
+        return []
+      }
       const [embedding] = await embedTexts([queryText], this.embeddingModel, dimension)
       if (!embedding) {
         return []

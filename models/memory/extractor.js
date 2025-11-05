@@ -43,10 +43,10 @@ function formatEntry (entry) {
   return str.length > limit ? str.slice(0, limit) + '…' : str
 }
 
-function buildGroupSystemPrompt () {
-  return `You are a knowledge extraction assistant that specialises in summarising long-term facts from chat transcripts.
-Read the provided group conversation and identify statements that should be stored as long-term knowledge for the group. 
-Note that you should only record valuable information, as this will help the LLM assistant use it as objective facts to answer questions in the future.
+function resolveGroupExtractionPrompts () {
+  const config = ChatGPTConfig.memory?.group || {}
+  const system = config.extractionSystemPrompt || `You are a knowledge extraction assistant that specialises in summarising long-term facts from group chat transcripts.
+Read the provided conversation and identify statements that should be stored as long-term knowledge for the group.
 Return a JSON array. Each element must contain:
 {
   "fact": 事实内容，必须完整包含事件的各个要素而不能是简单的短语（比如谁参与了事件、做了什么事情、背景时间是什么）（同一件事情尽可能整合为同一条而非拆分，以便利于检索）,
@@ -56,17 +56,19 @@ Return a JSON array. Each element must contain:
   "source_messages": 对应原始消息的简要摘录或合并文本,
   "involved_users": 出现或相关的用户ID数组
 }
-Only include meaningful, verifiable information about group members that is useful for future conversations. Do not record incomplete information. Do not record other common sense which is not specified for the group`
+Only include meaningful, verifiable group-specific information that is useful for future conversations. Do not record incomplete information. Do not include general knowledge or unrelated facts. Do not wrap the JSON array in code fences.`
+  const userTemplate = config.extractionUserPrompt || `以下是群聊中的一些消息，请根据系统说明提取值得长期记忆的事实，以JSON数组形式返回，不要输出额外说明。
+
+${'{messages}'}`
+  return { system, userTemplate }
 }
 
-function buildGroupUserPrompt (messages) {
+function buildGroupUserPrompt (messages, template) {
   const joined = messages.map(msg => {
     const sender = msg.nickname || msg.user_id || '未知用户'
     return `${sender}: ${msg.text}`
   }).join('\n')
-  return `以下是群聊中的一些消息，请根据系统说明提取值得长期记忆的事实，以JSON数组形式返回，不要输出额外说明。
-
-${joined}`
+  return template.replace('${messages}', joined)
 }
 
 function buildExistingMemorySection (existingMemories = []) {
@@ -77,22 +79,28 @@ function buildExistingMemorySection (existingMemories = []) {
   return `以下是关于用户的已知长期记忆，请在提取新记忆时参考，避免重复已有事实，并在信息变更时更新描述：\n${lines.join('\n')}`
 }
 
-function buildUserSystemPrompt (existingMemories = []) {
-  return `You are an assistant that extracts long-term personal preferences or persona details about a user.
+function resolveUserExtractionPrompts (existingMemories = []) {
+  const config = ChatGPTConfig.memory?.user || {}
+  const systemTemplate = config.extractionSystemPrompt || `You are an assistant that extracts long-term personal preferences or persona details about a user.
 Given a conversation snippet between the user and the bot, identify durable information such as preferences, nicknames, roles, speaking style, habits, or other facts that remain valid over time.
-Return a JSON array of **strings**, and nothing else. The full response must be a json array!!! Each string must be a short sentence (in the same language as the conversation) describing one piece of long-term memory. Do not include embedded JSON objects, or additional metadata. Ignore temporary topics or uncertain information.
+Return a JSON array of **strings**, and nothing else, without any other characters including \`\`\` or \`\`\`json. Each string must be a short sentence (in the same language as the conversation) describing one piece of long-term memory. Do not include keys, JSON objects, or additional metadata. Ignore temporary topics or uncertain information.`
+  const userTemplate = config.extractionUserPrompt || `下面是用户与机器人的对话，请根据系统提示提取可长期记忆的个人信息。
 
-${buildExistingMemorySection(existingMemories)}`
+${'{messages}'}`
+  return {
+    system: `${systemTemplate}
+
+${buildExistingMemorySection(existingMemories)}`,
+    userTemplate
+  }
 }
 
-function buildUserPrompt (messages) {
+function buildUserPrompt (messages, template) {
   const body = messages.map(msg => {
     const prefix = msg.role === 'assistant' ? '机器人' : (msg.nickname || msg.user_id || '用户')
     return `${prefix}: ${msg.text}`
   }).join('\n')
-  return `下面是用户与机器人的对话，请根据系统提示提取可长期记忆的个人信息。
-
-${body}`
+  return template.replace('${messages}', body)
 }
 
 async function callModel ({ prompt, systemPrompt, model, maxToken = 4096, temperature = 0.2 }) {
@@ -149,10 +157,11 @@ export async function extractGroupFacts (messages) {
     return []
   }
   try {
+    const prompts = resolveGroupExtractionPrompts()
     logger.debug(`[Memory] start group fact extraction, messages=${messages.length}, model=${model}`)
     const text = await callModel({
-      prompt: buildGroupUserPrompt(messages),
-      systemPrompt: buildGroupSystemPrompt(),
+      prompt: buildGroupUserPrompt(messages, prompts.userTemplate),
+      systemPrompt: prompts.system,
       model
     })
     const parsed = parseJSON(text)
@@ -181,12 +190,11 @@ export async function extractUserMemories (messages, existingMemories = []) {
     return []
   }
   try {
+    const prompts = resolveUserExtractionPrompts(existingMemories)
     logger.debug(`[Memory] start user memory extraction, snippets=${messages.length}, existing=${existingMemories.length}, model=${model}`)
-    // logger.debug(`[Memory] memories prompt: ${buildUserPrompt(messages)}`)
-    // logger.debug(`[Memory] system prompt: ${buildUserSystemPrompt(existingMemories)}`)
     const text = await callModel({
-      prompt: buildUserPrompt(messages),
-      systemPrompt: buildUserSystemPrompt(existingMemories),
+      prompt: buildUserPrompt(messages, prompts.userTemplate),
+      systemPrompt: prompts.system,
       model
     })
     const parsed = parseJSON(text)

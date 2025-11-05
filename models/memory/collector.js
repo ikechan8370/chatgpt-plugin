@@ -4,6 +4,7 @@ import { extractGroupFacts } from './extractor.js'
 import { memoryService } from './service.js'
 import { getBotFramework } from '../../utils/bot.js'
 import { ICQQGroupContextCollector, TRSSGroupContextCollector } from '../../utils/group.js'
+import { groupHistoryCursorStore } from './groupHistoryCursorStore.js'
 
 const DEFAULT_MAX_WINDOW = 300 // seconds
 const DEFAULT_HISTORY_BATCH = 120
@@ -356,10 +357,10 @@ export class GroupMessageCollector {
       timestamp: timestampMs || Date.now()
     }
     const messageKey = this.resolveMessageKey(payload, messageId, timestampMs)
-    if (this.shouldSkipMessage(state, timestampMs, messageKey)) {
+    if (this.shouldSkipMessage(state, timestampMs, messageKey, payload.message_id)) {
       return false
     }
-    this.updateGroupState(state, timestampMs, messageKey)
+    this.updateGroupState(groupId, state, timestampMs, messageKey, payload.message_id)
     buffer.messages.push(payload)
     logger.debug(`[Memory] buffered group message, group=${groupId}, buffer=${buffer.messages.length}`)
     this.tryTriggerFlush(groupId, buffer)
@@ -393,18 +394,28 @@ export class GroupMessageCollector {
   getGroupState (groupId) {
     let state = this.groupStates.get(groupId)
     if (!state) {
+      const cursor = groupHistoryCursorStore.getCursor(groupId)
+      const lastTimestamp = Number(cursor?.last_timestamp) || 0
+      const lastMessageId = cursor?.last_message_id || null
       state = {
-        lastTimestamp: 0,
+        lastTimestamp,
+        lastMessageId,
         recentIds: new Set()
+      }
+      if (lastMessageId) {
+        state.recentIds.add(lastMessageId)
       }
       this.groupStates.set(groupId, state)
     }
     return state
   }
 
-  shouldSkipMessage (state, timestampMs, messageKey) {
+  shouldSkipMessage (state, timestampMs, messageKey, messageId) {
     if (!state) {
       return false
+    }
+    if (messageId && state.lastMessageId && messageId === state.lastMessageId) {
+      return true
     }
     if (timestampMs && timestampMs < state.lastTimestamp) {
       return true
@@ -418,8 +429,9 @@ export class GroupMessageCollector {
     return false
   }
 
-  updateGroupState (state, timestampMs, messageKey) {
-    if (!timestampMs) {
+  updateGroupState (groupId, state, timestampMs, messageKey, messageId) {
+    const hasTimestamp = Number.isFinite(timestampMs) && timestampMs > 0
+    if (!hasTimestamp) {
       if (messageKey) {
         state.recentIds.add(messageKey)
         if (state.recentIds.size > MAX_RECENT_IDS) {
@@ -427,20 +439,35 @@ export class GroupMessageCollector {
           state.recentIds = new Set(ids)
         }
       }
+      if (messageId) {
+        state.lastMessageId = String(messageId)
+        groupHistoryCursorStore.updateCursor(groupId, {
+          lastMessageId: state.lastMessageId,
+          lastTimestamp: state.lastTimestamp || null
+        })
+      }
       return
     }
+
     if (timestampMs > state.lastTimestamp) {
       state.lastTimestamp = timestampMs
       state.recentIds = messageKey ? new Set([messageKey]) : new Set()
-      return
-    }
-    if (timestampMs === state.lastTimestamp && messageKey) {
+    } else if (timestampMs === state.lastTimestamp && messageKey) {
       state.recentIds.add(messageKey)
       if (state.recentIds.size > MAX_RECENT_IDS) {
         const ids = Array.from(state.recentIds).slice(-MAX_RECENT_IDS)
         state.recentIds = new Set(ids)
       }
     }
+
+    if (messageId) {
+      state.lastMessageId = String(messageId)
+    }
+
+    groupHistoryCursorStore.updateCursor(groupId, {
+      lastMessageId: state.lastMessageId || null,
+      lastTimestamp: state.lastTimestamp || timestampMs
+    })
   }
 
   getBuffer (groupId) {

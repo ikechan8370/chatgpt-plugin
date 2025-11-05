@@ -5,6 +5,7 @@ import path from 'path'
 import ChatGPTConfig from '../../config/config.js'
 
 const META_VECTOR_DIM_KEY = 'group_vec_dimension'
+const META_VECTOR_MODEL_KEY = 'group_vec_model'
 const META_GROUP_TOKENIZER_KEY = 'group_memory_tokenizer'
 const META_USER_TOKENIZER_KEY = 'user_memory_tokenizer'
 const TOKENIZER_DEFAULT = 'unicode61'
@@ -14,6 +15,7 @@ const PLUGIN_ROOT = path.resolve('./plugins/chatgpt-plugin')
 
 let dbInstance = null
 let cachedVectorDimension = null
+let cachedVectorModel = null
 let userMemoryFtsConfig = {
   tokenizer: TOKENIZER_DEFAULT,
   matchQuery: null
@@ -329,6 +331,17 @@ function ensureGroupFactsTable (db) {
   ensureGroupFactsFtsTable(db)
 }
 
+function ensureGroupHistoryCursorTable (db) {
+  ensureMetaTable(db)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS group_history_cursor (
+      group_id TEXT PRIMARY KEY,
+      last_message_id TEXT,
+      last_timestamp INTEGER
+    )
+  `)
+}
+
 function ensureUserMemoryTable (db) {
   ensureMetaTable(db)
   db.exec(`
@@ -550,6 +563,9 @@ function ensureUserMemoryFtsTable (db) {
 }
 
 function createVectorTable (db, dimension) {
+  if (!dimension || dimension <= 0) {
+    throw new Error(`Invalid vector dimension for table creation: ${dimension}`)
+  }
   db.exec(`CREATE VIRTUAL TABLE vec_group_facts USING vec0(embedding float[${dimension}])`)
 }
 
@@ -559,10 +575,24 @@ function ensureVectorTable (db) {
     return cachedVectorDimension
   }
   const stored = getMetaValue(db, META_VECTOR_DIM_KEY)
+  const storedModel = getMetaValue(db, META_VECTOR_MODEL_KEY)
+  const currentModel = ChatGPTConfig.llm?.embeddingModel || ''
+  if (!storedModel || storedModel !== currentModel) {
+    try {
+      db.exec('DROP TABLE IF EXISTS vec_group_facts')
+    } catch (err) {
+      logger?.warn?.('[Memory] failed to drop vec_group_facts during model change:', err)
+    }
+    setMetaValue(db, META_VECTOR_MODEL_KEY, currentModel)
+    setMetaValue(db, META_VECTOR_DIM_KEY, '0')
+    cachedVectorDimension = 0
+    cachedVectorModel = currentModel
+    return cachedVectorDimension
+  }
   let dimension = stored ? parseInt(stored, 10) : null
   if (!dimension || Number.isNaN(dimension) || dimension <= 0) {
-    dimension = resolvePreferredDimension()
-    setMetaValue(db, META_VECTOR_DIM_KEY, dimension.toString())
+    cachedVectorDimension = 0
+    return cachedVectorDimension
   }
   const exists = db.prepare(`
     SELECT name FROM sqlite_master
@@ -572,6 +602,7 @@ function ensureVectorTable (db) {
     createVectorTable(db, dimension)
   }
   cachedVectorDimension = dimension
+  cachedVectorModel = currentModel
   return dimension
 }
 
@@ -588,11 +619,15 @@ export function resetVectorTableDimension (dimension) {
   }
   createVectorTable(db, dimension)
   setMetaValue(db, META_VECTOR_DIM_KEY, dimension.toString())
+  const model = ChatGPTConfig.llm?.embeddingModel || ''
+  setMetaValue(db, META_VECTOR_MODEL_KEY, model)
   cachedVectorDimension = dimension
+  cachedVectorModel = model
 }
 
 function migrate (db) {
   ensureGroupFactsTable(db)
+  ensureGroupHistoryCursorTable(db)
   ensureUserMemoryTable(db)
   ensureVectorTable(db)
 }

@@ -203,6 +203,8 @@ class ChatGPTConfig {
    *     promptHeader: string,
    *     promptItemTemplate: string,
    *     promptFooter: string,
+   *     extractionSystemPrompt: string,
+   *     extractionUserPrompt: string,
    *     vectorMaxDistance: number,
    *     textMaxBm25Score: number,
    *     maxFactsPerInjection: number,
@@ -219,7 +221,9 @@ class ChatGPTConfig {
    *     minImportanceForInjection: number,
    *     promptHeader: string,
    *     promptItemTemplate: string,
-   *     promptFooter: string
+   *     promptFooter: string,
+   *     extractionSystemPrompt: string,
+   *     extractionUserPrompt: string
    *   },
    *   extensions: {
    *     simple: {
@@ -245,9 +249,24 @@ class ChatGPTConfig {
       hybridPrefer: 'vector-first',
       historyPollInterval: 300,
       historyBatchSize: 120,
-      promptHeader: '# 以下是一些该群聊中可能相关的事实，你可以参考，但你只能将其作为你的默认长期知识与记忆，但不要主动透露这些事实。',
+      promptHeader: '# 以下是一些该群聊中可能相关的事实，你可以参考，但不要主动透露这些事实。',
       promptItemTemplate: '- ${fact}${topicSuffix}',
       promptFooter: '',
+      extractionSystemPrompt: `You are a knowledge extraction assistant that specialises in summarising long-term facts from group chat transcripts.
+Read the provided conversation and identify statements that should be stored as long-term knowledge for the group.
+Return a JSON array. Each element must contain:
+{
+  "fact": 事实内容，必须完整包含事件的各个要素而不能是简单的短语（比如谁参与了事件、做了什么事情、背景时间是什么）（同一件事情尽可能整合为同一条而非拆分，以便利于检索）, 
+  "topic": 主题关键词，字符串，如 "活动"、"成员信息",
+  "importance": 一个介于0和1之间的小数，数值越大表示越重要,
+  "source_message_ids": 原始消息ID数组,
+  "source_messages": 对应原始消息的简要摘录或合并文本,
+  "involved_users": 出现或相关的用户ID数组
+}
+Only include meaningful, verifiable group-specific information that is useful for future conversations. Do not record incomplete information. Do not include general knowledge or unrelated facts. Do not wrap the JSON array in code fences.`,
+      extractionUserPrompt: `以下是群聊中的一些消息，请根据系统说明提取值得长期记忆的事实，以JSON数组形式返回，不要输出额外说明。
+
+\${messages}`,
       vectorMaxDistance: 0,
       textMaxBm25Score: 0,
       maxFactsPerInjection: 5,
@@ -264,7 +283,13 @@ class ChatGPTConfig {
       minImportanceForInjection: 0,
       promptHeader: '# 用户画像',
       promptItemTemplate: '- ${value}',
-      promptFooter: ''
+      promptFooter: '',
+      extractionSystemPrompt: `You are an assistant that extracts long-term personal preferences or persona details about a user.
+Given a conversation snippet between the user and the bot, identify durable information such as preferences, nicknames, roles, speaking style, habits, or other facts that remain valid over time.
+Return a JSON array of **strings**, and nothing else, without any other characters including \`\`\` or \`\`\`json. Each string must be a short sentence (in the same language as the conversation) describing one piece of long-term memory. Do not include keys, JSON objects, or additional metadata. Ignore temporary topics or uncertain information.`,
+      extractionUserPrompt: `下面是用户与机器人的对话，请根据系统提示提取可长期记忆的个人信息。
+
+\${messages}`
     },
     extensions: {
       simple: {
