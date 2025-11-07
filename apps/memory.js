@@ -92,7 +92,7 @@ export class MemoryManager extends plugin {
     }
 
     const msgs = memories.map(item =>
-      `${item.id}. ${item.value}（重要度 ${item.importance.toFixed(2)}）`
+      `${item.id}. ${item.value}（更新时间：${item.updated_at}）`
     )
 
     const forwardMsg = await common.makeForwardMsg(e, ['🧠 您的记忆：', ...msgs], '私人记忆列表')
@@ -125,7 +125,7 @@ export class MemoryManager extends plugin {
     }
 
     const msgs = memories.map(item =>
-      `${item.id}. ${item.value}（重要度 ${item.importance.toFixed(2)}）`
+      `${item.id}. ${item.value}（更新时间：${item.updated_at}）`
     )
 
     const forwardMsg = await common.makeForwardMsg(e, ['🧠 TA的记忆：', ...msgs], 'TA的记忆列表')
