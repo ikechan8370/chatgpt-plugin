@@ -1,6 +1,6 @@
 {
   "name": "chatgpt-plugin",
-  "version": "3.0.0-beta.1",
+  "version": "3.0.0",
   "type": "module",
   "author": "ikechan8370",
   "dependencies": {
@@ -12,8 +12,10 @@
     "keyv-file": "^5.1.2",
     "lowdb": "^7.0.1",
     "sqlite-vec": "^0.1.7-alpha.2",
-    "sqlite3": "^5.1.6",
     "vectra": "^0.9.0"
+  },
+  "peerDependencies": {
+    "sqlite3": ">=5.1.6"
   },
   "pnpm": {}
 }

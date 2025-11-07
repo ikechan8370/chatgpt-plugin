@@ -1,25 +1,9 @@
 import Config from '../config/config.js'
 import { GroupMessageCollector } from '../models/memory/collector.js'
 import { memoryService } from '../models/memory/service.js'
+import common from '../../../lib/common/common.js'
 
 const collector = new GroupMessageCollector()
-
-function formatUserMemoryList (memories) {
-  if (!memories.length) {
-    return '暂无记录~'
-  }
-  return memories.map(item => `${item.id}. ${item.value}（重要度 ${item.importance.toFixed(2)}）`).join('\n')
-}
-
-function formatGroupFactList (facts) {
-  if (!facts.length) {
-    return '暂无群记忆。'
-  }
-  return facts.map(item => {
-    const topic = item.topic ? `【${item.topic}】` : ''
-    return `${item.id}. ${topic}${item.fact}`
-  }).join('\n')
-}
 
 function isGroupManager (e) {
   if (e.isMaster) {
@@ -54,6 +38,10 @@ export class MemoryManager extends plugin {
         {
           reg: '^#?(我的)?记忆$',
           fnc: 'showUserMemory'
+        },
+        {
+          reg: '^#?他的记忆$',
+          fnc: 'showTargetUserMemory'
         },
         {
           reg: '^#?(删除|清除)(我的)?记忆\\s*(\\d+)$',
@@ -96,9 +84,52 @@ export class MemoryManager extends plugin {
       await e.reply('私人记忆未开启或您未被授权。')
       return false
     }
-    const memories = memoryService.listUserMemories(e.sender.user_id, e.isGroup ? e.group_id : null, 10)
-    const content = formatUserMemoryList(memories)
-    await e.reply(`🧠 您的记忆：\n${content}`)
+    const memories = memoryService.listUserMemories(e.sender.user_id, e.isGroup ? e.group_id : null)
+
+    if (!memories.length) {
+      await e.reply('🧠 您的记忆：\n暂无记录~')
+      return true
+    }
+
+    const msgs = memories.map(item =>
+      `${item.id}. ${item.value}（重要度 ${item.importance.toFixed(2)}）`
+    )
+
+    const forwardMsg = await common.makeForwardMsg(e, ['🧠 您的记忆：', ...msgs], '私人记忆列表')
+    await e.reply(forwardMsg)
+    return true
+  }
+
+  async showTargetUserMemory (e) {
+    if (!e.isGroup) {
+      await e.reply('该指令仅可在群聊中使用。')
+      return false
+    }
+
+    const at = e.at || (e.message?.find(m => m.type === 'at')?.qq)
+    if (!at) {
+      await e.reply('请@要查询的用户。')
+      return false
+    }
+
+    if (!memoryService.isUserMemoryEnabled(at)) {
+      await e.reply('该用户未开启私人记忆或未被授权。')
+      return false
+    }
+
+    const memories = memoryService.listUserMemories(at, e.group_id)
+
+    if (!memories.length) {
+      await e.reply('🧠 TA的记忆：\n暂无记录~')
+      return true
+    }
+
+    const msgs = memories.map(item =>
+      `${item.id}. ${item.value}（重要度 ${item.importance.toFixed(2)}）`
+    )
+
+    const forwardMsg = await common.makeForwardMsg(e, ['🧠 TA的记忆：', ...msgs], 'TA的记忆列表')
+    await e.reply(forwardMsg)
     return true
   }
 
@@ -130,9 +161,20 @@ export class MemoryManager extends plugin {
       return false
     }
     await collector.flush(e.group_id)
-    const facts = memoryService.listGroupFacts(e.group_id, 10)
-    const content = formatGroupFactList(facts)
-    await e.reply(`📚 本群记忆：\n${content}`)
+    const facts = memoryService.listGroupFacts(e.group_id)
+
+    if (!facts.length) {
+      await e.reply('📚 本群记忆：\n暂无群记忆。')
+      return true
+    }
+
+    const msgs = facts.map(item => {
+      const topic = item.topic ? `【${item.topic}】` : ''
+      return `${item.id}. ${topic}${item.fact}`
+    })
+
+    const forwardMsg = await common.makeForwardMsg(e, ['📚 本群记忆：', ...msgs], '群记忆列表')
+    await e.reply(forwardMsg)
     return true
   }
 

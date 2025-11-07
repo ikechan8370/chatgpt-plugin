@@ -5,7 +5,13 @@ import path from 'path'
 import https from 'https'
 import { pipeline } from 'stream'
 import { promisify } from 'util'
-import AdmZip from 'adm-zip'
+let AdmZip
+try {
+  AdmZip = (await import('adm-zip')).default
+} catch (e) {
+  logger.warn('Failed to load AdmZip, maybe you need to install it manually:', e)
+}
+import { execSync } from "child_process"
 import {
   Chaite,
   ChaiteResponse,
@@ -219,14 +225,28 @@ async function downloadSimpleExtensionArchive ({ assetKey, assetName, targetDir 
   await downloadToFile(downloadUrl, tempFile)
   removeDirectoryIfExists(targetDir)
   ensureDirectoryExists(targetDir)
-  try {
-    const zip = new AdmZip(tempFile)
-    zip.extractAllTo(targetDir, true)
-  } finally {
-    if (fs.existsSync(tempFile)) {
-      fs.unlinkSync(tempFile)
+  if (AdmZip) {
+    try {
+      const zip = new AdmZip(tempFile)
+      zip.extractAllTo(targetDir, true)
+    } finally {
+      if (fs.existsSync(tempFile)) {
+        fs.unlinkSync(tempFile)
+      }
+    }
+  } else {
+    // 尝试使用 unzip 命令解压
+    try {
+      execSync(`unzip "${tempFile}" -d "${targetDir}"`, { stdio: 'inherit' })
+    } catch (error) {
+      throw new Error(`Failed to extract zip file: ${error.message}. Please install adm-zip manually: pnpm i`)
+    } finally {
+      if (fs.existsSync(tempFile)) {
+        fs.unlinkSync(tempFile)
+      }
     }
   }
+
   const libraryFile = findLibraryFile(targetDir)
   if (!libraryFile) {
     throw new Error('Downloaded extension package does not contain libsimple library.')
