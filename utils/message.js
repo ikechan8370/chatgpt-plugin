@@ -170,7 +170,7 @@ export function checkChatMsg (e, toggleMode, togglePrefix) {
     return true
   }
   const prefixReg = new RegExp(`^#?(图片)?${togglePrefix}[^gpt][sS]*`)
-  if (toggleMode === 'prefix' && e.msg.startsWith(prefixReg)) {
+  if (toggleMode === 'prefix' && prefixReg.test(e.msg)) {
     return true
   }
   return false
