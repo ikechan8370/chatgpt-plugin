@@ -17,5 +17,11 @@
   "peerDependencies": {
     "sqlite3": ">=5.1.6"
   },
-  "pnpm": {}
+  "pnpm": {
+    "peerDependencyRules": {
+      "ignoreMissing": [
+        "sqlite3"
+      ]
+    }
+  }
 }
