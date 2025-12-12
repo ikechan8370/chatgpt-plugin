@@ -46,6 +46,7 @@ export async function authCloud (apiKey = ChatGPTConfig.chaite.cloudApiKey) {
     return Chaite.getInstance().getToolsManager().cloudService.getUser()
   } catch (err) {
     logger.error(err)
+    return null
   }
 }
 
@@ -133,7 +134,11 @@ export async function initChaite () {
   await migrateDatabase()
   if (ChatGPTConfig.chaite.cloudApiKey) {
     const user = await authCloud(ChatGPTConfig.chaite.cloudApiKey)
-    logger.info(`Chaite.Cloud 认证成功, 当前用户${user.username || user.email} (${user.user_id})`)
+    if (user) {
+      logger.info(`Chaite.Cloud 认证成功, 当前用户${user.username || user.email} (${user.user_id})`)
+    } else {
+      logger.warn('Chaite.Cloud 认证失败，将继续使用本地功能')
+    }
   }
   await initRagManager(ChatGPTConfig.llm.embeddingModel, ChatGPTConfig.llm.dimensions)
   if (!ChatGPTConfig.chaite.authKey) {
