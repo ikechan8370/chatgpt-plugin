@@ -14,6 +14,7 @@ class ChatGPTConfig {
    * @type {{
    *   toggleMode: 'at' | 'prefix',
    *   debug: boolean,
+   *   sendReasoning: boolean,
    * }}
    */
   basic = {
@@ -24,7 +25,9 @@ class ChatGPTConfig {
     // 是否开启调试模式
     debug: false,
     // 一般命令的开头
-    commandPrefix: '#chatgpt'
+    commandPrefix: '#chatgpt',
+    // 是否发送思考内容
+    sendReasoning: true
   }
 
   /**
