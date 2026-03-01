@@ -31,13 +31,6 @@ export function supportGuoba () {
           render: () => {
             `<span>你好</span>`
           }
-        },
-        {
-          field: 'basic.sendReasoning',
-          label: '发送思考内容',
-          bottomHelpMessage: '使用@或指令前缀触发对话时，是否将思考过程以转发消息形式发送',
-          component: 'Switch',
-          defaultValue: true
         }
       ],
       // 获取配置数据方法（用于前端填充显示数据）
