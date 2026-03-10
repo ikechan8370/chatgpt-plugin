@@ -23,7 +23,7 @@ class ChatGPTConfig {
     // 触发前缀，仅在前缀触发时有效
     togglePrefix: '#chat',
     // @ 或前缀触发对话时，是否发送思考/工具过程转发消息
-    sendReasoning: true,
+    sendReasoning: false,
     // 是否开启调试模式
     debug: false,
     // 一般命令的开头

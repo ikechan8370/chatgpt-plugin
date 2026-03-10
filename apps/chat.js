@@ -5,6 +5,7 @@ import { YunzaiUserState } from '../models/chaite/storage/lowdb/user_state_stora
 import { getGroupContextPrompt } from '../utils/group.js'
 import { buildMemoryPrompt } from '../models/memory/prompt.js'
 import { extractTextFromUserMessage, processUserMemory } from '../models/memory/userMemoryManager.js'
+import { parseBooleanFlag } from '../utils/common.js'
 import * as crypto from 'node:crypto'
 
 export class Chat extends plugin {
@@ -53,7 +54,7 @@ export class Chat extends plugin {
       if (msgs.length > 0) {
         await e.reply(msgs)
       }
-      if (Config.basic.sendReasoning) {
+      if (parseBooleanFlag(Config.basic.sendReasoning, true)) {
         for (let forwardElement of forward) {
           this.reply(forwardElement)
         }
@@ -119,7 +120,7 @@ export class Chat extends plugin {
     if (msgs.length > 0) {
       await e.reply(msgs, true)
     }
-    if (Config.basic.sendReasoning) {
+    if (parseBooleanFlag(Config.basic.sendReasoning, true)) {
       for (let forwardElement of forward) {
         this.reply(forwardElement)
       }

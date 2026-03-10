@@ -3,6 +3,7 @@ import { createCRUDCommandRules, createSwitchCommandRules } from '../utils/comma
 import { Chaite, VERSION } from 'chaite'
 import * as crypto from 'node:crypto'
 import common from '../../../lib/common/common.js'
+import { parseBooleanFlag } from '../utils/common.js'
 
 export class ChatGPTManagement extends plugin {
   constructor () {
@@ -95,6 +96,10 @@ export class ChatGPTManagement extends plugin {
   toggleChatReasoningForward (e) {
     const enable = e.msg.includes('开启')
     ChatGPTConfig.basic.sendReasoning = enable
+    if (typeof ChatGPTConfig.saveToFile === 'function') {
+      ChatGPTConfig.saveToFile('code')
+    }
+    logger.info(`[ChatGPT-Plugin] set basic.sendReasoning=${ChatGPTConfig.basic.sendReasoning} (type=${typeof ChatGPTConfig.basic.sendReasoning})`)
     this.reply(`普通对话思考过程转发已${enable ? '开启' : '关闭'}`)
   }
 
@@ -160,7 +165,9 @@ export class ChatGPTManagement extends plugin {
     const defaultChatPresetId = ChatGPTConfig.llm.defaultChatPresetId
     const currentPreset = await Chaite.getInstance().getChatPresetManager().getInstance(defaultChatPresetId)
     msgs.push(`当前预设：${currentPreset?.name || '未设置'}${currentPreset ? ('\n\n' + currentPreset.toFormatedString(false)) : ''}`)
-    msgs.push(`普通对话思考过程转发：${ChatGPTConfig.basic.sendReasoning ? '开启' : '关闭'}\n伪人思考过程转发：${ChatGPTConfig.bym.sendReasoning ? '开启' : '关闭'}`)
+    const chatReasoningEnabled = parseBooleanFlag(ChatGPTConfig.basic.sendReasoning, true)
+    const bymReasoningEnabled = parseBooleanFlag(ChatGPTConfig.bym.sendReasoning, false)
+    msgs.push(`普通对话思考过程转发：${chatReasoningEnabled ? '开启' : '关闭'}\n伪人思考过程转发：${bymReasoningEnabled ? '开启' : '关闭'}`)
 
     const allTools = await Chaite.getInstance().getToolsManager().listInstances()
     let toolsMsg = `工具总数：${allTools.length}\n`

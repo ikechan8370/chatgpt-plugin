@@ -75,3 +75,29 @@ if (!fs.existsSync(dataDir)) {
 export function generateId () {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 15)
 }
+
+/**
+ * Parse config flag values from panel/file into boolean.
+ * Accepts: true/false, 1/0, on/off, yes/no, enable/disable.
+ * @param {any} value
+ * @param {boolean} defaultValue
+ * @returns {boolean}
+ */
+export function parseBooleanFlag (value, defaultValue = false) {
+  if (typeof value === 'boolean') {
+    return value
+  }
+  if (typeof value === 'number') {
+    return value !== 0
+  }
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase()
+    if (['true', '1', 'on', 'yes', 'y', 'enable', 'enabled', '开启'].includes(normalized)) {
+      return true
+    }
+    if (['false', '0', 'off', 'no', 'n', 'disable', 'disabled', '关闭'].includes(normalized)) {
+      return false
+    }
+  }
+  return defaultValue
+}

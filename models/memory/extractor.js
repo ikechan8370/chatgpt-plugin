@@ -251,6 +251,10 @@ export async function extractGroupFacts (messages) {
     logger.debug('[Memory] group fact extraction returned non-array content')
     return []
   } catch (err) {
+    const detail = err?.error ?? err?.body ?? err?.response ?? err?.cause
+    if (detail) {
+      logger.error('Failed to extract group facts (API detail):', typeof detail === 'object' ? JSON.stringify(detail) : detail)
+    }
     logger.error('Failed to extract group facts:', err)
     return []
   }
@@ -300,6 +304,10 @@ export async function extractUserMemories (messages, existingMemories = []) {
     logger.debug('[Memory] user memory extraction returned non-array content')
     return []
   } catch (err) {
+    const detail = err?.error ?? err?.body ?? err?.response ?? err?.cause
+    if (detail) {
+      logger.error('Failed to extract user memories:', typeof detail === 'object' ? JSON.stringify(detail) : detail)
+    }
     logger.error('Failed to extract user memories:', err)
     return []
   }
