@@ -53,8 +53,10 @@ export class Chat extends plugin {
       if (msgs.length > 0) {
         await e.reply(msgs)
       }
-      for (let forwardElement of forward) {
-        this.reply(forwardElement)
+      if (Config.basic.sendReasoning) {
+        for (let forwardElement of forward) {
+          this.reply(forwardElement)
+        }
       }
     }
     const userMessage = await intoUserMessage(e, {
@@ -117,8 +119,10 @@ export class Chat extends plugin {
     if (msgs.length > 0) {
       await e.reply(msgs, true)
     }
-    for (let forwardElement of forward) {
-      this.reply(forwardElement)
+    if (Config.basic.sendReasoning) {
+      for (let forwardElement of forward) {
+        this.reply(forwardElement)
+      }
     }
     await processUserMemory({
       event: e,

@@ -13,6 +13,7 @@ class ChatGPTConfig {
    * 基本配置
    * @type {{
    *   toggleMode: 'at' | 'prefix',
+    *   sendReasoning: boolean,
    *   debug: boolean,
    * }}
    */
@@ -21,6 +22,8 @@ class ChatGPTConfig {
     toggleMode: 'at',
     // 触发前缀，仅在前缀触发时有效
     togglePrefix: '#chat',
+    // @ 或前缀触发对话时，是否发送思考/工具过程转发消息
+    sendReasoning: true,
     // 是否开启调试模式
     debug: false,
     // 一般命令的开头
@@ -112,7 +115,7 @@ class ChatGPTConfig {
     // 如果blockStrategy为mask，屏蔽词的替换字符
     blockWordMask: '***',
     // 是否开启群组上下文
-    enableGroupContext: false,
+    enableGroupContext: true,
     // 群组上下文长度
     groupContextLength: 20,
     // 用于组装群聊上下文提示词的模板前缀

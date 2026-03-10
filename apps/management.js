@@ -28,6 +28,11 @@ export class ChatGPTManagement extends plugin {
           permission: 'master'
         },
         {
+          reg: `^${cmdPrefix}(开启|关闭)(普通对话)?(思考|推理)(过程)?(转发|回显)$`,
+          fnc: 'toggleChatReasoningForward',
+          permission: 'master'
+        },
+        {
           reg: `^${cmdPrefix}(查看)?(当前)?(配置|信息|统计信息|状态)$`,
           fnc: 'currentStatus',
           permission: 'master'
@@ -85,6 +90,12 @@ export class ChatGPTManagement extends plugin {
     } else {
       this.reply(`未找到预设${presetId}`)
     }
+  }
+
+  toggleChatReasoningForward (e) {
+    const enable = e.msg.includes('开启')
+    ChatGPTConfig.basic.sendReasoning = enable
+    this.reply(`普通对话思考过程转发已${enable ? '开启' : '关闭'}`)
   }
 
   async destroyConversation (e) {
@@ -149,6 +160,7 @@ export class ChatGPTManagement extends plugin {
     const defaultChatPresetId = ChatGPTConfig.llm.defaultChatPresetId
     const currentPreset = await Chaite.getInstance().getChatPresetManager().getInstance(defaultChatPresetId)
     msgs.push(`当前预设：${currentPreset?.name || '未设置'}${currentPreset ? ('\n\n' + currentPreset.toFormatedString(false)) : ''}`)
+    msgs.push(`普通对话思考过程转发：${ChatGPTConfig.basic.sendReasoning ? '开启' : '关闭'}\n伪人思考过程转发：${ChatGPTConfig.bym.sendReasoning ? '开启' : '关闭'}`)
 
     const allTools = await Chaite.getInstance().getToolsManager().listInstances()
     let toolsMsg = `工具总数：${allTools.length}\n`

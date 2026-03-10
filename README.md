@@ -65,6 +65,7 @@ ChatGPT-Plugin 以 Chaite 为内核，将多模型渠道、工具、处理器、
 basic:
   toggleMode: at            # at / prefix
   togglePrefix: "#chat"     # prefix 模式下的触发词
+  sendReasoning: true       # 普通对话是否转发思考/工具过程
   commandPrefix: "#chatgpt" # 管理指令前缀
 llm:
   defaultModel: "gpt-4o-mini"
@@ -88,7 +89,7 @@ memory:
     whitelist: ["123456789"]
 ```
 
-- **basic**：控制触发方式、调试与命令前缀。
+- **basic**：控制触发方式、普通对话思考过程转发、调试与命令前缀。
 - **llm**：定义默认模型、嵌入模型、群上下文等。`defaultChatPresetId` 需在面板或命令中提前创建。
 - **chaite**：`storage` 默认 SQLite，会在 `plugins/chatgpt-plugin/data/data.db` 生成数据文件；如接入 Chaite Cloud，请填入 `cloudApiKey` 并开放 `host/port`。
 - **bym**：配置伪人触发概率、关键词映射、撤回与思考内容开关。
@@ -107,6 +108,7 @@ memory:
 ### 管理命令 & 面板
 
 - `#chatgpt管理面板`：生成一次性 token，访问 `http://<host>:<port>` 即可使用 Chaite Web 面板。
+- `#chatgpt开启思考转发` / `#chatgpt关闭思考转发`：控制 `@Bot` 或前缀触发普通对话时是否发送思考过程转发消息。
 - CRUD 命令示例（均支持 `列表 / 添加 / 查看 / 删除`）：
   ```
   #chatgpt渠道列表
