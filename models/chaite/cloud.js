@@ -148,8 +148,8 @@ export async function initChaite () {
   // 监听Chaite配置变化，同步需要同步的配置
   chaite.on('config-change', obj => {
     const { key, newVal, oldVal } = obj
-    if (key === 'authKey') {
-      ChatGPTConfig.serverAuthKey = newVal
+    if (key === 'authKey' && newVal && ChatGPTConfig.chaite?.authKey !== newVal) {
+      ChatGPTConfig.chaite.authKey = newVal
     }
     logger.debug(`Chaite config changed: ${key} from ${oldVal} to ${newVal}`)
   })
@@ -161,6 +161,16 @@ export async function initChaite () {
     ChatGPTConfig._saveOrigin = 'chaite'
 
     try {
+      const currentAuthKey = ChatGPTConfig.chaite?.authKey || chaite.getGlobalConfig().getAuthKey()
+      if (config?.chaite && typeof config.chaite === 'object') {
+        const incomingAuthKey = typeof config.chaite.authKey === 'string'
+          ? config.chaite.authKey.trim()
+          : config.chaite.authKey
+        if (!incomingAuthKey) {
+          delete config.chaite.authKey
+        }
+      }
+
       Object.keys(config).forEach(key => {
         if (typeof config[key] === 'object' && config[key] !== null && ChatGPTConfig[key]) {
           deepMerge(ChatGPTConfig[key], config[key])
@@ -169,9 +179,15 @@ export async function initChaite () {
         }
       })
 
+      if (!ChatGPTConfig.chaite.authKey && currentAuthKey) {
+        ChatGPTConfig.chaite.authKey = currentAuthKey
+      }
+
       // 回传部分需要同步的配置
       chaite.getGlobalConfig().setDebug(ChatGPTConfig.basic.debug)
-      chaite.getGlobalConfig().setAuthKey(ChatGPTConfig.chaite.authKey)
+      if (ChatGPTConfig.chaite.authKey && chaite.getGlobalConfig().getAuthKey() !== ChatGPTConfig.chaite.authKey) {
+        chaite.getGlobalConfig().setAuthKey(ChatGPTConfig.chaite.authKey)
+      }
 
       // 使用新的触发保存方法，而不是直接调用saveToFile
       ChatGPTConfig._triggerSave('chaite')
