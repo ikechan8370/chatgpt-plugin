@@ -4,6 +4,7 @@ import { Chaite, VERSION } from 'chaite'
 import * as crypto from 'node:crypto'
 import common from '../../../lib/common/common.js'
 import { parseBooleanFlag } from '../utils/common.js'
+import { initMcpCompatibility } from '../utils/mcp/manager.js'
 
 export class ChatGPTManagement extends plugin {
   constructor () {
@@ -36,6 +37,11 @@ export class ChatGPTManagement extends plugin {
         {
           reg: `^${cmdPrefix}(查看)?(当前)?(配置|信息|统计信息|状态)$`,
           fnc: 'currentStatus',
+          permission: 'master'
+        },
+        {
+          reg: `^${cmdPrefix}(刷新|重载)(MCP|mcp)(工具)?$`,
+          fnc: 'refreshMcpTools',
           permission: 'master'
         }
       ]
@@ -187,5 +193,29 @@ export class ChatGPTManagement extends plugin {
 
     const m = await common.makeForwardMsg(e, msgs, e.msg)
     e.reply(m)
+  }
+
+  async refreshMcpTools (e) {
+    if (!ChatGPTConfig.mcp?.enable) {
+      await this.reply('MCP 未开启，请先在配置中启用 mcp.enable')
+      return false
+    }
+
+    const toolsManager = Chaite.getInstance().getToolsManager()
+    const before = await toolsManager.listInstances()
+
+    await this.reply('开始刷新 MCP 工具，请稍候...')
+    try {
+      await initMcpCompatibility(toolsManager)
+      const after = await toolsManager.listInstances()
+      const mcpPrefix = `${ChatGPTConfig.mcp?.toolNamePrefix || 'mcp'}_`
+      const mcpCount = after.filter(t => String(t?.name || '').startsWith(mcpPrefix)).length
+      await this.reply(`MCP 工具刷新完成\n工具总数：${before.length} -> ${after.length}\n桥接工具数：${mcpCount}`)
+      return true
+    } catch (err) {
+      logger.error('[MCP] 手动刷新工具失败:', err)
+      await this.reply(`MCP 工具刷新失败：${err?.message || err}`)
+      return false
+    }
   }
 }

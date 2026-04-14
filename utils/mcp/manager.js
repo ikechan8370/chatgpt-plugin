@@ -1,5 +1,6 @@
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import ChatGPTConfig from '../../config/config.js'
 import { md5 } from '../common.js'
 import {
@@ -10,6 +11,41 @@ import {
 } from './registry.js'
 
 const BRIDGE_TOOL_ID_PREFIX = 'mcp_bridge_'
+
+function resolveEnvPlaceholders (value) {
+  if (typeof value !== 'string') {
+    return value
+  }
+  return value.replace(/\$\{([A-Z0-9_]+)\}/gi, (_m, varName) => {
+    const envVal = process.env[varName]
+    return envVal == null ? '' : String(envVal)
+  })
+}
+
+function normalizeTransportType (server) {
+  const raw = String(server.transport || server.type || 'stdio').trim().toLowerCase()
+  if (raw === 'streamablehttp' || raw === 'streamable-http' || raw === 'streamable_http') {
+    return 'streamable-http'
+  }
+  if (raw === 'sse') {
+    return 'sse'
+  }
+  return 'stdio'
+}
+
+function normalizeServerId (server) {
+  return String(server.id || server.name || '').trim()
+}
+
+function normalizeServerEnabled (server) {
+  if (typeof server.enable === 'boolean') {
+    return server.enable
+  }
+  if (typeof server.isActive === 'boolean') {
+    return server.isActive
+  }
+  return false
+}
 
 function sanitizeToolName (name = '') {
   return String(name).replace(/[^a-zA-Z0-9_]/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '')
@@ -65,8 +101,9 @@ async function clearOldBridgeTools (toolsManager) {
 }
 
 async function createStdioTransport (server) {
+  const serverId = normalizeServerId(server)
   if (!server.command || !String(server.command).trim()) {
-    throw new Error(`MCP server ${server.id} 缺少 command 配置`)
+    throw new Error(`MCP server ${serverId} 缺少 command 配置`)
   }
 
   const transport = new StdioClientTransport({
@@ -93,11 +130,45 @@ async function createStdioTransport (server) {
   return transport
 }
 
-async function connectServer (server) {
-  if (server.transport !== 'stdio') {
-    logger.warn(`[MCP] 暂不支持 transport=${server.transport}，当前仅实现 stdio`) 
-    return null
+async function createStreamableHttpTransport (server) {
+  const serverId = normalizeServerId(server)
+  const rawUrl = String(server.baseUrl || server.url || '').trim()
+  if (!rawUrl) {
+    throw new Error(`MCP server ${serverId} 缺少 baseUrl/url 配置`)
   }
+
+  const rawHeaders = server.headers && typeof server.headers === 'object'
+    ? server.headers
+    : {}
+
+  const headers = {}
+  for (const [k, v] of Object.entries(rawHeaders)) {
+    headers[String(k)] = resolveEnvPlaceholders(String(v || ''))
+  }
+
+  const auth = headers.Authorization || headers.authorization
+  if (/\$\{[A-Z0-9_]+\}/i.test(String(rawHeaders.Authorization || rawHeaders.authorization || ''))) {
+    const authValue = String(auth || '').trim()
+    const hasToken = /^Bearer\s+\S+/i.test(authValue)
+    if (!hasToken) {
+      logger.warn(`[MCP] 服务 ${serverId} 的 Authorization 占位变量未设置，已跳过连接`)
+      return null
+    }
+  }
+
+  const requestInit = {}
+  if (Object.keys(headers).length > 0) {
+    requestInit.headers = headers
+  }
+
+  return new StreamableHTTPClientTransport(new URL(rawUrl), {
+    requestInit
+  })
+}
+
+async function connectServer (server) {
+  const transportType = normalizeTransportType(server)
+  const serverId = normalizeServerId(server)
 
   const client = new Client(
     {
@@ -109,7 +180,19 @@ async function connectServer (server) {
     }
   )
 
-  const transport = await createStdioTransport(server)
+  let transport
+  if (transportType === 'stdio') {
+    transport = await createStdioTransport(server)
+  } else if (transportType === 'streamable-http') {
+    transport = await createStreamableHttpTransport(server)
+    if (!transport) {
+      return null
+    }
+  } else {
+    logger.warn(`[MCP] 暂不支持 transport=${transportType}，server=${serverId}`)
+    return null
+  }
+
   await client.connect(transport)
   return { client, transport }
 }
@@ -140,10 +223,11 @@ export async function initMcpCompatibility (toolsManager) {
   const nameSet = new Set()
 
   for (const server of servers) {
-    if (!server?.enable) {
+    if (!normalizeServerEnabled(server)) {
       continue
     }
-    if (!server.id) {
+    const serverId = normalizeServerId(server)
+    if (!serverId) {
       logger.warn('[MCP] 忽略一个未设置 id 的 server 配置')
       continue
     }
@@ -154,11 +238,11 @@ export async function initMcpCompatibility (toolsManager) {
         continue
       }
 
-      registerMcpServerClient(server.id, connected)
+      registerMcpServerClient(serverId, connected)
       const toolList = await connected.client.listTools()
       const tools = Array.isArray(toolList?.tools) ? toolList.tools : []
 
-      logger.info(`[MCP] 服务 ${server.id} 已连接，发现工具 ${tools.length} 个`)
+      logger.info(`[MCP] 服务 ${serverId} 已连接，发现工具 ${tools.length} 个`)
 
       for (const tool of tools) {
         const mcpToolName = tool?.name
@@ -166,36 +250,36 @@ export async function initMcpCompatibility (toolsManager) {
           continue
         }
 
-        let bridgeToolName = buildBridgeToolName(server.id, mcpToolName)
+        let bridgeToolName = buildBridgeToolName(serverId, mcpToolName)
         if (nameSet.has(bridgeToolName)) {
-          bridgeToolName = `${bridgeToolName}_${md5(`${server.id}:${mcpToolName}`).slice(0, 6)}`
+          bridgeToolName = `${bridgeToolName}_${md5(`${serverId}:${mcpToolName}`).slice(0, 6)}`
         }
         nameSet.add(bridgeToolName)
 
         registerMcpToolRoute(bridgeToolName, {
-          serverId: server.id,
+          serverId,
           mcpToolName
         })
 
-        const className = `McpBridgeTool_${md5(`${server.id}:${mcpToolName}`).slice(0, 10)}`
+        const className = `McpBridgeTool_${md5(`${serverId}:${mcpToolName}`).slice(0, 10)}`
         const toolCode = buildBridgeToolCode(
           className,
           bridgeToolName,
           tool.inputSchema,
-          `[MCP:${server.id}] ${tool.description || mcpToolName}`
+          `[MCP:${serverId}] ${tool.description || mcpToolName}`
         )
 
         await toolsManager.addInstance({
-          id: `${BRIDGE_TOOL_ID_PREFIX}${md5(`${server.id}:${mcpToolName}`)}`,
+          id: `${BRIDGE_TOOL_ID_PREFIX}${md5(`${serverId}:${mcpToolName}`)}`,
           name: bridgeToolName,
-          description: `[MCP:${server.id}] ${tool.description || mcpToolName}`,
+          description: `[MCP:${serverId}] ${tool.description || mcpToolName}`,
           code: toolCode,
           permission: 'private',
           status: 'enabled'
         })
       }
     } catch (err) {
-      logger.error(`[MCP] 初始化 server=${server.id} 失败:`, err)
+      logger.error(`[MCP] 初始化 server=${serverId} 失败:`, err)
     }
   }
 }
