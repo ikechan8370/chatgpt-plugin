@@ -4,6 +4,7 @@
   "type": "module",
   "author": "ikechan8370",
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "adm-zip": "^0.5.10",
     "better-sqlite3": "^12.8.0",
     "chaite": "^1.8.2",

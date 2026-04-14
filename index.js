@@ -38,7 +38,7 @@ global.chatgpt = {
 
 // startSync returns proxied objects; bind them back so nested writes auto-persist
 const proxiedConfig = ChatGPTConfig.startSync('./plugins/chatgpt-plugin/data')
-for (const key of ['basic', 'bym', 'llm', 'management', 'chaite', 'memory']) {
+for (const key of ['basic', 'bym', 'llm', 'management', 'chaite', 'mcp', 'memory']) {
   if (proxiedConfig?.[key]) {
     ChatGPTConfig[key] = proxiedConfig[key]
   }

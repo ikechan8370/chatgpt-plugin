@@ -188,6 +188,47 @@ class ChatGPTConfig {
   }
 
   /**
+   * MCP 兼容配置（标准 Model Context Protocol）
+   * @type {{
+   *   enable: boolean,
+   *   toolNamePrefix: string,
+   *   removeStaleBridgeToolsOnStart: boolean,
+   *   servers: Array<{
+   *     id: string,
+   *     enable: boolean,
+   *     transport: 'stdio' | 'sse' | 'streamable-http',
+   *     command?: string,
+   *     args?: string[],
+   *     env?: Record<string, string>,
+   *     cwd?: string,
+   *     url?: string,
+   *     includeTools?: string[],
+   *     excludeTools?: string[]
+   *   }>
+   * }}
+   */
+  mcp = {
+    enable: false,
+    // 生成到 Chaite 工具池中的前缀，避免与本地工具重名
+    toolNamePrefix: 'mcp',
+    // 启动时清理旧的桥接工具（id 前缀为 mcp_bridge_）
+    removeStaleBridgeToolsOnStart: true,
+    servers: [
+      {
+        id: 'filesystem',
+        enable: false,
+        transport: 'stdio',
+        command: '',
+        args: [],
+        env: {},
+        cwd: '',
+        includeTools: [],
+        excludeTools: []
+      }
+    ]
+  }
+
+  /**
    * 记忆系统配置
    * @type {{
    *   database: string,
@@ -511,7 +552,7 @@ Return a JSON array of **strings**, and nothing else, without any other characte
       return result
     }
 
-    const sections = ['version', 'basic', 'bym', 'llm', 'management', 'chaite', 'memory']
+    const sections = ['version', 'basic', 'bym', 'llm', 'management', 'chaite', 'mcp', 'memory']
     for (const key of sections) {
       const loadedValue = loadedConfig[key]
       if (loadedValue === undefined) {
@@ -561,6 +602,7 @@ Return a JSON array of **strings**, and nothing else, without any other characte
         llm: this.llm,
         management: this.management,
         chaite: this.chaite,
+        mcp: this.mcp,
         memory: this.memory
       }
 
@@ -582,6 +624,7 @@ Return a JSON array of **strings**, and nothing else, without any other characte
       llm: this.llm,
       management: this.management,
       chaite: this.chaite,
+      mcp: this.mcp,
       memory: this.memory
     }
   }

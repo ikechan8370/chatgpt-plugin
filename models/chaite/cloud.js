@@ -34,6 +34,7 @@ import SQLiteTriggerStorage from './storage/sqlite/trigger_storage.js'
 import LowDBTriggerStorage from './storage/lowdb/trigger_storage,.js'
 import { createChaiteVectorizer } from './vectorizer.js'
 import { MemoryRouter, authenticateMemoryRequest } from '../memory/router.js'
+import { disposeMcpCompatibility, initMcpCompatibility } from '../../utils/mcp/manager.js'
 
 /**
  * 认证，以便共享上传
@@ -141,6 +142,7 @@ export async function initChaite () {
     }
   }
   await initRagManager(ChatGPTConfig.llm.embeddingModel, ChatGPTConfig.llm.dimensions)
+  await initMcpCompatibility(toolsManager)
   if (!ChatGPTConfig.chaite.authKey) {
     ChatGPTConfig.chaite.authKey = Chaite.getInstance().getFrontendAuthHandler().generateToken(0, true)
   }
@@ -205,6 +207,10 @@ export async function initChaite () {
   logger.info('Chaite.RAGManager 初始化完成')
   chaite.runApiServer(app => {
     app.use('/api/memory', authenticateMemoryRequest, MemoryRouter)
+  })
+
+  process.once('beforeExit', async () => {
+    await disposeMcpCompatibility()
   })
 }
 
