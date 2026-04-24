@@ -58,12 +58,55 @@ function buildBridgeToolName (serverId, mcpToolName) {
   return `${prefix}_${s}_${t}`
 }
 
+function normalizeSchemaTypeName (typeName) {
+  if (typeof typeName !== 'string') {
+    return typeName
+  }
+
+  const lowered = typeName.trim().toLowerCase()
+  switch (lowered) {
+    case 'bool':
+      return 'boolean'
+    case 'int':
+      return 'integer'
+    case 'float':
+    case 'double':
+      return 'number'
+    default:
+      return lowered
+  }
+}
+
+function normalizeJsonSchema (schema) {
+  if (Array.isArray(schema)) {
+    return schema.map(normalizeJsonSchema)
+  }
+
+  if (!schema || typeof schema !== 'object') {
+    return schema
+  }
+
+  const out = {}
+  for (const [k, v] of Object.entries(schema)) {
+    if (k === 'type') {
+      out[k] = Array.isArray(v)
+        ? v.map(normalizeSchemaTypeName)
+        : normalizeSchemaTypeName(v)
+      continue
+    }
+    out[k] = normalizeJsonSchema(v)
+  }
+
+  return out
+}
+
 function buildBridgeToolCode (className, bridgeToolName, schema, description = '') {
+  const normalizedSchema = normalizeJsonSchema(schema)
   const fnSchema = JSON.stringify({
     name: bridgeToolName,
     description: description || `MCP bridge tool: ${bridgeToolName}`,
-    parameters: schema && typeof schema === 'object'
-      ? schema
+    parameters: normalizedSchema && typeof normalizedSchema === 'object'
+      ? normalizedSchema
       : {
           type: 'object',
           properties: {},
