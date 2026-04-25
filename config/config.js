@@ -211,8 +211,8 @@ class ChatGPTConfig {
     enable: false,
     // 生成到 Chaite 工具池中的前缀，避免与本地工具重名
     toolNamePrefix: 'mcp',
-    // 启动时清理旧的桥接工具（id 前缀为 mcp_bridge_）
-    removeStaleBridgeToolsOnStart: true,
+    // 启动时不清理旧桥接工具，避免触发工具文件频繁 unlink/rescan 日志刷屏
+    removeStaleBridgeToolsOnStart: false,
     servers: [
       {
         id: 'filesystem',
