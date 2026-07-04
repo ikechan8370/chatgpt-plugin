@@ -34,6 +34,8 @@ import SQLiteTriggerStorage from './storage/sqlite/trigger_storage.js'
 import LowDBTriggerStorage from './storage/lowdb/trigger_storage,.js'
 import { createChaiteVectorizer } from './vectorizer.js'
 import { MemoryRouter, authenticateMemoryRequest } from '../memory/router.js'
+import { initMeili } from '../meili/client.js'
+import { initIndexer } from '../meili/indexer.js'
 
 /**
  * 认证，以便共享上传
@@ -190,6 +192,14 @@ export async function initChaite () {
   chaite.runApiServer(app => {
     app.use('/api/memory', authenticateMemoryRequest, MemoryRouter)
   })
+
+  // 初始化 MeiliSearch 消息索引
+  try {
+    await initMeili()
+    await initIndexer()
+  } catch (err) {
+    logger.warn(`[MeiliSearch] 初始化失败: ${err.message}`)
+  }
 }
 
 function deepMerge (target, source) {
