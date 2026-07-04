@@ -712,6 +712,9 @@ export function getMemoryDatabase () {
   ensureDirectory(dbPath)
   logger?.info?.('[Memory] opening memory database at %s', dbPath)
   dbInstance = new Database(dbPath)
+  // 启用 WAL 模式，允许并发读写，避免 SQLITE_BUSY
+  dbInstance.pragma('journal_mode = WAL')
+  dbInstance.pragma('busy_timeout = 5000')
   sqliteVec.load(dbInstance)
   resetSimpleState({
     requested: false,

@@ -164,6 +164,9 @@ async function callModel ({ prompt, systemPrompt, model, maxToken = 4096, temper
   const options = sendMessageOption
     ? JSON.parse(JSON.stringify(sendMessageOption))
     : {}
+  // memory 提取不需要工具调用，清除预设中的工具配置避免 Gemini 等模型的 Jinja 模板报错
+  delete options.toolGroupId
+  delete options.toolChoice
   options.model = model || options.model
   if (!options.model) {
     throw new Error('No model available for memory extraction call')
