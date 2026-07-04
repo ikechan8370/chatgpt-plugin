@@ -319,7 +319,16 @@ Return a JSON array of **strings**, and nothing else, without any other characte
     // 是否用 AI 描述图片（使用 chaite 预设，通过 aiPresetId 指定）
     describeImage: false,
     // AI 功能使用的 chaite 预设 ID（图片描述、学舌、画像等）
-    aiPresetId: ''
+    aiPresetId: '',
+    // 资源限制（local 模式传给 meilisearch 的命令行参数）
+    // 索引时最大内存，如 '150MB'。小机器建议 <= 总内存的 1/3
+    maxIndexingMemory: '200MB',
+    // 实验性减少索引内存占用（牺牲一点速度）
+    experimentalReduceMemory: true,
+    // 任务数据库最大大小，如 '200MB'
+    maxTaskDbSize: '',
+    // 快照间隔（秒），默认 86400（1天），加大可减少磁盘写入
+    snapshotIntervalSec: 86400
   }
 
   constructor () {

@@ -70,12 +70,26 @@ export class MeiliProcess {
 
     // 启动进程
     logger.info(`[MeiliSearch] 启动 MeiliSearch v${this.config.version}...`)
-    this.process = spawn(binaryPath, [
+    const args = [
       '--db-path', dbPath,
       '--http-addr', '127.0.0.1:7700',
       '--master-key', this.apiKey,
       '--no-analytics'
-    ], {
+    ]
+    // 资源限制参数
+    if (this.config.maxIndexingMemory) {
+      args.push('--max-indexing-memory', this.config.maxIndexingMemory)
+    }
+    if (this.config.experimentalReduceMemory) {
+      args.push('--experimental-reduce-indexing-memory-usage')
+    }
+    if (this.config.maxTaskDbSize) {
+      args.push('--max-task-db-size', this.config.maxTaskDbSize)
+    }
+    if (this.config.snapshotIntervalSec) {
+      args.push('--snapshot-interval-sec', String(this.config.snapshotIntervalSec))
+    }
+    this.process = spawn(binaryPath, args, {
       stdio: ['ignore', 'pipe', 'pipe'],
       windowsHide: true
     })
