@@ -1,39 +1,26 @@
 import { spawn } from 'node:child_process'
 import { createWriteStream } from 'node:fs'
-import { mkdir, access, unlink } from 'node:fs/promises'
+import { mkdir, access, rename, chmod } from 'node:fs/promises'
 import { join } from 'node:path'
 import { pipeline } from 'node:stream/promises'
-import { createGunzip } from 'node:zlib'
 import { platform, arch } from 'node:os'
-import { request } from 'node:https'
-import { createHash } from 'node:crypto'
-import { chmod } from 'node:fs/promises'
 import { dataDir } from '../../utils/common.js'
+import fetch from 'node-fetch'
 
 const MEILI_DIR = join(dataDir, 'meilisearch')
-// MeiliSearch binary name varies by platform
+
+// MeiliSearch 官方 release 命名：linux-{amd64,aarch64}, macos-{amd64,aarch64}, windows-amd64.exe
 function getBinaryName () {
   const p = platform()
   const a = arch()
-  if (p === 'win32') return 'meilisearch.exe'
-  if (p === 'darwin') {
-    return a === 'arm64' ? 'meilisearch-macos-arm64' : 'meilisearch-macos-amd64'
-  }
-  return a === 'arm64' ? 'meilisearch-linux-arm64' : 'meilisearch-linux-amd64'
+  const archName = a === 'arm64' ? 'aarch64' : 'amd64'
+  if (p === 'win32') return `meilisearch-windows-${archName}.exe`
+  if (p === 'darwin') return `meilisearch-macos-${archName}`
+  return `meilisearch-linux-${archName}`
 }
 
 function getDownloadUrl (version) {
-  const p = platform()
-  const a = arch()
-  let asset
-  if (p === 'win32') {
-    asset = 'meilisearch-windows-amd64.exe'
-  } else if (p === 'darwin') {
-    asset = a === 'arm64' ? 'meilisearch-macos-arm64' : 'meilisearch-macos-amd64'
-  } else {
-    asset = a === 'arm64' ? 'meilisearch-linux-aarch64' : 'meilisearch-linux-amd64'
-  }
-  return `https://github.com/meilisearch/meilisearch/releases/download/v${version}/${asset}`
+  return `https://github.com/meilisearch/meilisearch/releases/download/v${version}/${getBinaryName()}`
 }
 
 /**
@@ -124,29 +111,17 @@ export class MeiliProcess {
   }
 
   async _download (binaryPath) {
-    const version = this.config.version
-    const url = getDownloadUrl(version)
+    const url = getDownloadUrl(this.config.version)
     const tmpPath = binaryPath + '.download'
 
     logger.info(`[MeiliSearch] 下载 ${url}`)
-    await new Promise((resolve, reject) => {
-      const file = createWriteStream(tmpPath)
-      request(url, res => {
-        if (res.statusCode === 302 || res.statusCode === 301) {
-          // 跟随重定向
-          file.close()
-          unlink(tmpPath).catch(() => {})
-          request(res.headers.location, res2 => {
-            pipeline(res2, file).then(resolve, reject)
-          }).on('error', reject)
-          return
-        }
-        pipeline(res, file).then(resolve, reject)
-      }).on('error', reject)
-    })
+    const resp = await fetch(url, { redirect: 'follow' })
+    if (!resp.ok) {
+      throw new Error(`下载失败: HTTP ${resp.status}`)
+    }
 
-    // 重命名
-    const { rename } = await import('node:fs/promises')
+    const file = createWriteStream(tmpPath)
+    await pipeline(resp.body, file)
     await rename(tmpPath, binaryPath)
     logger.info('[MeiliSearch] 下载完成')
   }
