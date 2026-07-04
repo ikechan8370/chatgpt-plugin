@@ -179,7 +179,7 @@ export class Meilisearch extends plugin {
     if (asface) filter += ' AND message.asface = true'
     if (groupId) filter += ` AND group.group_id = "${groupId}"`
 
-    const results = await client.index('messages').search(query, {
+    const results = await client.index(ChatGPTConfig.meili.indexName).search(query, {
       filter,
       limit: 30,
       sort: ['quotable.time:desc'],
@@ -227,7 +227,7 @@ export class Meilisearch extends plugin {
     let filter = `sender.user_id = "${qq}"`
     if (groupId) filter += ` AND group.group_id = "${groupId}"`
 
-    const results = await client.index('messages').search('', {
+    const results = await client.index(ChatGPTConfig.meili.indexName).search('', {
       filter,
       limit: 70,
       sort: ['quotable.time:desc']
@@ -254,7 +254,7 @@ export class Meilisearch extends plugin {
     let filter = `group.group_id = "${groupId}"`
     if (qq) filter += ` AND sender.user_id = "${qq}"`
 
-    const results = await client.index('messages').search(query, {
+    const results = await client.index(ChatGPTConfig.meili.indexName).search(query, {
       filter,
       limit: 50,
       sort: ['quotable.time:desc'],
@@ -276,7 +276,7 @@ export class Meilisearch extends plugin {
     const all = e.msg.includes('全部')
     const opt = { facetQuery: '', facetName: 'message.tags' }
     if (!all) opt.filter = `group.group_id = "${String(e.group_id)}"`
-    const aggr = await client.index('messages').searchForFacetValues(opt)
+    const aggr = await client.index(ChatGPTConfig.meili.indexName).searchForFacetValues(opt)
     const values = (aggr.facetHits || []).map(h => `${h.value} (${h.count}次)`)
     if (values.length === 0) { await e.reply('暂无tag数据'); return }
     const fwd = await common.makeForwardMsg(e, [values.join('\n')], 'tag次数排行')
@@ -290,7 +290,7 @@ export class Meilisearch extends plugin {
     const all = e.msg.includes('全部')
     const opt = { facetQuery: '', facetName: 'sender.card' }
     if (!all) opt.filter = `group.group_id = "${String(e.group_id)}"`
-    const aggr = await client.index('messages').searchForFacetValues(opt)
+    const aggr = await client.index(ChatGPTConfig.meili.indexName).searchForFacetValues(opt)
     const values = (aggr.facetHits || []).map(h => `${h.value} (${h.count}次)`)
     if (values.length === 0) { await e.reply('暂无发言数据'); return }
     const fwd = await common.makeForwardMsg(e, [values.join('\n')], '发言排行')
@@ -306,7 +306,7 @@ export class Meilisearch extends plugin {
     let filter = 'message.asface = true'
     if (!all) filter += ` AND group.group_id = "${groupId}"`
 
-    const aggr = await client.index('messages').searchForFacetValues({ facetQuery: '', facetName: 'message.file', filter })
+    const aggr = await client.index(ChatGPTConfig.meili.indexName).searchForFacetValues({ facetQuery: '', facetName: 'message.file', filter })
 
     const values = await Promise.all((aggr.facetHits || []).slice(0, 20).map(async hit => {
       let imgElem
@@ -321,7 +321,7 @@ export class Meilisearch extends plugin {
 
       let senderFilter = `message.file = "${hit.value}"`
       if (!all) senderFilter += ` AND group.group_id = "${groupId}"`
-      const senderAggr = await client.index('messages').searchForFacetValues({ facetQuery: '', facetName: 'sender.card', filter: senderFilter })
+      const senderAggr = await client.index(ChatGPTConfig.meili.indexName).searchForFacetValues({ facetQuery: '', facetName: 'sender.card', filter: senderFilter })
       const topSender = senderAggr.facetHits?.[0]?.value || '?'
 
       return [imgElem, `${hit.count}次 (最爱发的人: ${topSender})`]
@@ -356,7 +356,7 @@ export class Meilisearch extends plugin {
       // 按 tag 搜索
       const filterParts = tags.map(t => `message.tags = "${t}"`)
       filterParts.push(`group.group_id = "${String(e.group_id)}"`)
-      const results = await client.index('messages').search('', { filter: filterParts.join(' AND ') })
+      const results = await client.index(ChatGPTConfig.meili.indexName).search('', { filter: filterParts.join(' AND ') })
       const messages = await handleHits(results)
       if (messages.length === 0) { await e.reply('没有找到: ' + tags.join(', ')); return }
       const fwd = await makeForwardMsg(e, messages, 'tag搜索', true)
@@ -367,7 +367,7 @@ export class Meilisearch extends plugin {
     const file = image.file
     const md5 = image.md5
 
-    const records = await client.index('messages').search('', { filter: `message.md5 = "${md5}"` })
+    const records = await client.index(ChatGPTConfig.meili.indexName).search('', { filter: `message.md5 = "${md5}"` })
 
     // 没有 tag：显示已有 tag
     if (tags.length === 0) {
@@ -393,7 +393,7 @@ export class Meilisearch extends plugin {
       toUpdate.push(hit)
     }
     if (toUpdate.length > 0) {
-      await client.index('messages').updateDocuments(toUpdate)
+      await client.index(ChatGPTConfig.meili.indexName).updateDocuments(toUpdate)
     }
     await e.reply('操作成功')
   }
@@ -412,7 +412,7 @@ export class Meilisearch extends plugin {
 
     const groupId = String(e.group_id || '')
     const filter = `group.group_id = "${groupId}" AND message.type = "at" AND message.qq = "${qq}"`
-    const results = await client.index('messages').search('', { filter, hitsPerPage: num, sort: ['quotable.time:desc'] })
+    const results = await client.index(ChatGPTConfig.meili.indexName).search('', { filter, hitsPerPage: num, sort: ['quotable.time:desc'] })
     const messages = await handleHits(results)
     if (messages.length === 0) { await e.reply('没有找到@记录'); return }
     const fwd = await makeForwardMsg(e, messages, '谁@我', true)
@@ -427,7 +427,7 @@ export class Meilisearch extends plugin {
     let [q = '', o = '{}'] = queryStr.split('/').map(s => s.trim())
     try {
       const opt = JSON.parse(o)
-      const results = await client.index('messages').search(q, {
+      const results = await client.index(ChatGPTConfig.meili.indexName).search(q, {
         limit: 100,
         sort: ['quotable.time:desc'],
         ...opt
@@ -456,7 +456,7 @@ export class Meilisearch extends plugin {
     const groupId = String(e.group_id || '')
 
     if (isRandom) {
-      const findUserRsp = await client.index('messages').search('', {
+      const findUserRsp = await client.index(ChatGPTConfig.meili.indexName).search('', {
         facets: ['sender.user_id'],
         filter: `group.group_id = "${groupId}" AND message.type = "text"`,
         limit: 1
@@ -470,7 +470,7 @@ export class Meilisearch extends plugin {
       await e.reply(`注意了，我要模仿 @${user?.card || user?.nickname || qq} 说话了！`)
     }
 
-    const bymRes = await client.index('messages').search('', {
+    const bymRes = await client.index(ChatGPTConfig.meili.indexName).search('', {
       filter: `sender.user_id = "${qq}" AND message.type = "text" AND group.group_id = "${groupId}"`,
       limit: 500,
       sort: ['quotable.time:desc']
@@ -519,7 +519,7 @@ export class Meilisearch extends plugin {
     const groupId = String(e.group_id || '')
 
     if (isRandom) {
-      const findUserRsp = await client.index('messages').search('', {
+      const findUserRsp = await client.index(ChatGPTConfig.meili.indexName).search('', {
         facets: ['sender.user_id'],
         filter: `group.group_id = "${groupId}"`,
         limit: 1
@@ -533,7 +533,7 @@ export class Meilisearch extends plugin {
       await e.reply(`以下是 @${user?.card || user?.nickname || qq} 的用户画像。`)
     }
 
-    const bymRes = await client.index('messages').search('', {
+    const bymRes = await client.index(ChatGPTConfig.meili.indexName).search('', {
       filter: `sender.user_id = "${qq}" AND group.group_id = "${groupId}"`,
       limit: 1000,
       sort: ['quotable.time:desc']
@@ -579,7 +579,7 @@ export class Meilisearch extends plugin {
     let limit = parseInt(e.msg.replace(/^#群画像/, '').trim()) || 1000
     if (limit > 10000) limit = 10000
 
-    const bymRes = await client.index('messages').search('', {
+    const bymRes = await client.index(ChatGPTConfig.meili.indexName).search('', {
       filter: `group.group_id = "${groupId}"`,
       limit,
       sort: ['quotable.time:desc']

@@ -312,6 +312,8 @@ Return a JSON array of **strings**, and nothing else, without any other characte
     apiKey: '',
     // 本地模式: MeiliSearch 版本号
     version: '1.13.3',
+    // index 名称，多用户共用同一 MeiliSearch 时可区分不同实例
+    indexName: 'messages',
     // 索引内容开关
     indexText: true,
     indexImage: true,

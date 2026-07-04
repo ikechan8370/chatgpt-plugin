@@ -221,7 +221,7 @@ export async function initIndexer () {
             let existingDesc = null
             if (fs.existsSync(dest)) {
               try {
-                const searchRes = await client.index('messages').search('', {
+                const searchRes = await client.index(config.indexName).search('', {
                   filter: `message.file = "${file}"`,
                   limit: 1
                 })
@@ -282,7 +282,7 @@ export async function initIndexer () {
       }
 
       // 索引到 MeiliSearch
-      await client.index('messages').addDocuments([doc])
+      await client.index(config.indexName).addDocuments([doc])
       indexCount++
       if (indexCount % 50 === 0) {
         logger.debug(`[MeiliIndexer] 已索引 ${indexCount} 条消息`)

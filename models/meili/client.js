@@ -1,4 +1,4 @@
-import { MeiliSearch } from 'meilisearch'
+import { Meilisearch } from 'meilisearch'
 import ChatGPTConfig from '../../config/config.js'
 import { MeiliProcess } from './meiliProcess.js'
 
@@ -25,7 +25,7 @@ export function getMeiliClient () {
 
   // 外部模式
   if (!config.host) return null
-  _client = new MeiliSearch({
+  _client = new Meilisearch({
     host: config.host,
     apiKey: config.apiKey || undefined
   })
@@ -46,7 +46,7 @@ function createLazyClient (config, process) {
         if (!_inner) {
           if (!_initPromise) {
             _initPromise = process.start().then(() => {
-              _inner = new MeiliSearch({
+              _inner = new Meilisearch({
                 host: process.host,
                 apiKey: process.apiKey
               })
@@ -82,7 +82,7 @@ export async function initMeili () {
   if (config.mode === 'local') {
     _process = new MeiliProcess(config)
     await _process.start()
-    const client = new MeiliSearch({
+    const client = new Meilisearch({
       host: _process.host,
       apiKey: _process.apiKey
     })
@@ -100,7 +100,7 @@ export async function initMeili () {
 
   // 外部模式
   if (config.host) {
-    const client = new MeiliSearch({
+    const client = new Meilisearch({
       host: config.host,
       apiKey: config.apiKey || undefined
     })
