@@ -1,9 +1,9 @@
 import { getMeiliClient, isMeiliConfigured } from '../models/meili/client.js'
 import ChatGPTConfig from '../config/config.js'
+import { Chaite, SendMessageOption } from 'chaite'
 import common from '../../../lib/common/common.js'
 import fs from 'node:fs'
 import path from 'node:path'
-import fetch from 'node-fetch'
 import _ from 'lodash'
 import { dataDir } from '../utils/common.js'
 
@@ -104,54 +104,32 @@ async function handleHits (results) {
   return messages
 }
 
-// ==================== AI Provider 调用 ====================
-
-async function callOpenAI (prompt, systemPrompt) {
-  const config = ChatGPTConfig.meili?.profileAi?.openai
-  if (!config?.apiKey) throw new Error('OpenAI API Key 未配置')
-  const resp = await fetch(`${config.baseUrl}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${config.apiKey}`
-    },
-    body: JSON.stringify({
-      model: config.model || 'gpt-4.1-mini',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: prompt }
-      ],
-      temperature: 1,
-      max_tokens: config.maxTokens || 4096,
-      stream: false
-    })
-  })
-  const data = await resp.json()
-  return data.choices?.[0]?.message?.content || ''
-}
-
-async function callGemini (prompt, systemPrompt, model) {
-  const config = ChatGPTConfig.meili?.profileAi?.gemini
-  if (!config?.apiKey) throw new Error('Gemini API Key 未配置')
-  const m = model || config.model || 'gemini-2.5-flash'
-  const resp = await fetch(`${config.baseUrl}/models/${m}:generateContent?key=${config.apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      system_instruction: { parts: [{ text: systemPrompt }] },
-      generationConfig: { temperature: 1, maxOutputTokens: 8192 }
-    })
-  })
-  const data = await resp.json()
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || ''
-}
+// ==================== AI 调用（复用 chaite 渠道/预设） ====================
 
 async function callAI (prompt, systemPrompt) {
-  const config = ChatGPTConfig.meili
-  const provider = config.profileAiProvider || 'gemini'
-  if (provider === 'openai') return callOpenAI(prompt, systemPrompt)
-  return callGemini(prompt, systemPrompt)
+  const presetId = ChatGPTConfig.meili?.aiPresetId
+  if (!presetId) throw new Error('未配置 meili.aiPresetId')
+
+  const chaite = Chaite.getInstance()
+  if (!chaite) throw new Error('Chaite 未初始化')
+
+  const preset = await chaite.getChatPresetManager().getInstance(presetId)
+  if (!preset) throw new Error(`预设 ${presetId} 不存在`)
+
+  const resp = await chaite.sendMessage({
+    role: 'user',
+    content: [{ type: 'text', text: prompt }]
+  }, null, new SendMessageOption({
+    disableHistoryRead: true,
+    disableHistorySave: true,
+    stream: false,
+    systemOverride: systemPrompt
+  }))
+
+  return (resp.contents || [])
+    .filter(c => c.type === 'text')
+    .map(c => c.text)
+    .join('\n')
 }
 
 // ==================== Plugin ====================

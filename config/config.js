@@ -316,37 +316,10 @@ Return a JSON array of **strings**, and nothing else, without any other characte
     indexText: true,
     indexImage: true,
     indexFile: false,
-    // 是否用 AI 描述图片 (需要配置 AI provider)
-    describeImage: true,
-    // AI 图片描述提供商: 'openai' | 'gemini'
-    imageAiProvider: 'openai',
-    imageAi: {
-      openai: {
-        apiKey: '',
-        baseUrl: 'https://api.openai.com/v1',
-        model: 'gpt-4.1-mini'
-      },
-      gemini: {
-        apiKey: '',
-        baseUrl: 'https://xuanku.chaite.cloud/v1beta',
-        model: 'gemini-2.5-flash'
-      }
-    },
-    // AI 学舌/画像提供商: 'openai' | 'gemini'
-    profileAiProvider: 'gemini',
-    profileAi: {
-      openai: {
-        apiKey: '',
-        baseUrl: 'https://api.openai.com/v1',
-        model: 'gpt-4.1-mini',
-        maxTokens: 8192
-      },
-      gemini: {
-        apiKey: '',
-        baseUrl: 'https://xuanku.chaite.cloud/v1beta',
-        model: 'gemini-2.5-flash'
-      }
-    }
+    // 是否用 AI 描述图片（使用 chaite 预设，通过 aiPresetId 指定）
+    describeImage: false,
+    // AI 功能使用的 chaite 预设 ID（图片描述、学舌、画像等）
+    aiPresetId: ''
   }
 
   constructor () {

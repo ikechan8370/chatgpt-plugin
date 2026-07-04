@@ -3,6 +3,7 @@ import path from 'node:path'
 import fetch from 'node-fetch'
 import https from 'node:https'
 import { fileTypeFromBuffer } from 'file-type'
+import { Chaite, SendMessageOption } from 'chaite'
 import { getMeiliClient, isMeiliConfigured } from './client.js'
 import ChatGPTConfig from '../../config/config.js'
 import { dataDir } from '../../utils/common.js'
@@ -34,74 +35,59 @@ async function downloadFile (url, destPath) {
 }
 
 /**
- * AI 图片描述
+ * AI 图片描述 - 通过 chaite 渠道/预设调用
  */
 async function describeImage (imageBase64, mime) {
-  const config = ChatGPTConfig.meili
-  const provider = config.imageAiProvider || 'openai'
-  const aiConfig = config.imageAi?.[provider] || {}
-
-  if (provider === 'gemini') {
-    return describeWithGemini(imageBase64, mime, aiConfig)
+  const presetId = ChatGPTConfig.meili?.aiPresetId
+  if (!presetId) {
+    logger.warn('[MeiliIndexer] 未配置 meili.aiPresetId，跳过图片描述')
+    return null
   }
-  return describeWithOpenAI(imageBase64, mime, aiConfig)
-}
 
-async function describeWithOpenAI (imageBase64, mime, aiConfig) {
-  const { OpenAI } = await import('openai')
-  const client = new OpenAI({
-    apiKey: aiConfig.apiKey,
-    baseURL: aiConfig.baseUrl,
-    defaultHeaders: { 'x-request-from': 'Yunzai/MeiliIndexer' }
-  })
+  const chaite = Chaite.getInstance()
+  if (!chaite) return null
+
+  const presetManager = chaite.getChatPresetManager()
+  const preset = await presetManager.getInstance(presetId)
+  if (!preset) {
+    logger.warn(`[MeiliIndexer] 预设 ${presetId} 不存在`)
+    return null
+  }
 
   const prompt = `描述一下这个图片，返回描述文本和对应的tags。tags和文本不宜过多。tags一般不超过5个。描述不超过50字，除非图片中有文字需要复述。描述文本和tags都应该有助于通过关键词检索到该张图片。如果图片中有文字，应该将文字包含在描述中，如果文字较多可以只包含概述。要求返回json格式，包含两个字段 \`tags\` (list[str])和 \`description\` (str).优先使用简体中文进行描述。返回内容必须是完整json字符串且不包含任何其他字符。`
 
-  const resp = await client.chat.completions.create({
-    model: aiConfig.model || 'gpt-4.1-mini',
-    messages: [{
+  const sendOptions = new SendMessageOption({
+    disableHistoryRead: true,
+    disableHistorySave: true,
+    stream: false
+  })
+
+  try {
+    const resp = await chaite.sendMessage({
       role: 'user',
       content: [
-        { type: 'image_url', image_url: { url: `data:${mime};base64,${imageBase64}`, detail: 'high' } },
+        { type: 'image', image: imageBase64, mimeType: mime },
         { type: 'text', text: prompt }
       ]
-    }]
-  })
-
-  const content = (resp.choices[0]?.message?.content || '').replace(/```json/g, '').replace(/```/g, '').trim()
-  try {
-    return JSON.parse(content)
-  } catch {
-    logger.warn('[MeiliIndexer] AI 返回非 JSON:', content.slice(0, 200))
-    return null
-  }
-}
-
-async function describeWithGemini (imageBase64, mime, aiConfig) {
-  const url = `${aiConfig.baseUrl}/models/${aiConfig.model || 'gemini-2.5-flash'}:generateContent?key=${aiConfig.apiKey}`
-  const prompt = `描述一下这个图片，返回JSON格式。包含两个字段：tags(字符串数组，不超过5个)和description(字符串，不超过50字)。使用简体中文。只返回JSON，不要其他内容。`
-
-  const resp = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      contents: [{
-        parts: [
-          { inline_data: { mime_type: mime, data: imageBase64 } },
-          { text: prompt }
-        ]
-      }],
-      generationConfig: { temperature: 0.5, maxOutputTokens: 512 }
+    }, null, {
+      ...sendOptions,
+      chatPreset: preset
     })
-  })
 
-  const data = await resp.json()
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
-  const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim()
-  try {
-    return JSON.parse(cleaned)
-  } catch {
-    logger.warn('[MeiliIndexer] Gemini 返回非 JSON:', text.slice(0, 200))
+    const text = (resp.contents || [])
+      .filter(c => c.type === 'text')
+      .map(c => c.text)
+      .join(' ')
+      .replace(/```json/g, '').replace(/```/g, '').trim()
+
+    try {
+      return JSON.parse(text)
+    } catch {
+      logger.warn('[MeiliIndexer] AI 返回非 JSON:', text.slice(0, 200))
+      return null
+    }
+  } catch (err) {
+    logger.warn('[MeiliIndexer] 图片描述失败:', err.message)
     return null
   }
 }
