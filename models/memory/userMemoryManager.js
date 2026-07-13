@@ -1,9 +1,6 @@
-import { Chaite } from 'chaite'
 import * as crypto from 'node:crypto'
 import { extractUserMemories } from './extractor.js'
 import { memoryService } from './service.js'
-
-const USER_MEMORY_CONTEXT_LIMIT = 6
 
 export function extractTextFromContents (contents) {
   if (!Array.isArray(contents)) {
@@ -55,35 +52,35 @@ function normaliseMemoriesInput (memories, sourceId) {
   })
 }
 
-export async function processUserMemory ({ event, userMessage, userText, conversationId, assistantContents, assistantMessageId }) {
+function getEventUserId (e) {
+  const userId = e?.user_id ?? e?.sender?.user_id
+  if (userId === null || userId === undefined) {
+    return ''
+  }
+  return String(userId).trim()
+}
+
+export async function processUserMemory ({ event, userMessage, userText, assistantContents, assistantMessageId }) {
   const e = event
-  if (!memoryService.isUserMemoryEnabled(e.sender.user_id)) {
+  const userId = getEventUserId(e)
+  if (!userId || !memoryService.isUserMemoryEnabled(userId)) {
     return
   }
   const snippets = []
   const userMessageId = e.message_id || e.seq || userMessage?.id || crypto.randomUUID()
-  const senderName = e.sender?.card || e.sender?.nickname || String(e.sender?.user_id || '')
+  const senderName = e.sender?.card || e.sender?.nickname || userId
 
-  try {
-    const historyManager = Chaite.getInstance()?.getHistoryManager?.()
-    if (historyManager && conversationId) {
-      const history = await historyManager.getHistory(null, conversationId)
-      const filtered = (history || [])
-        .filter(msg => ['user', 'assistant'].includes(msg.role))
-        .map(msg => ({
-          role: msg.role,
-          text: extractTextFromContents(msg.content),
-          nickname: msg.role === 'user' ? senderName : '机器人',
-          message_id: msg.id
-        }))
-        .filter(item => item.text)
-      if (filtered.length > 0) {
-        const limited = filtered.slice(-USER_MEMORY_CONTEXT_LIMIT * 2)
-        snippets.push(...limited)
-      }
-    }
-  } catch (err) {
-    logger.warn('Failed to collect user memory context:', err)
+  // Only extract personal memory from the actual user turn. The chat pipeline
+  // injects memory prompts and group context as role=user messages for model
+  // caching; reading them back from history would attribute other members'
+  // messages to the current user.
+  if (userText) {
+    snippets.push({
+      role: 'user',
+      text: userText,
+      nickname: senderName,
+      message_id: userMessageId
+    })
   }
 
   if (assistantContents) {
@@ -98,20 +95,11 @@ export async function processUserMemory ({ event, userMessage, userText, convers
     }
   }
 
-  if (userText && !snippets.some(item => item.message_id === userMessageId)) {
-    snippets.push({
-      role: 'user',
-      text: userText,
-      nickname: senderName,
-      message_id: userMessageId
-    })
-  }
-
   if (snippets.length === 0) {
     return
   }
 
-  const existingRecords = memoryService.listUserMemories(e.sender.user_id, e.isGroup ? e.group_id : null, 50)
+  const existingRecords = await memoryService.listUserMemories(userId, e.isGroup ? e.group_id : null, 50)
   const existingTexts = existingRecords.map(record => record.value).filter(Boolean)
   const memories = await extractUserMemories(snippets, existingTexts)
   if (!memories || memories.length === 0) {
@@ -119,11 +107,9 @@ export async function processUserMemory ({ event, userMessage, userText, convers
   }
 
   const enriched = normaliseMemoriesInput(memories, userMessageId)
-  memoryService.upsertUserMemories(
-    e.sender.user_id,
+  await memoryService.upsertUserMemories(
+    userId,
     e.isGroup ? e.group_id : null,
     enriched
   )
 }
-
-export { USER_MEMORY_CONTEXT_LIMIT }

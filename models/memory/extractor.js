@@ -104,16 +104,31 @@ function resolveGroupExtractionPrompts (presetSendMessageOption) {
   const config = ChatGPTConfig.memory?.group || {}
   const system = config.extractionSystemPrompt || presetSendMessageOption?.systemOverride || `You are a knowledge extraction assistant that specialises in summarising long-term facts from group chat transcripts.
 Read the provided conversation and identify statements that should be stored as long-term knowledge for the group.
+
+WHAT TO EXTRACT (high value):
+- Personal facts about members (jobs, skills, life events, locations)
+- Group events, plans, or decisions
+- Shared knowledge or inside jokes the group has established
+- Opinions or preferences that reveal something about a member's identity
+
+DO NOT EXTRACT (low value):
+- How members interact with a bot (commands, nicknames for bot, etc.)
+- Mundane daily chatter without substance
+- Greetings, thanks, or other pleasantries
+- Anything that won't be relevant after a few hours
+
 Return a JSON array. Each element must contain:
 {
-  "fact": 事实内容，必须完整包含事件的各个要素而不能是简单的短语（比如谁参与了事件、做了什么事情、背景时间是什么）（同一件事情尽可能整合为同一条而非拆分，以便利于检索）,
-  "topic": 主题关键词，字符串，如 "活动"、"成员信息",
-  "importance": 一个介于0和1之间的小数，数值越大表示越重要,
+  "fact": 事实内容，必须完整包含事件的各个要素（谁参与了、做了什么事、背景是什么），尽可能整合而非拆分,
+  "topic": 主题关键词，如 "活动"、"成员信息",
+  "importance": 介于0和1之间的小数。重要事实(如人生大事、群决策)给0.8以上；普通趣事给0.4-0.6；琐碎信息给0.3以下或直接不提取,
   "source_message_ids": 原始消息ID数组,
-  "source_messages": 对应原始消息的简要摘录或合并文本,
+  "source_messages": 对应原始消息的简要摘录,
   "involved_users": 出现或相关的用户ID数组
 }
-Only include meaningful, verifiable group-specific information that is useful for future conversations. Do not record incomplete information. Do not include general knowledge or unrelated facts. Do not wrap the JSON array in code fences.`
+
+If nothing meaningful is found, return an empty array []. Quality over quantity.
+Do not wrap the JSON array in code fences.`
   const userTemplate = config.extractionUserPrompt || `以下是群聊中的一些消息，请根据系统说明提取值得长期记忆的事实，以JSON数组形式返回，不要输出额外说明。
 
 \${messages}`
@@ -138,14 +153,48 @@ function buildExistingMemorySection (existingMemories = []) {
 
 function resolveUserExtractionPrompts (existingMemories = [], presetSendMessageOption) {
   const config = ChatGPTConfig.memory?.user || {}
-  const systemTemplate = config.extractionSystemPrompt || presetSendMessageOption?.systemOverride || `You are an assistant that extracts long-term personal preferences or persona details about a user.
-Given a conversation snippet between the user and the bot, identify durable information such as preferences, nicknames, roles, speaking style, habits, or other facts that remain valid over time.
-Return a JSON array of **strings**, and nothing else, without any other characters including \`\`\` or \`\`\`json. Each string must be a short sentence (in the same language as the conversation) describing one piece of long-term memory. Do not include keys, JSON objects, or additional metadata. Ignore temporary topics or uncertain information.`
-  const userTemplate = config.extractionUserPrompt || `下面是用户与机器人的对话，请根据系统提示提取可长期记忆的个人信息。
+  const systemTemplate = config.extractionSystemPrompt || presetSendMessageOption?.systemOverride || `You are an assistant that extracts long-term personal memories about a user from their conversations with a bot.
+
+CRITICAL RULES - Only extract memories that meet ALL of these criteria:
+1. The information would remain true and useful weeks or months from now
+2. The information has substance - it tells us something meaningful about the user's life, knowledge, preferences, or identity
+3. The information would help the bot give better, more personalized responses in future conversations
+
+DO NOT extract:
+- How the user interacts with the bot (e.g., "likes to give commands", "calls the bot X", "interacts by asking for stories")
+- Generic or trivial statements without information value
+- Observations about the conversation itself rather than about the user
+- Repetitive filler, small talk, or greetings
+
+GOOD examples (high information value, extract these):
+- "已顺利拿到博士学位"
+- "具备大语言模型及嵌入模型的相关技术知识"
+- "喜欢吃川菜，特别是麻辣火锅"
+- "目前在字节跳动做后端开发"
+- "养了一只叫汤圆的橘猫"
+
+BAD examples (DO NOT extract):
+- "习惯通过复读指令来与机器人互动" ← describes interaction pattern, not user knowledge
+- "称呼机器人为'十四'" ← nickname for bot, not meaningful user info
+- "要求机器人讲色情暴力故事" ← describes interaction, not user identity
+- "今天问机器人天气怎么样" ← temporary, no lasting value
+
+Quantity: Only extract memories when you find genuinely meaningful information. Extracting 0 memories is perfectly fine if nothing meets the criteria. Quality over quantity.
+
+Return a JSON array of strings only, without any other characters including \`\`\` or \`\`\`json. Each string must be a short sentence (in the same language as the conversation) describing one piece of long-term memory.`
+  const userTemplate = config.extractionUserPrompt || `下面是用户与机器人的对话，请根据系统提示提取可长期记忆的个人信息。如果没有值得记忆的内容，返回空数组[]。
 
 \${messages}`
+  const speakerOnlyRules = `STRICT SPEAKER-ONLY RULES:
+- Extract memories ONLY about the human speaker whose messages are labeled as the user in this prompt.
+- Do NOT extract facts about people the speaker mentions, quotes, @mentions, replies to, or talks about.
+- Do NOT extract facts from the assistant's text unless it clearly confirms or restates information about the same human speaker.
+- If a sentence says another person likes, owns, works at, studies, lives in, plans, or prefers something, ignore it for this user's personal memory.
+- When uncertain whether the fact is about the speaker, return nothing for that fact.`
   return {
     system: `${systemTemplate}
+
+${speakerOnlyRules}
 
 ${buildExistingMemorySection(existingMemories)}`,
     userTemplate
@@ -164,6 +213,9 @@ async function callModel ({ prompt, systemPrompt, model, maxToken = 4096, temper
   const options = sendMessageOption
     ? JSON.parse(JSON.stringify(sendMessageOption))
     : {}
+  // memory 提取不需要工具调用，清除预设中的工具配置避免 Gemini 等模型的 Jinja 模板报错
+  delete options.toolGroupId
+  delete options.toolChoice
   options.model = model || options.model
   if (!options.model) {
     throw new Error('No model available for memory extraction call')

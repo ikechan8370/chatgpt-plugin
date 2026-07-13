@@ -21,6 +21,32 @@ function isGroupManager (e) {
   return false
 }
 
+function getEventUserId (e) {
+  const userId = e?.user_id ?? e?.sender?.user_id
+  if (userId === null || userId === undefined) {
+    return ''
+  }
+  return String(userId).trim()
+}
+
+function getAtUserId (e) {
+  const candidates = []
+  if (e?.at) {
+    candidates.push(e.at)
+  }
+  for (const elem of e?.message || []) {
+    const qq = elem?.qq ?? elem?.data?.qq
+    if (elem?.type === 'at' && qq) {
+      candidates.push(qq)
+    }
+  }
+  const botId = e?.bot?.uin ? String(e.bot.uin) : ''
+  const target = candidates
+    .map(item => String(item).trim())
+    .find(item => item && item !== 'all' && item !== botId && item !== 'true')
+  return target || ''
+}
+
 export class MemoryManager extends plugin {
   constructor () {
     const cmdPrefix = Config.basic.commandPrefix || '#chatgpt'
@@ -75,16 +101,26 @@ export class MemoryManager extends plugin {
   }
 
   async collect (e) {
-    collector.push(e)
+    await collector.push(e)
     return false
   }
 
   async showUserMemory (e) {
-    if (!memoryService.isUserMemoryEnabled(e.sender.user_id)) {
+    if (e.isGroup && getAtUserId(e)) {
+      return await this.showTargetUserMemory(e)
+    }
+    const userId = getEventUserId(e)
+    if (!userId) {
+      await e.reply('无法识别您的用户ID，暂时不能查询私人记忆。')
+      return false
+    }
+    if (!memoryService.isUserMemoryEnabled(userId)) {
       await e.reply('私人记忆未开启或您未被授权。')
       return false
     }
-    const memories = memoryService.listUserMemories(e.sender.user_id, e.isGroup ? e.group_id : null)
+    const memories = await memoryService.listUserMemories(userId, e.isGroup ? e.group_id : null, 50, 0, {
+      includeGlobal: false
+    })
 
     if (!memories.length) {
       await e.reply('🧠 您的记忆：\n暂无记录~')
@@ -106,7 +142,7 @@ export class MemoryManager extends plugin {
       return false
     }
 
-    const at = e.at || (e.message?.find(m => m.type === 'at')?.qq)
+    const at = getAtUserId(e)
     if (!at) {
       await e.reply('请@要查询的用户。')
       return false
@@ -117,7 +153,9 @@ export class MemoryManager extends plugin {
       return false
     }
 
-    const memories = memoryService.listUserMemories(at, e.group_id)
+    const memories = await memoryService.listUserMemories(at, e.group_id, 50, 0, {
+      includeGlobal: false
+    })
 
     if (!memories.length) {
       await e.reply('🧠 TA的记忆：\n暂无记录~')
@@ -142,11 +180,16 @@ export class MemoryManager extends plugin {
     if (!memoryId) {
       return false
     }
-    if (!memoryService.isUserMemoryEnabled(e.sender.user_id)) {
+    const userId = getEventUserId(e)
+    if (!userId) {
+      await e.reply('无法识别您的用户ID，暂时不能删除私人记忆。')
+      return false
+    }
+    if (!memoryService.isUserMemoryEnabled(userId)) {
       await e.reply('私人记忆未开启或您未被授权。')
       return false
     }
-    const success = memoryService.deleteUserMemory(memoryId, e.sender.user_id)
+    const success = await memoryService.deleteUserMemory(memoryId, userId)
     await e.reply(success ? '已删除指定记忆。' : '未找到对应的记忆条目。')
     return success
   }
@@ -161,7 +204,7 @@ export class MemoryManager extends plugin {
       return false
     }
     await collector.flush(e.group_id)
-    const facts = memoryService.listGroupFacts(e.group_id)
+    const facts = await memoryService.listGroupFacts(e.group_id)
 
     if (!facts.length) {
       await e.reply('📚 本群记忆：\n暂无群记忆。')
@@ -200,7 +243,7 @@ export class MemoryManager extends plugin {
     if (!factId) {
       return false
     }
-    const success = memoryService.deleteGroupFact(e.group_id, factId)
+    const success = await memoryService.deleteGroupFact(e.group_id, factId)
     await e.reply(success ? '已删除群记忆。' : '未找到对应的群记忆。')
     return success
   }

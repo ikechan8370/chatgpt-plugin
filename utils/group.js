@@ -1,6 +1,7 @@
 import { getBotFramework } from './bot.js'
 import ChatGPTConfig from '../config/config.js'
 import { formatTimeToBeiJing } from './common.js'
+export { buildGroupContextMessages } from './groupContextCache.js'
 
 export class GroupContextCollector {
   /**
@@ -91,7 +92,8 @@ export class TRSSGroupContextCollector extends GroupContextCollector {
     } catch (err) {
       logger.warn(err)
     }
-    return chats
+    // 反转为 oldest-first，与 ICQQ 顺序一致，groupContextCache 快照对齐依赖此顺序
+    return chats.reverse()
   }
 }
 

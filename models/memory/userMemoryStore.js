@@ -73,12 +73,15 @@ function appendRows (target, rows, seen) {
 }
 
 export class UserMemoryStore {
-  constructor (db = getMemoryDatabase()) {
+  constructor (db = null) {
     this.resetDatabase(db)
   }
 
-  resetDatabase (db = getMemoryDatabase()) {
+  resetDatabase (db = null) {
     this.db = db
+    if (!this.db) {
+      return
+    }
     this.upsertStmt = this.db.prepare(`
       INSERT INTO user_memory (user_id, group_id, key, value, importance, source_message_id, created_at, updated_at)
       VALUES (@user_id, @group_id, @key, @value, @importance, @source_message_id, datetime('now'), datetime('now'))
@@ -90,19 +93,19 @@ export class UserMemoryStore {
     `)
   }
 
-  ensureDb () {
+  async ensureDb () {
     if (!this.db || this.db.open === false) {
       logger?.debug?.('[Memory] refreshing user memory database connection')
-      this.resetDatabase()
+      this.resetDatabase(await getMemoryDatabase())
     }
     return this.db
   }
 
-  upsertMemories (userId, groupId, memories) {
+  async upsertMemories (userId, groupId, memories) {
     if (!memories || memories.length === 0) {
       return 0
     }
-    this.ensureDb()
+    await this.ensureDb()
     const normUserId = normaliseId(userId)
     const normGroupId = normaliseId(groupId)
     const prepared = (memories || [])
@@ -126,10 +129,10 @@ export class UserMemoryStore {
     if (!prepared.length) {
       return 0
     }
-    const transaction = this.db.transaction(items => {
+    const transaction = this.db.transaction(async items => {
       let changes = 0
       for (const item of items) {
-        const info = this.upsertStmt.run(item)
+        const info = await this.upsertStmt.run(item)
         changes += info.changes
       }
       return changes
@@ -137,10 +140,11 @@ export class UserMemoryStore {
     return transaction(prepared)
   }
 
-  listUserMemories (userId = null, groupId = null, limit = 50, offset = 0) {
-    this.ensureDb()
+  async listUserMemories (userId = null, groupId = null, limit = 50, offset = 0, options = {}) {
+    await this.ensureDb()
     const normUserId = normaliseId(userId)
     const normGroupId = normaliseId(groupId)
+    const includeGlobal = options.includeGlobal !== false
     const params = []
     let query = `
       SELECT * FROM user_memory
@@ -151,7 +155,7 @@ export class UserMemoryStore {
       params.push(normUserId)
     }
     if (normGroupId) {
-      if (normUserId) {
+      if (normUserId && includeGlobal) {
         query += ' AND (group_id = ? OR group_id IS NULL)'
       } else {
         query += ' AND group_id = ?'
@@ -163,22 +167,22 @@ export class UserMemoryStore {
       LIMIT ? OFFSET ?
     `
     params.push(limit, offset)
-    const rows = this.db.prepare(query).all(...params)
+    const rows = await this.db.prepare(query).all(...params)
     return rows.map(stripKey)
   }
 
-  deleteMemoryById (memoryId, userId = null) {
-    this.ensureDb()
+  async deleteMemoryById (memoryId, userId = null) {
+    await this.ensureDb()
     if (userId) {
-      const result = this.db.prepare('DELETE FROM user_memory WHERE id = ? AND user_id = ?').run(memoryId, normaliseId(userId))
+      const result = await this.db.prepare('DELETE FROM user_memory WHERE id = ? AND user_id = ?').run(memoryId, normaliseId(userId))
       return result.changes > 0
     }
-    const result = this.db.prepare('DELETE FROM user_memory WHERE id = ?').run(memoryId)
+    const result = await this.db.prepare('DELETE FROM user_memory WHERE id = ?').run(memoryId)
     return result.changes > 0
   }
 
-  listRecentMemories (userId, groupId = null, limit = 50, excludeIds = [], minImportance = 0) {
-    this.ensureDb()
+  async listRecentMemories (userId, groupId = null, limit = 50, excludeIds = [], minImportance = 0) {
+    await this.ensureDb()
     const normUserId = normaliseId(userId)
     const normGroupId = normaliseId(groupId)
     const filteredExclude = (excludeIds || []).filter(Boolean)
@@ -202,14 +206,15 @@ export class UserMemoryStore {
       LIMIT ?
     `
     params.push(limit)
-    return this.db.prepare(query).all(...params).map(stripKey)
+    const rows = await this.db.prepare(query).all(...params)
+    return rows.map(stripKey)
   }
 
-  textSearch (userId, groupId = null, queryText, limit = 5, excludeIds = []) {
+  async textSearch (userId, groupId = null, queryText, limit = 5, excludeIds = []) {
     if (!queryText || !queryText.trim()) {
       return []
     }
-    this.ensureDb()
+    await this.ensureDb()
     const normUserId = normaliseId(userId)
     const normGroupId = normaliseId(groupId)
     const filteredExclude = (excludeIds || []).filter(Boolean)
@@ -242,7 +247,7 @@ export class UserMemoryStore {
       `
       params.push(limit)
       try {
-        const ftsRows = this.db.prepare(query).all(...params)
+        const ftsRows = await this.db.prepare(query).all(...params)
         appendRows(results, ftsRows, seen)
       } catch (err) {
         logger?.warn?.('User memory text search failed:', err)
@@ -273,7 +278,7 @@ export class UserMemoryStore {
       `
       likeParams.push(Math.max(limit * 2, limit))
       try {
-        const likeRows = this.db.prepare(likeQuery).all(...likeParams)
+        const likeRows = await this.db.prepare(likeQuery).all(...likeParams)
         appendRows(results, likeRows, seen)
       } catch (err) {
         logger?.warn?.('User memory LIKE search failed:', err)
@@ -283,12 +288,12 @@ export class UserMemoryStore {
     return results.slice(0, limit)
   }
 
-  queryMemories (userId, groupId = null, queryText = '', options = {}) {
+  async queryMemories (userId, groupId = null, queryText = '', options = {}) {
     const normUserId = normaliseId(userId)
     if (!normUserId) {
       return []
     }
-    this.ensureDb()
+    await this.ensureDb()
     const {
       limit = 3,
       fallbackLimit,
@@ -315,12 +320,12 @@ export class UserMemoryStore {
     }
 
     if (queryText && searchLimit > 0) {
-      const searched = this.textSearch(userId, groupId, queryText, searchLimit)
+      const searched = await this.textSearch(userId, groupId, queryText, searchLimit)
       append(searched)
     }
 
     if (results.length < totalLimit) {
-      const recent = this.listRecentMemories(
+      const recent = await this.listRecentMemories(
         userId,
         groupId,
         Math.max(totalLimit * 2, totalLimit),

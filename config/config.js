@@ -36,6 +36,8 @@ class ChatGPTConfig {
    *   enable: boolean,
    *   hit: string[],
    *   probability: number,
+   *   speakingMode: 'reply' | 'contextual',
+   *   contextualPrompt: string,
    *   defaultPreset: string,
    *   presetPrefix?: string,
    *   presetMap: Array<{
@@ -57,6 +59,10 @@ class ChatGPTConfig {
     hit: ['bym'],
     // 不包含伪人必定触发词时的概率
     probability: 0.02,
+    // 发言策略：reply 回复触发消息；contextual 结合群聊上下文自主发言
+    speakingMode: 'reply',
+    // contextual 模式下替代触发消息发送给模型的本轮指令
+    contextualPrompt: '你现在不是在回复某一条特定消息，而是作为这个群里的一名普通群友自然参与当前聊天。请阅读前面的群聊上下文，选择一个自然的切入点发言，可以接续话题、补充信息、吐槽、提问或表达态度。不要解释任务，不要提及“上下文”“指令”“AI”或“机器人”，不要强行引用、@或逐句回答触发你的那条消息。直接输出一段适合发到群里的自然发言。',
     // 伪人模式的默认预设
     defaultPreset: '',
     // 伪人模式的预设前缀，会加在在所有其他预设前。例如此处可以用于配置通用的伪人发言风格（随意、模仿群友等），presetMap中专心配置角色设定即可
@@ -85,6 +91,7 @@ class ChatGPTConfig {
    *   blockStrategy: 'full' | 'mask',
    *   blockWordMask: string,
    *   enableGroupContext: boolean,
+   *   retainDynamicContextHistory: boolean,
    *   groupContextLength: number,
    *   groupContextTemplatePrefix: string,
    *   groupContextTemplateMessage: string,
@@ -116,6 +123,9 @@ class ChatGPTConfig {
     blockWordMask: '***',
     // 是否开启群组上下文
     enableGroupContext: true,
+    // 是否在多轮普通对话中保留每轮动态上下文（群聊记录、时间、记忆）。
+    // 关闭可显著减少 token；支持上下文缓存的渠道可改为开启。
+    retainDynamicContextHistory: false,
     // 群组上下文长度
     groupContextLength: 20,
     // 用于组装群聊上下文提示词的模板前缀
@@ -162,7 +172,8 @@ class ChatGPTConfig {
    *   cloudApiKey: string,
    *   authKey: string,
    *   host: string,
-   *   port: number}}
+   *   port: number,
+   *   publicBaseUrl: string}}
    */
   chaite = {
     // 数据目录，相对于插件下
@@ -183,8 +194,42 @@ class ChatGPTConfig {
     host: '0.0.0.0',
     // 管理面板监听端口
     port: 48370,
+    // 管理面板自定义访问地址；NAT/反代场景可填完整地址，如 https://example.com
+    publicBaseUrl: '',
     // 存储实现 sqlite lowdb
-    storage: 'sqlite'
+    storage: 'sqlite',
+    // 操作日志最多保留的条数，设为 0 可禁用自动清理
+    operationLogLimit: 50000
+  }
+
+  /**
+   * 视觉/图片处理配置
+   * @type {{
+   *   nonVisionStrategy: 'tool' | 'ignore',
+   *   visionChannelId: string,
+   *   imageDescriptionModel: string,
+   *   imageDescriptionSystemPrompt: string,
+   *   defaultQuestion: string,
+   *   maxImageSize: number,
+   *   enableGroupContextImages: boolean
+   * }}
+   */
+  vision = {
+    // 非视觉模型策略：'tool' - 替换为引用文本 + ask_about_image 工具
+    //                'ignore' - 仅替换为 [图片]
+    nonVisionStrategy: 'tool',
+    // 视觉模型渠道 ID（留空则自动查找第一个支持 visual 的渠道）
+    visionChannelId: '',
+    // 覆盖视觉模型（留空则使用渠道默认模型）
+    imageDescriptionModel: '',
+    // 图片描述时的系统提示词
+    imageDescriptionSystemPrompt: 'You are an image analysis assistant. Answer questions about images accurately and thoroughly.',
+    // 未指定 question 时的默认提问
+    defaultQuestion: '请详细描述这张图片的内容，包括场景、人物、物体、文字、颜色等所有可见细节。',
+    // 最大处理图片大小（bytes），默认 10MB
+    maxImageSize: 10485760,
+    // 是否将群聊上下文中的图片也存入历史（开启后图片会进入主干对话）
+    enableGroupContextImages: true
   }
 
   /**
@@ -298,17 +343,32 @@ class ChatGPTConfig {
       promptFooter: '',
       extractionSystemPrompt: `You are a knowledge extraction assistant that specialises in summarising long-term facts from group chat transcripts.
 Read the provided conversation and identify statements that should be stored as long-term knowledge for the group.
+
+WHAT TO EXTRACT (high value):
+- Personal facts about members (jobs, skills, life events, locations)
+- Group events, plans, or decisions
+- Shared knowledge or inside jokes the group has established
+- Opinions or preferences that reveal something about a member's identity
+
+DO NOT EXTRACT (low value):
+- How members interact with a bot (commands, nicknames for bot, etc.)
+- Mundane daily chatter without substance
+- Greetings, thanks, or other pleasantries
+- Anything that won't be relevant after a few hours
+
 Return a JSON array. Each element must contain:
 {
-  "fact": 事实内容，必须完整包含事件的各个要素而不能是简单的短语（比如谁参与了事件、做了什么事情、背景时间是什么）（同一件事情尽可能整合为同一条而非拆分，以便利于检索）, 
-  "topic": 主题关键词，字符串，如 "活动"、"成员信息",
-  "importance": 一个介于0和1之间的小数，数值越大表示越重要,
+  "fact": 事实内容，必须完整包含事件的各个要素（谁参与了、做了什么事、背景是什么），尽可能整合而非拆分,
+  "topic": 主题关键词，如 "活动"、"成员信息",
+  "importance": 介于0和1之间的小数。重要事实(如人生大事、群决策)给0.8以上；普通趣事给0.4-0.6；琐碎信息给0.3以下或直接不提取,
   "source_message_ids": 原始消息ID数组,
-  "source_messages": 对应原始消息的简要摘录或合并文本,
+  "source_messages": 对应原始消息的简要摘录,
   "involved_users": 出现或相关的用户ID数组
 }
-Only include meaningful, verifiable group-specific information that is useful for future conversations. Do not record incomplete information. Do not include general knowledge or unrelated facts. Do not wrap the JSON array in code fences.`,
-      extractionUserPrompt: `以下是群聊中的一些消息，请根据系统说明提取值得长期记忆的事实，以JSON数组形式返回，不要输出额外说明。
+
+If nothing meaningful is found, return an empty array []. Quality over quantity.
+Do not wrap the JSON array in code fences.`,
+      extractionUserPrompt: `以下是群聊中的一些消息，请根据系统说明提取值得长期记忆的事实，以JSON数组形式返回。如果没有值得记忆的内容，返回[]。
 
 \${messages}`,
       vectorMaxDistance: 0,
@@ -328,10 +388,36 @@ Only include meaningful, verifiable group-specific information that is useful fo
       promptHeader: '# 用户画像',
       promptItemTemplate: '- ${value}${timeSuffix}',
       promptFooter: '',
-      extractionSystemPrompt: `You are an assistant that extracts long-term personal preferences or persona details about a user.
-Given a conversation snippet between the user and the bot, identify durable information such as preferences, nicknames, roles, speaking style, habits, or other facts that remain valid over time.
-Return a JSON array of **strings**, and nothing else, without any other characters including \`\`\` or \`\`\`json. Each string must be a short sentence (in the same language as the conversation) describing one piece of long-term memory. Do not include keys, JSON objects, or additional metadata. Ignore temporary topics or uncertain information.`,
-      extractionUserPrompt: `下面是用户与机器人的对话，请根据系统提示提取可长期记忆的个人信息。
+      extractionSystemPrompt: `You are an assistant that extracts long-term personal memories about a user from their conversations with a bot.
+
+CRITICAL RULES - Only extract memories that meet ALL of these criteria:
+1. The information would remain true and useful weeks or months from now
+2. The information has substance - it tells us something meaningful about the user's life, knowledge, preferences, or identity
+3. The information would help the bot give better, more personalized responses in future conversations
+
+DO NOT extract:
+- How the user interacts with the bot (e.g., "likes to give commands", "calls the bot X", "interacts by asking for stories")
+- Generic or trivial statements without information value
+- Observations about the conversation itself rather than about the user
+- Repetitive filler, small talk, or greetings
+
+GOOD examples (high information value, extract these):
+- "已顺利拿到博士学位"
+- "具备大语言模型及嵌入模型的相关技术知识"
+- "喜欢吃川菜，特别是麻辣火锅"
+- "目前在字节跳动做后端开发"
+- "养了一只叫汤圆的橘猫"
+
+BAD examples (DO NOT extract):
+- "习惯通过复读指令来与机器人互动" ← describes interaction pattern, not user knowledge
+- "称呼机器人为'十四'" ← nickname for bot, not meaningful user info
+- "要求机器人讲色情暴力故事" ← describes interaction, not user identity
+- "今天问机器人天气怎么样" ← temporary, no lasting value
+
+Quantity: Only extract memories when you find genuinely meaningful information. Extracting 0 memories is perfectly fine if nothing meets the criteria. Quality over quantity.
+
+Return a JSON array of strings only, without any other characters including \`\`\` or \`\`\`json. Each string must be a short sentence (in the same language as the conversation) describing one piece of long-term memory.`,
+      extractionUserPrompt: `下面是用户与机器人的对话，请根据系统提示提取可长期记忆的个人信息。如果没有值得记忆的内容，返回空数组[]。
 
 \${messages}`
     },
@@ -376,11 +462,17 @@ Return a JSON array of **strings**, and nothing else, without any other characte
     // 文件变更标志和保存定时器
     this._saveOrigin = null
     this._saveTimer = null
+    this._saveLastMtimeMs = 0
 
     // 监听文件变化
     this.watcher = fs.watchFile(this.configPath, (curr, prev) => {
-      if (curr.mtime !== prev.mtime && this._saveOrigin !== 'code') {
-        this.loadFromFile()
+      if (curr.mtimeMs !== prev.mtimeMs) {
+        if (this._saveLastMtimeMs && Math.abs(curr.mtimeMs - this._saveLastMtimeMs) <= 1) {
+          return
+        }
+        if (this._saveOrigin !== 'code') {
+          this.loadFromFile()
+        }
       }
     })
 
@@ -515,6 +607,33 @@ Return a JSON array of **strings**, and nothing else, without any other characte
   _mergeConfig (loadedConfig) {
     let changed = false
 
+    const isEqual = (left, right) => {
+      if (left === right) {
+        return true
+      }
+      if (Array.isArray(left) || Array.isArray(right)) {
+        if (!Array.isArray(left) || !Array.isArray(right)) {
+          return false
+        }
+        if (left.length !== right.length) {
+          return false
+        }
+        return left.every((item, index) => isEqual(item, right[index]))
+      }
+      if (left && right && typeof left === 'object' && typeof right === 'object') {
+        const leftKeys = Object.keys(left)
+        const rightKeys = Object.keys(right)
+        if (leftKeys.length !== rightKeys.length) {
+          return false
+        }
+        return leftKeys.every(key =>
+          Object.prototype.hasOwnProperty.call(right, key) &&
+          isEqual(left[key], right[key])
+        )
+      }
+      return false
+    }
+
     const mergeInto = (target, source) => {
       if (!source || typeof source !== 'object') {
         return target
@@ -543,16 +662,18 @@ Return a JSON array of **strings**, and nothing else, without any other characte
         if (sourceValue && typeof sourceValue === 'object' && !Array.isArray(sourceValue)) {
           result[key] = mergeInto(targetValue, sourceValue)
         } else {
-          if (targetValue === undefined || targetValue !== sourceValue) {
+          if (targetValue === undefined || !isEqual(targetValue, sourceValue)) {
             changed = true
           }
-          result[key] = sourceValue
+          result[key] = Array.isArray(sourceValue)
+            ? sourceValue.slice()
+            : sourceValue
         }
       }
       return result
     }
 
-    const sections = ['version', 'basic', 'bym', 'llm', 'management', 'chaite', 'mcp', 'memory']
+    const sections = ['version', 'basic', 'bym', 'llm', 'management', 'chaite', 'mcp', 'vision', 'memory']
     for (const key of sections) {
       const loadedValue = loadedConfig[key]
       if (loadedValue === undefined) {
@@ -603,6 +724,7 @@ Return a JSON array of **strings**, and nothing else, without any other characte
         management: this.management,
         chaite: this.chaite,
         mcp: this.mcp,
+        vision: this.vision,
         memory: this.memory
       }
 
@@ -611,6 +733,7 @@ Return a JSON array of **strings**, and nothing else, without any other characte
         : yaml.dump(config)
 
       fs.writeFileSync(this.configPath, content, 'utf8')
+      this._saveLastMtimeMs = fs.statSync(this.configPath).mtimeMs
     } catch (error) {
       console.error('Failed to save config:', error)
     }
@@ -625,6 +748,7 @@ Return a JSON array of **strings**, and nothing else, without any other characte
       management: this.management,
       chaite: this.chaite,
       mcp: this.mcp,
+      vision: this.vision,
       memory: this.memory
     }
   }

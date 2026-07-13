@@ -339,34 +339,79 @@ export class SQLiteHistoryManager extends AbstractHistoryManager {
     const record = this._messageToRecord(message, conversationId)
 
     return new Promise((resolve, reject) => {
-      // 检查消息是否已存在
-      if (message.id) {
-        this.db.get(`SELECT id FROM ${this.tableName} WHERE id = ?`, [message.id], (err, row) => {
-          if (err) {
-            return reject(err)
-          }
-
-          if (row) {
-            // 消息已存在，更新
-            const fields = Object.keys(record)
-            const updates = fields.map(field => `${field} = ?`).join(', ')
-            const values = fields.map(field => record[field])
-
-            this.db.run(`UPDATE ${this.tableName} SET ${updates} WHERE id = ?`, [...values, message.id], (err) => {
-              if (err) {
-                return reject(err)
-              }
-              resolve()
-            })
-          } else {
-            // 消息不存在，插入
-            this._insertMessage(record, resolve, reject)
-          }
-        })
+      if (record.id) {
+        this._upsertMessage(record, resolve, reject)
       } else {
-        // 没有ID，直接插入
         this._insertMessage(record, resolve, reject)
       }
+    })
+  }
+
+  /**
+   * 批量保存历史消息，使用单个事务避免多条消息逐条 autocommit。
+   * @param {import('chaite').HistoryMessage[]} messages
+   * @param {string} conversationId
+   * @returns {Promise<void>}
+   */
+  async saveHistories (messages, conversationId) {
+    await this.ensureInitialized()
+
+    if (!messages || messages.length === 0) {
+      return
+    }
+
+    const records = messages.map(message => this._messageToRecord(message, conversationId))
+
+    if (records.some(record => !record.id)) {
+      for (const message of messages) {
+        await this.saveHistory(message, conversationId)
+      }
+      return
+    }
+
+    return new Promise((resolve, reject) => {
+      let settled = false
+      const finish = (err) => {
+        if (settled) return
+        settled = true
+        if (err) reject(err)
+        else resolve()
+      }
+      const rollback = (err) => {
+        this.db.run('ROLLBACK', () => finish(err))
+      }
+
+      this.db.serialize(() => {
+        this.db.run('BEGIN TRANSACTION', (err) => {
+          if (err) return finish(err)
+
+          const sql = this._upsertSql(records[0])
+          const fields = Object.keys(records[0])
+          const stmt = this.db.prepare(sql, (err) => {
+            if (err) return rollback(err)
+
+            let index = 0
+            const runNext = () => {
+              if (index >= records.length) {
+                return stmt.finalize((err) => {
+                  if (err) return rollback(err)
+                  this.db.run('COMMIT', finish)
+                })
+              }
+
+              const record = records[index]
+              const values = fields.map(field => record[field])
+              stmt.run(values, (err) => {
+                if (err) return rollback(err)
+                index++
+                runNext()
+              })
+            }
+
+            runNext()
+          })
+        })
+      })
     })
   }
 
@@ -389,6 +434,26 @@ export class SQLiteHistoryManager extends AbstractHistoryManager {
         resolve()
       }
     )
+  }
+
+  _upsertSql (record) {
+    const fields = Object.keys(record)
+    const placeholders = fields.map(() => '?').join(', ')
+    const updates = fields
+      .filter(field => field !== 'id')
+      .map(field => field + ' = excluded.' + field)
+      .join(', ')
+    return 'INSERT INTO ' + this.tableName + ' (' + fields.join(', ') + ') VALUES (' + placeholders + ') ON CONFLICT(id) DO UPDATE SET ' + updates
+  }
+
+  _upsertMessage (record, resolve, reject) {
+    const values = Object.keys(record).map(field => record[field])
+    this.db.run(this._upsertSql(record), values, function (err) {
+      if (err) {
+        return reject(err)
+      }
+      resolve()
+    })
   }
 
   /**
@@ -473,6 +538,44 @@ export class SQLiteHistoryManager extends AbstractHistoryManager {
           return reject(err)
         }
         resolve()
+      })
+    })
+  }
+
+  /**
+   * Remove one message without breaking the parent chain. Direct children are
+   * reparented to the removed message's parent first.
+   */
+  async removeHistory (messageId, conversationId) {
+    await this.ensureInitialized()
+    return new Promise((resolve, reject) => {
+      this.db.serialize(() => {
+        this.db.run('BEGIN TRANSACTION', (beginError) => {
+          if (beginError) return reject(beginError)
+          this.db.get(
+            `SELECT parentId FROM ${this.tableName} WHERE id = ? AND conversationId = ?`,
+            [messageId, conversationId],
+            (getError, row) => {
+              if (getError) return this.db.run('ROLLBACK', () => reject(getError))
+              if (!row) return this.db.run('COMMIT', () => resolve())
+              this.db.run(
+                `UPDATE ${this.tableName} SET parentId = ? WHERE conversationId = ? AND parentId = ?`,
+                [row.parentId || null, conversationId, messageId],
+                (updateError) => {
+                  if (updateError) return this.db.run('ROLLBACK', () => reject(updateError))
+                  this.db.run(
+                    `DELETE FROM ${this.tableName} WHERE id = ? AND conversationId = ?`,
+                    [messageId, conversationId],
+                    (deleteError) => {
+                      if (deleteError) return this.db.run('ROLLBACK', () => reject(deleteError))
+                      this.db.run('COMMIT', (commitError) => commitError ? reject(commitError) : resolve())
+                    }
+                  )
+                }
+              )
+            }
+          )
+        })
       })
     })
   }

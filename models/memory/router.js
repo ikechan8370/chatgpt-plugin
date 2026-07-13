@@ -276,7 +276,7 @@ async function downloadSimpleExtensionArchive ({ assetKey, assetName, targetDir 
   }
 }
 
-function updateMemoryConfig (payload = {}) {
+async function updateMemoryConfig (payload = {}) {
   const current = ChatGPTConfig.memory || {}
   const previousDatabase = current.database
   const previousDimension = current.vectorDimensions
@@ -464,7 +464,7 @@ function updateMemoryConfig (payload = {}) {
     const targetDimension = Number(nextConfig.vectorDimensions)
     if (Number.isFinite(targetDimension) && targetDimension > 0) {
       try {
-        resetVectorTableDimension(targetDimension)
+        await resetVectorTableDimension(targetDimension)
       } catch (err) {
         logger?.error?.('[Memory] failed to apply vector dimension change:', err)
       }
@@ -492,9 +492,9 @@ export const MemoryRouter = (() => {
     res.status(200).json(ChaiteResponse.ok(ChatGPTConfig.memory))
   })
 
-  router.post('/config', (req, res) => {
+  router.post('/config', async (req, res) => {
     try {
-      const updated = updateMemoryConfig(req.body || {})
+      const updated = await updateMemoryConfig(req.body || {})
       res.status(200).json(ChaiteResponse.ok(updated))
     } catch (error) {
       logger.error('Failed to update memory config:', error)
@@ -502,12 +502,12 @@ export const MemoryRouter = (() => {
     }
   })
 
-  router.get('/group/:groupId/facts', (req, res) => {
+  router.get('/group/:groupId/facts', async (req, res) => {
     const { groupId } = req.params
     const limit = parsePositiveInt(req.query.limit, 50)
     const offset = parsePositiveInt(req.query.offset, 0)
     try {
-      const facts = memoryService.listGroupFacts(groupId, limit, offset)
+      const facts = await memoryService.listGroupFacts(groupId, limit, offset)
       res.status(200).json(ChaiteResponse.ok(facts))
     } catch (error) {
       logger.error('Failed to fetch group facts:', error)
@@ -606,10 +606,10 @@ export const MemoryRouter = (() => {
     }
   })
 
-  router.delete('/group/:groupId/facts/:factId', (req, res) => {
+  router.delete('/group/:groupId/facts/:factId', async (req, res) => {
     const { groupId, factId } = req.params
     try {
-      const removed = memoryService.deleteGroupFact(groupId, factId)
+      const removed = await memoryService.deleteGroupFact(groupId, factId)
       if (!removed) {
         res.status(404).json(ChaiteResponse.fail(null, 'Fact not found'))
         return
@@ -621,13 +621,13 @@ export const MemoryRouter = (() => {
     }
   })
 
-  router.get('/user/memories', (req, res) => {
+  router.get('/user/memories', async (req, res) => {
     const userId = parseOptionalStringParam(req.query.userId)
     const groupId = parseOptionalStringParam(req.query.groupId)
     const limit = parsePositiveInt(req.query.limit, 50)
     const offset = parsePositiveInt(req.query.offset, 0)
     try {
-      const memories = memoryService.listUserMemories(userId, groupId, limit, offset)
+      const memories = await memoryService.listUserMemories(userId, groupId, limit, offset)
       res.status(200).json(ChaiteResponse.ok(memories))
     } catch (error) {
       logger.error('Failed to fetch user memories:', error)
@@ -635,13 +635,13 @@ export const MemoryRouter = (() => {
     }
   })
 
-  router.get('/user/:userId/memories', (req, res) => {
+  router.get('/user/:userId/memories', async (req, res) => {
     const { userId } = req.params
     const groupId = req.query.groupId ?? null
     const limit = parsePositiveInt(req.query.limit, 50)
     const offset = parsePositiveInt(req.query.offset, 0)
     try {
-      const memories = memoryService.listUserMemories(userId, groupId, limit, offset)
+      const memories = await memoryService.listUserMemories(userId, groupId, limit, offset)
       res.status(200).json(ChaiteResponse.ok(memories))
     } catch (error) {
       logger.error('Failed to fetch user memories:', error)
@@ -649,7 +649,7 @@ export const MemoryRouter = (() => {
     }
   })
 
-  router.post('/user/:userId/query', (req, res) => {
+  router.post('/user/:userId/query', async (req, res) => {
     const { userId } = req.params
     const groupId = req.body?.groupId ?? req.query.groupId ?? null
     const query = req.body?.query
@@ -663,7 +663,7 @@ export const MemoryRouter = (() => {
       return
     }
     try {
-      const memories = memoryService.queryUserMemories(userId, groupId, query, {
+      const memories = await memoryService.queryUserMemories(userId, groupId, query, {
         totalLimit,
         searchLimit,
         minImportance
@@ -675,7 +675,7 @@ export const MemoryRouter = (() => {
     }
   })
 
-  router.post('/user/:userId/memories', (req, res) => {
+  router.post('/user/:userId/memories', async (req, res) => {
     const { userId } = req.params
     const groupId = req.body?.groupId ?? null
     const memories = Array.isArray(req.body?.memories) ? req.body.memories : []
@@ -684,7 +684,7 @@ export const MemoryRouter = (() => {
       return
     }
     try {
-      const updated = memoryService.upsertUserMemories(userId, groupId, memories)
+      const updated = await memoryService.upsertUserMemories(userId, groupId, memories)
       res.status(200).json(ChaiteResponse.ok({ updated }))
     } catch (error) {
       logger.error('Failed to upsert user memories:', error)
@@ -692,10 +692,10 @@ export const MemoryRouter = (() => {
     }
   })
 
-  router.delete('/user/:userId/memories/:memoryId', (req, res) => {
+  router.delete('/user/:userId/memories/:memoryId', async (req, res) => {
     const { userId, memoryId } = req.params
     try {
-      const removed = memoryService.deleteUserMemory(memoryId, userId)
+      const removed = await memoryService.deleteUserMemory(memoryId, userId)
       if (!removed) {
         res.status(404).json(ChaiteResponse.fail(null, 'Memory not found'))
         return
@@ -707,10 +707,10 @@ export const MemoryRouter = (() => {
     }
   })
 
-  router.delete('/memories/:memoryId', (req, res) => {
+  router.delete('/memories/:memoryId', async (req, res) => {
     const { memoryId } = req.params
     try {
-      const removed = memoryService.deleteUserMemory(memoryId)
+      const removed = await memoryService.deleteUserMemory(memoryId)
       if (!removed) {
         res.status(404).json(ChaiteResponse.fail(null, 'Memory not found'))
         return

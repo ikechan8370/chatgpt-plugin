@@ -1,5 +1,5 @@
-import Database from 'better-sqlite3'
-import * as sqliteVec from 'sqlite-vec'
+import sqlite3 from 'sqlite3'
+import { createRequire } from 'module'
 import fs from 'fs'
 import path from 'path'
 import ChatGPTConfig from '../../config/config.js'
@@ -12,8 +12,10 @@ const TOKENIZER_DEFAULT = 'unicode61'
 const SIMPLE_MATCH_SIMPLE = 'simple_query'
 const SIMPLE_MATCH_JIEBA = 'jieba_query'
 const PLUGIN_ROOT = path.resolve('./plugins/chatgpt-plugin')
+const require = createRequire(import.meta.url)
 
 let dbInstance = null
+let sqliteVecLoader = null
 let cachedVectorDimension = null
 let cachedVectorModel = null
 let userMemoryFtsConfig = {
@@ -33,6 +35,203 @@ const simpleExtensionState = {
   dictPath: '',
   tokenizer: TOKENIZER_DEFAULT,
   matchQuery: null
+}
+const optionalDependencyState = {
+  databaseError: null,
+  vectorError: null
+}
+
+export class MemoryDatabaseUnavailableError extends Error {
+  constructor (message, cause) {
+    super(message)
+    this.name = 'MemoryDatabaseUnavailableError'
+    this.cause = cause
+  }
+}
+
+class SQLiteStatement {
+  constructor (nativeDb, sql) {
+    this.nativeDb = nativeDb
+    this.sql = sql
+  }
+
+  run (...params) {
+    return new Promise((resolve, reject) => {
+      this.nativeDb.run(this.sql, normaliseParams(params), function (err) {
+        if (err) {
+          reject(err)
+          return
+        }
+        resolve({
+          changes: this.changes || 0,
+          lastInsertRowid: this.lastID || 0,
+          lastID: this.lastID || 0
+        })
+      })
+    })
+  }
+
+  get (...params) {
+    return new Promise((resolve, reject) => {
+      this.nativeDb.get(this.sql, normaliseParams(params), (err, row) => {
+        if (err) {
+          reject(err)
+          return
+        }
+        resolve(row)
+      })
+    })
+  }
+
+  all (...params) {
+    return new Promise((resolve, reject) => {
+      this.nativeDb.all(this.sql, normaliseParams(params), (err, rows) => {
+        if (err) {
+          reject(err)
+          return
+        }
+        resolve(rows || [])
+      })
+    })
+  }
+}
+
+class SQLiteDatabase {
+  constructor (nativeDb) {
+    this.nativeDb = nativeDb
+    this.open = true
+  }
+
+  exec (sql) {
+    return new Promise((resolve, reject) => {
+      this.nativeDb.exec(sql, err => {
+        if (err) {
+          reject(err)
+          return
+        }
+        resolve()
+      })
+    })
+  }
+
+  prepare (sql) {
+    return new SQLiteStatement(this.nativeDb, sql)
+  }
+
+  transaction (callback) {
+    return async (...args) => {
+      await this.exec('BEGIN')
+      try {
+        const result = await callback(...args)
+        await this.exec('COMMIT')
+        return result
+      } catch (error) {
+        try {
+          await this.exec('ROLLBACK')
+        } catch (rollbackError) {
+          logger?.warn?.('[Memory] rollback failed:', rollbackError)
+        }
+        throw error
+      }
+    }
+  }
+
+  loadExtension (libraryPath) {
+    const tryLoad = candidate => new Promise((resolve, reject) => {
+      this.nativeDb.loadExtension(candidate, err => {
+        if (err) {
+          reject(err)
+          return
+        }
+        resolve()
+      })
+    })
+    return tryLoad(libraryPath).catch(async err => {
+      const ext = path.extname(libraryPath).toLowerCase()
+      if (!['.so', '.dylib', '.dll'].includes(ext)) {
+        throw err
+      }
+      const withoutExt = libraryPath.slice(0, -ext.length)
+      const message = String(err?.message || '')
+      if (!message.includes(`${libraryPath}${ext}`) && !message.includes(`${path.basename(libraryPath)}${ext}`)) {
+        throw err
+      }
+      logger?.debug?.('[Memory] retrying SQLite extension load without platform suffix:', withoutExt)
+      return await tryLoad(withoutExt)
+    })
+  }
+
+  close () {
+    return new Promise((resolve, reject) => {
+      this.nativeDb.close(err => {
+        this.open = false
+        if (err) {
+          reject(err)
+          return
+        }
+        resolve()
+      })
+    })
+  }
+}
+
+function normaliseParams (params) {
+  if (params.length === 1 && params[0] && typeof params[0] === 'object' && !Array.isArray(params[0]) && !Buffer.isBuffer(params[0]) && !ArrayBuffer.isView(params[0])) {
+    const source = params[0]
+    const named = {}
+    for (const [key, value] of Object.entries(source)) {
+      if (!key.startsWith('@') && !key.startsWith(':') && !key.startsWith('$')) {
+        named[`@${key}`] = value
+      } else {
+        named[key] = value
+      }
+    }
+    return named
+  }
+  return params
+}
+
+function openSqliteDatabase (dbPath) {
+  return new Promise((resolve, reject) => {
+    const nativeDb = new sqlite3.Database(dbPath, err => {
+      if (err) {
+        optionalDependencyState.databaseError = err
+        reject(new MemoryDatabaseUnavailableError(
+          '[Memory] sqlite3 database is unavailable. Memory features are disabled because the host sqlite3 dependency failed to open.',
+          err
+        ))
+        return
+      }
+      optionalDependencyState.databaseError = null
+      resolve(new SQLiteDatabase(nativeDb))
+    })
+  })
+}
+
+async function tryLoadSqliteVec (db) {
+  if (sqliteVecLoader === false) {
+    return false
+  }
+  try {
+    if (!sqliteVecLoader) {
+      sqliteVecLoader = require('sqlite-vec')
+    }
+    const loadablePath = sqliteVecLoader.getLoadablePath
+      ? sqliteVecLoader.getLoadablePath()
+      : null
+    if (!loadablePath) {
+      sqliteVecLoader.load(db)
+    } else {
+      await db.loadExtension(loadablePath)
+    }
+    optionalDependencyState.vectorError = null
+    return true
+  } catch (error) {
+    sqliteVecLoader = false
+    optionalDependencyState.vectorError = error
+    logger?.warn?.('[Memory] optional dependency sqlite-vec is unavailable; vector retrieval is disabled:', error?.message || error)
+    return false
+  }
 }
 
 function resolveDbPath () {
@@ -75,8 +274,8 @@ function ensureDirectory (filePath) {
   }
 }
 
-function ensureMetaTable (db) {
-  db.exec(`
+async function ensureMetaTable (db) {
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS memory_meta (
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
@@ -84,14 +283,14 @@ function ensureMetaTable (db) {
   `)
 }
 
-function getMetaValue (db, key) {
+async function getMetaValue (db, key) {
   const stmt = db.prepare('SELECT value FROM memory_meta WHERE key = ?')
-  const row = stmt.get(key)
+  const row = await stmt.get(key)
   return row ? row.value : null
 }
 
-function setMetaValue (db, key, value) {
-  db.prepare(`
+async function setMetaValue (db, key, value) {
+  await db.prepare(`
     INSERT INTO memory_meta (key, value)
     VALUES (?, ?)
     ON CONFLICT(key) DO UPDATE SET value = excluded.value
@@ -192,7 +391,7 @@ function discoverSimplePaths () {
   return { libraryPath: '', dictPath: '' }
 }
 
-function applySimpleExtension (db) {
+async function applySimpleExtension (db) {
   const config = ChatGPTConfig.memory?.extensions?.simple || {}
   simpleExtensionState.requested = Boolean(config.enable)
   simpleExtensionState.enabled = Boolean(config.enable)
@@ -226,13 +425,13 @@ function applySimpleExtension (db) {
   }
   try {
     logger?.info?.('[Memory] loading simple tokenizer extension from', resolvedLibraryPath)
-    db.loadExtension(resolvedLibraryPath)
+    await db.loadExtension(resolvedLibraryPath)
     if (config.useJieba) {
       const resolvedDict = resolvePluginPath(config.dictPath)
       if (resolvedDict && fs.existsSync(resolvedDict)) {
         try {
           logger?.debug?.('[Memory] configuring simple tokenizer jieba dict:', resolvedDict)
-          db.prepare('select jieba_dict(?)').get(resolvedDict)
+          await db.prepare('select jieba_dict(?)').get(resolvedDict)
         } catch (err) {
           logger?.warn?.('Failed to register jieba dict for simple extension:', err)
         }
@@ -257,7 +456,7 @@ function applySimpleExtension (db) {
     }
     return
   } catch (error) {
-    logger?.error?.('Failed to load simple extension:', error)
+    logger?.warn?.('Failed to load simple extension; falling back to unicode61 tokenizer:', error)
     resetSimpleState({
       requested: true,
       enabled: true,
@@ -266,7 +465,7 @@ function applySimpleExtension (db) {
   }
 }
 
-function loadSimpleExtensionForCleanup (db) {
+async function loadSimpleExtensionForCleanup (db) {
   if (!ChatGPTConfig.memory.extensions) {
     ChatGPTConfig.memory.extensions = {}
   }
@@ -302,13 +501,13 @@ function loadSimpleExtensionForCleanup (db) {
   }
   try {
     logger?.info?.('[Memory] temporarily loading simple extension for cleanup tasks')
-    db.loadExtension(resolvedLibraryPath)
+    await db.loadExtension(resolvedLibraryPath)
     const useJieba = Boolean(config.useJieba)
     if (useJieba) {
       const resolvedDict = resolvePluginPath(dictPath)
       if (resolvedDict && fs.existsSync(resolvedDict)) {
         try {
-          db.prepare('select jieba_dict(?)').get(resolvedDict)
+          await db.prepare('select jieba_dict(?)').get(resolvedDict)
         } catch (err) {
           logger?.warn?.('Failed to set jieba dict during cleanup:', err)
         }
@@ -321,9 +520,9 @@ function loadSimpleExtensionForCleanup (db) {
   }
 }
 
-function ensureGroupFactsTable (db) {
-  ensureMetaTable(db)
-  db.exec(`
+async function ensureGroupFactsTable (db) {
+  await ensureMetaTable(db)
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS group_facts (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       group_id TEXT NOT NULL,
@@ -336,20 +535,20 @@ function ensureGroupFactsTable (db) {
       created_at TEXT DEFAULT (datetime('now'))
     )
   `)
-  db.exec(`
+  await db.exec(`
     CREATE UNIQUE INDEX IF NOT EXISTS idx_group_facts_unique
       ON group_facts(group_id, fact)
   `)
-  db.exec(`
+  await db.exec(`
     CREATE INDEX IF NOT EXISTS idx_group_facts_group
       ON group_facts(group_id, importance DESC, created_at DESC)
   `)
-  ensureGroupFactsFtsTable(db)
+  await ensureGroupFactsFtsTable(db)
 }
 
-function ensureGroupHistoryCursorTable (db) {
-  ensureMetaTable(db)
-  db.exec(`
+async function ensureGroupHistoryCursorTable (db) {
+  await ensureMetaTable(db)
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS group_history_cursor (
       group_id TEXT PRIMARY KEY,
       last_message_id TEXT,
@@ -358,9 +557,9 @@ function ensureGroupHistoryCursorTable (db) {
   `)
 }
 
-function ensureUserMemoryTable (db) {
-  ensureMetaTable(db)
-  db.exec(`
+async function ensureUserMemoryTable (db) {
+  await ensureMetaTable(db)
+  await db.exec(`
     CREATE TABLE IF NOT EXISTS user_memory (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id TEXT NOT NULL,
@@ -373,24 +572,24 @@ function ensureUserMemoryTable (db) {
       updated_at TEXT DEFAULT (datetime('now'))
     )
   `)
-  db.exec(`
+  await db.exec(`
     CREATE UNIQUE INDEX IF NOT EXISTS idx_user_memory_key
       ON user_memory(user_id, coalesce(group_id, ''), key)
   `)
-  db.exec(`
+  await db.exec(`
     CREATE INDEX IF NOT EXISTS idx_user_memory_group
       ON user_memory(group_id)
   `)
-  db.exec(`
+  await db.exec(`
     CREATE INDEX IF NOT EXISTS idx_user_memory_user
       ON user_memory(user_id)
   `)
-  ensureUserMemoryFtsTable(db)
+  await ensureUserMemoryFtsTable(db)
 }
 
-function dropGroupFactsFtsArtifacts (db) {
+async function dropGroupFactsFtsArtifacts (db) {
   try {
-    db.exec(`
+    await db.exec(`
       DROP TRIGGER IF EXISTS group_facts_ai;
       DROP TRIGGER IF EXISTS group_facts_ad;
       DROP TRIGGER IF EXISTS group_facts_au;
@@ -398,9 +597,9 @@ function dropGroupFactsFtsArtifacts (db) {
     `)
   } catch (err) {
     if (String(err?.message || '').includes('no such tokenizer')) {
-      const loaded = loadSimpleExtensionForCleanup(db)
+      const loaded = await loadSimpleExtensionForCleanup(db)
       if (loaded) {
-        db.exec(`
+        await db.exec(`
           DROP TRIGGER IF EXISTS group_facts_ai;
           DROP TRIGGER IF EXISTS group_facts_ad;
           DROP TRIGGER IF EXISTS group_facts_au;
@@ -409,10 +608,10 @@ function dropGroupFactsFtsArtifacts (db) {
       } else {
         logger?.warn?.('[Memory] Falling back to raw schema cleanup for group_facts_fts')
         try {
-          db.exec('PRAGMA writable_schema = ON;')
-          db.exec(`DELETE FROM sqlite_master WHERE name IN ('group_facts_ai','group_facts_ad','group_facts_au','group_facts_fts');`)
+          await db.exec('PRAGMA writable_schema = ON;')
+          await db.exec(`DELETE FROM sqlite_master WHERE name IN ('group_facts_ai','group_facts_ad','group_facts_au','group_facts_fts');`)
         } finally {
-          db.exec('PRAGMA writable_schema = OFF;')
+          await db.exec('PRAGMA writable_schema = OFF;')
         }
       }
     } else {
@@ -421,9 +620,9 @@ function dropGroupFactsFtsArtifacts (db) {
   }
 }
 
-function createGroupFactsFts (db, tokenizer) {
+async function createGroupFactsFts (db, tokenizer) {
   logger?.info?.('[Memory] creating group_facts_fts with tokenizer=%s', tokenizer)
-  db.exec(`
+  await db.exec(`
     CREATE VIRTUAL TABLE group_facts_fts
       USING fts5(
         fact,
@@ -433,19 +632,19 @@ function createGroupFactsFts (db, tokenizer) {
         tokenize = '${tokenizer}'
       )
   `)
-  db.exec(`
+  await db.exec(`
     CREATE TRIGGER group_facts_ai AFTER INSERT ON group_facts BEGIN
       INSERT INTO group_facts_fts(rowid, fact, topic)
       VALUES (new.id, new.fact, coalesce(new.topic, ''));
     END;
   `)
-  db.exec(`
+  await db.exec(`
     CREATE TRIGGER group_facts_ad AFTER DELETE ON group_facts BEGIN
       INSERT INTO group_facts_fts(group_facts_fts, rowid, fact, topic)
       VALUES ('delete', old.id, old.fact, coalesce(old.topic, ''));
     END;
   `)
-  db.exec(`
+  await db.exec(`
     CREATE TRIGGER group_facts_au AFTER UPDATE ON group_facts BEGIN
       INSERT INTO group_facts_fts(group_facts_fts, rowid, fact, topic)
       VALUES ('delete', old.id, old.fact, coalesce(old.topic, ''));
@@ -454,39 +653,39 @@ function createGroupFactsFts (db, tokenizer) {
     END;
   `)
   try {
-    db.exec(`INSERT INTO group_facts_fts(group_facts_fts) VALUES ('rebuild')`)
+    await db.exec(`INSERT INTO group_facts_fts(group_facts_fts) VALUES ('rebuild')`)
   } catch (err) {
     logger?.debug?.('Group facts FTS rebuild skipped:', err?.message || err)
   }
 }
 
-function ensureGroupFactsFtsTable (db) {
+async function ensureGroupFactsFtsTable (db) {
   const desiredTokenizer = groupMemoryFtsConfig.tokenizer || TOKENIZER_DEFAULT
-  const storedTokenizer = getMetaValue(db, META_GROUP_TOKENIZER_KEY)
-  const tableExists = db.prepare(`
+  const storedTokenizer = await getMetaValue(db, META_GROUP_TOKENIZER_KEY)
+  const tableExists = await db.prepare(`
     SELECT name FROM sqlite_master
     WHERE type = 'table' AND name = 'group_facts_fts'
   `).get()
   if (storedTokenizer && storedTokenizer !== desiredTokenizer) {
-    dropGroupFactsFtsArtifacts(db)
+    await dropGroupFactsFtsArtifacts(db)
   } else if (!storedTokenizer && tableExists) {
     // Unknown tokenizer, drop to ensure consistency.
-    dropGroupFactsFtsArtifacts(db)
+    await dropGroupFactsFtsArtifacts(db)
   }
-  const existsAfterDrop = db.prepare(`
+  const existsAfterDrop = await db.prepare(`
     SELECT name FROM sqlite_master
     WHERE type = 'table' AND name = 'group_facts_fts'
   `).get()
   if (!existsAfterDrop) {
-    createGroupFactsFts(db, desiredTokenizer)
-    setMetaValue(db, META_GROUP_TOKENIZER_KEY, desiredTokenizer)
+    await createGroupFactsFts(db, desiredTokenizer)
+    await setMetaValue(db, META_GROUP_TOKENIZER_KEY, desiredTokenizer)
     logger?.info?.('[Memory] group facts FTS initialised with tokenizer=%s', desiredTokenizer)
   }
 }
 
-function dropUserMemoryFtsArtifacts (db) {
+async function dropUserMemoryFtsArtifacts (db) {
   try {
-    db.exec(`
+    await db.exec(`
       DROP TRIGGER IF EXISTS user_memory_ai;
       DROP TRIGGER IF EXISTS user_memory_ad;
       DROP TRIGGER IF EXISTS user_memory_au;
@@ -494,9 +693,9 @@ function dropUserMemoryFtsArtifacts (db) {
     `)
   } catch (err) {
     if (String(err?.message || '').includes('no such tokenizer')) {
-      const loaded = loadSimpleExtensionForCleanup(db)
+      const loaded = await loadSimpleExtensionForCleanup(db)
       if (loaded) {
-        db.exec(`
+        await db.exec(`
           DROP TRIGGER IF EXISTS user_memory_ai;
           DROP TRIGGER IF EXISTS user_memory_ad;
           DROP TRIGGER IF EXISTS user_memory_au;
@@ -505,10 +704,10 @@ function dropUserMemoryFtsArtifacts (db) {
       } else {
         logger?.warn?.('[Memory] Falling back to raw schema cleanup for user_memory_fts')
         try {
-          db.exec('PRAGMA writable_schema = ON;')
-          db.exec(`DELETE FROM sqlite_master WHERE name IN ('user_memory_ai','user_memory_ad','user_memory_au','user_memory_fts');`)
+          await db.exec('PRAGMA writable_schema = ON;')
+          await db.exec(`DELETE FROM sqlite_master WHERE name IN ('user_memory_ai','user_memory_ad','user_memory_au','user_memory_fts');`)
         } finally {
-          db.exec('PRAGMA writable_schema = OFF;')
+          await db.exec('PRAGMA writable_schema = OFF;')
         }
       }
     } else {
@@ -517,9 +716,9 @@ function dropUserMemoryFtsArtifacts (db) {
   }
 }
 
-function createUserMemoryFts (db, tokenizer) {
+async function createUserMemoryFts (db, tokenizer) {
   logger?.info?.('[Memory] creating user_memory_fts with tokenizer=%s', tokenizer)
-  db.exec(`
+  await db.exec(`
     CREATE VIRTUAL TABLE user_memory_fts
       USING fts5(
         value,
@@ -528,19 +727,19 @@ function createUserMemoryFts (db, tokenizer) {
         tokenize = '${tokenizer}'
       )
   `)
-  db.exec(`
+  await db.exec(`
     CREATE TRIGGER user_memory_ai AFTER INSERT ON user_memory BEGIN
       INSERT INTO user_memory_fts(rowid, value)
       VALUES (new.id, new.value);
     END;
   `)
-  db.exec(`
+  await db.exec(`
     CREATE TRIGGER user_memory_ad AFTER DELETE ON user_memory BEGIN
       INSERT INTO user_memory_fts(user_memory_fts, rowid, value)
       VALUES ('delete', old.id, old.value);
     END;
   `)
-  db.exec(`
+  await db.exec(`
     CREATE TRIGGER user_memory_au AFTER UPDATE ON user_memory BEGIN
       INSERT INTO user_memory_fts(user_memory_fts, rowid, value)
       VALUES ('delete', old.id, old.value);
@@ -549,52 +748,60 @@ function createUserMemoryFts (db, tokenizer) {
     END;
   `)
   try {
-    db.exec(`INSERT INTO user_memory_fts(user_memory_fts) VALUES ('rebuild')`)
+    await db.exec(`INSERT INTO user_memory_fts(user_memory_fts) VALUES ('rebuild')`)
   } catch (err) {
     logger?.debug?.('User memory FTS rebuild skipped:', err?.message || err)
   }
 }
 
-function ensureUserMemoryFtsTable (db) {
+async function ensureUserMemoryFtsTable (db) {
   const desiredTokenizer = userMemoryFtsConfig.tokenizer || TOKENIZER_DEFAULT
-  const storedTokenizer = getMetaValue(db, META_USER_TOKENIZER_KEY)
-  const tableExists = db.prepare(`
+  const storedTokenizer = await getMetaValue(db, META_USER_TOKENIZER_KEY)
+  const tableExists = await db.prepare(`
     SELECT name FROM sqlite_master
     WHERE type = 'table' AND name = 'user_memory_fts'
   `).get()
   if (storedTokenizer && storedTokenizer !== desiredTokenizer) {
-    dropUserMemoryFtsArtifacts(db)
+    await dropUserMemoryFtsArtifacts(db)
   } else if (!storedTokenizer && tableExists) {
-    dropUserMemoryFtsArtifacts(db)
+    await dropUserMemoryFtsArtifacts(db)
   }
-  const existsAfterDrop = db.prepare(`
+  const existsAfterDrop = await db.prepare(`
     SELECT name FROM sqlite_master
     WHERE type = 'table' AND name = 'user_memory_fts'
   `).get()
   if (!existsAfterDrop) {
-    createUserMemoryFts(db, desiredTokenizer)
-    setMetaValue(db, META_USER_TOKENIZER_KEY, desiredTokenizer)
+    await createUserMemoryFts(db, desiredTokenizer)
+    await setMetaValue(db, META_USER_TOKENIZER_KEY, desiredTokenizer)
     logger?.info?.('[Memory] user memory FTS initialised with tokenizer=%s', desiredTokenizer)
   }
 }
 
-function createVectorTable (db, dimension) {
+async function createVectorTable (db, dimension) {
   if (!dimension || dimension <= 0) {
     throw new Error(`Invalid vector dimension for table creation: ${dimension}`)
   }
-  db.exec(`CREATE VIRTUAL TABLE vec_group_facts USING vec0(embedding float[${dimension}])`)
+  if (optionalDependencyState.vectorError) {
+    throw optionalDependencyState.vectorError
+  }
+  await db.exec(`CREATE VIRTUAL TABLE vec_group_facts USING vec0(embedding float[${dimension}])`)
 }
 
-function ensureVectorTable (db) {
-  ensureMetaTable(db)
+async function ensureVectorTable (db) {
+  await ensureMetaTable(db)
   if (cachedVectorDimension !== null) {
     return cachedVectorDimension
   }
+  if (optionalDependencyState.vectorError) {
+    cachedVectorDimension = 0
+    cachedVectorModel = ChatGPTConfig.llm?.embeddingModel || ''
+    return cachedVectorDimension
+  }
   const preferredDimension = resolvePreferredDimension()
-  const stored = getMetaValue(db, META_VECTOR_DIM_KEY)
-  const storedModel = getMetaValue(db, META_VECTOR_MODEL_KEY)
+  const stored = await getMetaValue(db, META_VECTOR_DIM_KEY)
+  const storedModel = await getMetaValue(db, META_VECTOR_MODEL_KEY)
   const currentModel = ChatGPTConfig.llm?.embeddingModel || ''
-  const tableExists = Boolean(db.prepare(`
+  const tableExists = Boolean(await db.prepare(`
     SELECT name FROM sqlite_master
     WHERE type = 'table' AND name = 'vec_group_facts'
   `).get())
@@ -616,7 +823,7 @@ function ensureVectorTable (db) {
 
   if (needsTableReset && tableExists) {
     try {
-      db.exec('DROP TABLE IF EXISTS vec_group_facts')
+      await db.exec('DROP TABLE IF EXISTS vec_group_facts')
       tablePresent = false
       dimension = 0
     } catch (err) {
@@ -624,16 +831,16 @@ function ensureVectorTable (db) {
     }
   }
 
-if (!tablePresent) {
+  if (!tablePresent) {
     if (dimension <= 0) {
       dimension = parseDimension(preferredDimension)
     }
     if (dimension > 0) {
       try {
-        createVectorTable(db, dimension)
+        await createVectorTable(db, dimension)
         tablePresent = true
-        setMetaValue(db, META_VECTOR_MODEL_KEY, currentModel)
-        setMetaValue(db, META_VECTOR_DIM_KEY, String(dimension))
+        await setMetaValue(db, META_VECTOR_MODEL_KEY, currentModel)
+        await setMetaValue(db, META_VECTOR_DIM_KEY, String(dimension))
         cachedVectorDimension = dimension
         cachedVectorModel = currentModel
         return cachedVectorDimension
@@ -651,35 +858,35 @@ if (!tablePresent) {
   }
 
   // At this point we failed to determine a valid dimension, set metadata to 0 to avoid loops.
-  setMetaValue(db, META_VECTOR_MODEL_KEY, currentModel)
-  setMetaValue(db, META_VECTOR_DIM_KEY, '0')
+  await setMetaValue(db, META_VECTOR_MODEL_KEY, currentModel)
+  await setMetaValue(db, META_VECTOR_DIM_KEY, '0')
   cachedVectorDimension = 0
   cachedVectorModel = currentModel
   return cachedVectorDimension
 }
-export function resetVectorTableDimension (dimension) {
+export async function resetVectorTableDimension (dimension) {
   if (!Number.isFinite(dimension) || dimension <= 0) {
     throw new Error(`Invalid vector dimension: ${dimension}`)
   }
-  const db = getMemoryDatabase()
+  const db = await getMemoryDatabase()
   try {
-    db.exec('DROP TABLE IF EXISTS vec_group_facts')
+    await db.exec('DROP TABLE IF EXISTS vec_group_facts')
   } catch (err) {
     logger?.warn?.('[Memory] failed to drop vec_group_facts:', err)
   }
-  createVectorTable(db, dimension)
-  setMetaValue(db, META_VECTOR_DIM_KEY, dimension.toString())
+  await createVectorTable(db, dimension)
+  await setMetaValue(db, META_VECTOR_DIM_KEY, dimension.toString())
   const model = ChatGPTConfig.llm?.embeddingModel || ''
-  setMetaValue(db, META_VECTOR_MODEL_KEY, model)
+  await setMetaValue(db, META_VECTOR_MODEL_KEY, model)
   cachedVectorDimension = dimension
   cachedVectorModel = model
 }
 
-function migrate (db) {
-  ensureGroupFactsTable(db)
-  ensureGroupHistoryCursorTable(db)
-  ensureUserMemoryTable(db)
-  ensureVectorTable(db)
+async function migrate (db) {
+  await ensureGroupFactsTable(db)
+  await ensureGroupHistoryCursorTable(db)
+  await ensureUserMemoryTable(db)
+  await ensureVectorTable(db)
 }
 
 export function getUserMemoryFtsConfig () {
@@ -694,6 +901,15 @@ export function getSimpleExtensionState () {
   return { ...simpleExtensionState }
 }
 
+export function getMemoryOptionalDependencyState () {
+  return {
+    databaseAvailable: !optionalDependencyState.databaseError,
+    databaseError: optionalDependencyState.databaseError?.message || null,
+    vectorAvailable: !optionalDependencyState.vectorError,
+    vectorError: optionalDependencyState.vectorError?.message || null
+  }
+}
+
 export function sanitiseFtsQueryInput (query, ftsConfig) {
   if (!query) {
     return ''
@@ -704,26 +920,29 @@ export function sanitiseFtsQueryInput (query, ftsConfig) {
   return sanitiseRawFtsInput(query)
 }
 
-export function getMemoryDatabase () {
+export async function getMemoryDatabase () {
   if (dbInstance) {
     return dbInstance
   }
   const dbPath = resolveDbPath()
   ensureDirectory(dbPath)
   logger?.info?.('[Memory] opening memory database at %s', dbPath)
-  dbInstance = new Database(dbPath)
-  sqliteVec.load(dbInstance)
+  dbInstance = await openSqliteDatabase(dbPath)
+  // 启用 WAL 模式，允许并发读写，避免 SQLITE_BUSY
+  await dbInstance.exec('PRAGMA journal_mode = WAL')
+  await dbInstance.exec('PRAGMA busy_timeout = 5000')
+  await tryLoadSqliteVec(dbInstance)
   resetSimpleState({
     requested: false,
     enabled: false
   })
-  applySimpleExtension(dbInstance)
-  migrate(dbInstance)
+  await applySimpleExtension(dbInstance)
+  await migrate(dbInstance)
   logger?.info?.('[Memory] memory database init completed (simple loaded=%s)', simpleExtensionState.loaded)
   return dbInstance
 }
 
-export function getVectorDimension () {
+export async function getVectorDimension () {
   const currentModel = ChatGPTConfig.llm?.embeddingModel || ''
   if (cachedVectorModel && cachedVectorModel !== currentModel) {
     cachedVectorDimension = null
@@ -732,8 +951,8 @@ export function getVectorDimension () {
   if (cachedVectorDimension !== null) {
     return cachedVectorDimension
   }
-  const db = getMemoryDatabase()
-  return ensureVectorTable(db)
+  const db = await getMemoryDatabase()
+  return await ensureVectorTable(db)
 }
 
 export function resetCachedDimension () {
@@ -744,7 +963,9 @@ export function resetCachedDimension () {
 export function resetMemoryDatabaseInstance () {
   if (dbInstance) {
     try {
-      dbInstance.close()
+      dbInstance.close().catch(error => {
+        console.warn('Failed to close memory database:', error)
+      })
     } catch (error) {
       console.warn('Failed to close memory database:', error)
     }

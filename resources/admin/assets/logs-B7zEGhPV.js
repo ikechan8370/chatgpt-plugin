@@ -1,0 +1,1 @@
+import{p as s}from"./index-DiOlaFw7.js";function e(t={}){return s.Get("/api/logs",{params:t})}function r(){return s.Get("/api/logs/stats")}function o(t={}){return s.Delete("/api/logs",{params:t})}export{e as a,o as c,r as f};

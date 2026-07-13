@@ -1,0 +1,1 @@
+.metrics-grid[data-v-28b81c59]{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:16px}.records[data-v-28b81c59]{overflow:hidden}@media (max-width: 900px){.metrics-grid[data-v-28b81c59]{grid-template-columns:repeat(2,1fr)}}@media (max-width: 560px){.metrics-grid[data-v-28b81c59]{grid-template-columns:1fr}}

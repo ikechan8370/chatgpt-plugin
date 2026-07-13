@@ -57,12 +57,15 @@ function normaliseGroupId (groupId) {
 }
 
 export class GroupMemoryStore {
-  constructor (db = getMemoryDatabase()) {
+  constructor (db = null) {
     this.resetDatabase(db)
   }
 
-  resetDatabase (db = getMemoryDatabase()) {
+  resetDatabase (db = null) {
     this.db = db
+    if (!this.db) {
+      return
+    }
     this.insertFactStmt = this.db.prepare(`
       INSERT INTO group_facts (group_id, fact, topic, importance, source_message_ids, source_messages, involved_users)
       VALUES (@group_id, @fact, @topic, @importance, @source_message_ids, @source_messages, @involved_users)
@@ -92,10 +95,10 @@ export class GroupMemoryStore {
     }
   }
 
-  ensureDb () {
+  async ensureDb () {
     if (!this.db || this.db.open === false) {
       logger?.debug?.('[Memory] refreshing group memory database connection')
-      this.resetDatabase()
+      this.resetDatabase(await getMemoryDatabase())
     }
     return this.db
   }
@@ -142,7 +145,7 @@ export class GroupMemoryStore {
     if (!facts || facts.length === 0) {
       return []
     }
-    this.ensureDb()
+    await this.ensureDb()
     const normGroupId = normaliseGroupId(groupId)
     const filteredFacts = facts
       .map(f => {
@@ -168,7 +171,7 @@ export class GroupMemoryStore {
     }
 
     let vectors = []
-    let tableDimension = getVectorDimension() || 0
+    let tableDimension = await getVectorDimension() || 0
     const configuredDimension = Number(ChatGPTConfig.llm?.dimensions || 0)
     if (this.isVectorEnabled()) {
       try {
@@ -190,7 +193,7 @@ export class GroupMemoryStore {
           const expectedDimension = tableDimension || preferredDimension || configuredDimension || 'unknown'
           logger.warn(`[Memory] embedding dimension mismatch, expected=${expectedDimension}, actual=${actualDimension}. Recreating vector table.`)
           try {
-            resetVectorTableDimension(actualDimension)
+            await resetVectorTableDimension(actualDimension)
             this.prepareVectorStatements()
             tableDimension = actualDimension
           } catch (resetErr) {
@@ -199,7 +202,7 @@ export class GroupMemoryStore {
           }
         } else if (actualDimension && tableDimension <= 0) {
           try {
-            resetVectorTableDimension(actualDimension)
+            await resetVectorTableDimension(actualDimension)
             this.prepareVectorStatements()
             tableDimension = actualDimension
           } catch (resetErr) {
@@ -213,17 +216,17 @@ export class GroupMemoryStore {
       }
     }
 
-    const transaction = this.db.transaction((items, vectorList) => {
+    const transaction = this.db.transaction(async (items, vectorList) => {
       const saved = []
       for (let i = 0; i < items.length; i++) {
         const payload = {
           group_id: normGroupId,
           ...items[i]
         }
-        const info = this.insertFactStmt.run(payload)
+        const info = await this.insertFactStmt.run(payload)
         let factId = Number(info.lastInsertRowid)
         if (!factId) {
-          const existing = this.db.prepare('SELECT id FROM group_facts WHERE group_id = ? AND fact = ?').get(normGroupId, payload.fact)
+          const existing = await this.db.prepare('SELECT id FROM group_facts WHERE group_id = ? AND fact = ?').get(normGroupId, payload.fact)
           factId = existing?.id
         }
         factId = Number.parseInt(String(factId ?? ''), 10)
@@ -262,13 +265,13 @@ export class GroupMemoryStore {
             }
             const rowId = BigInt(factId)
             logger.debug(`[Memory] upserting vector for fact ${factId}, rowIdType=${typeof rowId}`)
-            this.deleteVecStmt.run(rowId)
-            this.insertVecStmt.run(rowId, embeddingArray)
+            await this.deleteVecStmt.run(rowId)
+            await this.insertVecStmt.run(rowId, embeddingArray)
           } catch (error) {
             logger.error(`Failed to upsert vector for fact ${factId}:`, error)
           }
         }
-        saved.push(this.loadFactByIdStmt.get(factId))
+        saved.push(await this.loadFactByIdStmt.get(factId))
       }
       return saved
     })
@@ -276,8 +279,9 @@ export class GroupMemoryStore {
     return transaction(filteredFacts, vectors)
   }
 
-  listFacts (groupId, limit = 50, offset = 0) {
-    return this.db.prepare(`
+  async listFacts (groupId, limit = 50, offset = 0) {
+    await this.ensureDb()
+    return await this.db.prepare(`
       SELECT * FROM group_facts
       WHERE group_id = ?
       ORDER BY importance DESC, created_at DESC
@@ -285,16 +289,16 @@ export class GroupMemoryStore {
     `).all(normaliseGroupId(groupId), limit, offset)
   }
 
-  deleteFact (groupId, factId) {
-    this.ensureDb()
+  async deleteFact (groupId, factId) {
+    await this.ensureDb()
     const normGroupId = normaliseGroupId(groupId)
-    const fact = this.db.prepare('SELECT id FROM group_facts WHERE id = ? AND group_id = ?').get(factId, normGroupId)
+    const fact = await this.db.prepare('SELECT id FROM group_facts WHERE id = ? AND group_id = ?').get(factId, normGroupId)
     if (!fact) {
       return false
     }
-    this.db.prepare('DELETE FROM group_facts WHERE id = ?').run(factId)
+    await this.db.prepare('DELETE FROM group_facts WHERE id = ?').run(factId)
     try {
-      this.deleteVecStmt.run(BigInt(factId))
+      await this.deleteVecStmt.run(BigInt(factId))
     } catch (err) {
       logger?.warn?.(`[Memory] failed to delete vector for fact ${factId}:`, err)
     }
@@ -302,12 +306,12 @@ export class GroupMemoryStore {
   }
 
   async vectorSearch (groupId, queryText, limit) {
-    this.ensureDb()
+    await this.ensureDb()
     if (!this.isVectorEnabled()) {
       return []
     }
     try {
-      let tableDimension = getVectorDimension() || 0
+      let tableDimension = await getVectorDimension() || 0
       if (!tableDimension || tableDimension <= 0) {
         logger.debug('[Memory] vector table dimension unavailable, attempting to infer from embedding')
       }
@@ -325,7 +329,7 @@ export class GroupMemoryStore {
       if (tableDimension > 0 && actualDimension !== tableDimension) {
         logger.warn(`[Memory] vector dimension mismatch detected during search, table=${tableDimension}, embedding=${actualDimension}. Rebuilding vector table.`)
         try {
-          resetVectorTableDimension(actualDimension)
+          await resetVectorTableDimension(actualDimension)
           this.prepareVectorStatements()
           tableDimension = actualDimension
         } catch (resetErr) {
@@ -336,7 +340,7 @@ export class GroupMemoryStore {
         return []
       } else if (tableDimension <= 0 && actualDimension > 0) {
         try {
-          resetVectorTableDimension(actualDimension)
+          await resetVectorTableDimension(actualDimension)
           this.prepareVectorStatements()
           tableDimension = actualDimension
         } catch (resetErr) {
@@ -344,7 +348,7 @@ export class GroupMemoryStore {
           return []
         }
       }
-      const rows = this.db.prepare(`
+      const rows = await this.db.prepare(`
         SELECT gf.*, vec_group_facts.distance AS distance
         FROM vec_group_facts
         JOIN group_facts gf ON gf.id = vec_group_facts.rowid
@@ -364,8 +368,8 @@ export class GroupMemoryStore {
     }
   }
 
-  textSearch (groupId, queryText, limit) {
-    this.ensureDb()
+  async textSearch (groupId, queryText, limit) {
+    await this.ensureDb()
     if (!queryText || !queryText.trim()) {
       return []
     }
@@ -377,7 +381,7 @@ export class GroupMemoryStore {
     if (matchQueryParam) {
       const matchExpression = ftsConfig.matchQuery ? `${ftsConfig.matchQuery}(?)` : '?'
       try {
-        const rows = this.db.prepare(`
+        const rows = await this.db.prepare(`
           SELECT gf.*, bm25(group_facts_fts) AS bm25_score
           FROM group_facts_fts
           JOIN group_facts gf ON gf.id = group_facts_fts.rowid
@@ -409,7 +413,7 @@ export class GroupMemoryStore {
 
     if (results.length < limit) {
       try {
-        const likeRows = this.db.prepare(`
+        const likeRows = await this.db.prepare(`
           SELECT *
           FROM group_facts
           WHERE group_id = ?
@@ -434,8 +438,8 @@ export class GroupMemoryStore {
     return results.slice(0, limit)
   }
 
-  importanceFallback (groupId, limit, minImportance, excludeIds = []) {
-    this.ensureDb()
+  async importanceFallback (groupId, limit, minImportance, excludeIds = []) {
+    await this.ensureDb()
     const ids = excludeIds.filter(Boolean)
     const notInClause = ids.length ? `AND id NOT IN (${ids.map(() => '?').join(',')})` : ''
     const stmt = this.db.prepare(`
@@ -451,7 +455,7 @@ export class GroupMemoryStore {
       params.push(...ids)
     }
     params.push(limit)
-    return stmt.all(...params)
+    return await stmt.all(...params)
   }
 
   /**
@@ -493,20 +497,20 @@ export class GroupMemoryStore {
       } else if (preferVector) {
         append(vectorRows)
         if (combined.length < limit) {
-          append(this.textSearch(normGroupId, queryText, limit))
+          append(await this.textSearch(normGroupId, queryText, limit))
         }
       } else {
-        append(this.textSearch(normGroupId, queryText, limit))
+        append(await this.textSearch(normGroupId, queryText, limit))
         if (combined.length < limit) {
           append(vectorRows)
         }
       }
     } else if (mode === 'keyword') {
-      append(this.textSearch(normGroupId, queryText, limit))
+      append(await this.textSearch(normGroupId, queryText, limit))
     }
 
     if (combined.length < limit) {
-      const fallback = this.importanceFallback(normGroupId, limit - combined.length, minImportance, Array.from(seen))
+      const fallback = await this.importanceFallback(normGroupId, limit - combined.length, minImportance, Array.from(seen))
       append(fallback)
     }
 

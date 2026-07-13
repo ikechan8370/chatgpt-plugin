@@ -1,0 +1,1 @@
+import{p as t}from"./index-DiOlaFw7.js";function e(o){return t.Get("/api/toolGroups/list",{params:o})}function p(o){return t.Post("/api/toolGroups/",o)}function s(o,r){return t.Put(`/api/toolGroups/${o}`,r)}function a(o){return t.Delete(`/api/toolGroups/${o}`)}export{p as c,a as d,e as f,s as u};

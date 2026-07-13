@@ -53,9 +53,23 @@ function normalisePersonalMemory (entry) {
 
 class MemoryService {
   constructor () {
-    const db = getMemoryDatabase()
-    this.groupStore = new GroupMemoryStore(db)
-    this.userStore = new UserMemoryStore(db)
+    this.groupStore = null
+    this.userStore = null
+  }
+
+  async ensureStores () {
+    if (this.groupStore && this.userStore) {
+      return true
+    }
+    try {
+      const db = await getMemoryDatabase()
+      this.groupStore = new GroupMemoryStore(db)
+      this.userStore = new UserMemoryStore(db)
+      return true
+    } catch (err) {
+      logger?.warn?.('[Memory] memory database unavailable; memory features are disabled:', err?.message || err)
+      return false
+    }
   }
 
   isGroupMemoryEnabled (groupId) {
@@ -91,6 +105,9 @@ class MemoryService {
     if (!this.isGroupMemoryEnabled(groupId)) {
       return []
     }
+    if (!await this.ensureStores()) {
+      return []
+    }
     try {
       const saved = await this.groupStore.saveFacts(groupId, facts)
       if (saved.length > 0) {
@@ -110,6 +127,9 @@ class MemoryService {
     if (!this.isGroupMemoryEnabled(groupId)) {
       return []
     }
+    if (!await this.ensureStores()) {
+      return []
+    }
     const { maxFactsPerInjection = 5, minImportanceForInjection = 0 } = ChatGPTConfig.memory?.group || {}
     const limit = options.limit || maxFactsPerInjection
     const minImportance = options.minImportance ?? minImportanceForInjection
@@ -121,16 +141,25 @@ class MemoryService {
     }
   }
 
-  listGroupFacts (groupId, limit = 50, offset = 0) {
-    return this.groupStore.listFacts(groupId, limit, offset)
+  async listGroupFacts (groupId, limit = 50, offset = 0) {
+    if (!await this.ensureStores()) {
+      return []
+    }
+    return await this.groupStore.listFacts(groupId, limit, offset)
   }
 
-  deleteGroupFact (groupId, factId) {
-    return this.groupStore.deleteFact(groupId, factId)
+  async deleteGroupFact (groupId, factId) {
+    if (!await this.ensureStores()) {
+      return false
+    }
+    return await this.groupStore.deleteFact(groupId, factId)
   }
 
-  upsertUserMemories (userId, groupId, memories) {
+  async upsertUserMemories (userId, groupId, memories) {
     if (!this.isUserMemoryEnabled(userId)) {
+      return 0
+    }
+    if (!await this.ensureStores()) {
       return 0
     }
     try {
@@ -145,7 +174,7 @@ class MemoryService {
       if (prepared.length === 0) {
         return 0
       }
-      const changed = this.userStore.upsertMemories(userId, groupId, prepared)
+      const changed = await this.userStore.upsertMemories(userId, groupId, prepared)
       if (changed > 0) {
         logger.info(`[Memory] user=${userId} updated ${changed} personal memories${groupId ? ` in group=${groupId}` : ''}`)
         prepared.slice(0, 10).forEach((item, idx) => {
@@ -159,8 +188,11 @@ class MemoryService {
     }
   }
 
-  queryUserMemories (userId, groupId = null, queryText = '', options = {}) {
+  async queryUserMemories (userId, groupId = null, queryText = '', options = {}) {
     if (!this.isUserMemoryEnabled(userId)) {
+      return []
+    }
+    if (!await this.ensureStores()) {
       return []
     }
     const userConfig = ChatGPTConfig.memory?.user || {}
@@ -171,7 +203,7 @@ class MemoryService {
       return []
     }
     try {
-      return this.userStore.queryMemories(userId, groupId, queryText, {
+      return await this.userStore.queryMemories(userId, groupId, queryText, {
         limit: searchLimit,
         fallbackLimit: totalLimit,
         minImportance
@@ -182,12 +214,18 @@ class MemoryService {
     }
   }
 
-  listUserMemories (userId, groupId = null, limit = 50, offset = 0) {
-    return this.userStore.listUserMemories(userId, groupId, limit, offset)
+  async listUserMemories (userId, groupId = null, limit = 50, offset = 0, options = {}) {
+    if (!await this.ensureStores()) {
+      return []
+    }
+    return await this.userStore.listUserMemories(userId, groupId, limit, offset, options)
   }
 
-  deleteUserMemory (memoryId, userId = null) {
-    return this.userStore.deleteMemoryById(memoryId, userId)
+  async deleteUserMemory (memoryId, userId = null) {
+    if (!await this.ensureStores()) {
+      return false
+    }
+    return await this.userStore.deleteMemoryById(memoryId, userId)
   }
 }
 

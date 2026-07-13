@@ -104,7 +104,7 @@ export async function buildMemoryPrompt ({ userId, groupId, queryText }) {
   if (memoryService.isUserMemoryEnabled(userId)) {
     const totalLimit = userConfig.maxItemsPerInjection || 5
     const searchLimit = Math.min(userConfig.maxRelevantItemsPerQuery || totalLimit, totalLimit)
-    const userMemories = memoryService.queryUserMemories(userId, groupId, queryText, {
+    const userMemories = await memoryService.queryUserMemories(userId, groupId, queryText, {
       totalLimit,
       searchLimit,
       minImportance: userConfig.minImportanceForInjection ?? 0

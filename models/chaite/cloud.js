@@ -8,6 +8,7 @@ import {
   ToolManager,
   ToolsGroupManager,
   TriggerManager
+  , OperationLogManager, McpServerManager, SkillRegistry
 } from 'chaite'
 import ChatGPTConfig from '../../config/config.js'
 import { LowDBChannelStorage } from './storage/lowdb/channel_storage.js'
@@ -35,6 +36,9 @@ import LowDBTriggerStorage from './storage/lowdb/trigger_storage,.js'
 import { createChaiteVectorizer } from './vectorizer.js'
 import { MemoryRouter, authenticateMemoryRequest } from '../memory/router.js'
 import { disposeMcpCompatibility, initMcpCompatibility } from '../../utils/mcp/manager.js'
+import { SQLiteOperationLogStorage } from './storage/sqlite/operation_log_storage.js'
+import { SQLiteMcpServerStorage } from './storage/sqlite/mcp_server_storage.js'
+import { LowDBMcpServerStorage } from './storage/lowdb/mcp_server_storage.js'
 
 /**
  * 认证，以便共享上传
@@ -70,7 +74,7 @@ export async function initRagManager (model, dimensions) {
 
 export async function initChaite () {
   const storage = ChatGPTConfig.chaite.storage
-  let channelsStorage, chatPresetsStorage, toolsStorage, processorsStorage, userStateStorage, historyStorage, toolsGroupStorage, triggerStorage
+  let channelsStorage, chatPresetsStorage, toolsStorage, processorsStorage, userStateStorage, historyStorage, toolsGroupStorage, triggerStorage, operationLogStorage, mcpServerStorage
   switch (storage) {
     case 'sqlite': {
       const dbPath = path.join(dataDir, 'data.db')
@@ -88,6 +92,8 @@ export async function initChaite () {
       await toolsGroupStorage.initialize()
       triggerStorage = new SQLiteTriggerStorage(dbPath)
       await triggerStorage.initialize()
+      mcpServerStorage = new SQLiteMcpServerStorage(dbPath)
+      await mcpServerStorage.initialize()
       historyStorage = new SQLiteHistoryManager(dbPath, path.join(dataDir, 'images'))
       await checkMigrate()
       break
@@ -101,6 +107,7 @@ export async function initChaite () {
       processorsStorage = new LowDBProcessorsStorage(ChatGPTStorage)
       userStateStorage = new LowDBUserStateStorage(ChatGPTStorage)
       triggerStorage = new LowDBTriggerStorage(ChatGPTStorage)
+      mcpServerStorage = new LowDBMcpServerStorage(ChatGPTStorage)
       const ChatGPTHistoryStorage = (await import('storage/lowdb/storage.js')).ChatGPTHistoryStorage
       await ChatGPTHistoryStorage.init()
       historyStorage = new LowDBHistoryManager(ChatGPTHistoryStorage)
@@ -129,6 +136,18 @@ export async function initChaite () {
   const userModeSelector = new ChatGPTUserModeSelector()
   let chaite = Chaite.init(channelsManager, toolsManager, processorsManager, chatPresetManager, toolsGroupManager, triggerManager,
     userModeSelector, userStateStorage, historyStorage, logger)
+  if (storage === 'sqlite') {
+    operationLogStorage = new SQLiteOperationLogStorage(path.join(dataDir, 'data.db'), ChatGPTConfig.chaite.operationLogLimit)
+    await operationLogStorage.initialize()
+    chaite.setOperationLogManager(new OperationLogManager(operationLogStorage))
+  }
+  chaite.setMcpServerManager(new McpServerManager(mcpServerStorage))
+  chaite.setMcpManagementGuard(context => Boolean(context.getEvent()?.isMaster))
+  const skillsDir = path.join(dataDir, 'skills')
+  if (!fs.existsSync(skillsDir)) fs.mkdirSync(skillsDir, { recursive: true })
+  const skillRegistry = new SkillRegistry(skillsDir)
+  await skillRegistry.load()
+  chaite.setSkillRegistry(skillRegistry)
   logger.info('Chaite 初始化完成')
   chaite.setCloudService(ChatGPTConfig.chaite.cloudBaseUrl)
   logger.info('Chaite.Cloud 初始化完成')
@@ -190,6 +209,7 @@ export async function initChaite () {
       if (ChatGPTConfig.chaite.authKey && chaite.getGlobalConfig().getAuthKey() !== ChatGPTConfig.chaite.authKey) {
         chaite.getGlobalConfig().setAuthKey(ChatGPTConfig.chaite.authKey)
       }
+      operationLogStorage?.setMaxEntries(ChatGPTConfig.chaite.operationLogLimit).catch(error => logger.warn(`更新操作日志保留条数失败: ${error.message}`))
 
       // 使用新的触发保存方法，而不是直接调用saveToFile
       ChatGPTConfig._triggerSave('chaite')
@@ -206,12 +226,107 @@ export async function initChaite () {
   chaite.getGlobalConfig().setDebug(ChatGPTConfig.basic.debug)
   logger.info('Chaite.RAGManager 初始化完成')
   chaite.runApiServer(app => {
+    registerManagementPanelAutoLogin(app)
     app.use('/api/memory', authenticateMemoryRequest, MemoryRouter)
+  }, {
+    frontendDir: path.resolve('./plugins/chatgpt-plugin/resources/admin')
   })
 
   process.once('beforeExit', async () => {
     await disposeMcpCompatibility()
   })
+}
+
+function registerManagementPanelAutoLogin (app) {
+  app.get('/api/chatgpt-plugin/autologin/:token', (req, res) => {
+    res
+      .status(200)
+      .type('html')
+      .send(renderAutoLoginHtml(req.params.token))
+  })
+}
+
+function renderAutoLoginHtml (token) {
+  const tokenJson = JSON.stringify(token).replace(/</g, '\\u003c')
+  return `<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ChatGPT 管理面板登录中</title>
+  <style>
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      color: #1f2937;
+      background: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    main {
+      width: min(420px, calc(100vw - 32px));
+      padding: 28px;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      box-shadow: 0 18px 45px rgb(15 23 42 / 8%);
+    }
+    h1 {
+      margin: 0 0 12px;
+      font-size: 20px;
+      font-weight: 650;
+    }
+    p {
+      margin: 0;
+      color: #64748b;
+      line-height: 1.7;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>正在登录管理面板</h1>
+    <p id="message">请稍候，正在校验一次性 token。</p>
+  </main>
+  <script>
+    const token = ${tokenJson};
+    const message = document.getElementById('message');
+
+    function setLocalStorage(key, value, expire = 60 * 60 * 24 * 7) {
+      window.localStorage.setItem(key, JSON.stringify({
+        value,
+        expire: Date.now() + expire * 1000
+      }));
+    }
+
+    async function login() {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token })
+      });
+      const result = await response.json();
+      const data = result && result.data;
+      if (!response.ok || result.code !== 0 || !data || !data.token) {
+        throw new Error(result.message || 'token 无效或已过期');
+      }
+      setLocalStorage('userInfo', data);
+      setLocalStorage('accessToken', data.token);
+      if (data.refreshToken) {
+        setLocalStorage('refreshToken', data.refreshToken);
+      }
+      message.textContent = '登录成功，正在进入面板。';
+      window.location.replace('/');
+    }
+
+    login().catch(error => {
+      message.textContent = '自动登录失败：' + error.message + '。请返回私聊消息，使用面板地址和 token 手动登录。';
+    });
+  </script>
+</body>
+</html>`
 }
 
 function deepMerge (target, source) {

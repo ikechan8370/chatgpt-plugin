@@ -50,6 +50,16 @@ export class LowDBHistoryManager extends AbstractHistoryManager {
     await this.collection.delete({ conversationId })
   }
 
+  async removeHistory (messageId, conversationId) {
+    const target = await this.collection.findOne({ id: messageId, conversationId })
+    if (!target) return
+    const children = await this.collection.find({ conversationId, parentId: messageId })
+    for (const child of children) {
+      await this.collection.updateById(child.id, { parentId: target.parentId })
+    }
+    await this.collection.deleteById(messageId)
+  }
+
   async getOneHistory (messageId, conversationId) {
     return this.collection.findOne({ id: messageId, conversationId })
   }

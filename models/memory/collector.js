@@ -308,7 +308,7 @@ export class GroupMessageCollector {
     messages.sort((a, b) => normalizeTimestamp(a.timestamp) - normalizeTimestamp(b.timestamp))
     let queued = 0
     for (const payload of messages) {
-      if (this.queueMessage(groupId, payload)) {
+      if (await this.queueMessage(groupId, payload)) {
         queued++
       }
     }
@@ -341,11 +341,11 @@ export class GroupMessageCollector {
     }
   }
 
-  queueMessage (groupId, rawPayload) {
+  async queueMessage (groupId, rawPayload) {
     if (!rawPayload || !rawPayload.text) {
       return false
     }
-    const state = this.getGroupState(groupId)
+    const state = await this.getGroupState(groupId)
     const messageId = this.ensureMessageId(rawPayload)
     const timestampMs = normalizeTimestamp(rawPayload.timestamp)
     const buffer = this.getBuffer(groupId)
@@ -360,7 +360,7 @@ export class GroupMessageCollector {
     if (this.shouldSkipMessage(state, timestampMs, messageKey, payload.message_id)) {
       return false
     }
-    this.updateGroupState(groupId, state, timestampMs, messageKey, payload.message_id)
+    await this.updateGroupState(groupId, state, timestampMs, messageKey, payload.message_id)
     buffer.messages.push(payload)
     logger.debug(`[Memory] buffered group message, group=${groupId}, buffer=${buffer.messages.length}`)
     this.tryTriggerFlush(groupId, buffer)
@@ -391,10 +391,10 @@ export class GroupMessageCollector {
     return parts.filter(Boolean).join(':')
   }
 
-  getGroupState (groupId) {
+  async getGroupState (groupId) {
     let state = this.groupStates.get(groupId)
     if (!state) {
-      const cursor = groupHistoryCursorStore.getCursor(groupId)
+      const cursor = await groupHistoryCursorStore.getCursor(groupId)
       const lastTimestamp = Number(cursor?.last_timestamp) || 0
       const lastMessageId = cursor?.last_message_id || null
       state = {
@@ -429,7 +429,7 @@ export class GroupMessageCollector {
     return false
   }
 
-  updateGroupState (groupId, state, timestampMs, messageKey, messageId) {
+  async updateGroupState (groupId, state, timestampMs, messageKey, messageId) {
     const hasTimestamp = Number.isFinite(timestampMs) && timestampMs > 0
     if (!hasTimestamp) {
       if (messageKey) {
@@ -441,7 +441,7 @@ export class GroupMessageCollector {
       }
       if (messageId) {
         state.lastMessageId = String(messageId)
-        groupHistoryCursorStore.updateCursor(groupId, {
+        await groupHistoryCursorStore.updateCursor(groupId, {
           lastMessageId: state.lastMessageId,
           lastTimestamp: state.lastTimestamp || null
         })
@@ -464,7 +464,7 @@ export class GroupMessageCollector {
       state.lastMessageId = String(messageId)
     }
 
-    groupHistoryCursorStore.updateCursor(groupId, {
+    await groupHistoryCursorStore.updateCursor(groupId, {
       lastMessageId: state.lastMessageId || null,
       lastTimestamp: state.lastTimestamp || timestampMs
     })
@@ -495,7 +495,7 @@ export class GroupMessageCollector {
     }
   }
 
-  push (e) {
+  async push (e) {
     const groupId = normaliseGroupId(e.group_id || e.group?.group_id)
     if (!memoryService.isGroupMemoryEnabled(groupId)) {
       return
@@ -510,7 +510,7 @@ export class GroupMessageCollector {
     this.addSelfId(e.bot?.uin)
     const messageId = e.message_id || e.seq || crypto.randomUUID()
     logger.debug(`[Memory] collect group message, group=${groupId}, user=${e.sender?.user_id}, buffer=${(this.buffers.get(groupId)?.messages.length || 0) + 1}`)
-    this.queueMessage(groupId, {
+    await this.queueMessage(groupId, {
       message_id: messageId,
       user_id: String(e.sender?.user_id || ''),
       nickname: e.sender?.card || e.sender?.nickname || '',

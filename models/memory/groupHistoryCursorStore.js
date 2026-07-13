@@ -9,12 +9,17 @@ function normaliseGroupId (groupId) {
 }
 
 export class GroupHistoryCursorStore {
-  constructor (db = getMemoryDatabase()) {
+  constructor (db = null) {
     this.resetDatabase(db)
   }
 
-  resetDatabase (db = getMemoryDatabase()) {
+  resetDatabase (db = null) {
     this.db = db
+    if (!this.db) {
+      this.selectStmt = null
+      this.upsertStmt = null
+      return
+    }
     this.selectStmt = this.db.prepare(`
       SELECT last_message_id, last_timestamp
       FROM group_history_cursor
@@ -29,32 +34,42 @@ export class GroupHistoryCursorStore {
     `)
   }
 
-  ensureDb () {
+  async ensureDb () {
     if (!this.db || this.db.open === false) {
       logger?.debug?.('[Memory] refreshing group history cursor database connection')
-      this.resetDatabase()
+      this.resetDatabase(await getMemoryDatabase())
     }
     return this.db
   }
 
-  getCursor (groupId) {
+  async getCursor (groupId) {
     const gid = normaliseGroupId(groupId)
     if (!gid) return null
-    this.ensureDb()
-    return this.selectStmt.get(gid) || null
+    try {
+      await this.ensureDb()
+      return await this.selectStmt.get(gid) || null
+    } catch (err) {
+      logger?.warn?.('[Memory] group history cursor unavailable:', err?.message || err)
+      return null
+    }
   }
 
-  updateCursor (groupId, { lastMessageId = null, lastTimestamp = null } = {}) {
+  async updateCursor (groupId, { lastMessageId = null, lastTimestamp = null } = {}) {
     const gid = normaliseGroupId(groupId)
     if (!gid) return false
-    this.ensureDb()
-    const payload = {
-      group_id: gid,
-      last_message_id: lastMessageId ? String(lastMessageId) : null,
-      last_timestamp: (typeof lastTimestamp === 'number' && Number.isFinite(lastTimestamp)) ? Math.floor(lastTimestamp) : null
+    try {
+      await this.ensureDb()
+      const payload = {
+        group_id: gid,
+        last_message_id: lastMessageId ? String(lastMessageId) : null,
+        last_timestamp: (typeof lastTimestamp === 'number' && Number.isFinite(lastTimestamp)) ? Math.floor(lastTimestamp) : null
+      }
+      await this.upsertStmt.run(payload)
+      return true
+    } catch (err) {
+      logger?.warn?.('[Memory] failed to update group history cursor:', err?.message || err)
+      return false
     }
-    this.upsertStmt.run(payload)
-    return true
   }
 }
 
