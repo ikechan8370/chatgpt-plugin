@@ -7,7 +7,7 @@
     "@modelcontextprotocol/sdk": "^1.29.0",
     "adm-zip": "^0.5.10",
     "better-sqlite3": "^12.8.0",
-    "chaite": "^1.8.2",
+    "chaite": "^1.13.0",
     "js-yaml": "^4.1.0",
     "keyv": "^5.3.1",
     "keyv-file": "^5.1.2",
