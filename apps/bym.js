@@ -3,7 +3,7 @@ import { Chaite } from 'chaite'
 import { intoUserMessage, toYunzai } from '../utils/message.js'
 import common from '../../../lib/common/common.js'
 import { getGroupContextPrompt, buildGroupContextMessages, getGroupHistory } from '../utils/group.js'
-import { formatTimeToBeiJing } from '../utils/common.js'
+import { formatTimeToBeiJing, parseBooleanFlag } from '../utils/common.js'
 import { extractTextFromUserMessage, processUserMemory } from '../models/memory/userMemoryManager.js'
 import { buildMemoryPrompt } from '../models/memory/prompt.js'
 import { isVisualModelForSendOptions, visionService } from '../utils/vision.js'
@@ -131,8 +131,10 @@ export class bym extends plugin {
       if (msgs.length > 0) {
         await e.reply(msgs)
       }
-      for (let forwardElement of forward) {
-        this.reply(forwardElement)
+      if (parseBooleanFlag(ChatGPTConfig.bym.sendReasoning, false)) {
+        for (let forwardElement of forward) {
+          this.reply(forwardElement)
+        }
       }
     }
     // === 缓存友好的消息顺序：稳定内容在前，动态内容在后 ===
@@ -250,7 +252,7 @@ export class bym extends plugin {
         await common.sleep(Math.floor(Math.random() * 2000) + 1000)
       }
     }
-    if (ChatGPTConfig.bym.sendReasoning) {
+    if (parseBooleanFlag(ChatGPTConfig.bym.sendReasoning, false)) {
       for (let forwardElement of forward) {
         await e.reply(forwardElement, false, { recallMsg: recall ? 10 : 0 })
       }

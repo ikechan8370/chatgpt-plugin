@@ -35,6 +35,7 @@ import SQLiteTriggerStorage from './storage/sqlite/trigger_storage.js'
 import LowDBTriggerStorage from './storage/lowdb/trigger_storage,.js'
 import { createChaiteVectorizer } from './vectorizer.js'
 import { MemoryRouter, authenticateMemoryRequest } from '../memory/router.js'
+import { disposeMcpCompatibility, initMcpCompatibility } from '../../utils/mcp/manager.js'
 import { SQLiteOperationLogStorage } from './storage/sqlite/operation_log_storage.js'
 import { SQLiteMcpServerStorage } from './storage/sqlite/mcp_server_storage.js'
 import { LowDBMcpServerStorage } from './storage/lowdb/mcp_server_storage.js'
@@ -162,6 +163,7 @@ export async function initChaite () {
     }
   }
   await initRagManager(ChatGPTConfig.llm.embeddingModel, ChatGPTConfig.llm.dimensions)
+  await initMcpCompatibility(toolsManager)
   if (!ChatGPTConfig.chaite.authKey) {
     ChatGPTConfig.chaite.authKey = Chaite.getInstance().getFrontendAuthHandler().generateToken(0, true)
   }
@@ -169,8 +171,8 @@ export async function initChaite () {
   // 监听Chaite配置变化，同步需要同步的配置
   chaite.on('config-change', obj => {
     const { key, newVal, oldVal } = obj
-    if (key === 'authKey') {
-      ChatGPTConfig.serverAuthKey = newVal
+    if (key === 'authKey' && newVal && ChatGPTConfig.chaite?.authKey !== newVal) {
+      ChatGPTConfig.chaite.authKey = newVal
     }
     logger.debug(`Chaite config changed: ${key} from ${oldVal} to ${newVal}`)
   })
@@ -182,6 +184,16 @@ export async function initChaite () {
     ChatGPTConfig._saveOrigin = 'chaite'
 
     try {
+      const currentAuthKey = ChatGPTConfig.chaite?.authKey || chaite.getGlobalConfig().getAuthKey()
+      if (config?.chaite && typeof config.chaite === 'object') {
+        const incomingAuthKey = typeof config.chaite.authKey === 'string'
+          ? config.chaite.authKey.trim()
+          : config.chaite.authKey
+        if (!incomingAuthKey) {
+          delete config.chaite.authKey
+        }
+      }
+
       Object.keys(config).forEach(key => {
         if (typeof config[key] === 'object' && config[key] !== null && ChatGPTConfig[key]) {
           deepMerge(ChatGPTConfig[key], config[key])
@@ -190,9 +202,15 @@ export async function initChaite () {
         }
       })
 
+      if (!ChatGPTConfig.chaite.authKey && currentAuthKey) {
+        ChatGPTConfig.chaite.authKey = currentAuthKey
+      }
+
       // 回传部分需要同步的配置
       chaite.getGlobalConfig().setDebug(ChatGPTConfig.basic.debug)
-      chaite.getGlobalConfig().setAuthKey(ChatGPTConfig.chaite.authKey)
+      if (ChatGPTConfig.chaite.authKey && chaite.getGlobalConfig().getAuthKey() !== ChatGPTConfig.chaite.authKey) {
+        chaite.getGlobalConfig().setAuthKey(ChatGPTConfig.chaite.authKey)
+      }
       operationLogStorage?.setMaxEntries(ChatGPTConfig.chaite.operationLogLimit).catch(error => logger.warn(`更新操作日志保留条数失败: ${error.message}`))
 
       // 使用新的触发保存方法，而不是直接调用saveToFile
@@ -214,6 +232,10 @@ export async function initChaite () {
     app.use('/api/memory', authenticateMemoryRequest, MemoryRouter)
   }, {
     frontendDir: path.resolve('./plugins/chatgpt-plugin/resources/admin')
+  })
+
+  process.once('beforeExit', async () => {
+    await disposeMcpCompatibility()
   })
 }
 

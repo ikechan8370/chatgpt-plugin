@@ -13,6 +13,7 @@ class ChatGPTConfig {
    * 基本配置
    * @type {{
    *   toggleMode: 'at' | 'prefix',
+    *   sendReasoning: boolean,
    *   debug: boolean,
    * }}
    */
@@ -21,6 +22,8 @@ class ChatGPTConfig {
     toggleMode: 'at',
     // 触发前缀，仅在前缀触发时有效
     togglePrefix: '#chat',
+    // @ 或前缀触发对话时，是否发送思考/工具过程转发消息
+    sendReasoning: false,
     // 是否开启调试模式
     debug: false,
     // 一般命令的开头
@@ -119,7 +122,7 @@ class ChatGPTConfig {
     // 如果blockStrategy为mask，屏蔽词的替换字符
     blockWordMask: '***',
     // 是否开启群组上下文
-    enableGroupContext: false,
+    enableGroupContext: true,
     // 是否在多轮普通对话中保留每轮动态上下文（群聊记录、时间、记忆）。
     // 关闭可显著减少 token；支持上下文缓存的渠道可改为开启。
     retainDynamicContextHistory: false,
@@ -227,6 +230,47 @@ class ChatGPTConfig {
     maxImageSize: 10485760,
     // 是否将群聊上下文中的图片也存入历史（开启后图片会进入主干对话）
     enableGroupContextImages: true
+  }
+
+  /**
+   * MCP 兼容配置（标准 Model Context Protocol）
+   * @type {{
+   *   enable: boolean,
+   *   toolNamePrefix: string,
+   *   removeStaleBridgeToolsOnStart: boolean,
+   *   servers: Array<{
+   *     id: string,
+   *     enable: boolean,
+   *     transport: 'stdio' | 'sse' | 'streamable-http',
+   *     command?: string,
+   *     args?: string[],
+   *     env?: Record<string, string>,
+   *     cwd?: string,
+   *     url?: string,
+   *     includeTools?: string[],
+   *     excludeTools?: string[]
+   *   }>
+   * }}
+   */
+  mcp = {
+    enable: false,
+    // 生成到 Chaite 工具池中的前缀，避免与本地工具重名
+    toolNamePrefix: 'mcp',
+    // 启动时不清理旧桥接工具，避免触发工具文件频繁 unlink/rescan 日志刷屏
+    removeStaleBridgeToolsOnStart: false,
+    servers: [
+      {
+        id: 'filesystem',
+        enable: false,
+        transport: 'stdio',
+        command: '',
+        args: [],
+        env: {},
+        cwd: '',
+        includeTools: [],
+        excludeTools: []
+      }
+    ]
   }
 
   /**
@@ -629,7 +673,7 @@ Return a JSON array of strings only, without any other characters including \`\`
       return result
     }
 
-    const sections = ['version', 'basic', 'bym', 'llm', 'management', 'chaite', 'vision', 'memory']
+    const sections = ['version', 'basic', 'bym', 'llm', 'management', 'chaite', 'mcp', 'vision', 'memory']
     for (const key of sections) {
       const loadedValue = loadedConfig[key]
       if (loadedValue === undefined) {
@@ -679,6 +723,7 @@ Return a JSON array of strings only, without any other characters including \`\`
         llm: this.llm,
         management: this.management,
         chaite: this.chaite,
+        mcp: this.mcp,
         vision: this.vision,
         memory: this.memory
       }
@@ -702,6 +747,7 @@ Return a JSON array of strings only, without any other characters including \`\`
       llm: this.llm,
       management: this.management,
       chaite: this.chaite,
+      mcp: this.mcp,
       vision: this.vision,
       memory: this.memory
     }

@@ -259,7 +259,8 @@ export async function toYunzai (e, contents) {
   if (forward.length > 1) {
     const newForward = [await common.makeForwardMsg(e, forward, '多次思考过程')]
     return {
-      msgs: msgs.filter(i => !!i), newForward
+      msgs: msgs.filter(i => !!i),
+      forward: newForward
     }
   }
   return {

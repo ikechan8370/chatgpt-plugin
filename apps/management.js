@@ -5,6 +5,8 @@ import * as crypto from 'node:crypto'
 import * as os from 'node:os'
 import fetch from 'node-fetch'
 import common from '../../../lib/common/common.js'
+import { parseBooleanFlag } from '../utils/common.js'
+import { initMcpCompatibility } from '../utils/mcp/manager.js'
 
 export class ChatGPTManagement extends plugin {
   constructor () {
@@ -30,12 +32,22 @@ export class ChatGPTManagement extends plugin {
           permission: 'master'
         },
         {
+          reg: `^${cmdPrefix}(开启|关闭)(普通对话)?(思考|推理)(过程)?(转发|回显)$`,
+          fnc: 'toggleChatReasoningForward',
+          permission: 'master'
+        },
+        {
           reg: `^${cmdPrefix}(查看)?(当前)?(配置|信息|统计信息|状态)$`,
           fnc: 'currentStatus',
           permission: 'master'
         },
         {
-          reg: `^${cmdPrefix}确认MCP\s+[a-zA-Z0-9-]+$`,
+          reg: `^${cmdPrefix}(刷新|重载)(MCP|mcp)(工具)?$`,
+          fnc: 'refreshMcpTools',
+          permission: 'master'
+        },
+        {
+          reg: `^${cmdPrefix}确认MCP\\s+[a-zA-Z0-9-]+$`,
           fnc: 'confirmMcpDraft',
           permission: 'master'
         }
@@ -135,6 +147,16 @@ export class ChatGPTManagement extends plugin {
     }
   }
 
+  toggleChatReasoningForward (e) {
+    const enable = e.msg.includes('开启')
+    ChatGPTConfig.basic.sendReasoning = enable
+    if (typeof ChatGPTConfig.saveToFile === 'function') {
+      ChatGPTConfig.saveToFile('code')
+    }
+    logger.info(`[ChatGPT-Plugin] set basic.sendReasoning=${ChatGPTConfig.basic.sendReasoning} (type=${typeof ChatGPTConfig.basic.sendReasoning})`)
+    this.reply(`普通对话思考过程转发已${enable ? '开启' : '关闭'}`)
+  }
+
   async destroyConversation (e) {
     if (e.msg.includes('全部')) {
       if (!e.isMaster) {
@@ -197,6 +219,9 @@ export class ChatGPTManagement extends plugin {
     const defaultChatPresetId = ChatGPTConfig.llm.defaultChatPresetId
     const currentPreset = await Chaite.getInstance().getChatPresetManager().getInstance(defaultChatPresetId)
     msgs.push(`当前预设：${currentPreset?.name || '未设置'}${currentPreset ? ('\n\n' + currentPreset.toFormatedString(false)) : ''}`)
+    const chatReasoningEnabled = parseBooleanFlag(ChatGPTConfig.basic.sendReasoning, true)
+    const bymReasoningEnabled = parseBooleanFlag(ChatGPTConfig.bym.sendReasoning, false)
+    msgs.push(`普通对话思考过程转发：${chatReasoningEnabled ? '开启' : '关闭'}\n伪人思考过程转发：${bymReasoningEnabled ? '开启' : '关闭'}`)
 
     const allTools = await Chaite.getInstance().getToolsManager().listInstances()
     let toolsMsg = `工具总数：${allTools.length}\n`
@@ -216,6 +241,30 @@ export class ChatGPTManagement extends plugin {
 
     const m = await common.makeForwardMsg(e, msgs, e.msg)
     e.reply(m)
+  }
+
+  async refreshMcpTools (e) {
+    if (!ChatGPTConfig.mcp?.enable) {
+      await this.reply('MCP 未开启，请先在配置中启用 mcp.enable')
+      return false
+    }
+
+    const toolsManager = Chaite.getInstance().getToolsManager()
+    const before = await toolsManager.listInstances()
+
+    await this.reply('开始刷新 MCP 工具，请稍候...')
+    try {
+      await initMcpCompatibility(toolsManager)
+      const after = await toolsManager.listInstances()
+      const mcpPrefix = `${ChatGPTConfig.mcp?.toolNamePrefix || 'mcp'}_`
+      const mcpCount = after.filter(t => String(t?.name || '').startsWith(mcpPrefix)).length
+      await this.reply(`MCP 工具刷新完成\n工具总数：${before.length} -> ${after.length}\n桥接工具数：${mcpCount}`)
+      return true
+    } catch (err) {
+      logger.error('[MCP] 手动刷新工具失败:', err)
+      await this.reply(`MCP 工具刷新失败：${err?.message || err}`)
+      return false
+    }
   }
 }
 

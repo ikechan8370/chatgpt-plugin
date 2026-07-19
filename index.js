@@ -36,7 +36,13 @@ global.chatgpt = {
 
 }
 
-ChatGPTConfig.startSync('./plugins/chatgpt-plugin/data')
+// startSync returns proxied objects; bind them back so nested writes auto-persist
+const proxiedConfig = ChatGPTConfig.startSync('./plugins/chatgpt-plugin/data')
+for (const key of ['basic', 'bym', 'llm', 'management', 'chaite', 'mcp', 'memory']) {
+  if (proxiedConfig?.[key]) {
+    ChatGPTConfig[key] = proxiedConfig[key]
+  }
+}
 initChaite()
 logger.info('chatgpt-plugin加载成功')
 logger.info(`当前版本${ChatGPTConfig.version}`)

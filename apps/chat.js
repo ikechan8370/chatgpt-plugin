@@ -5,6 +5,7 @@ import { YunzaiUserState } from '../models/chaite/storage/lowdb/user_state_stora
 import { getGroupContextPrompt, buildGroupContextMessages, getGroupHistory } from '../utils/group.js'
 import { buildMemoryPrompt } from '../models/memory/prompt.js'
 import { extractTextFromUserMessage, processUserMemory } from '../models/memory/userMemoryManager.js'
+import { parseBooleanFlag } from '../utils/common.js'
 import { isVisualModelForSendOptions, visionService } from '../utils/vision.js'
 import * as crypto from 'node:crypto'
 import fetch from 'node-fetch'
@@ -64,8 +65,10 @@ export class Chat extends plugin {
       if (msgs.length > 0) {
         await e.reply(msgs)
       }
-      for (let forwardElement of forward) {
-        this.reply(forwardElement)
+      if (parseBooleanFlag(Config.basic.sendReasoning, true)) {
+        for (let forwardElement of forward) {
+          this.reply(forwardElement)
+        }
       }
     }
     const userMessage = await intoUserMessage(e, {
@@ -214,8 +217,7 @@ export class Chat extends plugin {
     if (msgs.length > 0) {
       await e.reply(msgs, true)
     }
-    // 与 bym 模式共用 sendReasoning 开关
-    if (Config.bym.sendReasoning) {
+    if (parseBooleanFlag(Config.bym.sendReasoning, true)) {
       for (let forwardElement of forward) {
         this.reply(forwardElement)
       }

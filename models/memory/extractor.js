@@ -13,6 +13,38 @@ function collectTextFromResponse (response) {
     .trim()
 }
 
+function stripJsonComments (text) {
+  // Character-based JSON comment stripper.
+  // Removes // line comments outside of JSON string values.
+  let result = ''
+  let inString = false
+  let i = 0
+  while (i < text.length) {
+    const ch = text[i]
+    if (inString) {
+      result += ch
+      if (ch === '\\') {
+        if (i + 1 < text.length) result += text[++i]
+      } else if (ch === '"') {
+        inString = false
+      }
+    } else {
+      if (ch === '\\') {
+        if (i + 1 < text.length) result += text[++i]
+      } else if (ch === '"') {
+        inString = true
+        result += ch
+      } else if (ch === '/' && text[i + 1] === '/') {
+        while (i < text.length && text[i] !== '\n') i++
+      } else {
+        result += ch
+      }
+    }
+    i++
+  }
+  return result
+}
+
 function parseJSON (text) {
   if (!text) {
     return null
@@ -23,8 +55,13 @@ function parseJSON (text) {
   try {
     return JSON.parse(payload)
   } catch (err) {
-    logger.warn('Failed to parse JSON from memory extractor response:', text)
-    return null
+    // Retry after stripping JSON comments (some models like DeepSeek-R1 add // comments)
+    try {
+      return JSON.parse(stripJsonComments(payload))
+    } catch (err2) {
+      logger.warn('Failed to parse JSON from memory extractor response:', text)
+      return null
+    }
   }
 }
 
@@ -222,15 +259,11 @@ async function callModel ({ prompt, systemPrompt, model, maxToken = 4096, temper
   }
   const resolvedModel = options.model
   const { client } = await getClientForModel(resolvedModel)
-  const response = await client.sendMessage({
-    role: 'user',
-    content: [
-      {
-        type: 'text',
-        text: prompt
-      }
-    ]
-  }, SendMessageOption.create({
+  // 记忆提取不需要工具调用，清空 client 上的工具列表，防止不支持 function calling 的模型报 400
+  client.tools = []
+  client.options.tools = []
+  client.options.builtinToolCategories = []
+  const smeOption = SendMessageOption.create({
     ...options,
     model: options.model,
     temperature: options.temperature ?? temperature,
@@ -238,8 +271,24 @@ async function callModel ({ prompt, systemPrompt, model, maxToken = 4096, temper
     systemOverride: systemPrompt ?? options.systemOverride,
     disableHistoryRead: true,
     disableHistorySave: true,
-    stream: false
-  }))
+    stream: false,
+    builtinToolCategories: []
+  })
+  const userMsg = {
+    role: 'user',
+    content: [
+      {
+        type: 'text',
+        text: prompt
+      }
+    ]
+  }
+  let response
+  try {
+    response = await client.sendMessage(userMsg, smeOption)
+  } catch (err) {
+    throw err
+  }
   return collectTextFromResponse(response)
 }
 
@@ -303,6 +352,10 @@ export async function extractGroupFacts (messages) {
     logger.debug('[Memory] group fact extraction returned non-array content')
     return []
   } catch (err) {
+    const detail = err?.error ?? err?.body ?? err?.response ?? err?.cause
+    if (detail) {
+      logger.error('Failed to extract group facts (API detail):', typeof detail === 'object' ? JSON.stringify(detail) : detail)
+    }
     logger.error('Failed to extract group facts:', err)
     return []
   }
@@ -352,6 +405,10 @@ export async function extractUserMemories (messages, existingMemories = []) {
     logger.debug('[Memory] user memory extraction returned non-array content')
     return []
   } catch (err) {
+    const detail = err?.error ?? err?.body ?? err?.response ?? err?.cause
+    if (detail) {
+      logger.error('Failed to extract user memories:', typeof detail === 'object' ? JSON.stringify(detail) : detail)
+    }
     logger.error('Failed to extract user memories:', err)
     return []
   }
