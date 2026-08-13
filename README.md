@@ -165,5 +165,5 @@ https://afdian.net/a/ikechan8370
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=ikechan8370/chatgpt-plugin&type=Date)](https://star-history.com/#ikechan8370/chatgpt-plugin&Date)
+[![Star History Chart](https://api.star-history.dera.page/svg?repos=ikechan8370/chatgpt-plugin&type=Date)](https://star-history.dera.page/#ikechan8370/chatgpt-plugin&Date)
 
