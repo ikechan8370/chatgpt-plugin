@@ -44,7 +44,7 @@ export class SQLiteChannelStorage extends ChaiteStorage {
         }
 
         // 创建Channel表，将主要属性分列存储
-        this.db.run(`CREATE TABLE IF NOT EXISTS ${this.tableName} (
+        this.db.run('CREATE TABLE IF NOT EXISTS ' + this.tableName + ` (
           id TEXT PRIMARY KEY,
           name TEXT NOT NULL,
           description TEXT,
@@ -73,13 +73,13 @@ export class SQLiteChannelStorage extends ChaiteStorage {
           const promises = [
             // 按类型和状态索引
             new Promise((resolve, reject) => {
-              this.db.run(`CREATE INDEX IF NOT EXISTS idx_${this.tableName}_type ON ${this.tableName} (type)`, err => {
+              this.db.run('CREATE INDEX IF NOT EXISTS idx_' + this.tableName + '_type ON ' + this.tableName + ' (type)', err => {
                 if (err) reject(err)
                 else resolve()
               })
             }),
             new Promise((resolve, reject) => {
-              this.db.run(`CREATE INDEX IF NOT EXISTS idx_${this.tableName}_status ON ${this.tableName} (status)`, err => {
+              this.db.run('CREATE INDEX IF NOT EXISTS idx_' + this.tableName + '_status ON ' + this.tableName + ' (status)', err => {
                 if (err) reject(err)
                 else resolve()
               })
@@ -231,7 +231,7 @@ export class SQLiteChannelStorage extends ChaiteStorage {
     await this.ensureInitialized()
 
     return new Promise((resolve, reject) => {
-      this.db.get(`SELECT * FROM ${this.tableName} WHERE id = ?`, [key], (err, row) => {
+      this.db.get('SELECT * FROM ' + this.tableName + ' WHERE id = ?', [key], (err, row) => {
         if (err) {
           return reject(err)
         }
@@ -273,7 +273,7 @@ export class SQLiteChannelStorage extends ChaiteStorage {
 
     return new Promise((resolve, reject) => {
       this.db.run(
-        `INSERT INTO ${this.tableName} (${fields.join(', ')})
+        'INSERT INTO ' + this.tableName + ' (' + fields.join(', ') + ')' + `
          VALUES (${placeholders})
          ON CONFLICT(id) DO UPDATE SET ${updates}`,
         [...values, ...duplicateValues],
@@ -296,7 +296,7 @@ export class SQLiteChannelStorage extends ChaiteStorage {
     await this.ensureInitialized()
 
     return new Promise((resolve, reject) => {
-      this.db.run(`DELETE FROM ${this.tableName} WHERE id = ?`, [key], (err) => {
+      this.db.run('DELETE FROM ' + this.tableName + ' WHERE id = ?', [key], (err) => {
         if (err) {
           return reject(err)
         }
@@ -313,7 +313,7 @@ export class SQLiteChannelStorage extends ChaiteStorage {
     await this.ensureInitialized()
 
     return new Promise((resolve, reject) => {
-      this.db.all(`SELECT * FROM ${this.tableName}`, (err, rows) => {
+      this.db.all('SELECT * FROM ' + this.tableName, (err, rows) => {
         if (err) {
           return reject(err)
         }
@@ -374,7 +374,7 @@ export class SQLiteChannelStorage extends ChaiteStorage {
     }
 
     // 构建SQL查询
-    let sql = `SELECT * FROM ${this.tableName}`
+    let sql = 'SELECT * FROM ' + this.tableName
     if (sqlFilters.length > 0) {
       sql += ` WHERE ${sqlFilters.join(' AND ')}`
     }
@@ -497,7 +497,7 @@ export class SQLiteChannelStorage extends ChaiteStorage {
     await this.ensureInitialized()
 
     return new Promise((resolve, reject) => {
-      this.db.run(`DELETE FROM ${this.tableName}`, (err) => {
+      this.db.run('DELETE FROM ' + this.tableName, (err) => {
         if (err) {
           return reject(err)
         }
