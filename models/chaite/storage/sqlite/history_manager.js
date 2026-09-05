@@ -3,6 +3,7 @@ import { openSQLiteDatabase } from './runtime.js'
 import path from 'path'
 import fs from 'fs'
 import crypto from 'crypto'
+import { isBase64Image } from './base64_image.js'
 
 export class SQLiteHistoryManager extends AbstractHistoryManager {
   /**
@@ -100,18 +101,7 @@ export class SQLiteHistoryManager extends AbstractHistoryManager {
    * @returns {boolean}
    */
   _isBase64Image (str) {
-    if (!str || typeof str !== 'string') {
-      return false
-    }
-
-    // 处理带前缀的 base64 格式
-    if (str.startsWith('data:image/')) {
-      return true
-    }
-
-    // 处理纯 base64 字符串
-    // base64 编码只会包含字母、数字、+、/，以及末尾可能有 = 或 == 用于填充
-    return /^[A-Za-z0-9+/]+={0,2}$/.test(str)
+    return isBase64Image(str)
   }
 
   /**
