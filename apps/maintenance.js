@@ -1,6 +1,5 @@
 import ChatGPTConfig from '../config/config.js'
-import { Chaite } from 'chaite'
-import { pruneHistoryByRetention, reportRetentionOpportunity, retentionPolicies, runHistoryMaintenance, vacuumDatabases } from '../models/chaite/historyRetention.js'
+import { pruneHistoryByRetention, retentionPolicies, runHistoryMaintenance, vacuumDatabases } from '../models/chaite/historyRetention.js'
 
 const MiB = 1024 * 1024
 
@@ -53,15 +52,9 @@ export class ChatGPTMaintenance extends plugin {
       fnc: this.maintenanceTask.bind(this),
       log: false
     }]
-
-    // 升级上来的实例提示一次可清理的历史，等 chaite 起来再查
-    const notify = async () => {
-      while (!Chaite.getInstance()) {
-        await new Promise(resolve => setTimeout(resolve, 1000))
-      }
-      await reportRetentionOpportunity()
-    }
-    notify().catch(err => logger.debug?.(`[History] retention notice failed: ${err.message}`))
+    // 注意：Yunzai 每收到一条消息都会 new 一次插件类（lib/plugins/loader.js
+    // 的 `new i.class(e)`），所以构造函数里不能放只该执行一次的逻辑。
+    // 升级提示放在 index.js 里，跟着 initChaite 走。
   }
 
   async maintenanceTask () {
