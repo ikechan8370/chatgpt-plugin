@@ -203,7 +203,8 @@ export class MemoryManager extends plugin {
       await e.reply('本群尚未开启记忆功能。')
       return false
     }
-    await collector.flush(e.group_id)
+    // 提取失败不该让查询命令整个挂掉，缓冲的消息会留到下一轮重试。
+    await collector.flush(e.group_id).catch(err => logger.warn('[Memory] flush before listing group memory failed:', err))
     const facts = await memoryService.listGroupFacts(e.group_id)
 
     if (!facts.length) {
@@ -234,7 +235,7 @@ export class MemoryManager extends plugin {
       await e.reply('仅限主人或群管理员管理群记忆。')
       return false
     }
-    await collector.flush(e.group_id)
+    await collector.flush(e.group_id).catch(err => logger.warn('[Memory] flush before deleting group memory failed:', err))
     const match = e.msg.match(/(\d+)$/)
     if (!match) {
       return false

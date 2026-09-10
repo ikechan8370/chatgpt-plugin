@@ -9,6 +9,8 @@ import { groupHistoryCursorStore } from './groupHistoryCursorStore.js'
 const DEFAULT_MAX_WINDOW = 300 // seconds
 const DEFAULT_HISTORY_BATCH = 120
 const MAX_RECENT_IDS = 200
+// 提取失败时消息会被放回缓冲区重试，这里兜底防止提取一直失败把缓冲区撑爆。
+const MAX_BUFFERED_MESSAGES = 1000
 
 function nowSeconds () {
   return Math.floor(Date.now() / 1000)
@@ -486,6 +488,11 @@ export class GroupMessageCollector {
     const config = this.groupConfig
     const minCount = config.minMessageCount || 50
     const maxWindow = config.maxMessageWindow || DEFAULT_MAX_WINDOW
+    // 上一轮提取失败后先等一个窗口再重试，否则缓冲区已经超过 minCount，
+    // 每来一条消息都会立刻再打一次接口。
+    if (buffer.retryAfter && nowSeconds() < buffer.retryAfter) {
+      return
+    }
     const shouldFlushByCount = buffer.messages.length >= minCount
     const shouldFlushByTime = buffer.messages.length > 0 && (nowSeconds() - buffer.lastFlushAt) >= maxWindow
     logger.debug(`[Memory] try trigger flush, group=${groupId}, count=${buffer.messages.length}, lastFlushAt=${buffer.lastFlushAt}, shouldFlushByCount=${shouldFlushByCount}, shouldFlushByTime=${shouldFlushByTime}`)
@@ -528,8 +535,8 @@ export class GroupMessageCollector {
       return
     }
     this.processing.add(groupId)
+    const messages = buffer.messages
     try {
-      const messages = buffer.messages
       this.buffers.set(groupId, {
         messages: [],
         lastFlushAt: nowSeconds()
@@ -574,9 +581,38 @@ export class GroupMessageCollector {
       })
       const saved = await memoryService.saveGroupFacts(groupId, enrichedFacts)
       logger.info(`[Memory] saved ${saved.length} group facts for group=${groupId}`)
+    } catch (err) {
+      // 缓冲区在调用提取之前就已经被换成空的了，而 groupHistoryCursorStore 的游标
+      // 也早就推过这批消息，所以这里直接丢掉的话它们就永久没了——接口抖一下就少
+      // 一整个窗口的群记忆。放回缓冲区等下一轮重试。
+      this.restoreBuffer(groupId, messages)
+      throw err
     } finally {
       this.processing.delete(groupId)
     }
+  }
+
+  /**
+   * 把提取失败的消息放回缓冲区头部，保持时间顺序，并设置重试冷却。
+   * @param {string} groupId
+   * @param {Array<*>} messages
+   */
+  restoreBuffer (groupId, messages) {
+    const config = this.groupConfig
+    const cooldown = config.maxMessageWindow || DEFAULT_MAX_WINDOW
+    const current = this.buffers.get(groupId)
+    const pending = current?.messages || []
+    const restored = [...messages, ...pending]
+    const dropped = Math.max(0, restored.length - MAX_BUFFERED_MESSAGES)
+    if (dropped > 0) {
+      logger.warn(`[Memory] group buffer overflow after failed extraction, dropping ${dropped} oldest message(s), group=${groupId}`)
+    }
+    this.buffers.set(groupId, {
+      messages: restored.slice(-MAX_BUFFERED_MESSAGES),
+      lastFlushAt: nowSeconds(),
+      retryAfter: nowSeconds() + cooldown
+    })
+    logger.warn(`[Memory] restored ${messages.length} message(s) to group buffer after failed extraction, group=${groupId}, retry in ${cooldown}s`)
   }
 
   addSelfId (uin) {
