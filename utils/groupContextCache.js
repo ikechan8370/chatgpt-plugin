@@ -3,6 +3,7 @@ import path from 'path'
 import * as crypto from 'node:crypto'
 import { visionService } from './vision.js'
 import { dataDir, formatTimeToBeiJing } from './common.js'
+import { groupHeaderTemplateValues, groupMessageTemplateValues, renderTemplate } from './template.js'
 
 class GroupContextCache {
   constructor () {
@@ -30,6 +31,11 @@ class GroupContextCache {
           resolve()
         })
       })
+    // 失败时清掉缓存的 promise，否则一次偶发的建表失败会让群聊上下文缓存
+    // 到重启为止都用不了。
+    }).catch(err => {
+      this._initPromise = null
+      throw err
     })
     return this._initPromise
   }
@@ -233,7 +239,6 @@ async function buildImageInfos (chat, options = {}) {
  * @returns {Promise<{id: string, text: string, images: Array<{url: string}>}>}
  */
 export async function formatChatMessage (chat, templates, options = {}) {
-  const sender = chat.sender || {}
   const id = getMessageId(chat)
   let rawMessage = chat.raw_message || '-'
   const images = await buildImageInfos(chat, { cacheImage: !options.includeImages })
@@ -241,15 +246,14 @@ export async function formatChatMessage (chat, templates, options = {}) {
     rawMessage = `${rawMessage} ${images.map(imageRefText).join(' ')}`
   }
 
-  const text = templates.groupContextTemplateMessage
-    .replace('${message.sender.card}', sender.card || '-')
-    .replace('${message.sender.nickname}', sender.nickname || '-')
-    .replace('${message.sender.user_id}', sender.user_id || '-')
-    .replace('${message.sender.role}', sender.role || '-')
-    .replace('${message.sender.title}', sender.title || '-')
-    .replace('${message.time}', chat.time ? formatTimeToBeiJing(chat.time) : '-')
-    .replace('${message.messageId}', id || '-')
-    .replace('${message.raw_message}', rawMessage)
+  const text = renderTemplate(
+    templates.groupContextTemplateMessage,
+    groupMessageTemplateValues(chat, {
+      messageId: id,
+      rawMessage,
+      time: chat.time ? formatTimeToBeiJing(chat.time) : '-'
+    })
+  )
 
   return { id, text, images }
 }
@@ -294,9 +298,10 @@ export async function buildGroupContextMessages (e, length, templates, getHistor
     return { header: '', messages: [] }
   }
 
-  const header = groupContextTemplatePrefix
-    .replace('${group.group_id}', groupId)
-    .replace('${group.name}', e.group?.name || e.group_name || 'unknown')
+  const header = renderTemplate(
+    groupContextTemplatePrefix,
+    groupHeaderTemplateValues(groupId, e.group?.name || e.group_name || 'unknown')
+  )
 
   let allMessages
   if (!snapshot || snapshot.length === 0) {

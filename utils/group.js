@@ -1,6 +1,7 @@
 import { getBotFramework } from './bot.js'
 import ChatGPTConfig from '../config/config.js'
 import { formatTimeToBeiJing } from './common.js'
+import { groupHeaderTemplateValues, groupMessageTemplateValues, renderTemplate } from './template.js'
 export { buildGroupContextMessages } from './groupContextCache.js'
 
 export class GroupContextCollector {
@@ -126,32 +127,22 @@ export async function getGroupContextPrompt (e, length) {
   const chats = await getGroupHistory(e, length)
   const rows = chats
     .filter(chat => chat)
-    .map(chat => {
-      const sender = chat.sender || {}
-      return groupContextTemplateMessage
-      // eslint-disable-next-line no-template-curly-in-string
-        .replace('${message.sender.card}', sender.card || '-')
-      // eslint-disable-next-line no-template-curly-in-string
-        .replace('${message.sender.nickname}', sender.nickname || '-')
-      // eslint-disable-next-line no-template-curly-in-string
-        .replace('${message.sender.user_id}', sender.user_id || '-')
-      // eslint-disable-next-line no-template-curly-in-string
-        .replace('${message.sender.role}', sender.role || '-')
-      // eslint-disable-next-line no-template-curly-in-string
-        .replace('${message.sender.title}', sender.title || '-')
-      // eslint-disable-next-line no-template-curly-in-string
-        .replace('${message.time}', chat.time ? formatTimeToBeiJing(chat.time) : '-')
-      // eslint-disable-next-line no-template-curly-in-string
-        .replace('${message.messageId}', chat.messageId || '-')
-      // eslint-disable-next-line no-template-curly-in-string
-        .replace('${message.raw_message}', chat.raw_message || '-')
-    }).join('\n')
+    .map(chat => renderTemplate(
+      groupContextTemplateMessage,
+      groupMessageTemplateValues(chat, {
+        messageId: chat.messageId,
+        rawMessage: chat.raw_message,
+        time: chat.time ? formatTimeToBeiJing(chat.time) : '-'
+      })
+    )).join('\n')
   return [
-    groupContextTemplatePrefix
-      // eslint-disable-next-line no-template-curly-in-string
-      .replace('${group.group_id}', e.group.group_id || e.group_id || 'unknown')
-      // eslint-disable-next-line no-template-curly-in-string
-      .replace('${group.name}', e.group.name || e.group_name || 'unknown'),
+    renderTemplate(
+      groupContextTemplatePrefix,
+      groupHeaderTemplateValues(
+        e.group?.group_id || e.group_id || 'unknown',
+        e.group?.name || e.group_name || 'unknown'
+      )
+    ),
     rows,
     groupContextTemplateSuffix
   ].join('\n')

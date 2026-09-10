@@ -13,6 +13,12 @@ const IMAGES_DIR = path.join(dataDir, 'images')
 const IMAGE_REFS_PATH = path.join(IMAGES_DIR, 'refs.json')
 const TOOL_ASSET_MANIFEST = path.join(dataDir, 'tool-image-assets.json')
 const DEFAULT_TOOL_ASSET_TTL = 7 * 24 * 60 * 60 * 1000
+// refs 只在对应缓存文件被清理时才会被删除，而群聊上下文里没落盘的图片（视觉模型
+// 走的分支）压根没有文件，永远不会被回收。加一个硬上限兜底，避免 refs.json 无限
+// 增长——默认保留策略是 forever，否则这个表会一直涨下去。
+const MAX_REF_ENTRIES = 50000
+const REF_PRUNE_TARGET = Math.floor(MAX_REF_ENTRIES * 0.9)
+const REFS_SAVE_DEBOUNCE_MS = 1000
 let assetManifestLock = Promise.resolve()
 
 function withAssetManifestLock (fn) {
@@ -44,11 +50,19 @@ class VisionService {
     }
     this.refs = this._loadRefs()
     this.cleanupTimer = null
+    this._refsDirty = false
+    this._refsSaveTimer = null
+    // 进程退出前把还没落盘的 refs 写掉，避免丢失最近的图片来源信息。
+    process.once('exit', () => this._flushRefs())
   }
 
   cleanupExpiredImages () {
     const retentionMs = resolveImageRetentionMs(ChatGPTConfig.vision)
     if (retentionMs <= 0) return { deleted: 0, bytesFreed: 0, refsRemoved: 0 }
+
+    // 清理逻辑是直接读写 refs.json 的，先把内存里挂起的改动落盘再交给它，
+    // 否则接下来的 _loadRefs() 会把这些改动丢掉。
+    this._flushRefs()
 
     const result = cleanupExpiredImageCache({
       imagesDir: IMAGES_DIR,
@@ -91,12 +105,53 @@ class VisionService {
     }
   }
 
-  _saveRefs () {
+  /**
+   * 立即把 refs 写盘。写临时文件再 rename，避免进程中途挂掉留下半个 JSON。
+   */
+  _flushRefs () {
+    if (this._refsSaveTimer) {
+      clearTimeout(this._refsSaveTimer)
+      this._refsSaveTimer = null
+    }
+    if (!this._refsDirty) return
+    this._refsDirty = false
     try {
-      fs.writeFileSync(IMAGE_REFS_PATH, JSON.stringify(this.refs, null, 2))
+      const tempPath = `${IMAGE_REFS_PATH}.tmp`
+      fs.writeFileSync(tempPath, JSON.stringify(this.refs, null, 2))
+      fs.renameSync(tempPath, IMAGE_REFS_PATH)
     } catch (err) {
       logger.warn(`[Vision] failed to save image refs: ${err.message}`)
     }
+  }
+
+  /**
+   * 合并写盘。rememberImageSource 在群聊上下文里是每条消息每张图都要调一次的，
+   * 以前每次都同步全量重写 refs.json，文件越大越卡，而且是卡在事件循环上。
+   */
+  _saveRefs () {
+    this._refsDirty = true
+    if (this._refsSaveTimer) return
+    this._refsSaveTimer = setTimeout(() => {
+      this._refsSaveTimer = null
+      this._flushRefs()
+    }, REFS_SAVE_DEBOUNCE_MS)
+    this._refsSaveTimer.unref?.()
+  }
+
+  /**
+   * refs 超过上限时按 updatedAt 淘汰最旧的。被淘汰的条目如果磁盘上还有缓存文件，
+   * loadImage / resolveImageRef 仍然能通过文件名找回图片，只是少了 url 元信息。
+   */
+  _pruneRefs () {
+    const keys = Object.keys(this.refs)
+    if (keys.length <= MAX_REF_ENTRIES) return 0
+    keys.sort((a, b) => (Number(this.refs[a]?.updatedAt) || 0) - (Number(this.refs[b]?.updatedAt) || 0))
+    const excess = keys.length - REF_PRUNE_TARGET
+    for (let i = 0; i < excess; i++) {
+      delete this.refs[keys[i]]
+    }
+    logger.info(`[Vision] pruned ${excess} least recently used image ref(s), kept ${Object.keys(this.refs).length}`)
+    return excess
   }
 
   rememberImageSource (ref, source = {}) {
@@ -111,6 +166,7 @@ class VisionService {
       ref,
       updatedAt: Date.now()
     }
+    this._pruneRefs()
     this._saveRefs()
   }
 
@@ -315,6 +371,9 @@ class VisionService {
     for (const ext of ['.jpg', '.png', '.gif', '.webp']) {
       const filePath = path.join(IMAGES_DIR, `${ref}${ext}`)
       if (fs.existsSync(filePath)) {
+        // 文件内容是不可变的（文件名就是内容的 md5），已经算过就别再整file读一遍。
+        const cached = this.refs[ref]?.imageId
+        if (cached) return cached
         return crypto.createHash('md5').update(fs.readFileSync(filePath)).digest('hex')
       }
     }
