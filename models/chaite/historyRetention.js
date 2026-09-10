@@ -92,6 +92,42 @@ export async function pruneHistoryByRetention (options = {}) {
 }
 
 /**
+ * 从旧版本升级上来时，保留期是被强制关掉的（见 config.js 的 retentionUpgradeNotice）。
+ * 这里在启动时提示一次：报出真实的行数和占用，让主人自己决定要不要开。
+ *
+ * 只在真的有可观的数据量时才提示，免得对着一个几乎空的库刷屏。
+ */
+export async function reportRetentionOpportunity () {
+  if (!ChatGPTConfig.retentionUpgradeNotice) return
+  ChatGPTConfig.retentionUpgradeNotice = false
+
+  const historyManager = Chaite.getInstance()?.getHistoryManager?.()
+  if (typeof historyManager?.countHistoryBefore !== 'function') return
+
+  try {
+    const before = cutoffFor(30)
+    const [bymRows, allRows] = await Promise.all([
+      historyManager.countHistoryBefore({ before, conversationPrefix: BYM_CONVERSATION_PREFIX }),
+      historyManager.countHistoryBefore({ before })
+    ])
+    if (bymRows + allRows < 10000) return
+
+    const prefix = ChatGPTConfig.basic?.commandPrefix || '#chatgpt'
+    logger.warn('='.repeat(62))
+    logger.warn('[ChatGPT-Plugin] 检测到可清理的历史记录')
+    logger.warn(`  超过 30 天的伪人会话记录：${bymRows} 条（全部会话：${allRows} 条）`)
+    logger.warn('  伪人每次发言都会把当次群聊上下文写进历史表用于审计，这张表默认只增不减。')
+    logger.warn('  为避免升级时误删你的历史，保留期目前是关闭的。如需自动清理，请在配置中设置：')
+    logger.warn('    bym.historyRetentionDays = 30   （伪人历史保留天数，0 为永久）')
+    logger.warn('    chaite.autoVacuum = true        （清理后回收磁盘空间）')
+    logger.warn(`  开启前可先用 ${prefix}历史统计 查看会清理多少，用 ${prefix}清理历史 手动执行一次。`)
+    logger.warn('='.repeat(62))
+  } catch (err) {
+    logger.debug?.(`[History] retention opportunity check failed: ${err.message}`)
+  }
+}
+
+/**
  * 回收删除后留下的磁盘空间。
  *
  * @param {{force?: boolean}} [options] force 时忽略空闲页阈值，用于手动命令

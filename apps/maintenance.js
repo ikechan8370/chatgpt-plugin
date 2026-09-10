@@ -1,5 +1,6 @@
 import ChatGPTConfig from '../config/config.js'
-import { pruneHistoryByRetention, retentionPolicies, runHistoryMaintenance, vacuumDatabases } from '../models/chaite/historyRetention.js'
+import { Chaite } from 'chaite'
+import { pruneHistoryByRetention, reportRetentionOpportunity, retentionPolicies, runHistoryMaintenance, vacuumDatabases } from '../models/chaite/historyRetention.js'
 
 const MiB = 1024 * 1024
 
@@ -52,6 +53,15 @@ export class ChatGPTMaintenance extends plugin {
       fnc: this.maintenanceTask.bind(this),
       log: false
     }]
+
+    // 升级上来的实例提示一次可清理的历史，等 chaite 起来再查
+    const notify = async () => {
+      while (!Chaite.getInstance()) {
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      }
+      await reportRetentionOpportunity()
+    }
+    notify().catch(err => logger.debug?.(`[History] retention notice failed: ${err.message}`))
   }
 
   async maintenanceTask () {

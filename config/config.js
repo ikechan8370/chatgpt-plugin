@@ -72,14 +72,14 @@ class ChatGPTConfig {
     temperature: -1,
     // 是否发送思考内容
     sendReasoning: false,
-    // 伪人对话历史的保留天数，0 表示永久保留（默认）。
+    // 伪人对话历史的保留天数，0 表示永久保留。
     // 伪人每次发言都会新建一个会话，并把当次的群聊上下文写进历史表用于审计，
     // 默认配置下一次约 22 行。不设保留期的话这张表只增不减（实测一年约 1.6M 行 /
     // 0.7 GiB）。这里只影响伪人产生的会话，正常对话历史不受影响。
     //
-    // 默认为 0 是刻意的：删除不可逆，升级插件不该悄悄开始删用户的历史。
-    // 想开启前建议先用 #chatgpt历史统计 看看会删掉多少。
-    historyRetentionDays: 0
+    // 全新安装默认 30 天；从旧版本升级上来的会保持 0（不删任何东西），
+    // 只在启动时提示一次，由主人自己决定要不要开。
+    historyRetentionDays: 30
   }
 
   /**
@@ -226,9 +226,9 @@ class ChatGPTConfig {
     // （incremental_vacuum 在 WAL 下几乎无效，实测过）。
     // VACUUM 很快——417 MiB 的历史库实测 1.0s——但会重写整个文件、期间独占写锁，
     // 并临时需要约等于库大小的额外磁盘空间。空闲页不够多时会自动跳过。
-    // 默认关闭：重写整个数据库这种事应该由主人自己决定何时开始，
-    // 也可以随时用 #chatgpt整理数据库 手动执行一次。
-    autoVacuum: false,
+    // 与 bym.historyRetentionDays 一样：全新安装默认开，升级上来的保持关闭。
+    // 任何时候都可以用 #chatgpt整理数据库 手动执行一次。
+    autoVacuum: true,
     // 空闲页少于这个数就不做 VACUUM，避免每天为了几 MiB 重写整个库。
     // 默认 20000 页 ≈ 80 MiB（页大小 4KiB）
     autoVacuumMinFreePages: 20000
@@ -453,6 +453,8 @@ Return a JSON array of strings only, without any other characters including \`\`
     } else if (fs.existsSync(yamlPath)) {
       this.configPath = yamlPath
     } else {
+      // 没有配置文件 = 全新安装，保留期之类的默认值直接生效
+      this.isFreshInstall = true
       this.configPath = jsonPath
       this.saveToFile()
     }
@@ -691,6 +693,17 @@ Return a JSON array of strings only, without any other characters including \`\`
         }
         this[key] = loadedValue
       }
+    }
+
+    // 旧版本的配置文件里没有保留期相关的键。这时候不能直接套用新的默认值——
+    // 那等于"升级插件"就开始删用户攒了很久的审计历史。保持关闭，写回配置文件
+    // （这样只会判定一次），并打个标记让启动时提示一次。
+    // 全新安装没有配置文件，走不到这里，默认值直接生效。
+    if (!this.isFreshInstall && loadedConfig.bym?.historyRetentionDays === undefined) {
+      this.bym.historyRetentionDays = 0
+      this.chaite.autoVacuum = false
+      this.retentionUpgradeNotice = true
+      changed = true
     }
 
     return { changed }
