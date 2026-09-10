@@ -72,11 +72,14 @@ class ChatGPTConfig {
     temperature: -1,
     // 是否发送思考内容
     sendReasoning: false,
-    // 伪人对话历史的保留天数，0 表示永久保留。
+    // 伪人对话历史的保留天数，0 表示永久保留（默认）。
     // 伪人每次发言都会新建一个会话，并把当次的群聊上下文写进历史表用于审计，
     // 默认配置下一次约 22 行。不设保留期的话这张表只增不减（实测一年约 1.6M 行 /
     // 0.7 GiB）。这里只影响伪人产生的会话，正常对话历史不受影响。
-    historyRetentionDays: 90
+    //
+    // 默认为 0 是刻意的：删除不可逆，升级插件不该悄悄开始删用户的历史。
+    // 想开启前建议先用 #chatgpt历史统计 看看会删掉多少。
+    historyRetentionDays: 0
   }
 
   /**
@@ -223,7 +226,9 @@ class ChatGPTConfig {
     // （incremental_vacuum 在 WAL 下几乎无效，实测过）。
     // VACUUM 很快——417 MiB 的历史库实测 1.0s——但会重写整个文件、期间独占写锁，
     // 并临时需要约等于库大小的额外磁盘空间。空闲页不够多时会自动跳过。
-    autoVacuum: true,
+    // 默认关闭：重写整个数据库这种事应该由主人自己决定何时开始，
+    // 也可以随时用 #chatgpt整理数据库 手动执行一次。
+    autoVacuum: false,
     // 空闲页少于这个数就不做 VACUUM，避免每天为了几 MiB 重写整个库。
     // 默认 20000 页 ≈ 80 MiB（页大小 4KiB）
     autoVacuumMinFreePages: 20000
