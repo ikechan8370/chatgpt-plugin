@@ -1,4 +1,5 @@
 import { ChaiteStorage, ChatPreset } from 'chaite'
+import { invalidatePresetPrefixIndex } from '../../../../utils/presetCache.js'
 
 /**
  * @extends {ChaiteStorage<import('chaite').ChatPreset>}
@@ -38,6 +39,8 @@ export class LowDBChatPresetsStorage extends ChaiteStorage {
    * @returns {Promise<string>}
    */
   async setItem (id, preset) {
+    // 预设前缀变了要让缓存的索引失效，否则改完预设最长要等一个 TTL 才生效
+    invalidatePresetPrefixIndex()
     if (id && await this.getItem(id)) {
       await this.collection.updateById(id, preset)
       return id
@@ -52,6 +55,7 @@ export class LowDBChatPresetsStorage extends ChaiteStorage {
    * @returns {Promise<void>}
    */
   async removeItem (key) {
+    invalidatePresetPrefixIndex()
     await this.collection.deleteById(key)
   }
 

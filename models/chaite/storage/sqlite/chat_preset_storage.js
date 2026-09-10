@@ -3,6 +3,7 @@ import { openSQLiteDatabase } from './runtime.js'
 import path from 'path'
 import fs from 'fs'
 import { generateId } from '../../../../utils/common.js'
+import { invalidatePresetPrefixIndex } from '../../../../utils/presetCache.js'
 
 /**
  * @extends {ChaiteStorage<import('chaite').ChatPreset>}
@@ -253,6 +254,8 @@ export class SQLiteChatPresetStorage extends ChaiteStorage {
           if (err) {
             return reject(err)
           }
+          // 预设前缀变了要让缓存的索引失效，否则改完预设最长要等一个 TTL 才生效
+          invalidatePresetPrefixIndex()
           resolve(id)
         }
       )
@@ -272,6 +275,7 @@ export class SQLiteChatPresetStorage extends ChaiteStorage {
         if (err) {
           return reject(err)
         }
+        invalidatePresetPrefixIndex()
         resolve()
       })
     })

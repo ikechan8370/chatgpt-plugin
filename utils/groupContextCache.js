@@ -4,6 +4,13 @@ import * as crypto from 'node:crypto'
 import { visionService } from './vision.js'
 import { dataDir, formatTimeToBeiJing } from './common.js'
 import { groupHeaderTemplateValues, groupMessageTemplateValues, renderTemplate } from './template.js'
+import { mapWithConcurrency } from './concurrency.js'
+import ChatGPTConfig from '../config/config.js'
+import fetch from 'node-fetch'
+
+function imageFetchConcurrency () {
+  return ChatGPTConfig.llm?.imageFetchConcurrency || 6
+}
 
 class GroupContextCache {
   constructor () {
@@ -193,14 +200,14 @@ function extractImageFingerprint (elem, url) {
 }
 
 async function buildImageInfos (chat, options = {}) {
-  const images = []
   if (!Array.isArray(chat.message)) {
     if (chat.raw_message?.includes('[\u56fe\u7247]') || chat.raw_message?.includes('[\u52a8\u753b\u8868\u60c5]')) {
       logger.debug(`[GroupContext] raw_message contains image marker but chat.message is not iterable: ${typeof chat.message}, isArray: ${Array.isArray(chat.message)}`)
     }
-    return images
+    return []
   }
 
+  const candidates = []
   for (let i = 0; i < chat.message.length; i++) {
     const elem = chat.message[i]
     if (!isImageLikeElem(elem)) continue
@@ -209,8 +216,12 @@ async function buildImageInfos (chat, options = {}) {
       logger.debug(`[GroupContext] found image-like message but cannot extract URL: type=${elem.type}, keys=${JSON.stringify(Object.keys(elem))}, dataKeys=${elem.data ? JSON.stringify(Object.keys(elem.data)) : 'no data'}`)
       continue
     }
+    candidates.push({ elem, url, ref: stableImageRef(chat, elem, i) })
+  }
+  if (candidates.length === 0) return []
 
-    const ref = stableImageRef(chat, elem, i)
+  // \u540c\u4e00\u6761\u6d88\u606f\u91cc\u7684\u591a\u5f20\u56fe\u5e76\u53d1\u4e0b\u8f7d\uff0c\u987a\u5e8f\u7531 mapWithConcurrency \u4fdd\u8bc1
+  const results = await mapWithConcurrency(candidates, imageFetchConcurrency(), async ({ elem, url, ref }) => {
     let imageId = extractImageFingerprint(elem, url)
     try {
       const cachedImageId = visionService.getImageContentId(ref)
@@ -221,12 +232,13 @@ async function buildImageInfos (chat, options = {}) {
         imageId = saved.imageId || imageId
       }
       visionService.rememberImageSource(ref, { url, imageId })
-      images.push({ ref, url, imageId })
+      return { ref, url, imageId }
     } catch (err) {
       logger.warn(`[GroupContext] failed to save history image ref from ${url}: ${err.message}`)
+      return null
     }
-  }
-  return images
+  })
+  return results.filter(Boolean)
 }
 
 /**
@@ -259,6 +271,40 @@ export async function formatChatMessage (chat, templates, options = {}) {
 }
 
 /**
+ * 把一批群聊上下文消息里的图片取成可直接塞进 prompt 的 base64 内容。
+ * 优先用本地缓存，缺失的才去下载，多张图之间并发。
+ *
+ * @param {Array<{images?: Array<{ref: string, url: string}>}>} messages
+ * @returns {Promise<Array<{type: 'image', image: string, mimeType: string, ref: string}>>}
+ */
+export async function loadGroupContextImages (messages) {
+  const images = (messages || []).flatMap(message => message.images || [])
+  if (images.length === 0) return []
+
+  const loaded = await mapWithConcurrency(images, imageFetchConcurrency(), async img => {
+    try {
+      const cached = visionService.loadImage(img.ref)
+      if (cached) {
+        return { type: 'image', image: cached.base64, mimeType: cached.mimeType, ref: img.ref }
+      }
+      const res = await fetch(img.url)
+      if (!res.ok) {
+        logger.warn(`[GroupContext] 获取图片失败 ${img.url}: ${res.status}`)
+        return null
+      }
+      const mimeType = res.headers.get('content-type') || 'image/jpeg'
+      const buffer = Buffer.from(await res.arrayBuffer())
+      const saved = visionService.saveImageFromBuffer(buffer, mimeType, img.ref, { url: img.url })
+      return { type: 'image', image: buffer.toString('base64'), mimeType: saved.mimeType, ref: img.ref }
+    } catch (err) {
+      logger.warn(`[GroupContext] 获取图片异常 ${img.url}: ${err.message}`)
+      return null
+    }
+  })
+  return loaded.filter(Boolean)
+}
+
+/**
  * Build aligned group context messages for better prompt-cache reuse.
  *
  * @param {*} e event
@@ -277,21 +323,24 @@ export async function buildGroupContextMessages (e, length, templates, getHistor
   const snapshot = await groupContextCache.getSnapshot(groupId)
   const snapshotById = new Map((snapshot || []).map(m => [m.id, m]))
 
-  const newMessages = []
-  for (const chat of chats.filter(chat => chat)) {
-    const id = getMessageId(chat)
-    const cached = snapshotById.get(id)
-    const hasImage = chatHasImageLikeElem(chat)
-    const shouldAttachImages = includeImages && hasImage
-    const shouldUpgradeRefs = !includeImages && hasImage && !hasImageRefText(cached)
-    if (cached && !shouldAttachImages && !shouldUpgradeRefs) {
-      newMessages.push({ ...cached, images: [] })
-      continue
+  // 命中快照的消息不用重新格式化；剩下的要下载图片，彼此独立，可以并发。
+  // 顺序由 mapWithConcurrency 保证，快照对齐依赖它。
+  const formatted = await mapWithConcurrency(
+    chats.filter(chat => chat),
+    imageFetchConcurrency(),
+    async chat => {
+      const id = getMessageId(chat)
+      const cached = snapshotById.get(id)
+      const hasImage = chatHasImageLikeElem(chat)
+      const shouldAttachImages = includeImages && hasImage
+      const shouldUpgradeRefs = !includeImages && hasImage && !hasImageRefText(cached)
+      if (cached && !shouldAttachImages && !shouldUpgradeRefs) {
+        return { ...cached, images: [] }
+      }
+      return await formatChatMessage(chat, templates, { includeImages })
     }
-
-    const formatted = await formatChatMessage(chat, templates, { includeImages })
-    if (formatted.id) newMessages.push(formatted)
-  }
+  )
+  const newMessages = formatted.filter(message => message?.id)
 
   if (newMessages.length === 0) {
     logger.debug(`[GroupContext] received ${chats?.length || 0} chats but no formatted messages; check messageId/seq compatibility`)

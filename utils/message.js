@@ -2,6 +2,9 @@ import { Chaite } from 'chaite'
 import common from '../../../lib/common/common.js'
 import fetch from 'node-fetch'
 import { visionService } from './vision.js'
+import { getPresetPrefixIndex } from './presetCache.js'
+import { mapWithConcurrency } from './concurrency.js'
+import ChatGPTConfig from '../config/config.js'
 
 function imageRefText (ref) {
   return `[\u56fe\u7247 ref:${ref}]`
@@ -48,6 +51,20 @@ export async function intoUserMessage (e, options = {}) {
   const contents = []
   const imageRefs = []
   let text = ''
+  const imageConcurrency = ChatGPTConfig.llm?.imageFetchConcurrency || 6
+
+  // 下载并落盘一张图片，失败返回 null。多张图之间并发执行。
+  const fetchImageContent = async url => {
+    const res = await fetch(url)
+    if (!res.ok) {
+      logger.warn(`fetch image ${url} failed: ${res.status}`)
+      return null
+    }
+    const mimeType = res.headers.get('content-type') || 'image/jpeg'
+    const buffer = Buffer.from(await res.arrayBuffer())
+    const { ref } = visionService.saveImageFromBuffer(buffer, mimeType, '', { url })
+    return { type: 'image', image: buffer.toString('base64'), mimeType, ref }
+  }
   if ((e.source || e.reply_id) && (handleReplyImage || handleReplyText || handleReplyFile)) {
     let seq = e.isGroup ? (e.source?.seq || e.reply_id) : (e.source?.time || e.source?.time)
     let reply
@@ -59,25 +76,23 @@ export async function intoUserMessage (e, options = {}) {
         : (await e.friend.getChatHistory(seq, 1)).pop()?.message
     }
     if (reply) {
+      // 图片先收集起来并发下载，文本/文件仍按原顺序处理
+      const replyImageUrls = handleReplyImage
+        ? reply.filter(val => val.type === 'image').map(val => val.url)
+        : []
+      const replyImages = await mapWithConcurrency(replyImageUrls, imageConcurrency, url =>
+        fetchImageContent(url).catch(err => {
+          logger.warn(`fetch image ${url} failed: ${err.message}`)
+          return null
+        })
+      )
+      for (const image of replyImages) {
+        if (!image) continue
+        contents.push(image)
+        imageRefs.push(image.ref)
+      }
       for (let val of reply) {
-        if (val.type === 'image' && handleReplyImage) {
-          const res = await fetch(val.url)
-          if (res.ok) {
-            const mimeType = res.headers.get('content-type') || 'image/jpeg'
-            const buffer = Buffer.from(await res.arrayBuffer())
-            const base64 = buffer.toString('base64')
-            const { ref } = visionService.saveImageFromBuffer(buffer, mimeType, '', { url: val.url })
-            contents.push({
-              type: 'image',
-              image: base64,
-              mimeType,
-              ref
-            })
-            imageRefs.push(ref)
-          } else {
-            logger.warn(`fetch image ${val.url} failed: ${res.status}`)
-          }
-        } else if (val.type === 'text' && handleReplyText) {
+        if (val.type === 'text' && handleReplyText) {
           text = `本条消息对以下消息进行了引用回复：${val.text}\n\n本条消息内容：\n`
         } else if (val.type === 'file' && handleReplyFile) {
           let fileUrl = '获取失败'
@@ -114,23 +129,17 @@ export async function intoUserMessage (e, options = {}) {
       }
     }
   }
-  for (let element of e.message?.filter(element => element.type === 'image')) {
-    const res = await fetch(element.url)
-    if (res.ok) {
-      const mimeType = res.headers.get('content-type') || 'image/jpeg'
-      const buffer = Buffer.from(await res.arrayBuffer())
-      const base64 = buffer.toString('base64')
-      const { ref } = visionService.saveImageFromBuffer(buffer, mimeType, '', { url: element.url })
-      contents.push({
-        type: 'image',
-        image: base64,
-        mimeType,
-        ref
-      })
-      imageRefs.push(ref)
-    } else {
-      logger.warn(`fetch image ${element.url} failed: ${res.status}`)
-    }
+  const messageImageUrls = (e.message || []).filter(element => element.type === 'image').map(element => element.url)
+  const messageImages = await mapWithConcurrency(messageImageUrls, imageConcurrency, url =>
+    fetchImageContent(url).catch(err => {
+      logger.warn(`fetch image ${url} failed: ${err.message}`)
+      return null
+    })
+  )
+  for (const image of messageImages) {
+    if (!image) continue
+    contents.push(image)
+    imageRefs.push(image.ref)
   }
 
   if (toggleMode === 'prefix') {
@@ -165,29 +174,27 @@ export async function intoUserMessage (e, options = {}) {
 export async function getPreset (e, presetId, toggleMode, togglePrefix) {
   const isValidChat = checkChatMsg(e, toggleMode, togglePrefix)
   const manager = Chaite.getInstance().getChatPresetManager()
-  const presets = await manager.getAllPresets()
-  const prefixHitPresets = presets.filter(p => e.msg?.startsWith(p.prefix))
-  if (!isValidChat && prefixHitPresets.length === 0) {
+
+  // 命中 at / 通用前缀时直接走用户默认预设，前缀匹配的结果根本用不上，
+  // 没必要为此把整张预设表读出来反序列化一遍。
+  if (isValidChat) {
+    return await manager.getInstance(presetId)
+  }
+
+  // 不是发给机器人的消息也会走到这里（每条群消息都会），所以只查前缀索引，
+  // 命中之后再按 id 取那一条预设。
+  const prefixIndex = await getPresetPrefixIndex(manager)
+  const prefixHits = prefixIndex.filter(entry => e.msg?.startsWith(entry.prefix))
+  if (prefixHits.length === 0) {
     return null
   }
-  let preset
-  // 如果不是at且不满足通用前缀，查看是否满足其他预设
-  if (!isValidChat) {
-    // 找到其中prefix最长的
-    if (prefixHitPresets.length > 1) {
-      preset = prefixHitPresets.sort((a, b) => b.prefix.length - a.prefix.length)[0]
-    } else {
-      preset = prefixHitPresets[0]
-    }
-  } else {
-    // 命中at或通用前缀，直接走用户默认预设
-    preset = await manager.getInstance(presetId)
-  }
+  // 找到其中prefix最长的
+  const hit = prefixHits.length > 1
+    ? prefixHits.sort((a, b) => b.prefix.length - a.prefix.length)[0]
+    : prefixHits[0]
+
   // 如果没找到再查一次
-  if (!preset) {
-    preset = await manager.getInstance(presetId)
-  }
-  return preset
+  return await manager.getInstance(hit.id) || await manager.getInstance(presetId)
 }
 
 /**

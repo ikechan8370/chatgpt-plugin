@@ -136,8 +136,20 @@ class ChatGPTConfig {
     // eslint-disable-next-line no-template-curly-in-string
     groupContextTemplateMessage: '| ${message.sender.card} | ${message.sender.nickname} | ${message.sender.user_id} | ${message.sender.role} | ${message.sender.title} | ${message.time} | ${message.messageId} | ${message.raw_message} |',
     // 用于组装群聊上下文提示词的模板后缀
-    groupContextTemplateSuffix: '\n'
-
+    groupContextTemplateSuffix: '\n',
+    // 图片下载的并发上限。群聊上下文里的图片以前是一张张串行下的，
+    // 6 张图就要多等将近 1 秒。调大能更快，但同时在内存里的图片也更多
+    // （峰值约等于 该值 × 单图大小），内存紧张可以调小到 1~2。
+    imageFetchConcurrency: 6,
+    // 预设前缀索引的缓存时间（秒），0 表示关闭。
+    // 每条群消息都要判断一次是否命中预设前缀，不缓存的话每条消息都会把整张预设表
+    // 读出来反序列化一遍。这里只缓存 {id, prefix}，不缓存预设本体，
+    // 每个预设几十字节；预设增删改会自动失效。
+    presetCacheTTL: 60,
+    // 群聊历史的缓存时间（秒），0 表示关闭（默认）。
+    // 打开后同一个群在这段时间内的重复触发不会再走 QQ 网络拉历史，但缓存期内
+    // 新到的消息不会进入上下文，而且会常驻最多 32 个群的消息对象。建议 <= 3。
+    groupHistoryCacheTTL: 0
   }
 
   /**

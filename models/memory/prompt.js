@@ -101,24 +101,35 @@ export async function buildMemoryPrompt ({ userId, groupId, queryText }) {
   const segments = []
   const userConfig = ChatGPTConfig.memory?.user || {}
   const groupConfig = ChatGPTConfig.memory?.group || {}
-  if (memoryService.isUserMemoryEnabled(userId)) {
-    const totalLimit = userConfig.maxItemsPerInjection || 5
-    const searchLimit = Math.min(userConfig.maxRelevantItemsPerQuery || totalLimit, totalLimit)
-    const userMemories = await memoryService.queryUserMemories(userId, groupId, queryText, {
-      totalLimit,
-      searchLimit,
-      minImportance: userConfig.minImportanceForInjection ?? 0
-    })
+
+  // 两次检索互不依赖，而且各自都可能要打一次 embedding 接口，串行等于白等一轮
+  const [userMemories, facts] = await Promise.all([
+    memoryService.isUserMemoryEnabled(userId)
+      ? (() => {
+          const totalLimit = userConfig.maxItemsPerInjection || 5
+          const searchLimit = Math.min(userConfig.maxRelevantItemsPerQuery || totalLimit, totalLimit)
+          return memoryService.queryUserMemories(userId, groupId, queryText, {
+            totalLimit,
+            searchLimit,
+            minImportance: userConfig.minImportanceForInjection ?? 0
+          })
+        })()
+      : null,
+    groupId && memoryService.isGroupMemoryEnabled(groupId)
+      ? memoryService.queryGroupFacts(groupId, queryText, {
+        limit: groupConfig.maxFactsPerInjection || 5,
+        minImportance: groupConfig.minImportanceForInjection || 0
+      })
+      : null
+  ])
+
+  if (userMemories) {
     const userSegment = formatUserMemories(userMemories, userConfig)
     if (userSegment) {
       segments.push(userSegment)
     }
   }
-  if (groupId && memoryService.isGroupMemoryEnabled(groupId)) {
-    const facts = await memoryService.queryGroupFacts(groupId, queryText, {
-      limit: groupConfig.maxFactsPerInjection || 5,
-      minImportance: groupConfig.minImportanceForInjection || 0
-    })
+  if (facts) {
     const groupSegment = formatGroupFacts(facts, groupConfig)
     if (groupSegment) {
       segments.push(groupSegment)
