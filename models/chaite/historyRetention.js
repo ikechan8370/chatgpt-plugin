@@ -97,12 +97,19 @@ export async function pruneHistoryByRetention (options = {}) {
  *
  * 只在真的有可观的数据量时才提示，免得对着一个几乎空的库刷屏。
  */
-export async function reportRetentionOpportunity () {
-  if (!ChatGPTConfig.retentionUpgradeNotice) return
+export async function reportRetentionOpportunity (options = {}) {
+  if (!ChatGPTConfig.retentionUpgradeNotice) {
+    // 留一行 debug，方便确认这个检查确实被调用过（而不是压根没接上）
+    logger.debug?.('[History] retention notice: skipped, not an upgrade from a pre-retention version')
+    return false
+  }
   ChatGPTConfig.retentionUpgradeNotice = false
 
-  const historyManager = Chaite.getInstance()?.getHistoryManager?.()
-  if (typeof historyManager?.countHistoryBefore !== 'function') return
+  const historyManager = options.historyManager || Chaite.getInstance()?.getHistoryManager?.()
+  if (typeof historyManager?.countHistoryBefore !== 'function') {
+    logger.debug?.('[History] retention notice: history storage does not support counting, skipped')
+    return false
+  }
 
   try {
     const before = cutoffFor(30)
@@ -110,7 +117,10 @@ export async function reportRetentionOpportunity () {
       historyManager.countHistoryBefore({ before, conversationPrefix: BYM_CONVERSATION_PREFIX }),
       historyManager.countHistoryBefore({ before })
     ])
-    if (bymRows + allRows < 10000) return
+    if (bymRows + allRows < (options.minRows ?? 10000)) {
+      logger.debug?.(`[History] retention notice: only ${allRows} prunable row(s), not worth reporting`)
+      return false
+    }
 
     const prefix = ChatGPTConfig.basic?.commandPrefix || '#chatgpt'
     logger.warn('='.repeat(62))
@@ -122,8 +132,10 @@ export async function reportRetentionOpportunity () {
     logger.warn('    chaite.autoVacuum = true        （清理后回收磁盘空间）')
     logger.warn(`  开启前可先用 ${prefix}历史统计 查看会清理多少，用 ${prefix}清理历史 手动执行一次。`)
     logger.warn('='.repeat(62))
+    return true
   } catch (err) {
     logger.debug?.(`[History] retention opportunity check failed: ${err.message}`)
+    return false
   }
 }
 
