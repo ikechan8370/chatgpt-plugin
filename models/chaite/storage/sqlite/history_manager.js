@@ -5,6 +5,26 @@ import fs from 'fs'
 import crypto from 'crypto'
 import { isBase64Image } from './base64_image.js'
 
+/**
+ * 前缀的下一个字符串，用于把 "以 prefix 开头" 表达成范围比较。
+ * 用范围而不是 LIKE 'prefix%'，是因为 LIKE 能不能走索引取决于 case_sensitive_like
+ * 之类的设置，范围比较则一定能用上 conversationId 索引。
+ */
+function nextPrefix (prefix) {
+  const last = prefix.charCodeAt(prefix.length - 1)
+  return prefix.slice(0, -1) + String.fromCharCode(last + 1)
+}
+
+function buildPruneFilter (before, conversationPrefix) {
+  const conditions = ['createdAt < ?']
+  const params = [before]
+  if (conversationPrefix) {
+    conditions.push('conversationId >= ?', 'conversationId < ?')
+    params.push(conversationPrefix, nextPrefix(conversationPrefix))
+  }
+  return { where: conditions.join(' AND '), params }
+}
+
 export class SQLiteHistoryManager extends AbstractHistoryManager {
   /**
    *
@@ -68,8 +88,15 @@ export class SQLiteHistoryManager extends AbstractHistoryManager {
                 return reject(err)
               }
 
-              this.initialized = true
-              resolve()
+              // 保留期清理按 createdAt 过滤，没有索引的话每次都是全表扫描
+              this.db.run(`CREATE INDEX IF NOT EXISTS idx_${this.tableName}_created ON ${this.tableName} (createdAt)`, (err) => {
+                if (err) {
+                  return reject(err)
+                }
+
+                this.initialized = true
+                resolve()
+              })
             })
           })
         })
@@ -516,6 +543,53 @@ export class SQLiteHistoryManager extends AbstractHistoryManager {
         [messageId, conversationId]
       )
     }, { priority: 'high', label: 'remove history message' })
+  }
+
+  /**
+   * 统计早于某个时间的历史消息条数。
+   * @param {{before: string, conversationPrefix?: string}} options
+   * @returns {Promise<number>}
+   */
+  async countHistoryBefore ({ before, conversationPrefix = '' } = {}) {
+    await this.ensureInitialized()
+    if (!before) return 0
+    const { where, params } = buildPruneFilter(before, conversationPrefix)
+    const row = await this.db.getAsync(`SELECT COUNT(*) AS count FROM ${this.tableName} WHERE ${where}`, params)
+    return row?.count || 0
+  }
+
+  /**
+   * 按保留期删除历史消息。
+   *
+   * 分批删除而不是一条 DELETE 干掉几十万行：单条大 DELETE 会长时间占住写连接，
+   * 期间所有对话的写入都要排队。批次走 low 优先级，让实时对话的写入插在前面。
+   *
+   * @param {{before: string, conversationPrefix?: string, batchSize?: number, maxBatches?: number}} options
+   * @returns {Promise<{deleted: number, truncated: boolean}>}
+   */
+  async pruneHistory ({ before, conversationPrefix = '', batchSize = 2000, maxBatches = 500 } = {}) {
+    await this.ensureInitialized()
+    if (!before) return { deleted: 0, truncated: false }
+
+    const { where, params } = buildPruneFilter(before, conversationPrefix)
+    const sql = `DELETE FROM ${this.tableName} WHERE id IN (
+      SELECT id FROM ${this.tableName} WHERE ${where} LIMIT ?
+    )`
+
+    let deleted = 0
+    for (let batch = 0; batch < maxBatches; batch++) {
+      const result = await this.db.runAsync(sql, [...params, batchSize], {
+        priority: 'low',
+        label: 'prune history'
+      })
+      const changes = result?.changes || 0
+      deleted += changes
+      if (changes < batchSize) {
+        return { deleted, truncated: false }
+      }
+    }
+    // 还没删完，剩下的留给下一次，避免一次任务跑太久
+    return { deleted, truncated: true }
   }
 
   /**
