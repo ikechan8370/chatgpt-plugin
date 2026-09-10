@@ -139,6 +139,63 @@ class DatabaseRuntime {
     }, { ...options, label: options.label || 'transaction' })
   }
 
+  fileSize () {
+    let total = 0
+    for (const suffix of ['', '-wal', '-shm']) {
+      try {
+        total += fs.statSync(this.dbPath + suffix).size
+      } catch {}
+    }
+    return total
+  }
+
+  /**
+   * 回收删除后留下的空闲页。
+   *
+   * 只能用整库 VACUUM：即使把 auto_vacuum 设成 INCREMENTAL（而且必须设在
+   * journal_mode=WAL 之前，否则会被静默忽略），实测 PRAGMA incremental_vacuum
+   * 在 WAL 下几乎回收不到东西——2.3 万空闲页只还回 1 页。
+   *
+   * VACUUM 本身很快：实测 417 MiB 的历史库 1.0s 缩到 100 MiB。但它会重写整个
+   * 数据库文件，期间独占写锁，而且临时需要约等于库大小的额外磁盘空间。
+   *
+   * @param {{minFreePages?: number}} [options]
+   * @returns {Promise<object>}
+   */
+  async vacuum ({ minFreePages = 0 } = {}) {
+    const before = this.fileSize()
+    const row = await this.read('get', 'PRAGMA freelist_count', [])
+    const freePages = row?.freelist_count || 0
+
+    if (freePages < minFreePages) {
+      return { name: this.name, path: this.dbPath, skipped: 'free-pages', freePages, before, after: before, ms: 0 }
+    }
+
+    // VACUUM 要把整个库重写一遍，磁盘剩余空间不够就别开始
+    try {
+      const stat = fs.statfsSync(path.dirname(this.dbPath))
+      const available = stat.bavail * stat.bsize
+      if (available < before * 2) {
+        return { name: this.name, path: this.dbPath, skipped: 'disk-space', freePages, before, after: before, ms: 0, available }
+      }
+    } catch {}
+
+    const startedAt = Date.now()
+    // low 优先级：排在实时对话的写入后面
+    await this.enqueue(
+      db => new Promise((resolve, reject) => db.exec('VACUUM', error => error ? reject(error) : resolve())),
+      { priority: 'low', label: 'vacuum' }
+    )
+    await this.enqueue(
+      db => new Promise((resolve, reject) => db.exec('PRAGMA wal_checkpoint(TRUNCATE)', error => error ? reject(error) : resolve())),
+      { priority: 'low', label: 'vacuum checkpoint' }
+    )
+    const after = this.fileSize()
+    const ms = Date.now() - startedAt
+    log('info', `[SQLite:${this.name}] vacuum reclaimed ${((before - after) / 1024 / 1024).toFixed(1)} MiB in ${ms}ms`)
+    return { name: this.name, path: this.dbPath, freePages, before, after, ms }
+  }
+
   async release () {
     this.refs = Math.max(0, this.refs - 1)
     if (this.refs > 0 || this.closing) return
@@ -203,6 +260,25 @@ export function openSQLiteDatabase (dbPath, callback) {
   const handle = runtime.acquire()
   if (typeof callback === 'function') runtime.ready.then(() => callback(null), callback)
   return handle
+}
+
+/**
+ * 对所有已打开的 SQLite 库执行 VACUUM。
+ * @param {{minFreePages?: number}} [options]
+ * @returns {Promise<object[]>}
+ */
+export async function vacuumSQLiteDatabases (options = {}) {
+  const results = []
+  for (const runtime of [...runtimes.values()]) {
+    if (runtime.closing) continue
+    try {
+      results.push(await runtime.vacuum(options))
+    } catch (error) {
+      log('warn', `[SQLite:${runtime.name}] vacuum failed: ${error.message}`)
+      results.push({ name: runtime.name, path: runtime.dbPath, error: error.message })
+    }
+  }
+  return results
 }
 
 export async function closeAllSQLiteDatabases () {

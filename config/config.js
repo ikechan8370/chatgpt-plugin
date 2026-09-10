@@ -217,7 +217,16 @@ class ChatGPTConfig {
     // 存储实现 sqlite lowdb
     storage: 'sqlite',
     // 操作日志最多保留的条数，设为 0 可禁用自动清理
-    operationLogLimit: 50000
+    operationLogLimit: 50000,
+    // 保留期清理之后是否自动 VACUUM 回收磁盘空间。
+    // SQLite 删除数据后文件不会变小，空闲页要靠 VACUUM 才能还给文件系统
+    // （incremental_vacuum 在 WAL 下几乎无效，实测过）。
+    // VACUUM 很快——417 MiB 的历史库实测 1.0s——但会重写整个文件、期间独占写锁，
+    // 并临时需要约等于库大小的额外磁盘空间。空闲页不够多时会自动跳过。
+    autoVacuum: true,
+    // 空闲页少于这个数就不做 VACUUM，避免每天为了几 MiB 重写整个库。
+    // 默认 20000 页 ≈ 80 MiB（页大小 4KiB）
+    autoVacuumMinFreePages: 20000
   }
 
   /**

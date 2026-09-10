@@ -1,5 +1,6 @@
 import { Chaite } from 'chaite'
 import ChatGPTConfig from '../../config/config.js'
+import { vacuumSQLiteDatabases } from './storage/sqlite/runtime.js'
 
 // 伪人会话 id 的前缀，见 apps/bym.js
 const BYM_CONVERSATION_PREFIX = 'bym'
@@ -88,4 +89,33 @@ export async function pruneHistoryByRetention (options = {}) {
     }
   }
   return { results }
+}
+
+/**
+ * 回收删除后留下的磁盘空间。
+ *
+ * @param {{force?: boolean}} [options] force 时忽略空闲页阈值，用于手动命令
+ * @returns {Promise<{skipped?: string, results: object[]}>}
+ */
+export async function vacuumDatabases (options = {}) {
+  if (ChatGPTConfig.chaite?.storage !== 'sqlite') {
+    return { skipped: '当前存储不是 sqlite', results: [] }
+  }
+  const minFreePages = options.force
+    ? 0
+    : Math.max(0, Number(ChatGPTConfig.chaite?.autoVacuumMinFreePages) || 0)
+  return { results: await vacuumSQLiteDatabases({ minFreePages }) }
+}
+
+/**
+ * 保留期清理 + （按配置）回收磁盘空间。定时任务和手动命令共用。
+ * @param {{force?: boolean}} [options]
+ */
+export async function runHistoryMaintenance (options = {}) {
+  const prune = await pruneHistoryByRetention()
+  const shouldVacuum = options.force || ChatGPTConfig.chaite?.autoVacuum === true
+  const vacuum = shouldVacuum
+    ? await vacuumDatabases({ force: options.force })
+    : { skipped: '未开启 autoVacuum', results: [] }
+  return { prune, vacuum }
 }
