@@ -219,13 +219,18 @@ class ChatGPTConfig {
     port: 48370,
     // 管理面板自定义访问地址；NAT/反代场景可填完整地址，如 https://example.com
     publicBaseUrl: '',
-    // 存储实现 sqlite lowdb
-    storage: 'sqlite',
-    // 关系型存储的数据库连接。storage 为 sqlite 时才生效（lowdb 不走 SQL）。
+    // 存储实现 sql lowdb（sqlite 是 sql 的旧名，继续可用）
+    storage: 'sql',
+    // 关系型存储的连接配置。storage 为 lowdb 时整段忽略。
     //
-    // dialect 目前只能填 sqlite。postgres 的 driver 已经就位，但对话历史和操作
-    // 日志还没迁到 driver 层，现在切过去会把数据劈成两个引擎，所以先不开放。
-    // 等历史记录迁完再放开。
+    // dialect: sqlite | postgres
+    //
+    // sqlite 是默认，数据落在 dataDir 下的三个文件里，零配置、零运维。
+    // postgres 适合多实例共享、已有数据库运维体系、或者想摆脱 sqlite3 原生编译
+    // 的场景；它不会更快——本机 SQLite 读是微秒级，走网络至少零点几毫秒。
+    //
+    // 切到 postgres 需要自行安装驱动：pnpm add pg
+    // 注意：切换方言不会搬运数据，两边是各自独立的库。
     db: {
       dialect: 'sqlite',
       // 以下仅 postgres 用得上
