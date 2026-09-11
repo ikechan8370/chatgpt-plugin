@@ -23,21 +23,22 @@ import { VectraVectorDatabase } from './vector_database.js'
 import path from 'path'
 import fs from 'fs'
 import { migrateDatabase } from '../../utils/initDB.js'
-import { SQLiteChannelStorage } from './storage/sqlite/channel_storage.js'
 import { dataDir } from '../../utils/common.js'
-import { SQLiteChatPresetStorage } from './storage/sqlite/chat_preset_storage.js'
-import { SQLiteToolsStorage } from './storage/sqlite/tools_storage.js'
-import { SQLiteProcessorsStorage } from './storage/sqlite/processors_storage.js'
-import { SQLiteUserStateStorage } from './storage/sqlite/user_state_storage.js'
-import { SQLiteToolsGroupStorage } from './storage/sqlite/tool_groups_storage.js'
+import { initDrivers, getDriver, DB_MAIN } from './storage/driver/index.js'
+import { SqlChannelStorage } from './storage/sql/channel_storage.js'
+import { SqlChatPresetStorage } from './storage/sql/chat_preset_storage.js'
+import { SqlToolsStorage } from './storage/sql/tools_storage.js'
+import { SqlProcessorsStorage } from './storage/sql/processors_storage.js'
+import { SqlUserStateStorage } from './storage/sql/user_state_storage.js'
+import { SqlToolsGroupStorage } from './storage/sql/tool_groups_storage.js'
+import { SqlMcpServerStorage } from './storage/sql/mcp_server_storage.js'
+import SqlTriggerStorage from './storage/sql/trigger_storage.js'
 import { checkMigrate } from './storage/sqlite/migrate.js'
 import { SQLiteHistoryManager } from './storage/sqlite/history_manager.js'
-import SQLiteTriggerStorage from './storage/sqlite/trigger_storage.js'
 import LowDBTriggerStorage from './storage/lowdb/trigger_storage,.js'
 import { createChaiteVectorizer } from './vectorizer.js'
 import { MemoryRouter, authenticateMemoryRequest } from '../memory/router.js'
 import { SQLiteOperationLogStorage } from './storage/sqlite/operation_log_storage.js'
-import { SQLiteMcpServerStorage } from './storage/sqlite/mcp_server_storage.js'
 import { LowDBMcpServerStorage } from './storage/lowdb/mcp_server_storage.js'
 import { createDebugSanitizingLogger } from '../../utils/log.js'
 import { migrateSplitSQLiteDatabases } from './storage/sqlite/split_migrate.js'
@@ -80,25 +81,42 @@ export async function initChaite () {
   let channelsStorage, chatPresetsStorage, toolsStorage, processorsStorage, userStateStorage, historyStorage, toolsGroupStorage, triggerStorage, operationLogStorage, mcpServerStorage
   switch (storage) {
     case 'sqlite': {
-      const dbPath = path.join(dataDir, 'data.db')
       const historyDbPath = path.join(dataDir, 'history.db')
       await migrateSplitSQLiteDatabases(dataDir)
-      channelsStorage = new SQLiteChannelStorage(dbPath)
+
+      // 九个 storage 现在共用 sql_storage.js 那一份实现，方言差异由 driver 兜住。
+      // 这里拿到的是哪种 driver 由 chaite.db.dialect 决定，调用方不需要知道。
+      const dialect = ChatGPTConfig.chaite.db?.dialect || 'sqlite'
+      if (dialect !== 'sqlite') {
+        // driver 层本身支持 postgres，但历史记录和操作日志还直连 SQLite。现在放行
+        // 只会把数据劈到两个引擎上，比不支持更糟，所以先明确拦住。
+        throw new Error(
+          `chaite.db.dialect=${dialect} 暂不可用：对话历史与操作日志尚未迁移到 driver 层，` +
+          '现在切换会导致数据分散在两个数据库。请暂时使用 sqlite。'
+        )
+      }
+      await initDrivers({ dialect, dataDir, connection: ChatGPTConfig.chaite.db })
+      const mainDriver = getDriver(DB_MAIN)
+
+      channelsStorage = new SqlChannelStorage(mainDriver)
       await channelsStorage.initialize()
-      chatPresetsStorage = new SQLiteChatPresetStorage(dbPath)
+      chatPresetsStorage = new SqlChatPresetStorage(mainDriver)
       await chatPresetsStorage.initialize()
-      toolsStorage = new SQLiteToolsStorage(dbPath)
+      toolsStorage = new SqlToolsStorage(mainDriver)
       await toolsStorage.initialize()
-      processorsStorage = new SQLiteProcessorsStorage(dbPath)
+      processorsStorage = new SqlProcessorsStorage(mainDriver)
       await processorsStorage.initialize()
-      userStateStorage = new SQLiteUserStateStorage(dbPath)
+      userStateStorage = new SqlUserStateStorage(mainDriver)
       await userStateStorage.initialize()
-      toolsGroupStorage = new SQLiteToolsGroupStorage(dbPath)
+      toolsGroupStorage = new SqlToolsGroupStorage(mainDriver)
       await toolsGroupStorage.initialize()
-      triggerStorage = new SQLiteTriggerStorage(dbPath)
+      triggerStorage = new SqlTriggerStorage(mainDriver)
       await triggerStorage.initialize()
-      mcpServerStorage = new SQLiteMcpServerStorage(dbPath)
+      mcpServerStorage = new SqlMcpServerStorage(mainDriver)
       await mcpServerStorage.initialize()
+
+      // 历史记录还没迁到 driver 层（它实现的是 AbstractHistoryManager，不是
+      // ChaiteStorage，而且还要管图片落盘），暂时仍直连 SQLite
       historyStorage = new SQLiteHistoryManager(historyDbPath, path.join(dataDir, 'images'))
       await checkMigrate()
       break
