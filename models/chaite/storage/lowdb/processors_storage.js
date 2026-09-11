@@ -4,6 +4,10 @@ import { ChaiteStorage, ProcessorDTO } from 'chaite'
  * @extends {ChaiteStorage<import('chaite').Processor>}
  */
 export class LowDBProcessorsStorage extends ChaiteStorage {
+  getName () {
+    return 'LowDBProcessorsStorage'
+  }
+
   /**
    *
    * @param { LowDBStorage } storage

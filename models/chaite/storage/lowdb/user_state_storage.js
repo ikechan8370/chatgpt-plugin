@@ -1,27 +1,13 @@
 import { ChaiteStorage } from 'chaite'
-import * as crypto from 'node:crypto'
-
-/**
- * 继承UserState
- */
-export class YunzaiUserState {
-  constructor (userId, nickname, card, conversationId = crypto.randomUUID()) {
-    this.userId = userId
-    this.nickname = nickname
-    this.card = card
-    this.conversations = []
-    this.settings = {}
-    this.current = {
-      conversationId,
-      messageId: crypto.randomUUID()
-    }
-  }
-}
 
 /**
  * @extends {ChaiteStorage<import('chaite').UserState>}
  */
 export class LowDBUserStateStorage extends ChaiteStorage {
+  getName () {
+    return 'LowDBUserStateStorage'
+  }
+
   /**
    *
    * @param {LowDBStorage} storage
@@ -76,6 +62,40 @@ export class LowDBUserStateStorage extends ChaiteStorage {
    */
   async listItems () {
     return this.collection.findAll()
+  }
+
+  /**
+   *
+   * @param {Record<string, unknown>} filter
+   * @returns {Promise<import('chaite').UserState[]>}
+   */
+  async listItemsByEqFilter (filter) {
+    const allList = await this.listItems()
+    return allList.filter(item => {
+      for (const key in filter) {
+        if (item[key] !== filter[key]) {
+          return false
+        }
+      }
+      return true
+    })
+  }
+
+  /**
+   *
+   * @param {Array<{field: string, values: unknown[]}>} query
+   * @returns {Promise<import('chaite').UserState[]>}
+   */
+  async listItemsByInQuery (query) {
+    const allList = await this.listItems()
+    return allList.filter(item => {
+      for (const { field, values } of query) {
+        if (!values.includes(item[field])) {
+          return false
+        }
+      }
+      return true
+    })
   }
 
   async clear () {
