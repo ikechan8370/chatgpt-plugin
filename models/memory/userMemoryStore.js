@@ -1,4 +1,4 @@
-import { getMemoryDatabase, getUserMemoryFtsConfig, sanitiseFtsQueryInput } from './database.js'
+import { getMemoryDatabase, getUserMemoryFtsConfig, escapeLikePattern, needsLikeFallback, sanitiseFtsQueryInput } from './database.js'
 import { md5 } from '../../utils/common.js'
 
 function normaliseId (value) {
@@ -224,9 +224,18 @@ export class UserMemoryStore {
     const results = []
     const seen = new Set(filteredExclude)
     if (matchQueryParam) {
+      // trigram 下 1~2 个字的查询在 FTS 里没有索引项，退回 LIKE 扫描
+      const likeFallback = needsLikeFallback(matchQueryParam, ftsConfig)
       const matchExpression = ftsConfig.matchQuery ? `${ftsConfig.matchQuery}(?)` : '?'
-      const params = [normUserId, matchQueryParam]
-      let query = `
+      const params = [normUserId, likeFallback ? `%${escapeLikePattern(matchQueryParam)}%` : matchQueryParam]
+      let query = likeFallback
+        ? `
+        SELECT um.*, 0 AS bm25_score
+        FROM user_memory um
+        WHERE um.user_id = ?
+          AND um.value LIKE ? ESCAPE '\\'
+      `
+        : `
         SELECT um.*, bm25(user_memory_fts) AS bm25_score
         FROM user_memory_fts
         JOIN user_memory um ON um.id = user_memory_fts.rowid
@@ -241,7 +250,12 @@ export class UserMemoryStore {
         query += ` AND um.id NOT IN (${filteredExclude.map(() => '?').join(',')})`
         params.push(...filteredExclude)
       }
-      query += `
+      query += likeFallback
+        ? `
+        ORDER BY um.updated_at DESC
+        LIMIT ?
+      `
+        : `
         ORDER BY bm25_score ASC, um.updated_at DESC
         LIMIT ?
       `

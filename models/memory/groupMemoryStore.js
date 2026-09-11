@@ -1,4 +1,4 @@
-import { getMemoryDatabase, getVectorDimension, getGroupMemoryFtsConfig, resetVectorTableDimension, sanitiseFtsQueryInput } from './database.js'
+import { getMemoryDatabase, getVectorDimension, getGroupMemoryFtsConfig, escapeLikePattern, needsLikeFallback, resetVectorTableDimension, sanitiseFtsQueryInput } from './database.js'
 import ChatGPTConfig from '../../config/config.js'
 import { embedTexts } from '../chaite/vectorizer.js'
 
@@ -379,9 +379,21 @@ export class GroupMemoryStore {
     const results = []
     const seen = new Set()
     if (matchQueryParam) {
+      const likeFallback = needsLikeFallback(matchQueryParam, ftsConfig)
       const matchExpression = ftsConfig.matchQuery ? `${ftsConfig.matchQuery}(?)` : '?'
       try {
-        const rows = await this.db.prepare(`
+        // trigram 下 1~2 个字的查询（"天气""火锅"这种中文常见词）在 FTS 里没有
+        // 索引项，只能退回 LIKE 扫描。群记忆按群过滤后规模很小，扫描代价可接受。
+        const rows = likeFallback
+          ? await this.db.prepare(`
+          SELECT gf.*, 0 AS bm25_score
+          FROM group_facts gf
+          WHERE gf.group_id = ?
+            AND gf.fact LIKE ? ESCAPE '\\'
+          ORDER BY gf.updated_at DESC
+          LIMIT ?
+        `).all(groupId, `%${escapeLikePattern(matchQueryParam)}%`, limit)
+          : await this.db.prepare(`
           SELECT gf.*, bm25(group_facts_fts) AS bm25_score
           FROM group_facts_fts
           JOIN group_facts gf ON gf.id = group_facts_fts.rowid
@@ -391,7 +403,8 @@ export class GroupMemoryStore {
           LIMIT ?
         `).all(groupId, matchQueryParam, limit)
         for (const row of rows) {
-          const bm25Threshold = this.bm25Threshold
+          // LIKE 兜底没有 bm25 分数，不能拿阈值去筛（bm25 是负数，0 会被全滤掉）
+          const bm25Threshold = likeFallback ? 0 : this.bm25Threshold
           if (bm25Threshold) {
             const score = Number(row?.bm25_score)
             if (!Number.isFinite(score) || score > bm25Threshold) {

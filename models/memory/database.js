@@ -8,7 +8,15 @@ const META_VECTOR_DIM_KEY = 'group_vec_dimension'
 const META_VECTOR_MODEL_KEY = 'group_vec_model'
 const META_GROUP_TOKENIZER_KEY = 'group_memory_tokenizer'
 const META_USER_TOKENIZER_KEY = 'user_memory_tokenizer'
-const TOKENIZER_DEFAULT = 'unicode61'
+// unicode61 会把一整串连续的中文当成一个 token："今天天气很好"是一个词，
+// 搜"天气"命中 0 条。FTS5 自带的 trigram 分词器按 3 字切片，中文子串搜索可用，
+// 而且是 SQLite 3.34+ 内置的——不依赖任何本地编译的扩展，所有系统都能跑。
+// 所以 jieba(simple) 加载不上时退到 trigram，而不是 unicode61。
+const TOKENIZER_UNICODE61 = 'unicode61'
+const TOKENIZER_TRIGRAM = 'trigram'
+// trigram 至少要 3 个字符才有索引项，更短的查询走 LIKE 兜底
+const TRIGRAM_MIN_QUERY_LENGTH = 3
+let TOKENIZER_DEFAULT = TOKENIZER_UNICODE61
 const SIMPLE_MATCH_SIMPLE = 'simple_query'
 const SIMPLE_MATCH_JIEBA = 'jieba_query'
 const PLUGIN_ROOT = path.resolve('./plugins/chatgpt-plugin')
@@ -910,6 +918,39 @@ export function getMemoryOptionalDependencyState () {
   }
 }
 
+/**
+ * 探测这个 SQLite 是否支持 trigram 分词器（3.34+），据此决定 jieba 不可用时的退路。
+ * 只在打开数据库时探一次。
+ */
+async function detectFallbackTokenizer (db) {
+  try {
+    await db.exec("CREATE VIRTUAL TABLE IF NOT EXISTS temp.__tokenizer_probe USING fts5(c, tokenize='trigram')")
+    await db.exec('DROP TABLE IF EXISTS temp.__tokenizer_probe')
+    TOKENIZER_DEFAULT = TOKENIZER_TRIGRAM
+  } catch (err) {
+    TOKENIZER_DEFAULT = TOKENIZER_UNICODE61
+    logger?.warn?.('[Memory] trigram tokenizer unavailable (需要 SQLite 3.34+)，中文搜索将很不准：%s', err?.message)
+  }
+  return TOKENIZER_DEFAULT
+}
+
+/**
+ * 该查询在当前分词器下能不能用 MATCH。
+ * trigram 下短于 3 个字符的查询没有任何索引项可命中，必须走 LIKE。
+ * @param {string} query
+ * @param {{tokenizer?: string, matchQuery?: string|null}} ftsConfig
+ * @returns {boolean}
+ */
+export function escapeLikePattern (value) {
+  return String(value ?? '').replace(/[\\%_]/g, '\\$&')
+}
+
+export function needsLikeFallback (query, ftsConfig) {
+  if (ftsConfig?.matchQuery) return false
+  if (ftsConfig?.tokenizer !== TOKENIZER_TRIGRAM) return false
+  return String(query || '').trim().length < TRIGRAM_MIN_QUERY_LENGTH
+}
+
 export function sanitiseFtsQueryInput (query, ftsConfig) {
   if (!query) {
     return ''
@@ -932,6 +973,8 @@ export async function getMemoryDatabase () {
   await dbInstance.exec('PRAGMA journal_mode = WAL')
   await dbInstance.exec('PRAGMA busy_timeout = 5000')
   await tryLoadSqliteVec(dbInstance)
+  // 必须在 resetSimpleState 之前定好退路，它会把 TOKENIZER_DEFAULT 写进两个 config
+  await detectFallbackTokenizer(dbInstance)
   resetSimpleState({
     requested: false,
     enabled: false
