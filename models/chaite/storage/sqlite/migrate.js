@@ -1,19 +1,22 @@
 import path from 'path'
 import { dataDir } from '../../../../utils/common.js'
-import { SQLiteChannelStorage } from './channel_storage.js'
+import {
+  drivers,
+  SqlChannelStorage,
+  SqlChatPresetStorage,
+  SqlToolsStorage,
+  SqlProcessorsStorage,
+  SqlUserStateStorage
+} from 'chaite'
 import { LowDBChannelStorage } from '../lowdb/channel_storage.js'
-import { SQLiteChatPresetStorage } from './chat_preset_storage.js'
 import { LowDBChatPresetsStorage } from '../lowdb/chat_preset_storage.js'
-import { SQLiteToolsStorage } from './tools_storage.js'
 import { LowDBToolsStorage } from '../lowdb/tools_storage.js'
-import { SQLiteProcessorsStorage } from './processors_storage.js'
 import { LowDBProcessorsStorage } from '../lowdb/processors_storage.js'
-import { SQLiteUserStateStorage } from './user_state_storage.js'
 import { LowDBUserStateStorage } from '../lowdb/user_state_storage.js'
 import fs from 'fs'
 
 export async function checkMigrate () {
-  logger.debug('检查是否需要从 LowDB 迁移数据到 SQLite...')
+  logger.debug('检查是否需要从 LowDB 迁移数据到 SQL 存储...')
 
   try {
     // 导入所需的模块
@@ -22,7 +25,8 @@ export async function checkMigrate () {
     const { ChatGPTHistoryStorage } = await import('../lowdb/storage.js')
     await ChatGPTHistoryStorage.init()
 
-    const dbPath = path.join(dataDir, 'data.db')
+    // 存储实例现在由 chaite 提供，连接来自已经初始化好的 driver 注册表
+    const mainDriver = drivers.get('main')
 
     // 删除所有id为空的行
     logger.debug('开始修复id为空的数据行...')
@@ -68,31 +72,31 @@ export async function checkMigrate () {
       {
         name: '渠道',
         lowdbStorageClass: LowDBChannelStorage,
-        sqliteStorageClass: SQLiteChannelStorage,
+        sqlStorageClass: SqlChannelStorage,
         collection: 'channel'
       },
       {
         name: '预设',
         lowdbStorageClass: LowDBChatPresetsStorage,
-        sqliteStorageClass: SQLiteChatPresetStorage,
+        sqlStorageClass: SqlChatPresetStorage,
         collection: 'chat_presets'
       },
       {
         name: '工具',
         lowdbStorageClass: LowDBToolsStorage,
-        sqliteStorageClass: SQLiteToolsStorage,
+        sqlStorageClass: SqlToolsStorage,
         collection: 'tools'
       },
       {
         name: '处理器',
         lowdbStorageClass: LowDBProcessorsStorage,
-        sqliteStorageClass: SQLiteProcessorsStorage,
+        sqlStorageClass: SqlProcessorsStorage,
         collection: 'processors'
       },
       {
         name: '用户状态',
         lowdbStorageClass: LowDBUserStateStorage,
-        sqliteStorageClass: SQLiteUserStateStorage,
+        sqlStorageClass: SqlUserStateStorage,
         collection: 'userState',
         isSpecial: true
       }
@@ -119,18 +123,15 @@ export async function checkMigrate () {
     }
 
     // 检查 SQLite 中是否已有数据
-    const testStorage = new SQLiteChannelStorage(dbPath)
+    const testStorage = new SqlChannelStorage(mainDriver)
     await testStorage.initialize()
     const channels = await testStorage.listItems()
 
     if (channels.length > 0) {
-      logger.debug('SQLite 存储已有数据，跳过迁移')
-      await testStorage.close()
+      logger.debug('SQL 存储已有数据，跳过迁移')
       return
     }
-    await testStorage.close()
-
-    logger.info('开始从 LowDB 迁移数据到 SQLite...')
+    logger.info('开始从 LowDB 迁移数据到 SQL 存储...')
 
     // 迁移每种数据
     for (const pair of storagePairs) {
@@ -140,15 +141,14 @@ export async function checkMigrate () {
       if (items.length > 0) {
         logger.info(`迁移${pair.name}数据...`)
         // eslint-disable-next-line new-cap
-        const sqliteStorage = new pair.sqliteStorageClass(dbPath)
-        await sqliteStorage.initialize()
+        const sqlStorage = new pair.sqlStorageClass(mainDriver)
+        await sqlStorage.initialize()
 
         for (const item of items) {
-          await sqliteStorage.setItem(item.id, item)
+          await sqlStorage.setItem(item.id, item)
         }
 
         logger.info(`迁移了 ${items.length} 个${pair.name}`)
-        await sqliteStorage.close()
       }
     }
 

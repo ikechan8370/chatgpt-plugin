@@ -1,6 +1,6 @@
 import { Chaite } from 'chaite'
 import ChatGPTConfig from '../../config/config.js'
-import { vacuumSQLiteDatabases } from './storage/sqlite/runtime.js'
+import { drivers } from 'chaite'
 
 // 伪人会话 id 的前缀，见 apps/bym.js
 const BYM_CONVERSATION_PREFIX = 'bym'
@@ -146,13 +146,30 @@ export async function reportRetentionOpportunity (options = {}) {
  * @returns {Promise<{skipped?: string, results: object[]}>}
  */
 export async function vacuumDatabases (options = {}) {
-  if (ChatGPTConfig.chaite?.storage !== 'sqlite') {
-    return { skipped: '当前存储不是 sqlite', results: [] }
+  // VACUUM 是 SQLite 特有的：删除数据后文件不会自己变小。Postgres 有 autovacuum，
+  // 不需要也不该由插件来管。
+  if (ChatGPTConfig.chaite?.db?.dialect && ChatGPTConfig.chaite.db.dialect !== 'sqlite') {
+    return { skipped: `当前方言是 ${ChatGPTConfig.chaite.db.dialect}，无需 VACUUM`, results: [] }
+  }
+  if (!drivers.isInitialized()) {
+    return { skipped: '存储尚未初始化', results: [] }
   }
   const minFreePages = options.force
     ? 0
     : Math.max(0, Number(ChatGPTConfig.chaite?.autoVacuumMinFreePages) || 0)
-  return { results: await vacuumSQLiteDatabases({ minFreePages }) }
+
+  const results = []
+  for (const driver of drivers.listUnique()) {
+    // 只有 SqliteDriver 有 vacuum
+    if (typeof driver.vacuum !== 'function') continue
+    try {
+      results.push(await driver.vacuum({ minFreePages }))
+    } catch (error) {
+      logger.warn(`[Retention] vacuum ${driver.name} 失败: ${error.message}`)
+      results.push({ name: driver.name, error: error.message })
+    }
+  }
+  return { results }
 }
 
 /**

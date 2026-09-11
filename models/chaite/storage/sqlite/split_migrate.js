@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import { openSQLiteDatabase } from './runtime.js'
+import { SqliteDriver } from 'chaite'
 
 const MIGRATION_TABLE_SQL = `
   CREATE TABLE IF NOT EXISTS _sqlite_migrations (
@@ -56,37 +56,37 @@ const SPLIT_TABLES = [
   }
 ]
 
-async function close (db) {
-  await new Promise((resolve, reject) => db.close(error => error ? reject(error) : resolve()))
+async function close (driver) {
+  await driver.close()
 }
 
 async function migrateTable (source, target, definition, batchSize) {
-  await target.execAsync(`${definition.schema};${MIGRATION_TABLE_SQL}`, { label: `initialize ${definition.name} migration` })
-  const migrationColumns = await target.allAsync('PRAGMA table_info(_sqlite_migrations)')
+  await target.exec(`${definition.schema};${MIGRATION_TABLE_SQL}`, { label: `initialize ${definition.name} migration` })
+  const migrationColumns = await target.all('PRAGMA table_info(_sqlite_migrations)')
   if (!migrationColumns.some(column => column.name === 'sourceRowId')) {
-    await target.runAsync('ALTER TABLE _sqlite_migrations ADD COLUMN sourceRowId INTEGER NOT NULL DEFAULT 0')
+    await target.run('ALTER TABLE _sqlite_migrations ADD COLUMN sourceRowId INTEGER NOT NULL DEFAULT 0')
   }
-  const completed = await target.getAsync('SELECT sourceRowId FROM _sqlite_migrations WHERE name = ?', [definition.marker])
+  const completed = await target.get('SELECT sourceRowId FROM _sqlite_migrations WHERE name = ?', [definition.marker])
 
-  const exists = await source.getAsync('SELECT 1 FROM sqlite_master WHERE type = \'table\' AND name = ?', [definition.name])
+  const exists = await source.get('SELECT 1 FROM sqlite_master WHERE type = \'table\' AND name = ?', [definition.name])
   if (!exists) {
-    await target.runAsync('INSERT OR REPLACE INTO _sqlite_migrations(name, completedAt, sourceRowId) VALUES (?, ?, ?)', [definition.marker, new Date().toISOString(), 0])
+    await target.run('INSERT OR REPLACE INTO _sqlite_migrations(name, completedAt, sourceRowId) VALUES (?, ?, ?)', [definition.marker, new Date().toISOString(), 0])
     return 0
   }
 
   const quotedColumns = definition.columns.map(column => `"${column}"`).join(', ')
-  const sourceColumns = new Set((await source.allAsync(`PRAGMA table_info("${definition.name}")`)).map(column => column.name))
+  const sourceColumns = new Set((await source.all(`PRAGMA table_info("${definition.name}")`)).map(column => column.name))
   const sourceSelect = definition.columns.map(column => sourceColumns.has(column)
     ? `"${column}"`
     : `${definition.defaults?.[column] || 'NULL'} AS "${column}"`).join(', ')
   const placeholders = definition.columns.map(() => '?').join(', ')
   let cursor = Number(completed?.sourceRowId || 0)
-  const sourceState = await source.getAsync(`SELECT MAX(rowid) AS maxRowId FROM "${definition.name}"`)
+  const sourceState = await source.get(`SELECT MAX(rowid) AS maxRowId FROM "${definition.name}"`)
   if (Number(sourceState?.maxRowId || 0) < cursor) cursor = 0
-  const pendingState = await source.getAsync(`SELECT COUNT(*) AS count FROM "${definition.name}" WHERE rowid > ?`, [cursor])
+  const pendingState = await source.get(`SELECT COUNT(*) AS count FROM "${definition.name}" WHERE rowid > ?`, [cursor])
   const pendingRows = Number(pendingState?.count || 0)
   if (pendingRows === 0) {
-    await target.runAsync('INSERT OR REPLACE INTO _sqlite_migrations(name, completedAt, sourceRowId) VALUES (?, ?, ?)', [definition.marker, new Date().toISOString(), cursor])
+    await target.run('INSERT OR REPLACE INTO _sqlite_migrations(name, completedAt, sourceRowId) VALUES (?, ?, ?)', [definition.marker, new Date().toISOString(), cursor])
     return 0
   }
   globalThis.logger?.info?.(`[SQLite migration] migrating ${definition.name}: ${pendingRows} rows pending, batchSize=${batchSize}`)
@@ -94,7 +94,7 @@ async function migrateTable (source, target, definition, batchSize) {
   let lastInfoAt = Date.now()
   let nextInfoRows = Math.min(10000, pendingRows)
   while (true) {
-    const rows = await source.allAsync(
+    const rows = await source.all(
       `SELECT rowid AS _migrationRowId, ${sourceSelect} FROM "${definition.name}" WHERE rowid > ? ORDER BY rowid LIMIT ?`,
       [cursor, batchSize]
     )
@@ -124,7 +124,7 @@ async function migrateTable (source, target, definition, batchSize) {
     await new Promise(resolve => setImmediate(resolve))
   }
 
-  await target.runAsync('INSERT OR REPLACE INTO _sqlite_migrations(name, completedAt, sourceRowId) VALUES (?, ?, ?)', [definition.marker, new Date().toISOString(), cursor])
+  await target.run('INSERT OR REPLACE INTO _sqlite_migrations(name, completedAt, sourceRowId) VALUES (?, ?, ?)', [definition.marker, new Date().toISOString(), cursor])
   globalThis.logger?.info?.(`[SQLite migration] ${definition.name} migration completed: ${copied} rows copied`)
   return copied
 }
@@ -137,11 +137,14 @@ export async function migrateSplitSQLiteDatabases (dataDirectory, { batchSize = 
   const corePath = path.join(dataDirectory, 'data.db')
   if (!fs.existsSync(corePath)) return { history: 0, operation_logs: 0 }
 
-  const source = openSQLiteDatabase(corePath)
+  // 这里刻意自己开连接而不用 driver 注册表：拆库必须在注册表打开这些文件之前
+  // 完成，跑完就地关掉。
+  const source = new SqliteDriver(corePath)
   const targets = {
-    history: openSQLiteDatabase(path.join(dataDirectory, 'history.db')),
-    operation_logs: openSQLiteDatabase(path.join(dataDirectory, 'operation_logs.db'))
+    history: new SqliteDriver(path.join(dataDirectory, 'history.db')),
+    operation_logs: new SqliteDriver(path.join(dataDirectory, 'operation_logs.db'))
   }
+  await Promise.all([source.ready(), ...Object.values(targets).map(target => target.ready())])
   const result = {}
   try {
     for (const definition of SPLIT_TABLES) {
