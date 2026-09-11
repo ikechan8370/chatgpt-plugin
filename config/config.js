@@ -221,6 +221,26 @@ class ChatGPTConfig {
     publicBaseUrl: '',
     // 存储实现 sqlite lowdb
     storage: 'sqlite',
+    // 关系型存储的数据库连接。storage 为 sqlite 时才生效（lowdb 不走 SQL）。
+    //
+    // dialect 目前只能填 sqlite。postgres 的 driver 已经就位，但对话历史和操作
+    // 日志还没迁到 driver 层，现在切过去会把数据劈成两个引擎，所以先不开放。
+    // 等历史记录迁完再放开。
+    db: {
+      dialect: 'sqlite',
+      // 以下仅 postgres 用得上
+      host: '127.0.0.1',
+      port: 5432,
+      database: 'chatgpt_plugin',
+      username: '',
+      password: '',
+      ssl: false,
+      pool: {
+        max: 10,
+        idle: 10000,
+        acquire: 30000
+      }
+    },
     // 操作日志最多保留的条数，设为 0 可禁用自动清理
     operationLogLimit: 50000,
     // 保留期清理之后是否自动 VACUUM 回收磁盘空间。
