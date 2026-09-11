@@ -146,8 +146,10 @@ class ChatGPTConfig {
     // 用于组装群聊上下文提示词的模板后缀
     groupContextTemplateSuffix: '\n',
     // 图片下载的并发上限。群聊上下文里的图片以前是一张张串行下的，
-    // 6 张图就要多等将近 1 秒。调大能更快，但同时在内存里的图片也更多
-    // （峰值约等于 该值 × 单图大小），内存紧张可以调小到 1~2。
+    // 6 张图就要多等将近 1 秒。
+    // 这是全插件共享的上限（群聊上下文、引用消息、当前消息共用一个闸门），
+    // 所以内存峰值大致就是 该值 × 单图大小 × 2.3（Buffer + base64 字符串）。
+    // 内存紧张可以调小到 1~2。
     imageFetchConcurrency: 6,
     // 预设前缀索引的缓存时间（秒），0 表示关闭。
     // 每条群消息都要判断一次是否命中预设前缀，不缓存的话每条消息都会把整张预设表
@@ -701,7 +703,11 @@ Return a JSON array of strings only, without any other characters including \`\`
     // 全新安装没有配置文件，走不到这里，默认值直接生效。
     if (!this.isFreshInstall && loadedConfig.bym?.historyRetentionDays === undefined) {
       this.bym.historyRetentionDays = 0
-      this.chaite.autoVacuum = false
+      // 只在用户自己没配过 autoVacuum 时才关掉它：有人可能手写了一份精简配置
+      // （没有 bym 段但显式写了 chaite.autoVacuum: true），不能把他的设置抹掉。
+      if (loadedConfig.chaite?.autoVacuum === undefined) {
+        this.chaite.autoVacuum = false
+      }
       this.retentionUpgradeNotice = true
       changed = true
     }

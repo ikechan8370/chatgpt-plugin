@@ -5,11 +5,14 @@ import { visionService } from './vision.js'
 import { dataDir, formatTimeToBeiJing } from './common.js'
 import { groupHeaderTemplateValues, groupMessageTemplateValues, renderTemplate } from './template.js'
 import { mapWithConcurrency } from './concurrency.js'
+import { withImageFetchPermit } from './imageFetchQueue.js'
 import ChatGPTConfig from '../config/config.js'
 import fetch from 'node-fetch'
 
-function imageFetchConcurrency () {
-  return ChatGPTConfig.llm?.imageFetchConcurrency || 6
+// 外层按消息并发只是为了让各条消息的格式化互相重叠；真正受限的资源（图片下载）
+// 由 withImageFetchPermit 全局控制，所以这里可以放得比图片上限宽松一些。
+function messageFormatConcurrency () {
+  return Math.max(1, Number(ChatGPTConfig.llm?.imageFetchConcurrency) || 6)
 }
 
 class GroupContextCache {
@@ -220,8 +223,9 @@ async function buildImageInfos (chat, options = {}) {
   }
   if (candidates.length === 0) return []
 
-  // \u540c\u4e00\u6761\u6d88\u606f\u91cc\u7684\u591a\u5f20\u56fe\u5e76\u53d1\u4e0b\u8f7d\uff0c\u987a\u5e8f\u7531 mapWithConcurrency \u4fdd\u8bc1
-  const results = await mapWithConcurrency(candidates, imageFetchConcurrency(), async ({ elem, url, ref }) => {
+  // \u5e76\u53d1\u4e0b\u8f7d\uff0c\u4f46\u5e76\u53d1\u4e0a\u9650\u7531\u5168\u5c40\u95f8\u95e8\u7edf\u4e00\u63a7\u5236\uff08\u8fd9\u91cc\u4e0d\u80fd\u518d\u5957\u4e00\u5c42\u4e0a\u9650\uff0c\u5426\u5219\u4f1a\u76f8\u4e58\uff09\u3002
+  // Promise.all \u4fdd\u8bc1\u7ed3\u679c\u987a\u5e8f\u4e0e candidates \u4e00\u81f4\u3002
+  const results = await Promise.all(candidates.map(({ elem, url, ref }) => withImageFetchPermit(async () => {
     let imageId = extractImageFingerprint(elem, url)
     try {
       const cachedImageId = visionService.getImageContentId(ref)
@@ -237,7 +241,7 @@ async function buildImageInfos (chat, options = {}) {
       logger.warn(`[GroupContext] failed to save history image ref from ${url}: ${err.message}`)
       return null
     }
-  })
+  })))
   return results.filter(Boolean)
 }
 
@@ -281,7 +285,7 @@ export async function loadGroupContextImages (messages) {
   const images = (messages || []).flatMap(message => message.images || [])
   if (images.length === 0) return []
 
-  const loaded = await mapWithConcurrency(images, imageFetchConcurrency(), async img => {
+  const loaded = await Promise.all(images.map(img => withImageFetchPermit(async () => {
     try {
       const cached = visionService.loadImage(img.ref)
       if (cached) {
@@ -300,7 +304,7 @@ export async function loadGroupContextImages (messages) {
       logger.warn(`[GroupContext] 获取图片异常 ${img.url}: ${err.message}`)
       return null
     }
-  })
+  })))
   return loaded.filter(Boolean)
 }
 
@@ -327,7 +331,7 @@ export async function buildGroupContextMessages (e, length, templates, getHistor
   // 顺序由 mapWithConcurrency 保证，快照对齐依赖它。
   const formatted = await mapWithConcurrency(
     chats.filter(chat => chat),
-    imageFetchConcurrency(),
+    messageFormatConcurrency(),
     async chat => {
       const id = getMessageId(chat)
       const cached = snapshotById.get(id)

@@ -3,8 +3,7 @@ import common from '../../../lib/common/common.js'
 import fetch from 'node-fetch'
 import { visionService } from './vision.js'
 import { getPresetPrefixIndex } from './presetCache.js'
-import { mapWithConcurrency } from './concurrency.js'
-import ChatGPTConfig from '../config/config.js'
+import { withImageFetchPermit } from './imageFetchQueue.js'
 
 function imageRefText (ref) {
   return `[\u56fe\u7247 ref:${ref}]`
@@ -51,20 +50,23 @@ export async function intoUserMessage (e, options = {}) {
   const contents = []
   const imageRefs = []
   let text = ''
-  const imageConcurrency = ChatGPTConfig.llm?.imageFetchConcurrency || 6
-
-  // 下载并落盘一张图片，失败返回 null。多张图之间并发执行。
-  const fetchImageContent = async url => {
-    const res = await fetch(url)
-    if (!res.ok) {
-      logger.warn(`fetch image ${url} failed: ${res.status}`)
+  // 下载并落盘一张图片，失败返回 null。并发上限由全局图片闸门控制。
+  const fetchImageContent = url => withImageFetchPermit(async () => {
+    try {
+      const res = await fetch(url)
+      if (!res.ok) {
+        logger.warn(`fetch image ${url} failed: ${res.status}`)
+        return null
+      }
+      const mimeType = res.headers.get('content-type') || 'image/jpeg'
+      const buffer = Buffer.from(await res.arrayBuffer())
+      const { ref } = visionService.saveImageFromBuffer(buffer, mimeType, '', { url })
+      return { type: 'image', image: buffer.toString('base64'), mimeType, ref }
+    } catch (err) {
+      logger.warn(`fetch image ${url} failed: ${err.message}`)
       return null
     }
-    const mimeType = res.headers.get('content-type') || 'image/jpeg'
-    const buffer = Buffer.from(await res.arrayBuffer())
-    const { ref } = visionService.saveImageFromBuffer(buffer, mimeType, '', { url })
-    return { type: 'image', image: buffer.toString('base64'), mimeType, ref }
-  }
+  })
   if ((e.source || e.reply_id) && (handleReplyImage || handleReplyText || handleReplyFile)) {
     let seq = e.isGroup ? (e.source?.seq || e.reply_id) : (e.source?.time || e.source?.time)
     let reply
@@ -80,12 +82,7 @@ export async function intoUserMessage (e, options = {}) {
       const replyImageUrls = handleReplyImage
         ? reply.filter(val => val.type === 'image').map(val => val.url)
         : []
-      const replyImages = await mapWithConcurrency(replyImageUrls, imageConcurrency, url =>
-        fetchImageContent(url).catch(err => {
-          logger.warn(`fetch image ${url} failed: ${err.message}`)
-          return null
-        })
-      )
+      const replyImages = await Promise.all(replyImageUrls.map(fetchImageContent))
       for (const image of replyImages) {
         if (!image) continue
         contents.push(image)
@@ -130,12 +127,7 @@ export async function intoUserMessage (e, options = {}) {
     }
   }
   const messageImageUrls = (e.message || []).filter(element => element.type === 'image').map(element => element.url)
-  const messageImages = await mapWithConcurrency(messageImageUrls, imageConcurrency, url =>
-    fetchImageContent(url).catch(err => {
-      logger.warn(`fetch image ${url} failed: ${err.message}`)
-      return null
-    })
-  )
+  const messageImages = await Promise.all(messageImageUrls.map(fetchImageContent))
   for (const image of messageImages) {
     if (!image) continue
     contents.push(image)

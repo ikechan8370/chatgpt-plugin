@@ -122,7 +122,9 @@ function groupHistoryCacheTTLMs () {
  */
 export async function getGroupHistory (e, length = 20) {
   const ttl = groupHistoryCacheTTLMs()
-  const key = ttl > 0 ? `${e.group_id}:${length}` : ''
+  // key 必须带上 bot 账号：多 bot 同处一个群时，各账号能看到的历史并不相同，
+  // 只按 group_id 缓存会把一个账号拉到的历史喂给另一个账号。
+  const key = ttl > 0 ? `${e.bot?.uin ?? e.self_id ?? ''}:${e.group_id}:${length}` : ''
   if (key) {
     const hit = groupHistoryCache.get(key)
     if (hit && (Date.now() - hit.at) < ttl) {

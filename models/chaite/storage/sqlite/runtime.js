@@ -181,15 +181,34 @@ class DatabaseRuntime {
     } catch {}
 
     const startedAt = Date.now()
-    // low 优先级：排在实时对话的写入后面
-    await this.enqueue(
-      db => new Promise((resolve, reject) => db.exec('VACUUM', error => error ? reject(error) : resolve())),
-      { priority: 'low', label: 'vacuum' }
-    )
-    await this.enqueue(
-      db => new Promise((resolve, reject) => db.exec('PRAGMA wal_checkpoint(TRUNCATE)', error => error ? reject(error) : resolve())),
-      { priority: 'low', label: 'vacuum checkpoint' }
-    )
+    // 写入走队列是串行的，但读取是直接打在 reader 连接上、绕过队列的，所以
+    // VACUUM 期间来一次查询就可能拿不到独占锁而 SQLITE_BUSY。重试几次即可，
+    // VACUUM 本身是幂等的。
+    let attempt = 0
+    while (true) {
+      try {
+        // low 优先级：排在实时对话的写入后面
+        await this.enqueue(
+          db => new Promise((resolve, reject) => db.exec('VACUUM', error => error ? reject(error) : resolve())),
+          { priority: 'low', label: 'vacuum' }
+        )
+        break
+      } catch (error) {
+        const busy = error?.code === 'SQLITE_BUSY' || /database is locked/i.test(error?.message || '')
+        if (!busy || ++attempt >= 3) throw error
+        log('warn', `[SQLite:${this.name}] vacuum busy, retry ${attempt}/3`)
+        await new Promise(resolve => setTimeout(resolve, 2000 * attempt))
+      }
+    }
+    // checkpoint 只是顺手把 WAL 截短，失败不该把已经成功的 VACUUM 报成失败
+    try {
+      await this.enqueue(
+        db => new Promise((resolve, reject) => db.exec('PRAGMA wal_checkpoint(TRUNCATE)', error => error ? reject(error) : resolve())),
+        { priority: 'low', label: 'vacuum checkpoint' }
+      )
+    } catch (error) {
+      log('warn', `[SQLite:${this.name}] post-vacuum checkpoint failed: ${error.message}`)
+    }
     const after = this.fileSize()
     const ms = Date.now() - startedAt
     log('info', `[SQLite:${this.name}] vacuum reclaimed ${((before - after) / 1024 / 1024).toFixed(1)} MiB in ${ms}ms`)

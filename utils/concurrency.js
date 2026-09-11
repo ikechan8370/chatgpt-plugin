@@ -37,3 +37,42 @@ export async function mapWithConcurrency (items, limit, fn) {
   await Promise.all(Array.from({ length: max }, worker))
   return results
 }
+
+/**
+ * 全局并发闸门。
+ *
+ * mapWithConcurrency 的上限只在单次调用内生效，嵌套使用时会相乘：外层 6 条消息
+ * 并发、每条消息内部再 6 张图并发，实际同时在飞的下载就是 36 个而不是 6 个，
+ * 内存峰值也跟着翻倍。需要限制的是"同时下载多少张图"这个全局资源，所以用一个
+ * 共享的信号量，而不是在每一层各设一个上限。
+ *
+ * limit 每次取permit时重新读取，改配置无需重启。
+ *
+ * @param {() => number} getLimit
+ * @returns {<T>(fn: () => Promise<T>) => Promise<T>}
+ */
+export function createSemaphore (getLimit) {
+  let active = 0
+  const queue = []
+
+  const limit = () => Math.max(1, Number(getLimit()) || 1)
+
+  const pump = () => {
+    while (queue.length > 0 && active < limit()) {
+      active++
+      queue.shift()()
+    }
+  }
+
+  return function withPermit (fn) {
+    return new Promise((resolve, reject) => {
+      queue.push(() => {
+        Promise.resolve().then(fn).then(
+          value => { active--; pump(); resolve(value) },
+          error => { active--; pump(); reject(error) }
+        )
+      })
+      pump()
+    })
+  }
+}

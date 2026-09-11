@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { mapWithConcurrency } from './concurrency.js'
+import { createSemaphore, mapWithConcurrency } from './concurrency.js'
 
 const tick = ms => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -70,4 +70,57 @@ test('a rejection propagates', async () => {
     }),
     /boom/
   )
+})
+
+test('a shared semaphore caps nested usage (the limit does not multiply)', async () => {
+  let inFlight = 0
+  let peak = 0
+  const withPermit = createSemaphore(() => 6)
+
+  // 外层 20 条消息并发，每条消息内部再 3 张图并发 —— 以前这里会是 18
+  await mapWithConcurrency(Array.from({ length: 20 }, (_, i) => i), 6, async () =>
+    Promise.all([1, 2, 3].map(() => withPermit(async () => {
+      inFlight++
+      peak = Math.max(peak, inFlight)
+      await tick(10)
+      inFlight--
+    })))
+  )
+
+  assert.equal(peak, 6, `nested usage must still respect the shared limit, saw ${peak}`)
+})
+
+test('the semaphore preserves Promise.all result order', async () => {
+  const withPermit = createSemaphore(() => 2)
+  const out = await Promise.all([50, 10, 30, 5].map(ms => withPermit(async () => {
+    await tick(ms)
+    return ms
+  })))
+  assert.deepEqual(out, [50, 10, 30, 5])
+})
+
+test('the semaphore releases permits when a task throws', async () => {
+  const withPermit = createSemaphore(() => 1)
+  await assert.rejects(() => withPermit(async () => { throw new Error('boom') }), /boom/)
+  // 权限没被泄漏的话，后面的任务还能正常拿到
+  assert.equal(await withPermit(async () => 'ok'), 'ok')
+})
+
+test('the semaphore picks up a changed limit at runtime', async () => {
+  let limit = 1
+  let inFlight = 0
+  let peak = 0
+  const withPermit = createSemaphore(() => limit)
+
+  await Promise.all([1, 2].map(() => withPermit(async () => {
+    inFlight++; peak = Math.max(peak, inFlight); await tick(10); inFlight--
+  })))
+  assert.equal(peak, 1)
+
+  limit = 4
+  peak = 0
+  await Promise.all([1, 2, 3, 4].map(() => withPermit(async () => {
+    inFlight++; peak = Math.max(peak, inFlight); await tick(10); inFlight--
+  })))
+  assert.equal(peak, 4, 'config changes take effect without a restart')
 })

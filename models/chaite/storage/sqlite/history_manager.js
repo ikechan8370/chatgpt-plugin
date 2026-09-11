@@ -88,14 +88,20 @@ export class SQLiteHistoryManager extends AbstractHistoryManager {
                 return reject(err)
               }
 
-              // 保留期清理按 createdAt 过滤，没有索引的话每次都是全表扫描
-              this.db.run(`CREATE INDEX IF NOT EXISTS idx_${this.tableName}_created ON ${this.tableName} (createdAt)`, (err) => {
-                if (err) {
-                  return reject(err)
-                }
+              this.initialized = true
+              resolve()
 
-                this.initialized = true
-                resolve()
+              // 保留期清理按 createdAt 过滤，没有索引的话每次都是全表扫描。
+              // 但在已经很大的历史表上建索引可能要好几秒，不该卡住升级后的第一条
+              // 消息，所以放到后台用 low 优先级建——实时对话的写入会插在前面，
+              // 建好之前清理只是慢一点，不影响正确性。
+              // 暴露成 promise，便于测试和清理流程在需要时等待建完
+              this.createdAtIndexReady = this.db.runAsync(
+                `CREATE INDEX IF NOT EXISTS idx_${this.tableName}_created ON ${this.tableName} (createdAt)`,
+                [],
+                { priority: 'low', label: 'create createdAt index' }
+              ).catch(indexError => {
+                globalThis.logger?.warn?.(`[History] failed to create createdAt index: ${indexError.message}`)
               })
             })
           })

@@ -49,6 +49,7 @@ class VisionService {
       fs.mkdirSync(IMAGES_DIR, { recursive: true })
     }
     this.refs = this._loadRefs()
+    this._refCount = Object.keys(this.refs).length
     this.cleanupTimer = null
     this._refsDirty = false
     this._refsSaveTimer = null
@@ -69,7 +70,10 @@ class VisionService {
       refsPath: IMAGE_REFS_PATH,
       retentionMs
     })
-    if (result.refsRemoved > 0) this.refs = this._loadRefs()
+    if (result.refsRemoved > 0) {
+      this.refs = this._loadRefs()
+      this._refCount = Object.keys(this.refs).length
+    }
     if (result.deleted > 0) {
       logger.info(`[Vision] cleaned ${result.deleted} expired image(s), freed ${(result.bytesFreed / 1024 / 1024).toFixed(2)} MiB`)
     }
@@ -143,20 +147,30 @@ class VisionService {
    * loadImage / resolveImageRef 仍然能通过文件名找回图片，只是少了 url 元信息。
    */
   _pruneRefs () {
+    // 维护一个计数，避免每次调用都 Object.keys() 全量拍一份 key 数组出来——
+    // rememberImageSource 是每张图都要调的，那样等于又把 O(n) 加回热路径。
+    if (this._refCount === undefined) this._refCount = Object.keys(this.refs).length
+    if (this._refCount <= MAX_REF_ENTRIES) return 0
+
     const keys = Object.keys(this.refs)
-    if (keys.length <= MAX_REF_ENTRIES) return 0
     keys.sort((a, b) => (Number(this.refs[a]?.updatedAt) || 0) - (Number(this.refs[b]?.updatedAt) || 0))
     const excess = keys.length - REF_PRUNE_TARGET
     for (let i = 0; i < excess; i++) {
       delete this.refs[keys[i]]
     }
-    logger.info(`[Vision] pruned ${excess} least recently used image ref(s), kept ${Object.keys(this.refs).length}`)
+    this._refCount = keys.length - excess
+    logger.info(`[Vision] pruned ${excess} least recently used image ref(s), kept ${this._refCount}`)
     return excess
   }
 
   rememberImageSource (ref, source = {}) {
     if (!ref) return
-    const current = this.refs[ref] || {}
+    const current = this.refs[ref]
+    const isNew = current === undefined
+    if (isNew) {
+      if (this._refCount === undefined) this._refCount = Object.keys(this.refs).length
+      this._refCount++
+    }
     const cleanSource = Object.fromEntries(
       Object.entries(source).filter(([key, value]) => value !== undefined && value !== null && !(key === 'url' && value === ''))
     )
@@ -371,9 +385,12 @@ class VisionService {
     for (const ext of ['.jpg', '.png', '.gif', '.webp']) {
       const filePath = path.join(IMAGES_DIR, `${ref}${ext}`)
       if (fs.existsSync(filePath)) {
-        // 文件内容是不可变的（文件名就是内容的 md5），已经算过就别再整file读一遍。
+        // 文件内容是不可变的（文件名就是内容的 md5），已经算过就别再整个读一遍。
+        // 但只认 32 位十六进制：buildImageInfos 在视觉模型分支下会把
+        // extractImageFingerprint() 的 12 位短哈希也写进 imageId，那个不是内容
+        // 哈希，直接返回会让群聊快照里的 imageId 标记前后不一致、破坏前缀缓存。
         const cached = this.refs[ref]?.imageId
-        if (cached) return cached
+        if (typeof cached === 'string' && /^[a-f0-9]{32}$/i.test(cached)) return cached
         return crypto.createHash('md5').update(fs.readFileSync(filePath)).digest('hex')
       }
     }
@@ -406,6 +423,7 @@ class VisionService {
     if (filePath) await rm(filePath, { force: true }).catch(() => {})
     if (ref && this.refs[ref]) {
       delete this.refs[ref]
+      this._refCount = undefined
       this._saveRefs()
     }
   }
@@ -431,6 +449,7 @@ class VisionService {
         if (entry.filePath) await rm(entry.filePath, { force: true }).catch(() => {})
         if (entry.ref && this.refs[entry.ref]) {
           delete this.refs[entry.ref]
+          this._refCount = undefined
           refsChanged = true
         }
       }

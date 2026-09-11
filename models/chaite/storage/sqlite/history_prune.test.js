@@ -147,10 +147,29 @@ test('a missing cutoff is a no-op rather than deleting everything', async () => 
   assert.equal(await countAll(manager), 1, 'nothing was deleted')
 })
 
-test('the createdAt index exists so pruning does not full-scan', async () => {
+test('the createdAt index is built in the background and used by pruning', async () => {
   const { manager } = await makeManager()
+  // 建索引不阻塞 initialize，所以这里要等后台那一步跑完
+  assert.ok(manager.createdAtIndexReady instanceof Promise, 'index build is exposed as a promise')
+  await manager.createdAtIndexReady
+
   const plan = await manager.db.allAsync(
     'EXPLAIN QUERY PLAN SELECT id FROM history WHERE createdAt < ?', ['2026-01-01T00:00:00.000Z'])
   const detail = plan.map(row => row.detail).join(' ')
   assert.match(detail, /USING INDEX idx_history_created/, `expected an index scan, got: ${detail}`)
+})
+
+test('initialize resolves without waiting for the index build', async () => {
+  const { manager } = await makeManager()
+  // ensureInitialized 已经返回了，但索引可能还没建好 —— 此时查询仍必须正确
+  await seed(manager, [
+    { conversationId: 'bym1', ageDays: 100 },
+    { conversationId: 'bym2', ageDays: 1 }
+  ])
+  const count = await manager.countHistoryBefore({
+    before: new Date(Date.now() - 30 * DAY).toISOString(),
+    conversationPrefix: 'bym'
+  })
+  assert.equal(count, 1, 'correctness does not depend on the index existing yet')
+  await manager.createdAtIndexReady
 })
