@@ -32,11 +32,51 @@ const DRY_RUN = process.argv.includes('--dry-run')
 const { SqliteDriver, createPostgresDriver, migrateSqlStorage, getChaiteTables } = await import('chaite')
 const { default: ChatGPTConfig } = await import('../config/config.js')
 
-const dataDir = path.resolve('./plugins/chatgpt-plugin', ChatGPTConfig.chaite?.dataDir || 'data')
-const db = ChatGPTConfig.chaite?.db || {}
+/**
+ * 直接读配置文件，而不是只信 config 模块里的值。
+ *
+ * ChatGPTConfig 只有在 Bot 进程里被 startSync() 之后才会加载 config.json；
+ * 这个脚本是独立跑的，没走那条路，拿到的全是类里的默认值——host/port 恰好和
+ * 真实配置一样，username/password 却是空的，于是连接时报
+ * "client password must be a string"，看起来像凭据配错了。
+ */
+const CONFIG_DIR = path.resolve('./plugins/chatgpt-plugin', 'data')
+
+function loadPersistedConfig () {
+  for (const name of ['config.json', 'config.yaml']) {
+    const file = path.join(CONFIG_DIR, name)
+    if (!fs.existsSync(file)) continue
+    if (name.endsWith('.json')) {
+      try {
+        return JSON.parse(fs.readFileSync(file, 'utf8'))
+      } catch (error) {
+        console.error(`读取 ${file} 失败: ${error.message}`)
+        process.exit(1)
+      }
+    }
+    console.error(`检测到 ${file}，但这个脚本只支持 config.json，请先让 Bot 启动一次生成 json`)
+    process.exit(1)
+  }
+  return null
+}
+
+const persisted = loadPersistedConfig()
+if (!persisted) {
+  console.error(`在 ${CONFIG_DIR} 下找不到 config.json，请先启动过一次 Bot`)
+  process.exit(1)
+}
+
+// 落盘的配置优先，缺的字段用类默认值补
+const chaiteConfig = { ...(ChatGPTConfig.chaite || {}), ...(persisted.chaite || {}) }
+const dataDir = path.resolve('./plugins/chatgpt-plugin', chaiteConfig.dataDir || 'data')
+const db = { ...(ChatGPTConfig.chaite?.db || {}), ...(persisted.chaite?.db || {}) }
 
 if (!db.database) {
   console.error('缺少 chaite.db.database，请先在插件配置里填好 Postgres 连接信息')
+  process.exit(1)
+}
+if (!db.username) {
+  console.error('缺少 chaite.db.username，请先在插件配置里填好 Postgres 连接信息')
   process.exit(1)
 }
 
