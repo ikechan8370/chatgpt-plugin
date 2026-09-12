@@ -17,13 +17,16 @@
     "sqlite-vec": "^0.1.7-alpha.2"
   },
   "peerDependencies": {
-    "sqlite3": ">=5 <7",
-    "pg": "^8.0.0"
+    "pg": "^8.0.0",
+    "sqlite3": ">=5 <7"
   },
   "peerDependenciesMeta": {
     "pg": {
       "optional": true
     }
   },
-  "pnpm": {}
+  "pnpm": {},
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8"
+  }
 }
