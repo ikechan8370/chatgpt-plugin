@@ -21,4 +21,5 @@ export class LowDBMcpServerStorage extends ChaiteStorage {
   async listItems () { return await this.collection.findAll() }
   async listItemsByEqFilter (filter) { return (await this.listItems()).filter(item => Object.entries(filter).every(([key, value]) => item[key] === value)) }
   async listItemsByInQuery (query) { return (await this.listItems()).filter(item => query.every(({ field, values }) => values.includes(item[field]))) }
+  async clear () { await this.collection.deleteAll() }
 }

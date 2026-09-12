@@ -1,6 +1,10 @@
 import { ChaiteStorage, Channel } from 'chaite'
 
 export class LowDBChannelStorage extends ChaiteStorage {
+  getName () {
+    return 'LowDBChannelStorage'
+  }
+
   /**
    *
    * @param { LowDBStorage } storage

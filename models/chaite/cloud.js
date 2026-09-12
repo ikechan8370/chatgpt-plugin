@@ -17,6 +17,7 @@ import { LowDBToolsStorage } from './storage/lowdb/tools_storage.js'
 import { LowDBProcessorsStorage } from './storage/lowdb/processors_storage.js'
 import { ChatGPTUserModeSelector } from './user_mode_selector.js'
 import { LowDBUserStateStorage } from './storage/lowdb/user_state_storage.js'
+import { LowDBToolsGroupDTOsStorage } from './storage/lowdb/tool_groups_storage.js'
 import { LowDBHistoryManager } from './storage/lowdb/history_manager.js'
 import { VectraVectorDatabase } from './vector_database.js'
 import path from 'path'
@@ -103,20 +104,24 @@ export async function initChaite () {
       break
     }
     case 'lowdb': {
-      const ChatGPTStorage = (await import('storage/lowdb/storage.js')).default
+      // 相对路径：'storage/lowdb/storage.js' 是裸说明符，既没有对应的包也没有
+      // imports 映射，选到 lowdb 就会 ERR_MODULE_NOT_FOUND
+      const { default: ChatGPTStorage, ChatGPTHistoryStorage } = await import('./storage/lowdb/storage.js')
       await ChatGPTStorage.init()
       channelsStorage = new LowDBChannelStorage(ChatGPTStorage)
       chatPresetsStorage = new LowDBChatPresetsStorage(ChatGPTStorage)
       toolsStorage = new LowDBToolsStorage(ChatGPTStorage)
       processorsStorage = new LowDBProcessorsStorage(ChatGPTStorage)
       userStateStorage = new LowDBUserStateStorage(ChatGPTStorage)
+      toolsGroupStorage = new LowDBToolsGroupDTOsStorage(ChatGPTStorage)
       triggerStorage = new LowDBTriggerStorage(ChatGPTStorage)
       mcpServerStorage = new LowDBMcpServerStorage(ChatGPTStorage)
-      const ChatGPTHistoryStorage = (await import('storage/lowdb/storage.js')).ChatGPTHistoryStorage
       await ChatGPTHistoryStorage.init()
       historyStorage = new LowDBHistoryManager(ChatGPTHistoryStorage)
       break
     }
+    default:
+      throw new Error(`未知的存储实现 chaite.storage=${storage}，可选值：sqlite、lowdb`)
   }
   const channelsManager = await ChannelsManager.init(channelsStorage, new DefaultChannelLoadBalancer())
   const toolsDir = path.resolve('./plugins/chatgpt-plugin', ChatGPTConfig.chaite.toolsDirPath)
@@ -140,11 +145,14 @@ export async function initChaite () {
   const userModeSelector = new ChatGPTUserModeSelector()
   let chaite = Chaite.init(channelsManager, toolsManager, processorsManager, chatPresetManager, toolsGroupManager, triggerManager,
     userModeSelector, userStateStorage, historyStorage, chaiteLogger)
+  // 操作日志是高频写入、保留量按万条计的数据，lowdb 会把整个集合常驻内存并
+  // 整文件重写，不适合做持久化后端。所以 lowdb 下只挂内存版 manager：
+  // 管理面板的日志页面照常可用，只是重启后不保留。
   if (storage === 'sqlite') {
     operationLogStorage = new SQLiteOperationLogStorage(path.join(dataDir, 'operation_logs.db'), ChatGPTConfig.chaite.operationLogLimit)
     await operationLogStorage.initialize()
-    chaite.setOperationLogManager(new OperationLogManager(operationLogStorage))
   }
+  chaite.setOperationLogManager(new OperationLogManager(operationLogStorage))
   chaite.setMcpServerManager(new McpServerManager(mcpServerStorage))
   chaite.setMcpManagementGuard(context => Boolean(context.getEvent()?.isMaster))
   const skillsDir = path.join(dataDir, 'skills')

@@ -1,7 +1,7 @@
 import Config from '../config/config.js'
 import { Chaite, SendMessageOption } from 'chaite'
 import { getPreset, intoUserMessage, toYunzai } from '../utils/message.js'
-import { YunzaiUserState } from '../models/chaite/storage/lowdb/user_state_storage.js'
+import { YunzaiUserState } from '../models/chaite/user_state.js'
 import { buildGroupContextMessages, getGroupHistory, loadGroupContextImages } from '../utils/group.js'
 import { buildMemoryPrompt } from '../models/memory/prompt.js'
 import { extractTextFromUserMessage, processUserMemory } from '../models/memory/userMemoryManager.js'

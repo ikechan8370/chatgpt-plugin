@@ -4,6 +4,10 @@ import { ChaiteStorage, ToolsGroupDTO } from 'chaite'
  * @extends {ChaiteStorage<import('chaite').ToolsGroupDTO>}
  */
 export class LowDBToolsGroupDTOsStorage extends ChaiteStorage {
+  getName () {
+    return 'LowDBToolsGroupDTOsStorage'
+  }
+
   /**
    *
    * @param { LowDBStorage } storage
@@ -62,6 +66,40 @@ export class LowDBToolsGroupDTOsStorage extends ChaiteStorage {
   async listItems () {
     const list = await this.collection.findAll()
     return list.map(item => new ToolsGroupDTO({}).fromString(JSON.stringify(item)))
+  }
+
+  /**
+   *
+   * @param {Record<string, unknown>} filter
+   * @returns {Promise<import('chaite').ToolsGroupDTO[]>}
+   */
+  async listItemsByEqFilter (filter) {
+    const allList = await this.listItems()
+    return allList.filter(item => {
+      for (const key in filter) {
+        if (item[key] !== filter[key]) {
+          return false
+        }
+      }
+      return true
+    })
+  }
+
+  /**
+   *
+   * @param {Array<{field: string, values: unknown[]}>} query
+   * @returns {Promise<import('chaite').ToolsGroupDTO[]>}
+   */
+  async listItemsByInQuery (query) {
+    const allList = await this.listItems()
+    return allList.filter(item => {
+      for (const { field, values } of query) {
+        if (!values.includes(item[field])) {
+          return false
+        }
+      }
+      return true
+    })
   }
 
   async clear () {

@@ -5,6 +5,10 @@ import { invalidatePresetPrefixIndex } from '../../../../utils/presetCache.js'
  * @extends {ChaiteStorage<import('chaite').ChatPreset>}
  */
 export class LowDBChatPresetsStorage extends ChaiteStorage {
+  getName () {
+    return 'LowDBChatPresetsStorage'
+  }
+
   /**
    *
    * @param { LowDBStorage } storage
