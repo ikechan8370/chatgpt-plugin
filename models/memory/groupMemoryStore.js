@@ -86,8 +86,11 @@ export class GroupMemoryStore {
 
   prepareVectorStatements () {
     try {
-      this.deleteVecStmt = this.db.prepare('DELETE FROM vec_group_facts WHERE rowid = ?')
-      this.insertVecStmt = this.db.prepare('INSERT INTO vec_group_facts(rowid, embedding) VALUES (?, ?)')
+      // rowid 必须用 Number 传，不能用 BigInt：node-sqlite3 不支持绑定 BigInt，
+      // 会当成 NULL，于是 INSERT 拿到一个自动分配的 rowid（和 fact id 对不上），
+      // DELETE 则一条都匹配不到（changes=0）。两者都不报错，所以一直没被发现。
+      this.deleteVecStmt = this.db.prepare('DELETE FROM vec_group_facts WHERE rowid = ? AND group_id = ?')
+      this.insertVecStmt = this.db.prepare('INSERT INTO vec_group_facts(rowid, group_id, embedding) VALUES (?, ?, ?)')
     } catch (err) {
       this.deleteVecStmt = null
       this.insertVecStmt = null
@@ -263,10 +266,9 @@ export class GroupMemoryStore {
             } else {
               embeddingArray = Float32Array.from(vector)
             }
-            const rowId = BigInt(factId)
-            logger.debug(`[Memory] upserting vector for fact ${factId}, rowIdType=${typeof rowId}`)
-            await this.deleteVecStmt.run(rowId)
-            await this.insertVecStmt.run(rowId, embeddingArray)
+            const rowId = Number(factId)
+            await this.deleteVecStmt.run(rowId, normGroupId)
+            await this.insertVecStmt.run(rowId, normGroupId, embeddingArray)
           } catch (error) {
             logger.error(`Failed to upsert vector for fact ${factId}:`, error)
           }
@@ -298,7 +300,7 @@ export class GroupMemoryStore {
     }
     await this.db.prepare('DELETE FROM group_facts WHERE id = ?').run(factId)
     try {
-      await this.deleteVecStmt.run(BigInt(factId))
+      await this.deleteVecStmt.run(Number(factId), normGroupId)
     } catch (err) {
       logger?.warn?.(`[Memory] failed to delete vector for fact ${factId}:`, err)
     }
@@ -348,13 +350,16 @@ export class GroupMemoryStore {
           return []
         }
       }
+      // 按分区过滤再取 top-k。旧写法是先全库 top-k、再 JOIN 过滤群号，
+      // 小群基本什么都留不下（k=5 时期望不到 0.1 条），而且会静默退化成
+      // 文本检索，表面上看不出问题。
       const rows = await this.db.prepare(`
         SELECT gf.*, vec_group_facts.distance AS distance
         FROM vec_group_facts
         JOIN group_facts gf ON gf.id = vec_group_facts.rowid
-        WHERE gf.group_id = ?
+        WHERE vec_group_facts.group_id = ?
           AND vec_group_facts.embedding MATCH ?
-          AND vec_group_facts.k = ${limit}
+          AND vec_group_facts.k = ${Math.max(1, Math.trunc(Number(limit)) || 1)}
         ORDER BY distance ASC
       `).all(groupId, embeddingVector)
       const threshold = this.vectorDistanceThreshold

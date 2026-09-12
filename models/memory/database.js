@@ -4,6 +4,8 @@ import fs from 'fs'
 import path from 'path'
 import ChatGPTConfig from '../../config/config.js'
 
+const VECTOR_TABLE = 'vec_group_facts'
+const VECTOR_MIGRATION_TMP = 'vec_group_facts_migration_tmp'
 const META_VECTOR_DIM_KEY = 'group_vec_dimension'
 const META_VECTOR_MODEL_KEY = 'group_vec_model'
 const META_GROUP_TOKENIZER_KEY = 'group_memory_tokenizer'
@@ -792,7 +794,67 @@ async function createVectorTable (db, dimension) {
   if (optionalDependencyState.vectorError) {
     throw optionalDependencyState.vectorError
   }
-  await db.exec(`CREATE VIRTUAL TABLE vec_group_facts USING vec0(embedding float[${dimension}])`)
+  // group_id 作为 PARTITION KEY：KNN 只在本群的分区里找。
+  //
+  // 旧表没有这一列，只能先全库取 top-k 再 JOIN 过滤群号——k=5 的情况下，
+  // 一个只占全部向量 0.5% 的小群期望能留下 0.02 条结果，等于向量检索对它
+  // 完全失效，而且会静默退化成文本检索，看不出来。
+  await db.exec(
+    `CREATE VIRTUAL TABLE ${VECTOR_TABLE} USING vec0(group_id TEXT PARTITION KEY, embedding float[${dimension}])`
+  )
+}
+
+/**
+ * 老库的向量表没有 group_id 分区列，这里原地改造。
+ *
+ * 向量本身不用重新生成：vec0 可以把 embedding 原样读回来，rowid 就是
+ * group_facts.id，群号 JOIN 一下就有。整个搬运在 SQL 里完成，不把几百 MB
+ * 的向量读进 JS。
+ *
+ * @returns {Promise<boolean>} 是否执行了迁移
+ */
+async function migrateVectorTableToPartitioned (db, dimension) {
+  const existing = await db.prepare(`
+    SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?
+  `).get(VECTOR_TABLE)
+  if (!existing?.sql) return false
+  if (/partition\s+key/i.test(existing.sql)) return false
+
+  const before = await db.prepare(`SELECT COUNT(*) AS n FROM ${VECTOR_TABLE}`).get().catch(() => ({ n: 0 }))
+  const count = Number(before?.n || 0)
+  // 一次性操作，但在大库上不快：3072 维、3 万条实测约 90 秒。这期间记忆检索
+  // 会等着，所以把预计耗时打出来，免得看起来像卡死。
+  logger?.info?.(
+    `[Memory] 向量表缺少 group_id 分区列，开始原地迁移 ${count} 条向量` +
+    `（不需要重新生成向量，预计 ${Math.max(1, Math.round(count / 350))} 秒左右）`
+  )
+  const startedAt = Date.now()
+  await db.exec(`DROP TABLE IF EXISTS ${VECTOR_MIGRATION_TMP}`)
+  await db.exec(`CREATE TABLE ${VECTOR_MIGRATION_TMP} (rowid INTEGER PRIMARY KEY, group_id TEXT, embedding BLOB)`)
+
+  // 只搬还能对上 fact 的向量；对不上的是孤儿，留着也没用
+  const staged = await db.prepare(`
+    INSERT INTO ${VECTOR_MIGRATION_TMP}(rowid, group_id, embedding)
+    SELECT v.rowid, g.group_id, v.embedding
+    FROM ${VECTOR_TABLE} v
+    JOIN group_facts g ON g.id = v.rowid
+  `).run()
+
+  await db.exec(`DROP TABLE ${VECTOR_TABLE}`)
+  await createVectorTable(db, dimension)
+  const restored = await db.prepare(`
+    INSERT INTO ${VECTOR_TABLE}(rowid, group_id, embedding)
+    SELECT rowid, group_id, embedding FROM ${VECTOR_MIGRATION_TMP}
+  `).run()
+  await db.exec(`DROP TABLE ${VECTOR_MIGRATION_TMP}`)
+
+  const orphaned = count - Number(staged?.changes || 0)
+  logger?.info?.(
+    `[Memory] 向量表迁移完成：搬运 ${restored?.changes ?? 0} 条，` +
+    `耗时 ${((Date.now() - startedAt) / 1000).toFixed(1)}s` +
+    (orphaned > 0 ? `，丢弃 ${orphaned} 条对不上 fact 的孤儿向量` : '')
+  )
+  return true
 }
 
 async function ensureVectorTable (db) {
@@ -811,8 +873,8 @@ async function ensureVectorTable (db) {
   const currentModel = ChatGPTConfig.llm?.embeddingModel || ''
   const tableExists = Boolean(await db.prepare(`
     SELECT name FROM sqlite_master
-    WHERE type = 'table' AND name = 'vec_group_facts'
-  `).get())
+    WHERE type = 'table' AND name = ?
+  `).get(VECTOR_TABLE))
 
   const parseDimension = value => {
     if (!value && value !== 0) return 0
@@ -831,7 +893,7 @@ async function ensureVectorTable (db) {
 
   if (needsTableReset && tableExists) {
     try {
-      await db.exec('DROP TABLE IF EXISTS vec_group_facts')
+      await db.exec(`DROP TABLE IF EXISTS ${VECTOR_TABLE}`)
       tablePresent = false
       dimension = 0
     } catch (err) {
@@ -860,6 +922,12 @@ async function ensureVectorTable (db) {
   }
 
   if (tablePresent && storedDimension > 0) {
+    // 老库的向量表没有分区列，在这里补上（失败不该让记忆功能整个起不来）
+    try {
+      await migrateVectorTableToPartitioned(db, storedDimension)
+    } catch (err) {
+      logger?.error?.('[Memory] 向量表分区迁移失败，向量检索将继续使用旧结构:', err)
+    }
     cachedVectorDimension = storedDimension
     cachedVectorModel = storedModel || currentModel
     return cachedVectorDimension
@@ -878,7 +946,7 @@ export async function resetVectorTableDimension (dimension) {
   }
   const db = await getMemoryDatabase()
   try {
-    await db.exec('DROP TABLE IF EXISTS vec_group_facts')
+    await db.exec(`DROP TABLE IF EXISTS ${VECTOR_TABLE}`)
   } catch (err) {
     logger?.warn?.('[Memory] failed to drop vec_group_facts:', err)
   }
