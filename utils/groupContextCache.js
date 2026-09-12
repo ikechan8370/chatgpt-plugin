@@ -1,8 +1,7 @@
-import { openSQLiteDatabase } from '../models/chaite/storage/sqlite/runtime.js'
-import path from 'path'
+import { drivers } from 'chaite'
 import * as crypto from 'node:crypto'
 import { visionService } from './vision.js'
-import { dataDir, formatTimeToBeiJing } from './common.js'
+import { formatTimeToBeiJing } from './common.js'
 import { groupHeaderTemplateValues, groupMessageTemplateValues, renderTemplate } from './template.js'
 import { mapWithConcurrency } from './concurrency.js'
 import { withImageFetchPermit } from './imageFetchQueue.js'
@@ -26,24 +25,20 @@ class GroupContextCache {
     if (this.initialized) return
     if (this._initPromise) return this._initPromise
 
-    this._initPromise = new Promise((resolve, reject) => {
-      const dbPath = path.join(dataDir, 'data.db')
-      logger.debug(`[GroupContext] opening db at ${dbPath}`)
-      this.db = openSQLiteDatabase(dbPath, err => {
-        if (err) return reject(err)
-        this.db.run(`CREATE TABLE IF NOT EXISTS group_context_cache (
-          groupId TEXT PRIMARY KEY,
-          snapshot TEXT NOT NULL,
-          updatedAt INTEGER NOT NULL
-        )`, err => {
-          if (err) return reject(err)
-          this.initialized = true
-          resolve()
-        })
-      })
+    // 和其他表共用主库的 driver：以前这里自己 openSQLiteDatabase('data.db')，
+    // 绕过了存储层，换成 Postgres 时会被落下。
+    this._initPromise = (async () => {
+      this.db = drivers.get('main')
+      const dialect = this.db.dialect
+      await this.db.exec(dialect.createTable('group_context_cache', {
+        groupId: { type: 'text', pk: true },
+        snapshot: { type: 'json', notNull: true },
+        updatedAt: { type: 'bigint', notNull: true }
+      }))
+      this.initialized = true
     // 失败时清掉缓存的 promise，否则一次偶发的建表失败会让群聊上下文缓存
     // 到重启为止都用不了。
-    }).catch(err => {
+    })().catch(err => {
       this._initPromise = null
       throw err
     })
@@ -56,27 +51,26 @@ class GroupContextCache {
    */
   async getSnapshot (groupId) {
     await this._init()
-    return new Promise((resolve, reject) => {
-      this.db.get(
-        'SELECT snapshot FROM group_context_cache WHERE groupId = ?',
-        [String(groupId)],
-        (err, row) => {
-          if (err) return reject(err)
-          if (!row) {
-            logger.debug(`[GroupContext] getSnapshot: no snapshot for group=${groupId}`)
-            return resolve(null)
-          }
-          try {
-            const msgs = JSON.parse(row.snapshot)
-            logger.debug(`[GroupContext] getSnapshot ok: group=${groupId}, msgs=${msgs.length}`)
-            resolve(msgs)
-          } catch (e) {
-            logger.error(`[GroupContext] getSnapshot parse error: ${e.message}`)
-            resolve(null)
-          }
-        }
-      )
-    })
+    // 标识符必须走 quoteId：建表时是带引号建的（"groupId" 保留驼峰），
+    // 而 Postgres 会把裸标识符转成小写，写 groupId 实际查的是 groupid，
+    // 直接报 column "groupid" does not exist。SQLite 大小写不敏感所以看不出来。
+    const q = name => this.db.dialect.quoteId(name)
+    const row = await this.db.get(
+      `SELECT ${q('snapshot')} FROM ${q('group_context_cache')} WHERE ${q('groupId')} = ?`,
+      [String(groupId)]
+    )
+    if (!row) {
+      logger.debug(`[GroupContext] getSnapshot: no snapshot for group=${groupId}`)
+      return null
+    }
+    try {
+      const msgs = JSON.parse(row.snapshot)
+      logger.debug(`[GroupContext] getSnapshot ok: group=${groupId}, msgs=${msgs.length}`)
+      return msgs
+    } catch (e) {
+      logger.error(`[GroupContext] getSnapshot parse error: ${e.message}`)
+      return null
+    }
   }
 
   /**
@@ -87,17 +81,15 @@ class GroupContextCache {
     await this._init()
     const snapshot = JSON.stringify(messages)
     const now = Date.now()
-    return new Promise(resolve => {
-      this.db.run(
-        'INSERT OR REPLACE INTO group_context_cache (groupId, snapshot, updatedAt) VALUES (?, ?, ?)',
-        [String(groupId), snapshot, now],
-        err => {
-          if (err) logger.error(`[GroupContext] saveSnapshot failed: ${err.message}`)
-          else logger.debug(`[GroupContext] saveSnapshot ok: group=${groupId}, msgs=${messages.length}, bytes=${snapshot.length}`)
-          resolve()
-        }
-      )
-    })
+    // INSERT OR REPLACE 是 SQLite 专有写法，换成两种方言通用的 ON CONFLICT
+    // upsert() 内部会 quoteId，所以这里不用自己拼
+    const sql = this.db.dialect.upsert('group_context_cache', ['groupId', 'snapshot', 'updatedAt'], 'groupId')
+    try {
+      await this.db.run(sql, [String(groupId), snapshot, now])
+      logger.debug(`[GroupContext] saveSnapshot ok: group=${groupId}, msgs=${messages.length}, bytes=${snapshot.length}`)
+    } catch (err) {
+      logger.error(`[GroupContext] saveSnapshot failed: ${err.message}`)
+    }
   }
 
   /**
@@ -106,13 +98,15 @@ class GroupContextCache {
   async cleanup (maxAgeMs = 3600000) {
     await this._init()
     const cutoff = Date.now() - maxAgeMs
-    return new Promise(resolve => {
-      this.db.run(
-        'DELETE FROM group_context_cache WHERE updatedAt < ?',
-        [cutoff],
-        () => resolve()
+    try {
+      const q = name => this.db.dialect.quoteId(name)
+      await this.db.run(
+        `DELETE FROM ${q('group_context_cache')} WHERE ${q('updatedAt')} < ?`,
+        [cutoff]
       )
-    })
+    } catch (err) {
+      logger.error(`[GroupContext] cleanup failed: ${err.message}`)
+    }
   }
 }
 

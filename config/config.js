@@ -219,8 +219,33 @@ class ChatGPTConfig {
     port: 48370,
     // 管理面板自定义访问地址；NAT/反代场景可填完整地址，如 https://example.com
     publicBaseUrl: '',
-    // 存储实现 sqlite lowdb
-    storage: 'sqlite',
+    // 存储实现 sql lowdb（sqlite 是 sql 的旧名，继续可用）
+    storage: 'sql',
+    // 关系型存储的连接配置。storage 为 lowdb 时整段忽略。
+    //
+    // dialect: sqlite | postgres
+    //
+    // sqlite 是默认，数据落在 dataDir 下的三个文件里，零配置、零运维。
+    // postgres 适合多实例共享、已有数据库运维体系、或者想摆脱 sqlite3 原生编译
+    // 的场景；它不会更快——本机 SQLite 读是微秒级，走网络至少零点几毫秒。
+    //
+    // 切到 postgres 需要自行安装驱动：pnpm add pg
+    // 注意：切换方言不会搬运数据，两边是各自独立的库。
+    db: {
+      dialect: 'sqlite',
+      // 以下仅 postgres 用得上
+      host: '127.0.0.1',
+      port: 5432,
+      database: 'chatgpt_plugin',
+      username: '',
+      password: '',
+      ssl: false,
+      pool: {
+        max: 10,
+        idle: 10000,
+        acquire: 30000
+      }
+    },
     // 操作日志最多保留的条数，设为 0 可禁用自动清理
     operationLogLimit: 50000,
     // 保留期清理之后是否自动 VACUUM 回收磁盘空间。

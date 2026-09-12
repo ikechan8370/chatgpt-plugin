@@ -8,7 +8,20 @@ import {
   ToolManager,
   ToolsGroupManager,
   TriggerManager
-  , OperationLogManager, McpServerManager, SkillRegistry
+  , OperationLogManager, McpServerManager, SkillRegistry,
+  // SQL 存储层现在由 chaite 提供。以前这九个 storage 在本仓库和
+  // karin-plugin-chatgpt 里各有一份逐行雷同的拷贝，而且已经分叉。
+  drivers,
+  SqlChannelStorage,
+  SqlChatPresetStorage,
+  SqlToolsStorage,
+  SqlProcessorsStorage,
+  SqlUserStateStorage,
+  SqlToolsGroupStorage,
+  SqlMcpServerStorage,
+  SqlTriggerStorage,
+  SqlHistoryManager,
+  SqlOperationLogStorage
 } from 'chaite'
 import ChatGPTConfig from '../../config/config.js'
 import { LowDBChannelStorage } from './storage/lowdb/channel_storage.js'
@@ -23,21 +36,11 @@ import { VectraVectorDatabase } from './vector_database.js'
 import path from 'path'
 import fs from 'fs'
 import { migrateDatabase } from '../../utils/initDB.js'
-import { SQLiteChannelStorage } from './storage/sqlite/channel_storage.js'
 import { dataDir } from '../../utils/common.js'
-import { SQLiteChatPresetStorage } from './storage/sqlite/chat_preset_storage.js'
-import { SQLiteToolsStorage } from './storage/sqlite/tools_storage.js'
-import { SQLiteProcessorsStorage } from './storage/sqlite/processors_storage.js'
-import { SQLiteUserStateStorage } from './storage/sqlite/user_state_storage.js'
-import { SQLiteToolsGroupStorage } from './storage/sqlite/tool_groups_storage.js'
 import { checkMigrate } from './storage/sqlite/migrate.js'
-import { SQLiteHistoryManager } from './storage/sqlite/history_manager.js'
-import SQLiteTriggerStorage from './storage/sqlite/trigger_storage.js'
 import LowDBTriggerStorage from './storage/lowdb/trigger_storage,.js'
 import { createChaiteVectorizer } from './vectorizer.js'
 import { MemoryRouter, authenticateMemoryRequest } from '../memory/router.js'
-import { SQLiteOperationLogStorage } from './storage/sqlite/operation_log_storage.js'
-import { SQLiteMcpServerStorage } from './storage/sqlite/mcp_server_storage.js'
 import { LowDBMcpServerStorage } from './storage/lowdb/mcp_server_storage.js'
 import { createDebugSanitizingLogger } from '../../utils/log.js'
 import { migrateSplitSQLiteDatabases } from './storage/sqlite/split_migrate.js'
@@ -79,28 +82,50 @@ export async function initChaite () {
   const storage = ChatGPTConfig.chaite.storage
   let channelsStorage, chatPresetsStorage, toolsStorage, processorsStorage, userStateStorage, historyStorage, toolsGroupStorage, triggerStorage, operationLogStorage, mcpServerStorage
   switch (storage) {
-    case 'sqlite': {
-      const dbPath = path.join(dataDir, 'data.db')
-      const historyDbPath = path.join(dataDir, 'history.db')
-      await migrateSplitSQLiteDatabases(dataDir)
-      channelsStorage = new SQLiteChannelStorage(dbPath)
+    // 'sqlite' 是历史遗留的名字，现在的含义是「用 SQL 存储」，具体哪种数据库由
+    // chaite.db.dialect 决定。保留旧值是为了不让现有配置文件失效。
+    case 'sqlite':
+    case 'sql': {
+      const dialect = ChatGPTConfig.chaite.db?.dialect || 'sqlite'
+
+      // 拆库迁移只针对本地 SQLite 文件，且必须在 driver 打开这些文件之前跑完
+      if (dialect === 'sqlite') {
+        await migrateSplitSQLiteDatabases(dataDir)
+      }
+
+      await drivers.init(
+        dialect === 'sqlite'
+          ? { dialect: 'sqlite', dataDir }
+          : { dialect, ...ChatGPTConfig.chaite.db }
+      )
+      const mainDriver = drivers.get('main')
+
+      channelsStorage = new SqlChannelStorage(mainDriver)
       await channelsStorage.initialize()
-      chatPresetsStorage = new SQLiteChatPresetStorage(dbPath)
+      chatPresetsStorage = new SqlChatPresetStorage(mainDriver)
       await chatPresetsStorage.initialize()
-      toolsStorage = new SQLiteToolsStorage(dbPath)
+      toolsStorage = new SqlToolsStorage(mainDriver)
       await toolsStorage.initialize()
-      processorsStorage = new SQLiteProcessorsStorage(dbPath)
+      processorsStorage = new SqlProcessorsStorage(mainDriver)
       await processorsStorage.initialize()
-      userStateStorage = new SQLiteUserStateStorage(dbPath)
+      userStateStorage = new SqlUserStateStorage(mainDriver)
       await userStateStorage.initialize()
-      toolsGroupStorage = new SQLiteToolsGroupStorage(dbPath)
+      toolsGroupStorage = new SqlToolsGroupStorage(mainDriver)
       await toolsGroupStorage.initialize()
-      triggerStorage = new SQLiteTriggerStorage(dbPath)
+      triggerStorage = new SqlTriggerStorage(mainDriver)
       await triggerStorage.initialize()
-      mcpServerStorage = new SQLiteMcpServerStorage(dbPath)
+      mcpServerStorage = new SqlMcpServerStorage(mainDriver)
       await mcpServerStorage.initialize()
-      historyStorage = new SQLiteHistoryManager(historyDbPath, path.join(dataDir, 'images'))
-      await checkMigrate()
+
+      // 图片始终落本地磁盘：库里只存 $image:md5:ext 引用，换成 Postgres 也不会
+      // 把几 MB 的 base64 塞进行里
+      historyStorage = new SqlHistoryManager(drivers.get('history'), path.join(dataDir, 'images'))
+      await historyStorage.initialize()
+
+      // LowDB -> SQL 的一次性迁移只对本地 SQLite 有意义
+      if (dialect === 'sqlite') {
+        await checkMigrate()
+      }
       break
     }
     case 'lowdb': {
@@ -121,7 +146,7 @@ export async function initChaite () {
       break
     }
     default:
-      throw new Error(`未知的存储实现 chaite.storage=${storage}，可选值：sqlite、lowdb`)
+      throw new Error(`未知的存储实现 chaite.storage=${storage}，可选值：sql（旧名 sqlite）、lowdb`)
   }
   const channelsManager = await ChannelsManager.init(channelsStorage, new DefaultChannelLoadBalancer())
   const toolsDir = path.resolve('./plugins/chatgpt-plugin', ChatGPTConfig.chaite.toolsDirPath)
@@ -148,8 +173,8 @@ export async function initChaite () {
   // 操作日志是高频写入、保留量按万条计的数据，lowdb 会把整个集合常驻内存并
   // 整文件重写，不适合做持久化后端。所以 lowdb 下只挂内存版 manager：
   // 管理面板的日志页面照常可用，只是重启后不保留。
-  if (storage === 'sqlite') {
-    operationLogStorage = new SQLiteOperationLogStorage(path.join(dataDir, 'operation_logs.db'), ChatGPTConfig.chaite.operationLogLimit)
+  if (storage !== 'lowdb') {
+    operationLogStorage = new SqlOperationLogStorage(drivers.get('operation_logs'), ChatGPTConfig.chaite.operationLogLimit)
     await operationLogStorage.initialize()
   }
   chaite.setOperationLogManager(new OperationLogManager(operationLogStorage))
