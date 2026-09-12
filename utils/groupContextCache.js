@@ -51,8 +51,12 @@ class GroupContextCache {
    */
   async getSnapshot (groupId) {
     await this._init()
+    // 标识符必须走 quoteId：建表时是带引号建的（"groupId" 保留驼峰），
+    // 而 Postgres 会把裸标识符转成小写，写 groupId 实际查的是 groupid，
+    // 直接报 column "groupid" does not exist。SQLite 大小写不敏感所以看不出来。
+    const q = name => this.db.dialect.quoteId(name)
     const row = await this.db.get(
-      'SELECT snapshot FROM group_context_cache WHERE groupId = ?',
+      `SELECT ${q('snapshot')} FROM ${q('group_context_cache')} WHERE ${q('groupId')} = ?`,
       [String(groupId)]
     )
     if (!row) {
@@ -78,6 +82,7 @@ class GroupContextCache {
     const snapshot = JSON.stringify(messages)
     const now = Date.now()
     // INSERT OR REPLACE 是 SQLite 专有写法，换成两种方言通用的 ON CONFLICT
+    // upsert() 内部会 quoteId，所以这里不用自己拼
     const sql = this.db.dialect.upsert('group_context_cache', ['groupId', 'snapshot', 'updatedAt'], 'groupId')
     try {
       await this.db.run(sql, [String(groupId), snapshot, now])
@@ -94,7 +99,11 @@ class GroupContextCache {
     await this._init()
     const cutoff = Date.now() - maxAgeMs
     try {
-      await this.db.run('DELETE FROM group_context_cache WHERE updatedAt < ?', [cutoff])
+      const q = name => this.db.dialect.quoteId(name)
+      await this.db.run(
+        `DELETE FROM ${q('group_context_cache')} WHERE ${q('updatedAt')} < ?`,
+        [cutoff]
+      )
     } catch (err) {
       logger.error(`[GroupContext] cleanup failed: ${err.message}`)
     }
