@@ -5,7 +5,7 @@
   "author": "ikechan8370",
   "dependencies": {
     "adm-zip": "^0.5.10",
-    "chaite": "^1.14.0",
+    "chaite": "^1.15.0",
     "js-yaml": "^4.1.0",
     "keyv": "^5.3.1",
     "keyv-file": "^5.1.2",
