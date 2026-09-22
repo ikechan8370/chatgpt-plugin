@@ -1,0 +1,1 @@
+import{p as t}from"./index-BA8U2Ech.js";import{f as u}from"./pagination-DH5ltoJM.js";function e(o){return t.Get("/api/toolGroups/list",{params:o})}function s(o={}){return u(e,o)}function a(o){return t.Post("/api/toolGroups/",o)}function n(o,r){return t.Put(`/api/toolGroups/${o}`,r)}function i(o){return t.Delete(`/api/toolGroups/${o}`)}export{a as c,i as d,s as f,n as u};

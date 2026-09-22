@@ -44,6 +44,7 @@ import { MemoryRouter, authenticateMemoryRequest } from '../memory/router.js'
 import { LowDBMcpServerStorage } from './storage/lowdb/mcp_server_storage.js'
 import { createDebugSanitizingLogger } from '../../utils/log.js'
 import { migrateSplitSQLiteDatabases } from './storage/sqlite/split_migrate.js'
+import { StorageRouter } from './storageRouter.js'
 
 /**
  * 认证，以便共享上传
@@ -248,6 +249,7 @@ export async function initChaite () {
   chaite.runApiServer(app => {
     registerManagementPanelAutoLogin(app)
     app.use('/api/memory', authenticateMemoryRequest, MemoryRouter)
+    app.use('/api/storage', authenticateMemoryRequest, StorageRouter)
   }, {
     frontendDir: path.resolve('./plugins/chatgpt-plugin/resources/admin')
   })
