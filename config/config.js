@@ -45,7 +45,19 @@ class ChatGPTConfig {
    *   }>,
    *   maxTokens: number,
    *   temperature: number,
-   *   sendReasoning: boolean
+   *   sendReasoning: boolean,
+   *   jevTrigger?: {
+   *     enable: boolean,
+   *     url: string,
+   *     apiKey?: string,
+   *     model?: string,
+   *     threshold: number,
+   *     contextLength: number,
+   *     timeout: number,
+   *     cooldown: number,
+   *     instructions?: string,
+   *     fallbackProbability: number
+   *   }
    * }}
    * }}
    */
@@ -72,6 +84,30 @@ class ChatGPTConfig {
     temperature: -1,
     // 是否发送思考内容
     sendReasoning: false,
+    // Jev 智能触发：用 System One 决策模型（自建 Jev 兼容 API）根据群聊上下文判断是否接茬，
+    // 替代纯概率触发。仅在群聊生效；hit 必定触发词仍优先于 Jev 直接触发。
+    jevTrigger: {
+      // 开关。开启后群聊内不再按 probability 随机触发，由 Jev 判定
+      enable: false,
+      // Jev 兼容 API 地址，例如自建的 semif 服务
+      url: 'http://100.64.0.1:8000',
+      // API Key，未设鉴权可留空
+      apiKey: '',
+      // 模型名，服务端会自动解析
+      model: 'jev-latest',
+      // 接茬阈值：noul（应该接茬的概率）>= 该值才发言，建议 0.5~0.8
+      threshold: 0.6,
+      // 参与判定的群聊上下文条数
+      contextLength: 20,
+      // 单次判定超时（毫秒），超时或失败回退概率触发，不阻塞后续消息处理
+      timeout: 5000,
+      // Jev 触发发言后，同群的冷却秒数（防止连续接茬暴露机器人身份），0 为不冷却
+      cooldown: 300,
+      // 判定问题，可自定义机器人的接茶标准（会作为 noul 问题发给 Jev）
+      instructions: '',
+      // Jev 调用失败时的回退概率，-1 表示沿用上方 probability
+      fallbackProbability: -1
+    },
     // 伪人对话历史的保留天数，0 表示永久保留。
     // 伪人每次发言都会新建一个会话，并把当次的群聊上下文写进历史表用于审计，
     // 默认配置下一次约 22 行。不设保留期的话这张表只增不减（实测一年约 1.6M 行 /

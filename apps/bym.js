@@ -7,9 +7,13 @@ import { formatTimeToBeiJing } from '../utils/common.js'
 import { extractTextFromUserMessage, processUserMemory } from '../models/memory/userMemoryManager.js'
 import { buildMemoryPrompt } from '../models/memory/prompt.js'
 import { isVisualModelForSendOptions } from '../utils/vision.js'
+import { jevShouldChimeIn } from '../utils/jev.js'
 import * as crypto from 'node:crypto'
 
 const DEFAULT_CONTEXTUAL_PROMPT = '你现在不是在回复某一条特定消息，而是作为这个群里的一名普通群友自然参与当前聊天。请阅读前面的群聊上下文，选择一个自然的切入点发言，可以接续话题、补充信息、吐槽、提问或表达态度。不要解释任务，不要提及“上下文”“指令”“AI”或“机器人”，不要强行引用、@或逐句回答触发你的那条消息。直接输出一段适合发到群里的自然发言。'
+
+// Jev 触发的每群冷却记录：group_id -> 上次发言时间戳
+const jevReplyCooldown = new Map()
 
 function getEventUserId (e) {
   const userId = e?.user_id ?? e?.sender?.user_id
@@ -44,11 +48,53 @@ export class bym extends plugin {
     if (!ChatGPTConfig.bym.enable) {
       return false
     }
+    const keywordHit = ChatGPTConfig.bym.hit.find(keyword => e.msg?.includes(keyword))
     let prob = ChatGPTConfig.bym.probability
-    if (ChatGPTConfig.bym.hit.find(keyword => e.msg?.includes(keyword))) {
+    if (keywordHit) {
+      // 必定触发词是显式逃生通道，不走 Jev 判断也不受冷却限制
       prob = 1
     }
-    if (Math.random() > prob) {
+    // Jev 智能触发：用 System One 决策模型根据群聊上下文判断是否接茬，
+    // 替代纯概率触发。仅在群聊且未命中关键词时生效；
+    // Jev 调用失败或超时则回退到概率触发。
+    const jevCfg = ChatGPTConfig.bym.jevTrigger
+    if (jevCfg?.enable && !keywordHit && e.msg && e.isGroup) {
+      const cooldownMs = (jevCfg.cooldown > 0 ? jevCfg.cooldown : 0) * 1000
+      if (cooldownMs > 0 && Date.now() - (jevReplyCooldown.get(e.group_id) || 0) < cooldownMs) {
+        logger.debug(`[BYM] Jev 冷却中，跳过判定 group=${e.group_id}`)
+        return false
+      }
+      let decision = null
+      try {
+        decision = await jevShouldChimeIn(e, jevCfg)
+      } catch (err) {
+        logger.warn(`[BYM] Jev 判定失败，回退概率触发: ${err.message}`)
+      }
+      if (decision) {
+        if (!decision.answered) {
+          logger.warn('[BYM] Jev 未返回有效答案，回退概率触发')
+          if (Math.random() > prob) {
+            return false
+          }
+        } else if (!decision.triggered) {
+          logger.debug(`[BYM] Jev 判定不接茬 (noul=${decision.noul?.toFixed(3)}, ${decision.latencyMs}ms)`)
+          return false
+        } else {
+          logger.info(`[BYM] Jev 判定接茬 (noul=${decision.noul?.toFixed(3)}, ${decision.latencyMs}ms)`)
+          if (jevCfg.cooldown > 0) {
+            if (jevReplyCooldown.size > 500) {
+              jevReplyCooldown.clear()
+            }
+            jevReplyCooldown.set(e.group_id, Date.now())
+          }
+        }
+      } else {
+        const fallback = jevCfg.fallbackProbability >= 0 ? jevCfg.fallbackProbability : prob
+        if (Math.random() > fallback) {
+          return false
+        }
+      }
+    } else if (Math.random() > prob) {
       return false
     }
     logger.info('伪人模式触发')
