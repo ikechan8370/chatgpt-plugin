@@ -1,5 +1,6 @@
 import { getGroupHistory } from './group.js'
 import { formatTimeToBeiJing } from './common.js'
+import { renderTemplate } from './template.js'
 
 /**
  * Jev (System One) 决策模型客户端。
@@ -9,6 +10,53 @@ import { formatTimeToBeiJing } from './common.js'
  *   { state, model, questions: { <key>: { type: 'noul'|'choice'|'score', instructions, ... } } }
  *   → { model, answers: { <key>: { type, noul?|choice?|score?, confidence?, probabilities? } }, usage }
  */
+
+// state 构建模板的内置默认值（cfg 未配置/为空时使用）
+const STATE_TEMPLATE_DEFAULTS = {
+  // 每条群消息的渲染格式。可用占位符：${time} ${sender} ${message} ${card} ${nickname} ${userId}
+  stateMessageTemplate: '[${time}] ${sender}: ${message}',
+  // 追加在最新一条消息（触发判定那条）行尾的标记，设为空字符串则不加标记
+  stateLatestMark: ' ←【最新消息】',
+  // 整个 state 的组装。可用占位符：${transcript} ${currentTime} ${groupName} ${groupId}
+  stateTemplate: '${transcript}\n\nCurrent Time: ${currentTime}',
+  // 私聊场景的 state。可用占位符：${message} ${currentTime}
+  privateStateTemplate: '用户私信：${message}'
+}
+
+function resolveTemplate (value, fallback) {
+  const trimmed = typeof value === 'string' ? value.trim() : ''
+  return trimmed || fallback
+}
+
+/**
+ * 把群聊历史按模板转写成喂给 Jev 的纯文本上下文。
+ * @param {Array<*>} chats getGroupHistory 返回的消息列表（oldest-first）
+ * @param {*} cfg bym.jevTrigger 配置
+ * @returns {string}
+ */
+function renderTranscript (chats, cfg) {
+  const messageTemplate = resolveTemplate(cfg.stateMessageTemplate, STATE_TEMPLATE_DEFAULTS.stateMessageTemplate)
+  const latestMark = typeof cfg.stateLatestMark === 'string' ? cfg.stateLatestMark : STATE_TEMPLATE_DEFAULTS.stateLatestMark
+  const lines = chats
+    .filter(chat => chat && (chat.raw_message || chat.message))
+    .map((chat, index, arr) => {
+      const sender = chat.sender || {}
+      const values = {
+        time: chat.time ? formatTimeToBeiJing(chat.time * 1000) : '-',
+        sender: sender.card || sender.nickname || sender.user_id || '未知',
+        card: sender.card || '-',
+        nickname: sender.nickname || '-',
+        userId: sender.user_id || '-',
+        message: chat.raw_message || chat.message || ''
+      }
+      let line = renderTemplate(messageTemplate, values)
+      if (index === arr.length - 1) {
+        line += latestMark
+      }
+      return line
+    })
+  return lines.join('\n')
+}
 
 /**
  * 调用 System One 评估端点。
@@ -63,30 +111,9 @@ export async function callSystemOne (options) {
 }
 
 /**
- * 把群聊历史转写成喂给 Jev 的纯文本上下文。
- * @param {Array<*>} chats getGroupHistory 返回的消息列表（oldest-first）
- * @returns {string}
- */
-function renderTranscript (chats) {
-  const lines = chats
-    .filter(chat => chat && (chat.raw_message || chat.message))
-    .map(chat => {
-      const sender = chat.sender || {}
-      const name = sender.card || sender.nickname || sender.user_id || '未知'
-      const time = chat.time ? formatTimeToBeiJing(chat.time * 1000) : '-'
-      return `[${time}] ${name}: ${chat.raw_message || chat.message}`
-    })
-  if (lines.length > 0) {
-    // 最后一条就是触发本次判断的消息，明确标出来
-    lines[lines.length - 1] += ' ←【最新消息】'
-  }
-  return lines.join('\n')
-}
-
-/**
  * 用 Jev 判断机器人是否应该接茬。
- * 群聊场景会把最近的群聊上下文转写成对话记录作为 state；
- * 非群聊场景只用触发消息本身。
+ * 群聊场景会把最近的群聊上下文按模板转写成对话记录作为 state；
+ * 非群聊场景使用私聊模板。
  * @param {*} e yunzai 事件
  * @param {{
  *   url: string,
@@ -95,7 +122,11 @@ function renderTranscript (chats) {
  *   threshold?: number,
  *   contextLength?: number,
  *   timeout?: number,
- *   instructions?: string
+ *   instructions?: string,
+ *   stateMessageTemplate?: string,
+ *   stateLatestMark?: string,
+ *   stateTemplate?: string,
+ *   privateStateTemplate?: string
  * }} cfg bym.jevTrigger 配置
  * @returns {Promise<{triggered: boolean, noul: number|null, latencyMs: number, answered: boolean}>}
  *   answered=false 表示 Jev 没有给出有效答案（调用失败/格式不符），调用方应走回退逻辑
@@ -104,14 +135,28 @@ export async function jevShouldChimeIn (e, cfg) {
   const threshold = typeof cfg.threshold === 'number' ? cfg.threshold : 0.6
   const contextLength = cfg.contextLength > 0 ? cfg.contextLength : 20
   const startedAt = Date.now()
+  const currentTime = formatTimeToBeiJing(new Date().getTime())
   let state
   if (e.isGroup) {
     const chats = await getGroupHistory(e, contextLength)
-    const transcript = renderTranscript(chats || [])
-    state = (transcript || '（群聊记录为空）') +
-      `\n\nCurrent Time: ${formatTimeToBeiJing(new Date().getTime())}`
+    const transcript = renderTranscript(chats || [], cfg) || '（群聊记录为空）'
+    state = renderTemplate(
+      resolveTemplate(cfg.stateTemplate, STATE_TEMPLATE_DEFAULTS.stateTemplate),
+      {
+        transcript,
+        currentTime,
+        groupName: e.group?.name || e.group_name || '-',
+        groupId: e.group?.group_id || e.group_id || '-'
+      }
+    )
   } else {
-    state = `用户私信：${e.msg || ''}`
+    state = renderTemplate(
+      resolveTemplate(cfg.privateStateTemplate, STATE_TEMPLATE_DEFAULTS.privateStateTemplate),
+      {
+        message: e.msg || '',
+        currentTime
+      }
+    )
   }
   const questions = {
     should_reply: {

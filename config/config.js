@@ -105,6 +105,15 @@ class ChatGPTConfig {
       cooldown: 300,
       // 判定问题，可自定义机器人的接茶标准（会作为 noul 问题发给 Jev）
       instructions: '',
+      // —— 判定 state 模板（${xxx} 占位符，与群聊上下文模板同一套语法；置空用内置默认）——
+      // 每条群消息的渲染格式。可用：${time} ${sender} ${message} ${card} ${nickname} ${userId}
+      stateMessageTemplate: '[${time}] ${sender}: ${message}',
+      // 追加在最新一条消息（触发判定那条）行尾的标记，设为空字符串则不加标记
+      stateLatestMark: ' ←【最新消息】',
+      // 整个 state 的组装。可用：${transcript}（转写好的聊天记录） ${currentTime} ${groupName} ${groupId}
+      stateTemplate: '${transcript}\n\nCurrent Time: ${currentTime}',
+      // 私聊场景的 state。可用：${message} ${currentTime}
+      privateStateTemplate: '用户私信：${message}',
       // Jev 调用失败时的回退概率，-1 表示沿用上方 probability
       fallbackProbability: -1
     },
