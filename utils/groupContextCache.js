@@ -5,6 +5,7 @@ import { formatTimeToBeiJing } from './common.js'
 import { groupHeaderTemplateValues, groupMessageTemplateValues, renderTemplate } from './template.js'
 import { mapWithConcurrency } from './concurrency.js'
 import { withImageFetchPermit } from './imageFetchQueue.js'
+import { limitImageContent } from './image_size.js'
 import ChatGPTConfig from '../config/config.js'
 import fetch from 'node-fetch'
 
@@ -283,7 +284,7 @@ export async function loadGroupContextImages (messages) {
     try {
       const cached = visionService.loadImage(img.ref)
       if (cached) {
-        return { type: 'image', image: cached.base64, mimeType: cached.mimeType, ref: img.ref }
+        return await limitImageContent({ type: 'image', image: cached.base64, mimeType: cached.mimeType, ref: img.ref }, ChatGPTConfig.vision?.maxImageSize)
       }
       const res = await fetch(img.url)
       if (!res.ok) {
@@ -293,7 +294,7 @@ export async function loadGroupContextImages (messages) {
       const mimeType = res.headers.get('content-type') || 'image/jpeg'
       const buffer = Buffer.from(await res.arrayBuffer())
       const saved = visionService.saveImageFromBuffer(buffer, mimeType, img.ref, { url: img.url })
-      return { type: 'image', image: buffer.toString('base64'), mimeType: saved.mimeType, ref: img.ref }
+      return await limitImageContent({ type: 'image', image: buffer.toString('base64'), mimeType: saved.mimeType, ref: img.ref }, ChatGPTConfig.vision?.maxImageSize)
     } catch (err) {
       logger.warn(`[GroupContext] 获取图片异常 ${img.url}: ${err.message}`)
       return null

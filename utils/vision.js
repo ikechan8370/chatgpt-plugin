@@ -7,6 +7,7 @@ import { Chaite, ChaiteContext, createClient } from 'chaite'
 import ChatGPTConfig from '../config/config.js'
 import { dataDir } from './common.js'
 import { detectSupportedImageMime } from './image_mime.js'
+import { limitImageContent } from './image_size.js'
 import { cleanupExpiredImageCache, resolveImageRetentionMs } from './imageCacheCleanup.js'
 
 const IMAGES_DIR = path.join(dataDir, 'images')
@@ -341,7 +342,7 @@ class VisionService {
     const response = await client.sendMessage({
       role: 'user',
       content: [
-        { type: 'image', image: image.base64, mimeType: image.mimeType },
+        await limitImageContent({ type: 'image', image: image.base64, mimeType: image.mimeType }, config.maxImageSize),
         { type: 'text', text: question || config.defaultQuestion || 'Describe this image in detail.' }
       ]
     }, {

@@ -4,6 +4,8 @@ import fetch from 'node-fetch'
 import { visionService } from './vision.js'
 import { getPresetPrefixIndex } from './presetCache.js'
 import { withImageFetchPermit } from './imageFetchQueue.js'
+import ChatGPTConfig from '../config/config.js'
+import { limitImageContent } from './image_size.js'
 
 function imageRefText (ref) {
   return `[\u56fe\u7247 ref:${ref}]`
@@ -61,7 +63,7 @@ export async function intoUserMessage (e, options = {}) {
       const mimeType = res.headers.get('content-type') || 'image/jpeg'
       const buffer = Buffer.from(await res.arrayBuffer())
       const { ref } = visionService.saveImageFromBuffer(buffer, mimeType, '', { url })
-      return { type: 'image', image: buffer.toString('base64'), mimeType, ref }
+      return await limitImageContent({ type: 'image', image: buffer.toString('base64'), mimeType, ref }, ChatGPTConfig.vision?.maxImageSize)
     } catch (err) {
       logger.warn(`fetch image ${url} failed: ${err.message}`)
       return null
