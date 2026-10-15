@@ -57,12 +57,25 @@ export async function compressImageBuffer (buffer, maxImageSize) {
 export async function limitImageContent (item, maxImageSize) {
   if (item?.type !== 'image' || typeof item.image !== 'string') return item
   if (/^https?:\/\//i.test(item.image)) return item
-  const data = item.image.replace(/^data:[^,]*;base64,/i, '').replace(/^base64:\/\//i, '')
-  if (Buffer.byteLength(data, 'base64') <= resolveMaxImageSize(maxImageSize)) return item
-  const result = await compressImageBuffer(Buffer.from(data, 'base64'), maxImageSize)
+  const data = item.image.replace(/^data:[^,]*;base64,/i, '').replace(/^base64:\/\//i, '').replace(/\s/g, '')
+  const limit = resolveMaxImageSize(maxImageSize)
+  // Gateways may count the base64 field itself (about 4/3 of the file size).
+  // Bound both representations to avoid a base64-size rejection below 10 MiB.
+  if (data.length <= limit) {
+    return data === item.image ? item : {
+      ...item,
+      image: data,
+      mimeType: detectSupportedImageMime(Buffer.from(data.slice(0, 32), 'base64')) || item.mimeType
+    }
+  }
+  const binaryLimit = Math.floor(limit / 4) * 3
+  if (binaryLimit < 1) throw new Error('vision.maxImageSize 过小，无法容纳 Base64 图片')
+  const result = await compressImageBuffer(Buffer.from(data, 'base64'), binaryLimit)
+  const image = result.buffer.toString('base64')
+  if (image.length > limit) throw new Error('图片压缩失败：Base64 内容超过大小上限')
   return {
     ...item,
-    image: result.buffer.toString('base64'),
+    image,
     mimeType: result.mimeType,
     // Preserve routing rules such as forceImageRefMimes after conversion to JPEG.
     originalMimeType: item.originalMimeType || detectSupportedImageMime(Buffer.from(data.slice(0, 32), 'base64')) || item.mimeType

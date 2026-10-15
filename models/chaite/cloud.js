@@ -1,5 +1,8 @@
 import {
   Chaite,
+  ClaudeClient,
+  OpenAIClient,
+  GeminiClient,
   ChannelsManager,
   ChatPresetManager,
   DefaultChannelLoadBalancer,
@@ -45,6 +48,7 @@ import { LowDBMcpServerStorage } from './storage/lowdb/mcp_server_storage.js'
 import { createDebugSanitizingLogger } from '../../utils/log.js'
 import { migrateSplitSQLiteDatabases } from './storage/sqlite/split_migrate.js'
 import { StorageRouter } from './storageRouter.js'
+import { installImageRequestGuard } from '../../utils/image_request_guard.js'
 
 /**
  * 认证，以便共享上传
@@ -79,6 +83,7 @@ export async function initRagManager (model, dimensions) {
 }
 
 export async function initChaite () {
+  installImageRequestGuard([ClaudeClient, OpenAIClient, GeminiClient], () => ChatGPTConfig.vision?.maxImageSize)
   const chaiteLogger = createDebugSanitizingLogger(logger)
   const storage = ChatGPTConfig.chaite.storage
   let channelsStorage, chatPresetsStorage, toolsStorage, processorsStorage, userStateStorage, historyStorage, toolsGroupStorage, triggerStorage, operationLogStorage, mcpServerStorage

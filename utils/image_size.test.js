@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import test, { before, after } from 'node:test'
 import { readFileSync } from 'node:fs'
+import { createServer } from 'node:http'
+import { installImageRequestGuard } from './image_request_guard.js'
 import { compressImageBuffer as compressOriginal, limitImageContent as limitOriginal, resolveMaxImageSize } from './image_size.js'
 import { detectSupportedImageMime } from './image_mime.js'
 
@@ -89,7 +91,7 @@ test('images at or below the limit pass through without loading the host browser
   const result = await compressOriginal(animatedGif, animatedGif.length)
   assert.equal(result.buffer, animatedGif)
   const item = { type: 'image', image: animatedGif.toString('base64'), mimeType: 'image/gif', ref: 'original' }
-  assert.equal(await limitOriginal(item, animatedGif.length), item)
+  assert.equal(await limitOriginal(item, item.image.length), item)
 })
 
 test('text and URL content pass through without loading the host browser', async () => {
@@ -128,11 +130,23 @@ browserTest('base64/data URLs preserve refs, actual MIME, and original format fo
     const item = { type: 'image', image: prefix + buffer.toString('base64'), mimeType: 'image/jpeg', ref: 'original' }
     const result = await limitImageContent(item, '16384')
     assert.ok(Buffer.from(result.image, 'base64').length <= 16384)
+    assert.ok(result.image.length <= 16384)
     assert.equal(result.mimeType, 'image/jpeg')
     assert.equal(result.originalMimeType, 'image/png')
     assert.equal(result.ref, 'original')
     assert.notEqual(item.image, result.image)
   }
+})
+
+browserTest('a file below 10 MiB with the reported 10986956-byte base64 is compressed', async () => {
+  const png = await noisyImage('png')
+  const buffer = Buffer.concat([png, Buffer.alloc(8240217 - png.length)])
+  const item = { type: 'image', image: buffer.toString('base64'), mimeType: 'image/png' }
+  assert.ok(buffer.length < 10485760)
+  assert.equal(item.image.length, 10986956)
+  const result = await limitImageContent(item, 10485760)
+  assert.ok(result.image.length <= 10485760)
+  assert.equal(result.mimeType, 'image/jpeg')
 })
 
 browserTest('impossible limits and invalid images release their browser pages', async () => {
@@ -225,5 +239,75 @@ browserTest('bundled processor handles history and keeps GIF ref routing after c
   } finally {
     config.vision.maxImageSize = oldLimit
     delete globalThis[Symbol.for('chatgpt.image-compression.test.limit')]
+  }
+})
+
+browserTest('actual Claude SDK request limits old history at messages.13.content.6 without processors', async () => {
+  const { ClaudeClient, OpenAIClient, GeminiClient, ChaiteContext } = await import('chaite')
+  const clients = [ClaudeClient, OpenAIClient, GeminiClient]
+  const originalMethods = clients.map(Client => Client.prototype._sendMessage)
+  const requests = []
+  const server = createServer(async (req, res) => {
+    const chunks = []
+    for await (const chunk of req) chunks.push(chunk)
+    requests.push(JSON.parse(Buffer.concat(chunks)))
+    res.writeHead(200, { 'content-type': 'application/json' })
+    res.end(JSON.stringify({
+      id: 'msg_test', type: 'message', role: 'assistant', model: 'claude-test',
+      content: [{ type: 'text', text: 'ok' }], stop_reason: 'end_turn',
+      usage: { input_tokens: 1, output_tokens: 1 }
+    }))
+  })
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+  try {
+    installImageRequestGuard(clients, () => 10485760, limitImageContent)
+    const png = await noisyImage('png')
+    for (const byteLength of [8240217, 10986956]) {
+      const original = Buffer.concat([png, Buffer.alloc(byteLength - png.length)]).toString('base64')
+      const history = Array.from({ length: 14 }, (_, i) => ({ id: `history-${i}`, role: 'user', content: [{ type: 'text', text: `history ${i}` }] }))
+      history[13].content = Array.from({ length: 6 }, () => ({ type: 'text', text: 'context' }))
+      history[13].content.push({ type: 'image', image: original, mimeType: 'image/png' })
+      const logger = { debug () {}, info () {}, warn () {}, error () {} }
+      const context = new ChaiteContext(logger)
+      context.setChaite({
+        getGlobalConfig: () => ({ getDebug: () => false }),
+        getToolsGroupManager: () => null,
+        getToolsManager: () => null,
+        getOperationLogManager: () => null
+      })
+      const client = new ClaudeClient({
+        apiKey: 'test', baseUrl: `http://127.0.0.1:${server.address().port}`, logger,
+        historyManager: { getHistory: async () => [...history], saveHistory: async () => {} }
+      }, context)
+      const options = { model: 'claude-test', preProcessorIds: [], postProcessorIds: [], toolGroupId: [] }
+      await client.sendMessage({ role: 'user', content: [{ type: 'text', text: 'continue' }] }, options)
+      const source = requests.at(-1).messages[13].content[6].source
+      assert.equal(source.type, 'base64')
+      assert.ok(source.data.length <= 10485760)
+      assert.ok(Buffer.from(source.data, 'base64').length <= 10485760)
+      assert.equal(source.media_type, 'image/jpeg')
+      assert.equal(history[13].content[6].image, original, 'original cached history stays untouched')
+      assert.equal(client.preProcessors.length, 0)
+      // This bypasses the normal preprocessor/history-loading path entirely.
+      await client.sendMessageWithHistory(history, options)
+      assert.ok(requests.at(-1).messages[13].content[6].source.data.length <= 10485760)
+      // Chaite swallows this optional processor failure. The mandatory guard
+      // must still stop the request if the browser cannot compress the history.
+      client.options.preProcessors = [{ name: 'failing', process () { throw new Error('processor failed') } }]
+      const requestCount = requests.length
+      renderer.browser = false
+      renderer.browserInit = async () => false
+      try {
+        await assert.rejects(client.sendMessage({ role: 'user', content: [{ type: 'text', text: 'continue' }] }, options), /发送前图片处理失败.*messages\.13\.content\.6.*Puppeteer 浏览器不可用/)
+        assert.equal(requests.length, requestCount)
+      } finally {
+        renderer.browser = browser
+        delete renderer.browserInit
+      }
+    }
+    assert.equal(requests.length, 4)
+  } finally {
+    clients.forEach((Client, index) => { Client.prototype._sendMessage = originalMethods[index] })
+    await new Promise(resolve => server.close(resolve))
   }
 })

@@ -288,7 +288,8 @@ class ChatGPTConfig {
     imageDescriptionSystemPrompt: 'You are an image analysis assistant. Answer questions about images accurately and thoroughly.',
     // 未指定 question 时的默认提问
     defaultQuestion: '请详细描述这张图片的内容，包括场景、人物、物体、文字、颜色等所有可见细节。',
-    // 发送给模型的单张图片大小上限（bytes），默认 10MiB；超限复用云崽浏览器压缩为 JPEG
+    // 发送给模型的单张图片大小上限（bytes，包含 Base64 编码开销），默认 10MiB
+    // 超限复用云崽浏览器压缩为 JPEG；历史图片也在最终发送前检查，不依赖渠道预处理器
     // 超限动图取静态帧用于识图，缓存始终保留原图
     maxImageSize: 10485760,
     // 是否将群聊上下文中的图片也存入历史（开启后图片会进入主干对话）
