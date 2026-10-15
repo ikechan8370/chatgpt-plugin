@@ -3,8 +3,8 @@ import test, { before, after } from 'node:test'
 import { readFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { installImageRequestGuard } from './image_request_guard.js'
-import { compressImageBuffer as compressOriginal, limitImageContent as limitOriginal, resolveMaxImageSize } from './image_size.js'
-import { detectSupportedImageMime } from './image_mime.js'
+import { compressImageBuffer as compressOriginal, limitImageContent as limitOriginal, resolveMaxImageSize, resolveMaxImageDimension } from './image_size.js'
+import { detectSupportedImageMime, getImageDimensions } from './image_mime.js'
 
 // Real Chromium tests use the host's Puppeteer, or a temporary puppeteer-core
 // installation when IMAGE_COMPRESSION_TEST_CHROME_PATH is provided.
@@ -82,9 +82,28 @@ async function dimensions (buffer) {
   }, `data:${detectSupportedImageMime(buffer)};base64,${buffer.toString('base64')}`)
 }
 
+async function solidImage (width, height, format = 'png') {
+  const data = await fixturePage.evaluate(({ width, height, format }) => {
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+    const ctx = canvas.getContext('2d')
+    ctx.fillStyle = '#4682b4'
+    ctx.fillRect(0, 0, width, height)
+    return canvas.toDataURL(`image/${format}`).split(',')[1]
+  }, { width, height, format })
+  return Buffer.from(data, 'base64')
+}
+
 test('invalid limits use 10 MiB; numeric configuration strings work', () => {
   for (const value of [undefined, null, 0, -1, Infinity, 'invalid']) assert.equal(resolveMaxImageSize(value), 10485760)
   assert.equal(resolveMaxImageSize('2048'), 2048)
+})
+
+test('pixel limits default to 8000, accept numeric strings, and cannot exceed the API maximum', () => {
+  for (const value of [undefined, null, 0, -1, Infinity, 'invalid']) assert.equal(resolveMaxImageDimension(value), 8000)
+  assert.equal(resolveMaxImageDimension('2048'), 2048)
+  assert.equal(resolveMaxImageDimension(8192), 8000)
 })
 
 test('images at or below the limit pass through without loading the host browser', async () => {
@@ -109,6 +128,10 @@ browserTest('a real image above 10 MiB fits the default limit after compression'
 })
 
 for (const format of ['png', 'jpeg', 'webp', 'gif']) {
+  browserTest(`${format} headers match decoded dimensions without an image codec`, async () => {
+    const buffer = format === 'gif' ? animatedGif : await solidImage(37, 19, format)
+    assert.deepEqual(getImageDimensions(buffer), await dimensions(buffer))
+  })
   browserTest(`oversized ${format} becomes a decodable JPEG under the configured limit`, async () => {
     const buffer = await noisyImage(format)
     const original = Buffer.from(buffer)
@@ -123,6 +146,42 @@ for (const format of ['png', 'jpeg', 'webp', 'gif']) {
     assert.deepEqual(buffer, original)
   })
 }
+
+browserTest('small files with a width or height above 8000 are resized while preserving aspect ratio', async () => {
+  for (const [width, height] of [[12000, 60], [60, 12000]]) {
+    const buffer = await solidImage(width, height)
+    const item = { type: 'image', image: buffer.toString('base64'), mimeType: 'image/png', ref: 'long-image' }
+    const original = item.image
+    assert.ok(item.image.length < 10485760)
+    const result = await limitImageContent(item)
+    const output = Buffer.from(result.image, 'base64')
+    assert.deepEqual(await dimensions(output), width > height ? { width: 8000, height: 40 } : { width: 40, height: 8000 })
+    assert.ok(result.image.length <= 10485760)
+    assert.equal(result.ref, 'long-image')
+    assert.equal(result.originalMimeType, 'image/png')
+    assert.equal(item.image, original)
+  }
+})
+
+browserTest('a configured lower pixel limit and the byte limit both apply, without upscaling', async () => {
+  const buffer = await solidImage(4096, 64)
+  const result = await limitImageContent({ type: 'image', image: buffer.toString('base64'), mimeType: 'image/png' }, 16384, '1024')
+  assert.deepEqual(await dimensions(Buffer.from(result.image, 'base64')), { width: 1024, height: 16 })
+  assert.ok(result.image.length <= 16384)
+  const boundary = await solidImage(8000, 8)
+  const item = { type: 'image', image: boundary.toString('base64'), mimeType: 'image/png' }
+  assert.equal(await limitOriginal(item), item)
+  assert.equal((await compressOriginal(animatedGif, 10485760, 8000)).buffer, animatedGif)
+})
+
+browserTest('animated GIF canvas dimensions trigger shrinking even when its file is tiny', async () => {
+  const buffer = Buffer.from(animatedGif)
+  buffer.writeUInt16LE(9000, 6)
+  const result = await limitImageContent({ type: 'image', image: buffer.toString('base64'), mimeType: 'image/gif' })
+  const output = await dimensions(Buffer.from(result.image, 'base64'))
+  assert.equal(output.width, 8000)
+  assert.equal(result.originalMimeType, 'image/gif')
+})
 
 browserTest('base64/data URLs preserve refs, actual MIME, and original format for routing', async () => {
   const buffer = await noisyImage('png')
@@ -260,7 +319,7 @@ browserTest('actual Claude SDK request limits old history at messages.13.content
   })
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
   try {
-    installImageRequestGuard(clients, () => 10485760, limitImageContent)
+    installImageRequestGuard(clients, () => ({ maxImageSize: 10485760, maxImageDimension: 8000 }), limitImageContent)
     const png = await noisyImage('png')
     for (const byteLength of [8240217, 10986956]) {
       const original = Buffer.concat([png, Buffer.alloc(byteLength - png.length)]).toString('base64')
@@ -306,6 +365,19 @@ browserTest('actual Claude SDK request limits old history at messages.13.content
       }
     }
     assert.equal(requests.length, 4)
+    const buffer = await solidImage(12000, 60)
+    const original = buffer.toString('base64')
+    const history = [{ role: 'user', content: [...Array.from({ length: 29 }, () => ({ type: 'text', text: 'context' })), { type: 'image', image: original, mimeType: 'image/png' }] }]
+    const logger = { debug () {}, info () {}, warn () {}, error () {} }
+    const context = new ChaiteContext(logger)
+    context.setChaite({ getGlobalConfig: () => ({ getDebug: () => false }), getToolsGroupManager: () => null, getToolsManager: () => null, getOperationLogManager: () => null })
+    const client = new ClaudeClient({ apiKey: 'test', baseUrl: `http://127.0.0.1:${server.address().port}`, logger,
+      historyManager: { getHistory: async () => history, saveHistory: async () => {} }
+    }, context)
+    await client.sendMessageWithHistory(history, { model: 'claude-test', toolGroupId: [] })
+    const sent = requests.at(-1).messages[0].content[29].source
+    assert.deepEqual(await dimensions(Buffer.from(sent.data, 'base64')), { width: 8000, height: 40 })
+    assert.equal(history[0].content[29].image, original)
   } finally {
     clients.forEach((Client, index) => { Client.prototype._sendMessage = originalMethods[index] })
     await new Promise(resolve => server.close(resolve))

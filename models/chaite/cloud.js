@@ -83,7 +83,7 @@ export async function initRagManager (model, dimensions) {
 }
 
 export async function initChaite () {
-  installImageRequestGuard([ClaudeClient, OpenAIClient, GeminiClient], () => ChatGPTConfig.vision?.maxImageSize)
+  installImageRequestGuard([ClaudeClient, OpenAIClient, GeminiClient], () => ChatGPTConfig.vision)
   const chaiteLogger = createDebugSanitizingLogger(logger)
   const storage = ChatGPTConfig.chaite.storage
   let channelsStorage, chatPresetsStorage, toolsStorage, processorsStorage, userStateStorage, historyStorage, toolsGroupStorage, triggerStorage, operationLogStorage, mcpServerStorage

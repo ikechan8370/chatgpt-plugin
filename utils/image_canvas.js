@@ -1,5 +1,5 @@
 /** Runs inside Chromium via page.evaluate; must not reference Node globals. */
-export async function compressImageOnCanvas (dataUrl, limit) {
+export async function compressImageOnCanvas (dataUrl, limit, maxDimension = 8000) {
   const response = await fetch(dataUrl)
   // ImageBitmap decodes a static frame, including for animated GIF/WebP inputs.
   const image = await createImageBitmap(await response.blob())
@@ -7,7 +7,7 @@ export async function compressImageOnCanvas (dataUrl, limit) {
     const canvas = document.createElement('canvas')
     const context = canvas.getContext('2d')
     // Stay within browser canvas limits and avoid huge intermediate canvases.
-    const initialScale = Math.min(1, 8192 / image.width, 8192 / image.height,
+    const initialScale = Math.min(1, maxDimension / image.width, maxDimension / image.height,
       Math.sqrt(16 * 1024 * 1024 / (image.width * image.height)))
     let width = Math.max(1, Math.floor(image.width * initialScale))
     let height = Math.max(1, Math.floor(image.height * initialScale))

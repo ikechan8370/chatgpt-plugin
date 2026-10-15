@@ -270,6 +270,7 @@ class ChatGPTConfig {
    *   imageDescriptionSystemPrompt: string,
    *   defaultQuestion: string,
    *   maxImageSize: number,
+   *   maxImageDimension: number,
    *   enableGroupContextImages: boolean,
    *   forceImageRefMimes: string[],
    *   imageRetentionPreset: 'forever' | '30d' | '7d' | '3d' | '1d' | 'custom',
@@ -292,6 +293,9 @@ class ChatGPTConfig {
     // 超限复用云崽浏览器压缩为 JPEG；历史图片也在最终发送前检查，不依赖渠道预处理器
     // 超限动图取静态帧用于识图，缓存始终保留原图
     maxImageSize: 10485760,
+    // 发送图片的宽高上限（px，1–8000），任一边超限就等比例缩小，不放大。
+    // 字节数未超限的长图也检查；高于 8000 或无效的设置按 8000 处理。
+    maxImageDimension: 8000,
     // 是否将群聊上下文中的图片也存入历史（开启后图片会进入主干对话）
     enableGroupContextImages: true,
     // 即使视觉模型也无法直接查看的图片格式：这些格式不进入主干对话，

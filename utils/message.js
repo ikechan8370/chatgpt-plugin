@@ -63,7 +63,7 @@ export async function intoUserMessage (e, options = {}) {
       const mimeType = res.headers.get('content-type') || 'image/jpeg'
       const buffer = Buffer.from(await res.arrayBuffer())
       const { ref } = visionService.saveImageFromBuffer(buffer, mimeType, '', { url })
-      return await limitImageContent({ type: 'image', image: buffer.toString('base64'), mimeType, ref }, ChatGPTConfig.vision?.maxImageSize)
+      return await limitImageContent({ type: 'image', image: buffer.toString('base64'), mimeType, ref }, ChatGPTConfig.vision?.maxImageSize, ChatGPTConfig.vision?.maxImageDimension)
     } catch (err) {
       logger.warn(`fetch image ${url} failed: ${err.message}`)
       return null

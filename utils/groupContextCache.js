@@ -284,7 +284,7 @@ export async function loadGroupContextImages (messages) {
     try {
       const cached = visionService.loadImage(img.ref)
       if (cached) {
-        return await limitImageContent({ type: 'image', image: cached.base64, mimeType: cached.mimeType, ref: img.ref }, ChatGPTConfig.vision?.maxImageSize)
+        return await limitImageContent({ type: 'image', image: cached.base64, mimeType: cached.mimeType, ref: img.ref }, ChatGPTConfig.vision?.maxImageSize, ChatGPTConfig.vision?.maxImageDimension)
       }
       const res = await fetch(img.url)
       if (!res.ok) {
@@ -294,7 +294,7 @@ export async function loadGroupContextImages (messages) {
       const mimeType = res.headers.get('content-type') || 'image/jpeg'
       const buffer = Buffer.from(await res.arrayBuffer())
       const saved = visionService.saveImageFromBuffer(buffer, mimeType, img.ref, { url: img.url })
-      return await limitImageContent({ type: 'image', image: buffer.toString('base64'), mimeType: saved.mimeType, ref: img.ref }, ChatGPTConfig.vision?.maxImageSize)
+      return await limitImageContent({ type: 'image', image: buffer.toString('base64'), mimeType: saved.mimeType, ref: img.ref }, ChatGPTConfig.vision?.maxImageSize, ChatGPTConfig.vision?.maxImageDimension)
     } catch (err) {
       logger.warn(`[GroupContext] 获取图片异常 ${img.url}: ${err.message}`)
       return null

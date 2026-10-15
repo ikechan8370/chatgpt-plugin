@@ -45,3 +45,18 @@ test('installation is idempotent, reads live config, and guards every request ro
   assert.equal(seen[0].messages[0].content[0].ref, 'ref')
   assert.equal(history[0].content[0].image, 'original')
 })
+
+test('the final guard reads both live size limits for restored history', async () => {
+  let configured = { maxImageSize: 10485760, maxImageDimension: 8000 }
+  const seen = []
+  class Client { async _sendMessage (messages) { return messages } }
+  installImageRequestGuard([Client], () => configured, async (item, bytes, pixels) => {
+    seen.push({ bytes, pixels })
+    return item
+  })
+  const messages = [{ role: 'user', content: [{ type: 'image', image: 'historical' }] }]
+  await new Client()._sendMessage(messages)
+  configured = { maxImageSize: 16384, maxImageDimension: 1024 }
+  await new Client()._sendMessage(messages)
+  assert.deepEqual(seen, [{ bytes: 10485760, pixels: 8000 }, { bytes: 16384, pixels: 1024 }])
+})

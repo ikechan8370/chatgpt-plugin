@@ -342,7 +342,7 @@ class VisionService {
     const response = await client.sendMessage({
       role: 'user',
       content: [
-        await limitImageContent({ type: 'image', image: image.base64, mimeType: image.mimeType }, config.maxImageSize),
+        await limitImageContent({ type: 'image', image: image.base64, mimeType: image.mimeType }, config.maxImageSize, config.maxImageDimension),
         { type: 'text', text: question || config.defaultQuestion || 'Describe this image in detail.' }
       ]
     }, {

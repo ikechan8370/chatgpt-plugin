@@ -3,7 +3,7 @@ import { limitImageContent } from './image_size.js'
 const GUARD = Symbol.for('chatgpt-plugin.image-request-guard')
 
 /** Clone only changed messages; never overwrite original history/cache images. */
-export async function limitRequestImages (messages, maxImageSize, limitImage = limitImageContent) {
+export async function limitRequestImages (messages, maxImageSize, limitImage = limitImageContent, maxImageDimension) {
   let prepared = messages
   for (let messageIndex = 0; messageIndex < messages.length; messageIndex++) {
     const message = messages[messageIndex]
@@ -14,7 +14,7 @@ export async function limitRequestImages (messages, maxImageSize, limitImage = l
       if (item?.type !== 'image') continue
       let limited
       try {
-        limited = await limitImage(item, maxImageSize)
+        limited = await limitImage(item, maxImageSize, maxImageDimension)
       } catch (error) {
         throw new Error(`发送前图片处理失败 (messages.${messageIndex}.content.${contentIndex}): ${error.message}`, { cause: error })
       }
@@ -37,13 +37,16 @@ export async function limitRequestImages (messages, maxImageSize, limitImage = l
  * sendMessageWithHistory. Errors propagate here instead of being swallowed by
  * Chaite's optional preprocessor loop.
  */
-export function installImageRequestGuard (clientTypes, getMaxImageSize, limitImage = limitImageContent) {
+export function installImageRequestGuard (clientTypes, getImageLimits, limitImage = limitImageContent) {
   for (const Client of clientTypes) {
     const prototype = Client.prototype
     const original = prototype._sendMessage
     if (original[GUARD]) continue
     async function sendWithImageLimit (messages, ...args) {
-      const prepared = await limitRequestImages(messages, getMaxImageSize(), limitImage)
+      const configured = getImageLimits()
+      // Retain support for callers supplying only the byte limit.
+      const limits = configured && typeof configured === 'object' ? configured : { maxImageSize: configured }
+      const prepared = await limitRequestImages(messages, limits.maxImageSize, limitImage, limits.maxImageDimension)
       if (prepared !== messages) this.logger?.info?.('[Vision] 已在发送前处理超限图片/规范化图片内容')
       return original.call(this, prepared, ...args)
     }

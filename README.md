@@ -80,6 +80,9 @@ chaite:
   host: "0.0.0.0"
   port: 48370
   publicBaseUrl: ""         # 可选，自定义访问地址，如 https://example.com
+vision:
+  maxImageSize: 10485760    # 单张图片的 Base64 大小上限，bytes
+  maxImageDimension: 8000  # 宽高任一边的上限，px，可设为 1–8000
 memory:
   group:
     enable: false
@@ -93,6 +96,7 @@ memory:
 - **llm**：定义默认模型、嵌入模型、群上下文等。`defaultChatPresetId` 需在面板或命令中提前创建。
 - **chaite**：`storage` 默认 SQLite。核心配置保存在 `plugins/chatgpt-plugin/data/data.db`，聊天历史和操作日志分别保存在同目录的 `history.db`、`operation_logs.db`；升级时会自动从旧 `data.db` 分批复制数据，并保留旧表作为兼容备份。如接入 Chaite Cloud，请填入 `cloudApiKey` 并开放 `host/port`。`publicBaseUrl` 会作为“自定义地址”单独发送；插件还会列出本机网卡内网地址，并通过 ip.sb / ip.me 尝试获取公网 IPv4 / IPv6。
 - **bym**：配置伪人触发概率、关键词映射、撤回与思考内容开关。
+- **vision**：图片超过 `maxImageDimension` 时等比例缩小，超过 `maxImageSize` 时继续压缩；两项限制同时生效。检查覆盖当前消息、历史图片、群聊上下文及识图工具，只处理发送副本，缓存保留原图。管理面板的“视觉配置”中也可修改。对于有更低尺寸要求的模型或多图请求，可以将边长上限设为 `2000`。
 - **memory**：为群记忆或私人记忆开启检索、模型与提示词，可按需启用 `extensions.simple` 以加载自定义词典。
 
 修改后保存文件，插件会自动热加载；在 Chaite 面板修改配置时也会反向写回本地文件。
